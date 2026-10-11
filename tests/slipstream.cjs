@@ -24,11 +24,19 @@ function session(id, n = 3, playerIdx = -1) {
 function place(s, car, sPos, d, speed) {
   car.placeAt(s.track, s.track.wrapS(sPos), d, speed); car.speed = speed; car.u = speed; car.v = 0;
 }
-// The main straight: the longest DRS zone, measured from the geometry.
-function straight(t) {
-  const z = t.drsZones.slice().sort((a, b) => t.wrapS(b.end - b.start) - t.wrapS(a.end - a.start))[0];
-  return { start: z.start, len: t.wrapS(z.end - z.start) };
+// The circuit's long straights, measured from its racing-line curvature (no straight metadata in the game):
+// a lap is scanned from inside a bend, so a straight across the start/finish line is found once, whole.
+function straights(t) {
+  const N = t.N, sk = t.smoothArr(t.rlKappa.map(Math.abs), 5, 1), found = []; let st = -1, i0 = 0;
+  while (i0 < N && sk[i0] < 1 / 700) i0++;
+  for (let i = i0; i <= i0 + N; i++) {
+    const k = sk[i % N] < 1 / 700;
+    if (k && st < 0) st = i; else if (!k && st >= 0) { if (i - st > 120) found.push([st % N, i - st]); st = -1; }
+  }
+  return found.sort((a, b) => b[1] - a[1]).map(([a, len]) => ({ start: t.wrapS((a + 25) * SIM.DS), len: t.wrapS((len - 70) * SIM.DS) }));
 }
+// The main straight: the longest one.
+const straight = t => straights(t)[0];
 function goal(s, follower) { s.updateSlipstream(); return follower.slipGoal; }
 
 test('following closely on a straight gives a tow that grows as the gap closes', () => {
@@ -145,7 +153,7 @@ function drive(opts) {
   const raw = { steer: opts.steer || 0, throttle: opts.throttle ?? 1, brake: opts.brake || 0, analog: false };
   for (let k = 0; k < (opts.secs || 1e9) / dt && out.dist < (opts.dist || 1e9); k++) {
     h.step(car, dt, { lightsOut: true, wet: 0 }, raw);
-    car.slipstream = opts.slip || 0; car.drsOpen = !!opts.drs;
+    car.slipstream = opts.slip || 0;
     SIM.stepCarPhysics(car, dt, flat, env);
     out.dist += car.speed * dt;
     if (k % 24 === 0) out.trace.push([car.x, car.z, car.psi, car.r, car.speed, car.gLat]);
@@ -156,14 +164,10 @@ function drive(opts) {
 
 test('the tow is a measured drag cut: faster down a long straight, but not absurdly so', () => {
   const clean = drive({ dist: 1800 }), half = drive({ dist: 1800, slip: 0.5 }), full = drive({ dist: 1800, slip: 1 });
-  const drs = drive({ dist: 1800, drs: true }), both = drive({ dist: 1800, drs: true, slip: 1 });
-  console.log(`# 1.8 km from 180 km/h: clean ${clean.kmh.toFixed(1)}, half tow ${half.kmh.toFixed(1)}, full tow ${full.kmh.toFixed(1)}, DRS ${drs.kmh.toFixed(1)}, DRS + full tow ${both.kmh.toFixed(1)} km/h`);
+  console.log(`# 1.8 km from 180 km/h: clean ${clean.kmh.toFixed(1)}, half tow ${half.kmh.toFixed(1)}, full tow ${full.kmh.toFixed(1)} km/h`);
   assert.ok(half.kmh > clean.kmh + 4 && full.kmh > half.kmh + 4);
   assert.ok(full.kmh - clean.kmh < 25, 'tow alone adds ' + (full.kmh - clean.kmh).toFixed(1));
-  // DRS and the tow combine, with diminishing returns
-  assert.ok(both.kmh > drs.kmh + 3 && both.kmh > full.kmh);
-  assert.ok(both.kmh - drs.kmh < full.kmh - clean.kmh, 'the tow adds less on top of DRS');
-  assert.ok(both.kmh - clean.kmh < 40 && both.kmh < 370, 'combined ' + both.kmh.toFixed(1));
+  assert.ok(full.kmh < 370, 'full tow ' + full.kmh.toFixed(1));
   // it also helps acceleration lower down, not only at the top end
   const a0 = drive({ speed: 45, secs: 2 }), a1 = drive({ speed: 45, secs: 2, slip: 1 });
   assert.ok(a1.kmh > a0.kmh + 0.5 && a1.kmh < a0.kmh + 6, 'mid-speed gain ' + (a1.kmh - a0.kmh).toFixed(2));
@@ -174,8 +178,10 @@ test('the tow never changes downforce, cornering, braking or the lift-off coast'
   const cl = car.effClA(), cd = car.effCdA();
   car.slipstream = 1; assert.equal(car.effClA(), cl, 'downforce unchanged'); assert.ok(car.effCdA() < cd);
   assert.ok(Math.abs(car.effCdA() / cd - (1 - SIM.SLIPSTREAM.maxCut)) < 1e-12);
-  car.drsOpen = true; const drsOnly = SIM.SPEC.cdA * 0.8, both = car.effCdA();
-  assert.ok(both < drsOnly && both > drsOnly * (1 - SIM.SLIPSTREAM.maxCut), 'DRS + tow combine with diminishing returns');
+  // the tow is the only aerodynamic aid: there is no DRS flag left that could change the drag or downforce
+  const towed = car.effCdA(); car.drsOpen = true; car.input.drs = true;
+  assert.equal(car.effCdA(), towed); assert.equal(car.effClA(), cl);
+  assert.equal(SIM.SLIPSTREAM.drsShare, undefined);
   for (const opts of [{ throttle: 0, secs: 4, speed: 80 }, { throttle: 0, brake: 1, secs: 3, speed: 85 }, { throttle: 0, steer: 0.8, secs: 3, speed: 60 }, { throttle: 0, steer: -1, brake: 0.5, secs: 2, speed: 70 }]) {
     const a = drive(opts), b = drive(Object.assign({ slip: 1 }, opts));
     assert.deepEqual(b.trace, a.trace, JSON.stringify(opts));
@@ -215,18 +221,17 @@ test('a 20-car race on each circuit: bots draft, pit cars never do, speeds stay 
     const t = tracks.get(id);
     const s = new SIM.Session(t, { type: 'race', laps: 8, entries: SIM.DRIVERS.map(driver => ({ driver })), seed: 9, spectate: true, weather: 'dynamic', weatherState: dryState(9) });
     s.totalLaps = 4;
-    let towed = 0, maxV = 0, pitTow = 0, both = 0;
+    let towed = 0, maxV = 0, pitTow = 0;
     for (let step = 0; !s.over && s.time < 260; step++) {
       s.fixedStep(dt);
       for (const c of s.cars) {
         if (c.pit && (c.slipGoal > 0 || c.slipstream > 0)) pitTow++;
         if (c.slipstream > 0.3 && !c.pit) towed++;
-        if (c.slipstream > 0.2 && c.drsOpen) both++;
         if (!c.pit) maxV = Math.max(maxV, c.speed);
         assert.ok(Number.isFinite(c.slipstream) && c.slipstream >= 0 && c.slipstream <= 1);
       }
     }
-    console.log(`# ${id}: towed car-steps ${towed}, tow + DRS ${both}, top speed ${(maxV * 3.6).toFixed(1)} km/h`);
+    console.log(`# ${id}: towed car-steps ${towed}, top speed ${(maxV * 3.6).toFixed(1)} km/h`);
     assert.equal(pitTow, 0, id + ': tow in the pit lane');
     assert.ok(towed > 500, id + ': the bots drafted ' + towed);
     assert.ok(maxV * 3.6 < 370, id + ' top speed ' + (maxV * 3.6).toFixed(1));

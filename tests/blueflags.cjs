@@ -10,7 +10,7 @@ const SIM = moduleShim.exports;
 function field(track, player = true, weather = 'dry') {
   const race = new SIM.Session(track, { type: 'race', entries: SIM.DRIVERS.map((driver, i) => ({ driver, isPlayer: player && i === 0 })),
     seed: 71, weather, tyreWear: 'off', mandatory: false, mistakes: 0 });
-  race.lightsOut = true; race.time = 50; race.drsEnabled = true;
+  race.lightsOut = true; race.time = 50;
   for (const c of race.cars) { c.inGarage = true; c.launch.active = false; }
   return race;
 }
