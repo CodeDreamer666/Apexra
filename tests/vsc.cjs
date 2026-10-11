@@ -66,7 +66,9 @@ function monitor(S, exclude = new Set()) {
     m.steps++;
     // (two cars inside the pit lane are driven by the pit autopilot exactly as without a VSC: not counted here)
     const inLane = (c) => !!c.pit && S.track.pitProg(c.s) >= 0;
-    for (const e of S.events) if (e.type === 'collision' && !exclude.has(e.a) && !exclude.has(e.b) && !(inLane(e.a) && inLane(e.b))) m.contacts.push(e.a.driver.short + '/' + e.b.driver.short + ' j' + e.j.toFixed(0) + ' @' + S.time.toFixed(2));
+    // (contact in the first half second, a reaction time, is a move already under way when race control took over)
+    const reacting = S.time - S.vsc.start < 0.5;
+    for (const e of S.events) if (e.type === 'collision' && !reacting && !exclude.has(e.a) && !exclude.has(e.b) && !(inLane(e.a) && inLane(e.b))) m.contacts.push(e.a.driver.short + '/' + e.b.driver.short + ' j' + e.j.toFixed(0) + ' @' + S.time.toFixed(2));
     // race order of the cars in the queue (by race distance), sampled at 10 Hz
     if (S.step % 24 === 0) {
       const members = S.cars.filter(c => S.vscMember(c) && !exclude.has(c));
@@ -95,7 +97,7 @@ for (const id of ['summit', 'rivermere', 'redridge']) {
       laps: new Map(S.cars.map(c => [c, c.laps])), fuel: new Map(S.cars.map(c => [c, c.fuel])), wear: new Map(S.cars.map(c => [c, c.tyre.wear.reduce((a, b) => a + b, 0)])),
       compound: new Map(S.cars.map(c => [c, c.tyre.c])), weather: S.weather.time, time: S.time,
     };
-    crash(S, victim);
+    crash(S, victim, 70); // 70 m/s into the barrier: a crash that ends the car's race on every circuit
     const crashT = S.time;
     const mon = monitor(S, new Set([victim]));
     // the incident is judged on what happens: the car's race ends, and race control reacts at once
@@ -212,7 +214,8 @@ test('minor contact, a light barrier hit, an off, harmless debris and a routine 
     // debris: a lost front wing lying on the racing line
     S.addDebris(e.x, e.z, 'fw', 1, e, true); run(S, 4);
     // a routine power-unit failure: the car pulls off and stops clear of the racing surface
-    f.damage.c[8] = 1; S.checkFailures(f, 0);
+    // (staged directly: a failed power unit can occasionally catch fire, which is not the routine case)
+    f.damage.c[8] = 1; S.mechanicalFailure(f, 'engine', 'Engine Failure — Stop Safely', 'Power unit');
     assert.ok(f.retiring);
     assert.ok(runUntil(S, () => f.retiring.phase === 'parked', 40));
     assert.ok(Math.abs(f.d) > t.halfW - 0.5, 'the failed car stopped off the racing line');
@@ -296,7 +299,7 @@ test('cars in the pit lane carry on with their stops under the VSC, and cars joi
   // crash a car well away from the pit lane
   const victim = S.order.filter(c => c.ai && !c.pit && !boxers.includes(c) && c.position > 1)
     .sort((a, b) => Math.abs(t.dS(b.s, t.pit.entry0)) - Math.abs(t.dS(a.s, t.pit.entry0)))[0];
-  crash(S, victim);
+  crash(S, victim, 70);
   const mon = monitor(S, new Set([victim]));
   const stops0 = new Map(S.cars.map(c => [c, c.pitStops]));
   const timers = [];
