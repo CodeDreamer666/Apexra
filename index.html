@@ -233,9 +233,6 @@
   #rpmBar i { width: 6px; height: 20px; border-radius: 2px; background: rgba(255,255,255,.16); }
   #rpmBar i.on { background: var(--hblue); }
   #rpmBar i.hi { background: #ff3b3b; }
-  #boxpanel { display: flex; align-items: center; gap: 12px; padding: 8px 18px; font-size: 15px; font-weight: 700; letter-spacing: 1px; border-left: 4px solid var(--gold) !important; }
-  #boxpanel small { font-size: 12px; color: #dfe4ec; font-weight: 600; letter-spacing: .3px; }
-  #boxpanel kbd { min-width: 18px; padding: 0 5px; font-size: 11px; }
   #qtimer { padding: 6px 20px; font-size: 18px; font-weight: 700; letter-spacing: 1px; }
   #telemetry { position: absolute; left: 50%; bottom: 206px; transform: translateX(-50%); width: 620px; padding: 8px 10px; display: grid; grid-template-columns: 1fr 140px; gap: 10px; }
   #telemetry canvas { width: 100%; height: 120px; display: block; }
@@ -508,11 +505,9 @@
     <div id="launchHint" class="panel hidden"><kbd id="kW">W</kbd><span id="launchText">Hold W to rev, launch is automatic when the lights go out</span></div>
     <div id="lights" class="panel hidden"><div class="pod"><i></i><i></i></div><div class="pod"><i></i><i></i></div><div class="pod"><i></i><i></i></div><div class="pod"><i></i><i></i></div><div class="pod"><i></i><i></i></div></div>
     <div id="launchStatus" class="panel hidden" aria-live="polite"><span class="k">LAUNCH</span><b id="launchState">STANDBY</b><i class="vsep"></i><b class="num" id="launchRpm">4000</b><span class="k">RPM</span><span id="rpmBar"></span></div>
-    <div id="boxpanel" class="panel hidden"><span>BOX THIS LAP</span><small id="boxRep"></small></div>
   </div>
   <div id="strategyPanel" class="panel hz hidden" aria-label="Race strategy">
     <h3>TYRES, FUEL &amp; PIT STOP</h3><p id="strategyCurrent"></p><p id="strategyFuel"></p><p id="pitFacts"></p>
-    <button id="strategyBox" type="button" class="btn primary">Request pit stop</button>
     <p class="strategyNote" id="strategyRule"></p>
   </div>
   <section id="pitSvc" class="panel hz hidden" role="region" aria-labelledby="psTitle">
@@ -578,7 +573,7 @@
 <div id="controls" class="overlay hidden">
   <div class="dialog">
     <h2>Con<span>trols</span></h2>
-    <div class="sub">Super Star Car-style keyboard controls: WASD / arrows to drive. On the grid, hold W to rev to the launch rpm; launch control holds the car and releases it automatically when the red lights go out. Steer into the pit entry for automatic control (or press P to let the autopilot take it), choose tyres and fuel when you stop in one of the four shared boxes, and resume driving at pit exit. Press G for DRS inside a zone when eligible. C changes camera. Gamepad: left stick steer, RT throttle, LT brake, X DRS, Y camera, Start pause.</div>
+    <div class="sub">Super Star Car-style keyboard controls: WASD / arrows to drive. On the grid, hold W to rev to the launch rpm; launch control holds the car and releases it automatically when the red lights go out. Steer into the marked pit entry and cross the gold gate for automatic braking and control, choose tyres and fuel when you stop in one of the four shared boxes, and resume driving at pit exit. Press G for DRS inside a zone when eligible. C changes camera. Gamepad: left stick steer, RT throttle, LT brake, X DRS, Y camera, Start pause.</div>
     <div class="keys">
       <div>Accelerate <span><kbd>W</kbd><kbd>↑</kbd></span></div>
       <div>Brake <span><kbd>S</kbd><kbd>↓</kbd></span></div>
@@ -586,7 +581,6 @@
       <div>Controlled drift <span><kbd>W</kbd> + <kbd>S</kbd> + <kbd>A</kbd>/<kbd>D</kbd></span></div>
       <div>DRS open (in a zone, when eligible) <span><kbd>G</kbd></span></div>
       <div>Tyres &amp; pits panel <span><kbd>V</kbd></span></div>
-      <div>Box this lap (optional) <span><kbd>P</kbd></span></div>
       <div>Change camera <span><kbd>C</kbd></span></div>
       <div>Look back <span><kbd>B</kbd></span></div>
       <div>Full leaderboard <span><kbd>Tab</kbd></span></div>
@@ -713,10 +707,11 @@ const SIM = (function () {
   // longest straights), an elevation field (Gaussian rises and dips: x, z,
   // radius, height in metres) and the scenery the renderer builds around it.
   // pitLoss (s) is the time a clean tyre-only stop loses against staying out and fuelPerLap (kg) the
-  // race-pace consumption, both measured by simulating this circuit (tests/pitstops.cjs checks pitLoss).
+  // race-pace consumption, both measured by simulating this circuit. The connected 300 m approach and 200 m limiter zone
+  // retain real braking/service time: paired four-lap, tyre-only runs lose 20.52 / 20.50 / 20.37 s.
   const CIRCUITS = [
     {
-      id: 'summit', name: 'Summit Grand Circuit', country: 'Alpine Highlands', halfW: 7.0, length: 6000, drs: 3, pitLoss: 14.8, fuelPerLap: 2.78,
+      id: 'summit', name: 'Summit Grand Circuit', country: 'Alpine Highlands', halfW: 7.0, length: 6000, drs: 3, pitLoss: 20.5, fuelPerLap: 2.78,
       pts: [[-821, 427], [39, 427], [859, 427], [961, 423], [1020, 399], [1051, 360], [1063, 321], [1063, 286], [1039, 255], [1028, 220], [1043, 181], [1039, 153], [1004, 130], [953, 95], [906, 59], [852, 63], [813, 102], [785, 149], [754, 192], [707, 185], [680, 130], [652, 9], [637, -81], [660, -136], [727, -155], [820, -136], [891, -120], [930, -140], [922, -187], [859, -249], [785, -335], [734, -402], [676, -437], [617, -425], [566, -398], [430, -312], [293, -226], [246, -187], [207, -167], [156, -198], [109, -218], [62, -198], [23, -148], [-28, -89], [-94, -66], [-153, -73], [-192, -105], [-223, -148], [-266, -171], [-340, -171], [-408, -164], [-462, -126], [-520, -84], [-580, -66], [-640, -28], [-790, 48], [-899, 102], [-958, 130], [-1005, 149], [-1040, 185], [-1059, 231], [-1063, 298], [-1048, 337], [-1016, 360], [-1005, 399], [-969, 431], [-891, 435]],
       start: [39, 427],
       elev: [[880, -230, 420, 34], [600, -360, 260, 10], [230, -190, 300, 9], [-420, -120, 380, -6], [960, 200, 200, 6]],
@@ -724,7 +719,7 @@ const SIM = (function () {
       env: { style: 'alpine', lake: { x: 1300, z: -1050, a: 700, b: 330, rot: 0.3 }, castle: null, hill: 1.35, mountain: 1.25, snowLine: 620, forest: 1.1, broadleaf: 0.12, grass: [0.92, 1.0, 0.9], village: { x: -1250, z: -900 } },
     },
     {
-      id: 'rivermere', name: 'Rivermere Grand Prix', country: 'Rivermere Valley', halfW: 7.0, length: 6000, drs: 2, pitLoss: 14.4, fuelPerLap: 2.76,
+      id: 'rivermere', name: 'Rivermere Grand Prix', country: 'Rivermere Valley', halfW: 7.0, length: 6000, drs: 2, pitLoss: 20.5, fuelPerLap: 2.76,
       pts: [[-370, 369], [69, 379], [738, 394], [805, 385], [838, 335], [855, 239], [884, 172], [926, 151], [959, 185], [972, 294], [988, 373], [1039, 415], [1089, 406], [1106, 335], [1093, 231], [1043, 143], [968, 89], [257, -170], [-370, -371], [-495, -417], [-566, -392], [-579, -287], [-495, -187], [-487, -124], [-554, -91], [-637, -99], [-679, -162], [-692, -246], [-738, -275], [-934, -283], [-997, -262], [-1009, -212], [-972, -166], [-959, -124], [-1009, -87], [-1076, -37], [-1105, 14], [-1093, 68], [-1005, 110], [-850, 193], [-775, 268], [-696, 281], [-596, 260], [-495, 294], [-428, 352]],
       start: [69, 379],
       elev: [[-760, -150, 420, 9], [420, -260, 520, 6], [1000, 280, 260, -4]],
@@ -733,7 +728,7 @@ const SIM = (function () {
         river: [[-2900, -560], [-2000, -640], [-1300, -760], [-650, -720], [0, -660], [600, -700], [1150, -830], [1500, -960], [2100, -1080], [2900, -1150]] },
     },
     {
-      id: 'redridge', name: 'Redridge International Circuit', country: 'Redridge Canyon', halfW: 7.0, length: 6000, drs: 2, pitLoss: 14.7, fuelPerLap: 2.69,
+      id: 'redridge', name: 'Redridge International Circuit', country: 'Redridge Canyon', halfW: 7.0, length: 6000, drs: 2, pitLoss: 20.4, fuelPerLap: 2.69,
       pts: [[-1001, 344], [-106, 344], [890, 346], [1033, 331], [1054, 290], [1064, 200], [1067, 110], [1058, 36], [988, -18], [894, -10], [829, 38], [764, 91], [666, 106], [516, 87], [443, 34], [390, -55], [309, -116], [239, -128], [168, -96], [81, -63], [-15, -79], [-90, -120], [-269, -189], [-452, -267], [-631, -332], [-733, -352], [-859, -340], [-944, -269], [-956, -173], [-889, -92], [-747, -10], [-631, 79], [-574, 152], [-594, 219], [-676, 246], [-787, 254], [-832, 209], [-848, 161], [-909, 144], [-970, 177], [-1066, 266], [-1082, 321]],
       start: [-106, 344],
       elev: [[-820, -140, 430, 18], [330, -60, 360, 9], [980, 140, 260, 7], [-120, -330, 260, -5]],
@@ -969,12 +964,10 @@ const SIM = (function () {
       let sumK = 0; for (let i = 0; i < this.N; i++) sumK += this.kappa[i];
       const side = sumK > 0 ? 1 : -1;
       const hw = this.halfW;
-      // A short pit lane beside the main straight: an entry ramp (where cars brake and, when every box is busy,
-      // queue clear of the track), four shared service boxes, a departure stretch and the exit ramp (where cars
-      // accelerate). Distances in metres along the lap (s = 0 is the start/finish line); a circuit may adjust
-      // any of them in its definition. The 80 km/h limit runs from the end of the entry ramp to the start of
-      // the exit ramp.
-      const g = Object.assign({ rampIn: 70, queue: 0, queueGap: 14, firstBox: -30, spacing: 16, boxes: 4, afterBoxes: 11, rampOut: 60 }, this.def.pit || {});
+      // A connected 300 m approach on each circuit's main straight. Only the next 200 m is limited
+      // to 80 km/h; the separate exit ramp permits normal acceleration. Queue space lies before the
+      // four shared boxes, with room for the whole field to wait clear of the racing surface.
+      const g = Object.assign({ rampIn: 300, queue: 129, queueGap: 14, firstBox: -30, spacing: 16, boxes: 4, afterBoxes: 9, rampOut: 60 }, this.def.pit || {});
       const p = this.pit = {
         side, fastD: hw + 6.5, boxD: hw + 10.5, innerWall: hw + 4.0, outerWall: hw + 14.0, trackWall: hw + 3.0,
         limit: 80 / 3.6, boxes: [], boxSpacing: g.spacing,
@@ -987,16 +980,16 @@ const SIM = (function () {
       p.entry0 = this.wrapS(g.firstBox - g.queueGap - g.queue - g.rampIn); p.entry1 = this.wrapS(p.entry0 + g.rampIn);
       p.exit0 = this.wrapS(lastBox + g.afterBoxes); p.exit1 = this.wrapS(p.exit0 + g.rampOut);
       p.len = this.wrapS(p.exit1 - p.entry0);
-      // Take control on the approach, leaving enough real braking distance
-      // for worn dry tyres on a wet surface before the actual lane splits.
-      p.takeover=this.wrapS(p.entry0-350);
+      // The route first separates gently from the track; the gate is beyond the legal racing edge,
+      // so driving near the white line on the main straight cannot accidentally request a stop.
+      p.commitQ = 90; p.commit = this.wrapS(p.entry0 + p.commitQ);
       p.E = this.wrapS(p.entry1 - p.entry0); p.X = this.wrapS(p.exit1 - p.exit0);
     }
     pitProg(s) { const p = this.pit; const q = this.wrapS(s - p.entry0); return q < p.len ? q : -1; }
     // target lateral offset in the pit lane
     pitTargetD(s, boxS) {
       const p = this.pit, q = this.pitProg(s), hw = this.halfW;
-      if (q < 0) return p.side * (hw - 2.5);
+      if (q < 0) return p.side * (hw - 1.0);
       let d;
       if (q < p.E) d = lerp(hw - 1.0, p.fastD, smooth01(q / p.E));
       else if (q > p.len - p.X) d = lerp(hw - 2.5, p.fastD, smooth01((p.len - q) / p.X));
@@ -1011,6 +1004,13 @@ const SIM = (function () {
     inPitMain(s) { const q = this.pitProg(s); return q >= this.pit.E && q <= this.pit.len - this.pit.X; }
     // the 80 km/h zone: from the end of the entry ramp to the start of the exit ramp
     inLimiter(s) { const q = this.pitProg(s); return q >= this.pit.E && q <= this.pit.len - this.pit.X; }
+    pitCurvature(s, boxS = null) {
+      const a = this.pointAt(this.wrapS(s - 5), this.pitTargetD(this.wrapS(s - 5), boxS));
+      const b = this.pointAt(s, this.pitTargetD(s, boxS));
+      const c = this.pointAt(this.wrapS(s + 5), this.pitTargetD(this.wrapS(s + 5), boxS));
+      const ux = b[0] - a[0], uz = b[1] - a[1], vx = c[0] - b[0], vz = c[1] - b[1];
+      return 2 * (ux * vz - uz * vx) / Math.max(.01, Math.hypot(ux, uz) * Math.hypot(vx, vz) * Math.hypot(c[0] - a[0], c[1] - a[1]));
+    }
     buildTimingAndZones() {
       const N = this.N, L = this.length;
       this.sector1 = Math.round(L * 0.33 / DS) * DS; this.sector2 = Math.round(L * 0.68 / DS) * DS;
@@ -1126,7 +1126,13 @@ const SIM = (function () {
       const hw = this.halfW, ad = Math.abs(d), right = d > 0;
       if (ad <= hw + OFF_TRACK.tyreHalf) return 0;
       const s = i * DS; const p = this.pit;
-      if ((right ? 1 : -1) === p.side) { const q = this.pitProg(s); if (q >= 0 && (inPitLane || this.inPitMain(s)) && ad < p.outerWall + 0.5) return 0; }
+      if ((right ? 1 : -1) === p.side) {
+        const q = this.pitProg(s), route = q >= 0 && q < p.E ? Math.abs(this.pitTargetD(s, null)) : 0;
+        // The marked approach is a connected driving surface before the driver crosses the gate.
+        // Beyond it, the existing pit-mode checks still protect the service lane's legal boundaries.
+        const approach = route > 0 && Math.abs(ad - route) <= 2;
+        if (q >= 0 && (inPitLane || this.inPitMain(s) || approach) && ad < p.outerWall + 0.5) return 0;
+      }
       const kerb = right ? this.kerbR[i] : this.kerbL[i];
       if (kerb && ad <= hw + 1.3) return 1;
       if (ad <= hw + 3.8) return 2;
@@ -1345,7 +1351,7 @@ const SIM = (function () {
       this.penalty = 0; this.warnings = 0; this.offTrackFlag = false; this.penaltyLog = [];
       this.blueFlag = { target: null, gap: 0, age: 0, receding: 0, safe: false, side: 0, ease: 0, blocking: 0, moves: 0, lastMove: -99, warned: false, penalized: false, lastD: 0, lastTargetD: 0 };
       this.pitStops = 0; this.pit = null; // pit state object when in pit lane
-      this.boxRequest = false; this.boxCompound = null; this.outLap = false; this.inGarage = false;
+      this.boxCompound = null; this.outLap = false; this.inGarage = false;
       this.started = false; this.frozen = false; this.ghost = false;
       this.lastDeltaRef = null; this.delta = 0; this.lapTrace = []; this.fastestLapCount = 0;
       this.spun = false; this.offTime = 0; this.collisionCount = 0;
@@ -2484,8 +2490,8 @@ const SIM = (function () {
       let stayFast=queueing;
       let d=t.pitTargetD(s,P.phase==='in'?P.stopS:null);
       // on the approach, move across to the pit side progressively rather than at once
-      if(P.phase==='approach' && P.d0!=null) {
-        const run=Math.max(1,t.dS(P.s0,p.entry0)-30), done=clamp(t.dS(P.s0,s)/run,0,1);
+      if(P.d0!=null && t.pitProg(car.s)<p.E) {
+        const done=clamp(t.dS(P.s0,s)/45,0,1);
         d=lerp(P.d0,d,smooth01(done));
       }
       if(P.phase==='in') {
@@ -2556,6 +2562,7 @@ const SIM = (function () {
       cmd.brake=target<.05?1:dv<-.12?clamp(-dv*.35+.45,0,1):0;
       const th=cmd.brake?0:clamp(dv*.28+.10,0,P.phase==='out' || P.phase==='approach'?1:.75);
       this.smoothThrottle+=clamp(th-this.smoothThrottle,-12*dt,(P.phase==='out'?4:2.5)*dt);
+      if(cmd.brake>0)this.smoothThrottle=0;
       cmd.throttle=this.smoothThrottle;
     }
     pitSpeed() {
@@ -2577,7 +2584,17 @@ const SIM = (function () {
       if (car.pit && car.pit.phase === 'in') {
         const dd = t.dS(s, car.pit.stopS);
         // aim a metre short of the marks: the brakes are weak at walking pace; past the marks, keep stopping
-        if (dd > -7) v = Math.min(v, arcadeStopSpeed(dd - 1.3, car.brakeGrip(car.surfaceWet ?? this.race.wet)*car.damage.perf.brake));
+        v = Math.min(v, arcadeStopSpeed(dd - 1.3, car.brakeGrip(car.surfaceWet ?? this.race.wet)*car.damage.perf.brake));
+      }
+      // Look ahead along the actual approach, not just the racing line or the next waypoint. A curved
+      // entry requires earlier braking, with the same tyre/weather grip and brakes as normal driving.
+      if(q >= 0 && q < p.E) {
+        const wet = car.surfaceWet ?? this.race.wet, mu = this.handling.grip(car, wet);
+        const rate = (HANDLING.brakeRate * car.brakeGrip(wet) * car.damage.perf.brake + HANDLING.coastRate) * .85;
+        for(let ahead=0; ahead<=100; ahead+=20) {
+          const at=t.wrapS(s+ahead);
+          v=Math.min(v,arcadeCornerSpeed(t.pitCurvature(at),mu,.8,car.damage)+rate*ahead);
+        }
       }
       return v;
     }
@@ -2677,13 +2694,19 @@ const SIM = (function () {
       if (race.type === 'quali' && !this.pitOnly) this.qualiLogic();
       if (!this.pitOnly && race.type !== 'quali') this.assessDamage();
       // pit entry handling
-      if ((this.boxThisLap || this.pitOnly && car.boxRequest) && !car.pit) {
+      const entryQ=t.pitProg(car.s);
+      if(entryQ<0)this.pitEntryAborted=false;
+      // A late AI decision may not leave enough time to join the marked route. Abandon it while
+      // there is still an open connection to the track, rather than reaching the pit wall uncommitted.
+      if(this.pitting && !car.pit && entryQ>=t.pit.E-120 &&
+        (!race.pitEntrySafe(car) || Math.abs(car.d-t.pitTargetD(car.s,null))>3))this.pitEntryAborted=true;
+      if (this.boxThisLap && !car.pit && !this.pitEntryAborted) {
         const toEntry = t.dS(car.s, t.pit.entry0); const q = t.pitProg(car.s);
         // A call made too late to brake for the entry, or to stop at the box this car can expect, waits for
         // the next lap instead of overshooting the box. The request stays on.
         const toLim = (q >= 0 ? -q : toEntry) + t.pit.E - 3;
         const toStop = (q >= 0 ? -q : toEntry) + t.pitProg(race.expectedStopS(car));
-        const reachable = car.speed < t.pit.limit + 3 + (HANDLING.brakeRate * car.brakeGrip(car.surfaceWet ?? race.wet) + HANDLING.coastRate) * 0.95 * Math.max(0, toLim)
+        const reachable = car.speed < t.pit.limit - .6 + (HANDLING.brakeRate * car.brakeGrip(car.surfaceWet ?? race.wet) * car.damage.perf.brake + HANDLING.coastRate) * 0.95 * Math.max(0, toLim)
           && car.speed < 0.95 * arcadeStopSpeed(toStop - 1.3, car.brakeGrip(car.surfaceWet ?? race.wet) * car.damage.perf.brake);
         if (!this.pitting && !reachable && (q >= 0 || toEntry < 420)) { this.pitting = false; this.pitEntryBlend = 0; }
         else if (q >= 0 && q < t.pit.E + 30) { this.pitting = true; this.pitEntryBlend = 1; }
@@ -3381,7 +3404,7 @@ const SIM = (function () {
       this.cars = []; this.lightsOut = this.type !== 'race'; this.lights = 0; this.lightsOutTime = 0; this.startSeqT = 0;
       this.finishedFlag = false; this.leaderLap = 0; this.over = false; this.results = null;
       this.yellow = new Float64Array(track.marshalCount); this.flagState = new Uint8Array(track.marshalCount);
-      this.stats = { overtakes: 0, mistakes: 0, collisions: 0, pitstops: 0, spins: 0, boxMissed: 0 };
+      this.stats = { overtakes: 0, mistakes: 0, collisions: 0, pitstops: 0, spins: 0 };
       this.bestLap = { time: 0, car: null }; this.bestSectors = [0, 0, 0];
       this.compoundModel = cfg.compoundModel || defaultCompoundModel();
       this.segBase = cfg.segBase || null;
@@ -3497,7 +3520,6 @@ const SIM = (function () {
     blueEligible(car) {
       return !car.dnf && !car.finished && !car.retiring && !car.ghost && !car.inGarage && !car.pit && !car.spun &&
         !(car.ai && (car.ai.mode === 'recover' || car.ai.pitting || car.ai.pitEntryBlend > 0)) &&
-        !(car.isPlayer && car.boxRequest && this.track.dS(car.s, this.track.pit.entry0) > -30 && this.track.dS(car.s, this.track.pit.entry0) < 420) &&
         this.time >= (car.blueRejoinUntil || 0) && Math.abs(car.d) < this.track.halfW - .5;
     }
     blueLapping(car, other, gap) {
@@ -3712,15 +3734,17 @@ const SIM = (function () {
     // ---------- pit stops: four shared boxes, one queue, service decided at the box ----------
     // Every box offers the same services: tyres, fuel and automatic front- and rear-wing replacement.
     // A car joins the pit-lane queue at the moment it physically enters the pit lane; nothing is booked in
-    // advance (a pit request only tells the driver to take the entry). Boxes go strictly first come, first
-    // served: a free box is given at once to the earliest arrival, otherwise cars wait in a single FIFO
+    // advance. Boxes go strictly first come, first served: a free box is given at once to the earliest
+    // arrival, otherwise cars wait in a single FIFO
     // queue in the fast lane and the earliest waiting car takes the next box to come free. Arrivals in the
     // same physics step are ordered by how far into the lane they are, then by car number.
     allocatePitBoxes() {
       const B = this.pitBoxes, t = this.track;
       for (let k = 0; k < B.length; k++) {
         const c = B[k];
-        if (c && !(c.pit && c.pit.box === k && ['in', 'awaiting', 'stopped', 'release'].includes(c.pit.phase) && !c.dnf && !c.ghost && !c.inGarage)) B[k] = null;
+        const leaving = c && c.pit && c.pit.phase === 'out' &&
+          t.dS(t.pit.boxes[k], c.s) < 8 && Math.abs(c.d - t.pit.side * t.pit.boxD) < 3;
+        if (c && !(c.pit && c.pit.box === k && (['in', 'awaiting', 'stopped', 'release'].includes(c.pit.phase) || leaving) && !c.dnf && !c.ghost && !c.inGarage)) B[k] = null;
       }
       if (this.pitArrivals.length) {
         this.pitArrivals.sort((a, b) => a.t - b.t || b.q - a.q || a.car.id - b.car.id);
@@ -3840,23 +3864,41 @@ const SIM = (function () {
         return ds>-Math.max(35,o.speed*1.5) && ds<28 && o.d*t.pit.side>t.halfW-5;
       });
     }
+    pitEntrySafe(car) {
+      const t=this.track,p=t.pit,q=t.pitProg(car.s),wet=car.surfaceWet ?? this.wet;
+      const heading=car.psi-t.heading[car.idx];
+      const driver=car.ai||car.autopilot;
+      if(!driver || q<p.commitQ || q>p.E-35 || Math.cos(heading)<.96 || car.u<-.1)return false;
+      const use=car.brakeGrip(wet)*car.damage.perf.brake;
+      const rate=(HANDLING.brakeRate*use+HANDLING.coastRate)*.85;
+      const stop=t.dS(car.s,this.expectedStopS(car));
+      let safe=Math.min(p.limit-.6+rate*Math.max(0,p.E-q-5),arcadeStopSpeed(stop-2,use*.85));
+      const mu=driver.handling.grip(car,wet);
+      for(let ahead=0;ahead<=p.E-q;ahead+=20) {
+        safe=Math.min(safe,arcadeCornerSpeed(t.pitCurvature(t.wrapS(car.s+ahead)),mu,.8,car.damage)+rate*ahead);
+      }
+      return car.speed<=safe;
+    }
     pitLogic(car, dt) {
       const t = this.track, p = t.pit;
       if (car.inGarage || car.retiring) return;
       const q = t.pitProg(car.s);
       if (!car.pit) {
-        // entering pit lane? Steering into the entry commits the car; a request only lets the autopilot take it.
-        // (a player driven automatically, by race control or the autopilot, goes in only if that driver takes
-        // the entry: a request made too late to stop at the box waits for the next lap)
-        const autoDeclined=car.isPlayer && car.autopilot && (car.autoDrive || this.vscControls(car)) && !car.autopilot.pitting;
-        const committed=(car.boxRequest && !autoDeclined) || car.ai && car.ai.pitting;
-        const approach=t.dS(car.s,p.entry0), inApproach=committed && approach>=0 && approach<350;
-        const onEntry=(inApproach && (car.ai || car.d*p.side>t.halfW-1.5)) || (q>=0 && q<p.E+20 && car.d*p.side>t.halfW+(committed?-1.5:0.5));
-        if (onEntry && car.d * p.side < p.outerWall) {
+        // The marked commitment gate is on the connected entry route, before any barrier or limiter.
+        // Registration is unnecessary. An unsafe speed/heading is rejected here while control is still
+        // manual; the driver can brake and straighten before crossing the gate, or continue this lap.
+        const onEntry=q>=p.commitQ && q<=p.E-35 && car.d*p.side>=t.halfW+.5 &&
+          Math.abs(car.d-t.pitTargetD(car.s,null))<1.5;
+        if(onEntry && !this.pitEntrySafe(car)) {
+          if(car.isPlayer && this.time>=(car.pitEntryNotice||0)) {
+            car.pitEntryNotice=this.time+4;
+            this.msg('Pit entry unsafe — brake and straighten before the entry gate','info',car,3);
+          }
+          return;
+        }
+        if (onEntry) {
           if (this.type === 'quali' && car.q && car.q.phase !== 'waiting') { this.completeQuali(car, 'dnf', 'Returned to the pits'); return; }
-          // Crossing the road edge into the entry ramp commits a manual driver too.
-          // Waiting until two metres outside the road delays braking for a full queue.
-          // The autopilot drives from here; the car joins the queue at the entry line.
+          // The autopilot uses only ordinary steering and pedals from this point onwards.
           car.pit = { phase: 'approach', box: null, boxS: null, stopS: null, timer: 0, entryTime: null, queuePos: 0, d0: car.d, s0: car.s };
           if(car.isPlayer) {
             car.autoDrive=true;car.autopilot.mode='race';car.autopilot.handling.reset();
@@ -3865,7 +3907,6 @@ const SIM = (function () {
             car.autopilot.smoothThrottle=car.input.throttle;
             this.events.push({type:'pittakeover',car});
           }
-          car.boxRequest = false;
           if (car.ai) { car.ai.boxThisLap = false; car.ai.pitting = false; car.ai.pitEntryBlend = 0; }
           if (car.isPlayer) this.msg('PIT LANE — automatic driving to the first free box', 'info', car, 2.5);
         }
@@ -3875,11 +3916,11 @@ const SIM = (function () {
       if (P.phase === 'approach') {
         if (q >= 0) {
           // Arrival = the moment the car physically crosses the pit-entry line (interpolated within the step).
-          P.phase = 'queue'; P.entryTime = this.time - clamp(q / Math.max(car.speed, 0.1), 0, dt);
+          P.phase = 'queue'; P.entryTime = this.time - clamp((q-p.commitQ) / Math.max(car.speed, 0.1), 0, dt);
           this.pitArrivals.push({ car, t: P.entryTime, q });
           car.lapHadPit = true;
           this.log(car, 'pit entry');
-        } else if (t.dS(car.s, p.entry0) > 400) car.pit = null; // reset away from the entry: the call lapses
+        }
         return;
       }
       if (t.inLimiter(car.s) && car.speed > p.limit + 1.2 && ['approach','queue','in','out'].includes(P.phase)) {
@@ -3888,18 +3929,11 @@ const SIM = (function () {
       }
       if (P.phase === 'in') {
         const dd = t.dS(car.s, P.stopS);
-        if(dd < -6 && dd > -100) {
-          // A dangerously late entry can physically overshoot the box. Continue
-          // safely to the exit instead of trapping traffic or snapping backwards.
-          P.phase='out';P.boxS=null;P.box=null;P.missed=true;P.departS=car.s;this.stats.boxMissed++;
-          if(car.isPlayer)this.msg('Box missed — no service completed','pit',car,4);
-          this.log(car,'box missed');return;
-        }
         // a car that has come to rest off its marks but in its box (a late turn-in behind a parked neighbour)
         // is serviced where it stands: the crew comes to it
         const off = Math.abs(car.d - p.side * p.boxD);
-        P.settle = dd < 8 && dd > -6 && car.speed < 0.65 && off < 3 ? (P.settle || 0) + dt : 0;
-        if ((dd < 1.5 && dd > -6 && car.speed < 1.4 && off < 0.8) || (P.settle > 1.0 && dd < 3 && off < 2) || P.settle > 3) {
+        P.settle = dd < 8 && dd > -6 && car.speed < 0.05 && off < 3 ? (P.settle || 0) + dt : 0;
+        if ((dd < 2 && dd > -6 && car.speed < 0.05 && off < 0.8) || (P.settle > 1.0 && dd < 3 && off < 2) || P.settle > 3) {
           P.stopPose = { x: car.x, z: car.z, psi: car.psi };
           this.holdPitCar(car);
           P.arrivedAt = this.time;
@@ -4260,7 +4294,7 @@ const SIM = (function () {
       if (car.retiring || car.dnf || car.finished) return;
       car.retiring = { reason, t0: this.time, stopT: 0, phase: 'stopping' };
       this.vscNoteRetirement(car);
-      car.boxRequest = false; car.autoDrive = false;
+      car.autoDrive = false;
       if (car.ai) { car.ai.boxThisLap = false; car.ai.pitting = false; car.ai.pitEntryBlend = 0; }
       this.stats.retirements = (this.stats.retirements || 0) + 1;
     }
@@ -4680,7 +4714,7 @@ const SIM = (function () {
     completeQuali(car, result, reason = '', time = 0) {
       const q = car.q; if (!q || q.phase === 'complete') return;
       q.phase = 'complete'; q.result = result; q.reason = reason; q.time = time; q.sectors = car.lastSectors.slice();
-      car.qualiDone = true; car.qualiOut = result === 'dnf'; car.autoDrive = false; car.boxRequest = false;
+      car.qualiDone = true; car.qualiOut = result === 'dnf'; car.autoDrive = false;
       if (car.ai) { car.ai.boxThisLap = false; car.ai.pitting = false; }
       this.putInGarage(car);
       car.speed = car.u = car.v = 0; car.input.throttle = 0; car.input.brake = 1;
@@ -5531,9 +5565,34 @@ function buildTrack(scene, track, T, opts) {
     }, { flat: true, vScale: 9 });
     const m = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ map: T.asphalt, color: wet ? 0x6e7276 : 0xa2a5aa, roughness: wet ? .2 : .85, metalness: wet ? .2 : 0, polygonOffset: true, polygonOffsetFactor: -1 }));
     m.receiveShadow = true; G.add(m);
-    const [entryX,entryZ,entryH]=track.pointAt(P.takeover,side*(hw-1));
-    const entryMark=new THREE.Mesh(new THREE.PlaneGeometry(1.2,3),new THREE.MeshStandardMaterial({color:0xf5c518,roughness:.7,polygonOffset:true,polygonOffsetFactor:-2}));
+    const [entryX,entryZ,entryH]=track.pointAt(P.commit,track.pitTargetD(P.commit,null));
+    const entryMark=new THREE.Mesh(new THREE.PlaneGeometry(1.2,3.5),new THREE.MeshStandardMaterial({color:0xf5c518,roughness:.7,polygonOffset:true,polygonOffsetFactor:-2}));
     entryMark.rotation.x=-Math.PI/2;entryMark.rotation.z=-entryH;entryMark.position.set(entryX,.013,entryZ);G.add(entryMark);
+    // Continuous approach boundaries and distance boards make the commitment route visible at speed.
+    for(const edge of [-1,1]) {
+      const boundary=ribbon(track,i0,i0+Math.ceil(P.E/SIM.DS),1,(i)=>{
+        const s=i*SIM.DS,q=track.pitProg(s);if(q<0||q>P.E)return null;
+        const d=track.pitTargetD(s,null)+side*edge*1.75;
+        return [d-.08,d+.08,.014];
+      },{flat:true});
+      G.add(new THREE.Mesh(boundary,lineMat));
+    }
+    for(const metres of [300,200,100,0]) {
+      const s=track.wrapS(P.entry1-metres),d=side*(P.outerWall+1.5);
+      const [x,z,h]=track.pointAt(s,d);
+      const tex=canvasTex(256,160,(g,w,hh)=>{
+        g.fillStyle='#122334';g.fillRect(0,0,w,hh);g.strokeStyle='#f5c518';g.lineWidth=8;g.strokeRect(4,4,w-8,hh-8);
+        g.fillStyle='#fff';g.textAlign='center';g.font='bold 32px Arial';g.fillText(metres?'PIT ENTRY':'PIT LIMIT',w/2,43);
+        g.fillStyle='#f5c518';g.font='bold 68px Arial';g.fillText(metres?metres+' m':'80',w/2,121);
+      });
+      const sign=new THREE.Mesh(new THREE.PlaneGeometry(3.2,2),new THREE.MeshStandardMaterial({map:tex,roughness:.8,side:THREE.DoubleSide}));
+      sign.rotation.y=Math.atan2(-Math.cos(h),-Math.sin(h));sign.position.set(x,2.4,z);G.add(sign);
+      const post=new THREE.Mesh(new THREE.BoxGeometry(.12,2,.12),new THREE.MeshStandardMaterial({color:0x777b80,roughness:.9}));
+      post.position.set(x,1,z);G.add(post);
+    }
+    const [limX,limZ,limH]=track.pointAt(P.entry1,side*P.fastD);
+    const limiterMark=new THREE.Mesh(new THREE.PlaneGeometry(.5,5),lineMat);
+    limiterMark.rotation.x=-Math.PI/2;limiterMark.rotation.z=-limH;limiterMark.position.set(limX,.014,limZ);G.add(limiterMark);
     // pit lane lines: fast lane / box lane divider and entry/exit boundary
     const g2 = ribbon(track, i0, i0 + len, 1, (i) => {
       const s = i * SIM.DS; const q = track.pitProg(s); if (q < 0) return null;
@@ -7116,7 +7175,7 @@ function readPad() {
   const pads = navigator.getGamepads ? navigator.getGamepads() : []; const p = pads && Array.from(pads).find(x => x && x.connected);
   if (!p) return null;
   const b = (i) => p.buttons[i] ? p.buttons[i].value : 0; const pressed = (i) => p.buttons[i] && p.buttons[i].pressed && !padPrev[i];
-  const out = { steer: Math.abs(p.axes[0]) > 0.06 ? p.axes[0] : 0, throttle: b(7), brake: b(6), drs: pressed(2), cam: pressed(3), start: pressed(9), box: pressed(4) };
+  const out = { steer: Math.abs(p.axes[0]) > 0.06 ? p.axes[0] : 0, throttle: b(7), brake: b(6), drs: pressed(2), cam: pressed(3), start: pressed(9) };
   padPrev = p.buttons.map(x => x.pressed);
   return out;
 }
@@ -7658,12 +7717,6 @@ $('psConfirm').onclick = () => {
   const p = G.player, sess = G.session; if (!p || !sess || !p.pit || p.pit.phase !== 'awaiting') return;
   sess.confirmPitService(p, { ...p.pit.selection }); updatePitService(p, sess, true); G.strategyRefresh = 0;
 };
-$('strategyBox').onclick = () => {
-  const p = G.player; if (!p || p.pit || p.finished) return;
-  p.boxRequest = !p.boxRequest;
-  if (!p.boxRequest) p.autoDrive = false; G.strategyRefresh = 0;
-  pushMsg(p.boxRequest ? 'BOX THIS LAP — tyres and fuel are chosen at the box' : 'Pit stop cancelled', 'pit', 2);
-};
 function updateStrategyUI(p, sess) {
   if (sess.type !== 'race') { $('tyreLife').innerHTML = 'QUALIFYING <b>1 attempt</b>'; $('tyreNext').innerHTML = 'STYLE <b>' + p.tyre.style.name + '</b>'; return; }
   $('strategyToggle').classList.toggle('hidden', G.attract || G.mode === 'menu');
@@ -7678,9 +7731,7 @@ function updateStrategyUI(p, sess) {
   $('strategyFuel').textContent='Fuel '+p.fuel.toFixed(1)+' kg of '+sess.fuelCapacity.toFixed(1)+' · ≈ '+sess.fuelRange(p).toFixed(1)+' laps of range at '+sess.fuelLapRate(p).toFixed(2)+' kg/lap · '+sess.lapsLeft(p).toFixed(1)+' laps to go';
   const repair=p.damage.repairPlan({service:true});
   $('pitFacts').textContent=p.pit?'Pit stop in progress — see the pit service panel.':'A clean tyre-only stop costs ≈ '+sess.pitLoss.toFixed(0)+' s here. Four shared boxes, first come first served at the pit entry: '+sess.pitBoxesInUse()+' in use'+(sess.pitQueue.length?', '+sess.pitQueue.length+' queueing':'')+'. Refuelling '+SIM.REFUEL.rate.toFixed(1)+' kg/s. '+(repair.items.length?'Damaged '+repair.items.join(' and ').toLowerCase()+' replaced automatically; ':'Damaged wings are replaced automatically; ')+'structural, suspension and power-unit damage remains.';
-  $('strategyBox').disabled=p!==G.player||!!p.pit||p.finished||p.dnf;
-  $('strategyBox').textContent=p.pit?'Pit stop in progress':p.boxRequest?'Cancel pit request':'Request pit stop';
-  $('strategyRule').textContent=(SIM.needsCompound(sess,p)?'Second dry compound still required. ':'Compound rule satisfied or exempt. ')+'Steer into the pit entry at the '+(G.track.pit.side>0?'right':'left')+' track edge (a request lets the autopilot take it from the gold marker). Tyres and fuel are chosen when you stop in your box; the race keeps running while you decide. Control returns at pit exit.';
+  $('strategyRule').textContent=(SIM.needsCompound(sess,p)?'Second dry compound still required. ':'Compound rule satisfied or exempt. ')+'Steer into the pit entry at the '+(G.track.pit.side>0?'right':'left')+' track edge. Cross the gold entry gate to engage automatic braking and pit driving. Tyres and fuel are chosen when you stop in your box; the race keeps running while you decide. Control returns at pit exit.';
 }
 function exitToMenu() { G.paused = false; hideAllOverlays(); startAttract(); }
 
@@ -8041,12 +8092,6 @@ function updateHud(dt) {
   blueIndicator.classList.toggle('active', blue);
   blueIndicator.setAttribute('aria-hidden', String(!blue));
   $('blueFlagHint').textContent = p.blueFlag.warned ? 'Warning — stop blocking the lapping car' : 'Allow the lapping car to pass safely';
-  // pit request reminder (no compound or fuel choice before the box)
-  const bp = $('boxpanel');
-  if (G.player && p === G.player && p.boxRequest && !p.pit && $('strategyPanel').classList.contains('hidden')) {
-    bp.classList.remove('hidden');
-    $('boxRep').innerHTML = 'Steer into the pit entry, ' + Math.round(G.track.dS(p.s, G.track.pit.entry0)) + ' m · <kbd>P</kbd> cancels';
-  } else bp.classList.add('hidden');
   // spectator bar / quali timer
   const qt = $('qtimer');
   if (sess.type === 'quali' && !G.attract) {
@@ -8761,9 +8806,6 @@ function handleKeys(dt) {
     if (live.length && (takePress('ArrowLeft') || takePress('BracketLeft'))) { G.focus = live[(Math.max(0, pos) - 1 + live.length) % live.length]; G.camRig.init = false; }
     if (takePress('Digit1')) G.timeScale = 1; if (takePress('Digit2')) G.timeScale = 2; if (takePress('Digit4')) G.timeScale = 4;
     return;
-  }
-  if(sess.type==='race' && (takePress('KeyP') || (G.pad && G.pad.box))) {
-    if (!p.pit) { p.boxRequest = !p.boxRequest; if (p.boxRequest) pushMsg('BOX THIS LAP — tyres and fuel are chosen at the box', 'pit', 2.5); else { p.autoDrive = false; pushMsg('Pit stop cancelled', 'info', 1.5); } }
   }
   const space=takePress('Space');
   const respawn=space && !p.launch.active; // Restore the existing respawn control after launch.
