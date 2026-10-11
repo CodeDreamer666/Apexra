@@ -1264,6 +1264,49 @@ const SIM = (function () {
     for (let k = 1; k < T.length; k++) if (rpm <= T[k][0]) { const t = (rpm - T[k - 1][0]) / (T[k][0] - T[k - 1][0]); return 560 * lerp(T[k - 1][1], T[k][1], t); }
     return 560 * 0.6;
   }
+  /* ------------------------------------------------------------------
+     SLIPSTREAM — automatic drafting, identical for the player and every bot. A car running in the wake
+     of another at speed sees less aerodynamic drag; nothing else changes (no dirty air: downforce,
+     grip, steering, braking and tyre wear are untouched by following). Strength 0..1 is continuous:
+     it builds as the gap closes, fades with lateral offset from the wake and with heading mismatch,
+     and needs both cars moving quickly the same way round the lap.
+     ------------------------------------------------------------------ */
+  const SLIPSTREAM = {
+    maxCut: 0.15,   // drag reduction at full strength (15 %)
+    drsShare: 0.5,  // fraction of the tow kept while DRS is open
+    range: 65,      // m along the lap where the wake starts to act
+    full: 8,        // m: closest gap, full longitudinal strength
+    overlap: 4.5,   // m: noses this close are alongside, not in the wake
+    speedLo: 25, speedHi: 55, // m/s: no tow below speedLo, full from speedHi (slower of the two cars)
+    tau: 0.4,       // s: aerodynamic response time of the smoothed strength
+  };
+  const smoothRamp = (x, a, b) => smooth01((x - a) / (b - a));
+  // Wake strength felt by `car` behind `lead`, given their separation ds (m) along the lap (lead ahead).
+  // Track-frame gap and offset follow the wake round gentle curves; world-frame checks reject cars that
+  // only look close on paper (another part of the circuit, opposite directions, the pit lane).
+  function slipstreamStrength(car, lead, ds, track) {
+    const S = SLIPSTREAM;
+    if (ds <= S.overlap || ds >= S.range) return 0;
+    const spd = Math.min(car.speed, lead.speed); if (spd <= S.speedLo) return 0;
+    // both cars travelling forwards round the lap, in nearly the same direction
+    const lv = 1 / Math.max(lead.speed, 1e-3), cv = 1 / Math.max(car.speed, 1e-3);
+    const lx = lead.vx * lv, lz = lead.vz * lv, cx = car.vx * cv, cz = car.vz * cv;
+    const i = lead.idx; if (lx * track.tx[i] + lz * track.tz[i] < 0.5) return 0;
+    const j = car.idx; if (cx * track.tx[j] + cz * track.tz[j] < 0.5) return 0;
+    const align = smoothRamp(lx * cx + lz * cz, 0.94, 0.985);
+    if (align <= 0) return 0;
+    // genuinely behind the leading car in the world, at about the distance the lap says
+    const dx = lead.x - car.x, dz = lead.z - car.z;
+    const behind = dx * lx + dz * lz, dist = Math.hypot(dx, dz);
+    if (behind <= 0 || dist > ds + 6 || dist < ds * 0.6) return 0;
+    // lateral alignment with the wake, which widens with distance
+    const lat = Math.abs(lead.d - car.d), w = 2.0 + 0.03 * ds;
+    if (lat >= w) return 0;
+    const q = lat / w, latF = (1 - q * q) * (1 - q * q);
+    const t = clamp((ds - S.full) / (S.range - S.full), 0, 1);
+    const lonF = (1 - t) * (1 - t) * smoothRamp(ds, S.overlap, S.full);
+    return lonF * latF * align * smoothRamp(spd, S.speedLo, S.speedHi);
+  }
   const WHEEL_X = [SPEC.a, SPEC.a, -SPEC.b, -SPEC.b];
   const WHEEL_Y = [-SPEC.tw, SPEC.tw, -SPEC.tw, SPEC.tw]; // FL, FR, RL, RR (y = right)
 
@@ -1287,7 +1330,7 @@ const SIM = (function () {
       this.engineResponse = 0; this.driveForce = 0; this.pitHistory = [];
       this.tyre = { distance: 0, measuredWpl: 0, stress: 0.50, style: drivingStyle(0.50), lastThrottle: 0, c: 'M', wear: new Float64Array(4), temp: new Float64Array([80, 80, 80, 80]), age: 0, used: new Set() };
       this.fuel = 50;
-      this.drsOpen = false; this.drsAvail = false; this.dragMul = 1; this.downMul = 1; this.slipTarget = -1;
+      this.drsOpen = false; this.drsAvail = false; this.slipstream = 0; this.slipGoal = 0; // slipstream: smoothed wake strength 0..1 and its target
       this.damage = new CarDamage(); this.lastHit = 0; this.retiring = null;
       this.idx = 0; this.s = 0; this.d = 0; this.proj = { i: 0, d: 0, s: 0 }; this.wallTmp = { l: 0, r: 0, innerPit: 0 };
       // race state
@@ -1326,8 +1369,12 @@ const SIM = (function () {
         Math.min(1, fresh / COMPOUNDS[this.tyre.c].mu), 0.25, 1);
     }
     gripEstimate(wet) { const f = (this.tyreMu(0, wet) + this.tyreMu(1, wet)) / 2, r = (this.tyreMu(2, wet) + this.tyreMu(3, wet)) / 2; return 0.5 * (f + r) / 2 + 0.5 * Math.min(f, r); }
-    effClA() { return SPEC.clA * this.team.clA * this.downMul * this.damage.perf.clAMul * (this.drsOpen ? 0.9 : 1); }
-    effCdA() { return SPEC.cdA * this.team.cdA * this.dragMul * (this.drsOpen ? 0.8 : 1) * this.damage.perf.cdAMul; }
+    // Following another car never costs downforce (no dirty-air penalty); only the tow below changes the aero.
+    effClA() { return SPEC.clA * this.team.clA * this.damage.perf.clAMul * (this.drsOpen ? 0.9 : 1); }
+    effCdA() { return SPEC.cdA * this.team.cdA * this.slipDragMul() * (this.drsOpen ? 0.8 : 1) * this.damage.perf.cdAMul; }
+    // Drag multiplier from the tow. An open DRS flap already sheds much of the same drag, so the two
+    // combine with the tow's share halved rather than stacking in full.
+    slipDragMul() { return 1 - SLIPSTREAM.maxCut * this.slipstream * (this.drsOpen ? SLIPSTREAM.drsShare : 1); }
   }
 
   const tmpW = { l: 0, r: 0, innerPit: 0 };
@@ -1544,7 +1591,10 @@ const SIM = (function () {
       if(launchSlip>0.04)for(let i=2;i<4;i++){car.spin[i]=1;car.slipPow[i]+=rearTraction*launchSlip*Math.max(speed,3)*0.15;}
       // Blend aero resistance in with propulsion; S and released-W coasting keep
       // their exact original force law. DRS/slipstream affect the real drag term.
-      const poweredDrag = Math.max(0, Math.abs(drag) * 1.06 / m - H.coastRate * Math.abs(u)) * car.throttle;
+      // Under power the aerodynamic resistance is the larger of the coast term and the real drag; the
+      // tow scales both (drag already carries it through effCdA), so it helps at every speed it acts.
+      const coastAero = H.coastRate * Math.abs(u);
+      const poweredDrag = (Math.max(coastAero * car.slipDragMul(), Math.abs(drag) * 1.06 / m) - coastAero) * car.throttle;
       const drive = fuelOk ? car.driveForce / m - poweredDrag : 0;
       const braking = car.brake * Math.max(H.brakeFloor, Math.abs(u) * H.brakeRate) * DP.brake * car.brakeGrip(wet);
       const coast = H.coastRate * u + Math.sign(u) * Math.max(0, rollingResistance / m - 0.15);
@@ -2495,7 +2545,11 @@ const SIM = (function () {
         if (toLim > 0) v = p.limit-0.6 + (HANDLING.brakeRate*car.brakeGrip(car.surfaceWet ?? this.race.wet)*car.damage.perf.brake + HANDLING.coastRate) * 0.95 * toLim; else if (q <= p.len - p.X + 6) v = p.limit - 0.6;
       } else if (this.pitting || car.pit) {
         const toEntry = t.dS(s, p.entry0); const toLim = toEntry + p.E - 3;
-        if (toEntry > 0) v = p.limit-0.6 + (HANDLING.brakeRate*car.brakeGrip(car.surfaceWet ?? this.race.wet)*car.damage.perf.brake + HANDLING.coastRate) * 0.95 * Math.max(0, toLim);
+        if (toEntry > 0) {
+          v = p.limit-0.6 + (HANDLING.brakeRate*car.brakeGrip(car.surfaceWet ?? this.race.wet)*car.damage.perf.brake + HANDLING.coastRate) * 0.95 * Math.max(0, toLim);
+          // and be able to stop at the box it can expect, which may be the first one just past the limit line
+          v = Math.min(v, arcadeStopSpeed(toEntry + t.pitProg(this.race.expectedStopS(car)) - 1.3, car.brakeGrip(car.surfaceWet ?? this.race.wet)*car.damage.perf.brake));
+        }
       }
       if (car.pit && car.pit.phase === 'in') {
         const dd = t.dS(s, car.pit.stopS);
@@ -2602,9 +2656,12 @@ const SIM = (function () {
       // pit entry handling
       if ((this.boxThisLap || this.pitOnly && car.boxRequest) && !car.pit) {
         const toEntry = t.dS(car.s, t.pit.entry0); const q = t.pitProg(car.s);
-        // A call made too late to brake for the entry waits for the next lap instead of overshooting the box.
+        // A call made too late to brake for the entry, or to stop at the box this car can expect, waits for
+        // the next lap instead of overshooting the box. The request stays on.
         const toLim = (q >= 0 ? -q : toEntry) + t.pit.E - 3;
-        const reachable = car.speed < t.pit.limit + 3 + (HANDLING.brakeRate * car.brakeGrip(car.surfaceWet ?? race.wet) + HANDLING.coastRate) * 0.95 * Math.max(0, toLim);
+        const toStop = (q >= 0 ? -q : toEntry) + t.pitProg(race.expectedStopS(car));
+        const reachable = car.speed < t.pit.limit + 3 + (HANDLING.brakeRate * car.brakeGrip(car.surfaceWet ?? race.wet) + HANDLING.coastRate) * 0.95 * Math.max(0, toLim)
+          && car.speed < 0.95 * arcadeStopSpeed(toStop - 1.3, car.brakeGrip(car.surfaceWet ?? race.wet) * car.damage.perf.brake);
         if (!this.pitting && !reachable && (q >= 0 || toEntry < 420)) { this.pitting = false; this.pitEntryBlend = 0; }
         else if (q >= 0 && q < t.pit.E + 30) { this.pitting = true; this.pitEntryBlend = 1; }
         else if (toEntry > 0 && toEntry < 700) { this.pitting = toEntry < 420; this.pitEntryBlend = smooth01((420 - toEntry) / 250); }
@@ -3073,6 +3130,7 @@ const SIM = (function () {
     openRate: 3, minGap: 9, // a car already closer than that opens the gap at openRate m/s, from at least minGap
     closeUse: 0.4,      // share of full braking used to plan the approach to the car ahead
     openK: 0.25, openMax: 4, // m/s slower per metre a car is too close to the car ahead (at most openMax)
+    rejoinV: 8, rejoinD: 4, // a car recovering from an off faster than this (m/s), within this far of the road edge (m), is followed
     brakeGain: 1.2, brakeMax: 7, // progressive braking: m/s² per m/s too fast, at most brakeMax m/s² from the brakes
     closeGain: 2.5, closeMax: 25,  // the same when closer than the following distance and still closing: firmer
     noteE: 25000,       // J: an impact this big is a crash worth watching (well beyond scrapes and taps)
@@ -3362,6 +3420,8 @@ const SIM = (function () {
         env.pitLimiter = !!car.pit && t.inLimiter(car.s);
         // DRS
         this.updateDRS(car);
+        // the tow follows its target with a short aerodynamic lag, so drafting never jumps the speed
+        car.slipstream += (car.slipGoal - car.slipstream) * Math.min(1, dt / SLIPSTREAM.tau);
         stepCarPhysics(car, dt, t, env);
         // track projection
         const prevS = car.s;
@@ -3370,6 +3430,7 @@ const SIM = (function () {
         if(this.weather)this.weather.displace(car,dt);
         collideWalls(car, t, this);
         this.pitLogic(car, dt);
+        if (car.pit) car.slipstream = car.slipGoal = 0; // pit-lane control removes the tow at once
         this.timing(car, prevS, dt);
         if (car.retiring) this.retireStep(car, dt);
       }
@@ -3379,7 +3440,36 @@ const SIM = (function () {
       // Contact resolution runs after pit logic. Keep cars on their stopped pose
       // throughout selection, service and release, even if another car touches them.
       for (const car of this.cars) if (car.pit && ['awaiting','stopped','release'].includes(car.pit.phase)) this.holdPitCar(car);
+      if (this.step % 4 === 0) this.updateSlipstream();
       if (this.step % 24 === 0) this.slowUpdate();
+    }
+    // Slipstream targets for every car (60 Hz). Cars are sorted by lap position once, so each car only
+    // looks at the few cars within wake range ahead of it instead of the whole field.
+    updateSlipstream() {
+      const t = this.track, order = this.slipOrder || (this.slipOrder = []);
+      order.length = 0;
+      for (const c of this.cars) {
+        c.slipGoal = 0;
+        // no tow in the pit lane (and none from a car in it), before the start, under the VSC or in handling calibration
+        if (c.inGarage || c.pit || c.dnf) continue;
+        order.push(c);
+      }
+      if (this.type === 'calib' || (this.type === 'race' && (!this.lightsOut || this.vscActive)) || order.length < 2) return;
+      order.sort((a, b) => a.s - b.s);
+      const n = order.length;
+      for (let k = 0; k < n; k++) {
+        const c = order[k];
+        // off the road the car is not in anyone's wake; grass and gravel slow it as before
+        let off = 0; for (let i = 0; i < 4; i++) if (c.surf[i] >= 3) off++;
+        if (off >= 2) continue;
+        let best = 0;
+        for (let j = 1; j < n; j++) {
+          const o = order[(k + j) % n], ds = t.dS(c.s, o.s);
+          if (ds < 0 || ds >= SLIPSTREAM.range) break; // sorted: past the wake range (or the wrap) nobody else is close
+          const f = slipstreamStrength(c, o, ds, t); if (f > best) best = f;
+        }
+        c.slipGoal = best;
+      }
     }
     updateDRS(car) {
       const t = this.track; car.drsAvail = false;
@@ -3548,7 +3638,10 @@ const SIM = (function () {
       const q = t.pitProg(car.s);
       if (!car.pit) {
         // entering pit lane? Steering into the entry commits the car; a request only lets the autopilot take it.
-        const committed=car.boxRequest || car.ai && car.ai.pitting;
+        // (a player driven automatically, by race control or the autopilot, goes in only if that driver takes
+        // the entry: a request made too late to stop at the box waits for the next lap)
+        const autoDeclined=car.isPlayer && car.autopilot && (car.autoDrive || this.vscControls(car)) && !car.autopilot.pitting;
+        const committed=(car.boxRequest && !autoDeclined) || car.ai && car.ai.pitting;
         const approach=t.dS(car.s,p.entry0), inApproach=committed && approach>=0 && approach<350;
         const onEntry=(inApproach && (car.ai || car.d*p.side>t.halfW-1.5)) || (q>=0 && q<p.E+20 && car.d*p.side>t.halfW+(committed?-1.5:0.5));
         if (onEntry && car.d * p.side < p.outerWall) {
@@ -4140,13 +4233,21 @@ const SIM = (function () {
     }
     // The queue: every member follows the member physically ahead of it on the circuit (by track distance).
     // The race leader leads it; a lapped car stays where it is, so laps-down are kept.
+    // A car rejoining from an off (recovering, moving, at the edge of the road) is not in the queue yet, but
+    // the cars behind hold back behind it rather than drive past it as it comes back on.
+    vscRejoining(o) {
+      if (this.vscMember(o) || o.inGarage || o.ghost || o.dnf || o.retiring || o.finished || o.pit) return false;
+      const drv = o.ai || o.autopilot;
+      return !!(drv && drv.mode === 'recover') && !o.spun && o.speed > VSC.rejoinV && Math.abs(o.d) < this.track.halfW + VSC.rejoinD;
+    }
     vscPlan() {
       const L = this.track.length, m = this._vscMembers || (this._vscMembers = []);
       m.length = 0;
-      for (const c of this.cars) { c.vscAhead = null; c.vscGap = Infinity; if (this.vscMember(c)) m.push(c); }
+      for (const c of this.cars) { c.vscAhead = null; c.vscGap = Infinity; if (this.vscMember(c) || this.vscRejoining(c)) m.push(c); }
       m.sort((a, b) => a.s - b.s || a.id - b.id);
       for (let k = 0; k < m.length; k++) {
         const c = m[k], a = m[(k + 1) % m.length]; if (a === c) break;
+        if (!this.vscMember(c)) continue; // a rejoining car is followed; it does not follow
         let g = a.s - c.s; if (g < 0) g += L;
         c.vscAhead = a; c.vscGap = g;
         if (c.vscFrom !== a) { c.vscFrom = a; c.vscGapFrom = g; c.vscGapAt = this.time; } // a new car to follow
@@ -4270,19 +4371,6 @@ const SIM = (function () {
         }
       }
       for (let k = 0; k < M; k++) { const st = this.yellow[k] > 0 ? 1 : 0; if (st !== this.flagState[k]) { this.flagState[k] = st; if (st && this.player) { const pk = Math.floor(this.player.idx / t.N * M); if (k === pk || k === (pk + 1) % M) this.msg('YELLOW FLAG — sector ' + (k + 1), 'yellow', this.player, 2.5); } } }
-      // slipstream / dirty air
-      for (const c of this.cars) {
-        let drag = 1, down = 1;
-        for (const o of this.cars) {
-          if (o === c || o.inGarage || o.pit) continue;
-          const ds = t.dS(c.s, o.s); if (ds <= 3 || ds > 70) continue;
-          const lat = Math.abs(o.d - c.d); if (lat > 3) continue;
-          const f = (1 - lat / 3);
-          drag = Math.min(drag, 1 - 0.3 * (1 - ds / 70) * f);
-          if (ds < 35) down = Math.min(down, 1 - 0.14 * (1 - ds / 35) * f);
-        }
-        c.dragMul = drag; c.downMul = down;
-      }
       // delta & lap trace for player
       for (const c of this.cars) {
         if (!c.isPlayer && !(this.telemetryFocus === c)) continue;
@@ -4412,7 +4500,7 @@ const SIM = (function () {
     return (neg ? '-' : plus ? '+' : '') + str;
   }
 
-  return { G, RHO, PHYS_DT, DS, VSC, TEAMS, DRIVERS, TRACK_DEF, CIRCUITS, circuitById, circuitCentreLine, elevationAt, COMPOUNDS, SPEC, Track, Car, Session, AIDriver, planStrategy, wearPerLap, needsCompound, fmtTime, clamp, lerp, makeRng, stepCarPhysics, PlayerHandling, KeyboardDriveInput, HANDLING, USEFUL_WEAR, TYRE_STYLES, drivingStyle, tyreWearGrip, tyreWeatherGrip, tyreMismatch, updateTyres, wetnessFor, weatherCompound, DynamicWeather, CarDamage, DAMAGE_LEVELS, PART_KEYS, PART_NAMES, WHEEL_NAMES, REPAIR_TIME, REFUEL, FUEL_TANK_LAPS, FUEL_RESERVE, START_FUEL_LAPS, estimatePitLoss, chooseStartFuelLaps, normalizeDamageLevel, partExposure, torqueAt, defaultCompoundModel, setSeed: (s) => { rnd = makeRng(s); } };
+  return { G, RHO, PHYS_DT, DS, VSC, TEAMS, DRIVERS, TRACK_DEF, CIRCUITS, circuitById, circuitCentreLine, elevationAt, COMPOUNDS, SPEC, Track, Car, Session, AIDriver, planStrategy, wearPerLap, needsCompound, fmtTime, clamp, lerp, makeRng, stepCarPhysics, SLIPSTREAM, slipstreamStrength, PlayerHandling, KeyboardDriveInput, HANDLING, USEFUL_WEAR, TYRE_STYLES, drivingStyle, tyreWearGrip, tyreWeatherGrip, tyreMismatch, updateTyres, wetnessFor, weatherCompound, DynamicWeather, CarDamage, DAMAGE_LEVELS, PART_KEYS, PART_NAMES, WHEEL_NAMES, REPAIR_TIME, REFUEL, FUEL_TANK_LAPS, FUEL_RESERVE, START_FUEL_LAPS, estimatePitLoss, chooseStartFuelLaps, normalizeDamageLevel, partExposure, torqueAt, defaultCompoundModel, setSeed: (s) => { rnd = makeRng(s); } };
 })();
 // ==SIM-END==
 if (typeof module !== 'undefined') module.exports = SIM;
@@ -6896,7 +6984,7 @@ class CameraRig {
       cam.rotateZ((Math.sin(t * 23.7 + 0.7) * 0.5 + Math.sin(t * 47.3 + 2.9) * 0.5) * amp * 0.8);
     }
     this.fovKick *= Math.exp(-dt * 2.2);
-    targetFov += this.fovKick + (onboard && car.drsOpen ? 1.5 : 0) + (onboard && car.dragMul < 0.9 ? 1 : 0);
+    targetFov += this.fovKick + (onboard && car.drsOpen ? 1.5 : 0) + (onboard ? car.slipstream : 0);
     this.fov = this.init ? lerp(this.fov, targetFov, Math.min(1, dt * (this.mode === 'tv' ? 3 : 4))) : targetFov;
     if (Math.abs(cam.fov - this.fov) > 0.01) { cam.fov = this.fov; cam.updateProjectionMatrix(); }
     this.init = true;

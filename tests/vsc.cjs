@@ -103,9 +103,12 @@ for (const id of ['summit', 'rivermere', 'redridge']) {
     assert.ok(victim.retiring || victim.dnf, 'a crash that ended the race of ' + victim.driver.short);
     assert.equal(S.vsc.kind, 'crash'); assert.equal(S.vsc.count, 1);
     assert.ok(S.time - crashT < 3, 'deployed ' + (S.time - crashT).toFixed(1) + ' s after the impact');
-    const orderAtDeploy = S.order.filter(c => c !== victim).map(c => c.driver.short).join(' ');
+    const orderAtDeploy = S.order.filter(c => c !== victim);
     const lapsDown = new Map(S.cars.map(c => [c, c.lapsDown || 0]));
-    const deployT = S.time, spread0 = spread(S, victim), front0 = leaderGaps(S, victim), dist0 = new Map(S.cars.map(c => [c, c.totalDist]));
+    // the queue's close-up is measured over the cars that stay in it throughout (not one caught up in the
+    // incident after the deployment, which rejoins at the back)
+    const queued = new Set(S.cars.filter(c => S.vscMember(c) && c !== victim));
+    const deployT = S.time, front0 = leaderGaps(S, victim), dist0 = new Map(S.cars.map(c => [c, c.totalDist]));
     const playerCalls = me.controlCalls;
     let underControl = 0, controlledSteps = 0, greenStep = -1, thBefore = 0;
     runUntil(S, () => S.vsc.phase === 'green', 25, () => {
@@ -114,6 +117,7 @@ for (const id of ['summit', 'rivermere', 'redridge']) {
         controlledSteps++;
         if (S.vscControls(me)) underControl++;
         thBefore = me.input.throttle;
+        for (const c of queued) if (!S.vscMember(c)) queued.delete(c);
         // every running car is either in the queue or being driven around the incident / through the pits
         for (const c of running(S)) if (c !== victim && !c.retiring) assert.ok(S.vscControls(c));
       }
@@ -121,7 +125,7 @@ for (const id of ['summit', 'rivermere', 'redridge']) {
     greenStep = S.step;
     assert.equal(me.controlCalls, playerCalls + 1, 'no player input reached the car while the VSC was out; it does from the green-flag step');
     assert.equal(underControl, controlledSteps, 'the player\'s car was driven by race control for the whole period');
-    const spread1 = spread(S, victim);
+    const spread0 = spread([...queued], dist0), spread1 = spread([...queued]);
     // timing of the neutralisation: 10–20 s in total, the last five seconds the countdown
     const h = S.vsc.history[0];
     assert.ok(h.total >= VSC.minT - 1e-6 && h.total <= VSC.maxT + dt, 'lasted ' + h.total.toFixed(2) + ' s');
@@ -139,9 +143,11 @@ for (const id of ['summit', 'rivermere', 'redridge']) {
     const front1 = leaderGaps(S, victim);
     assert.ok(front1.span < front0.span, 'the front of the field closed up: ' + front0.list + ' → ' + front1.list);
     assert.ok(front1.first < 40, 'second place sits right behind the leader: ' + front1.first.toFixed(0) + ' m');
-    // race order and laps-down kept (the crashed car drops behind everyone still running)
+    // race order and laps-down kept (the crashed car drops behind everyone still running; a car caught up in the
+    // incident is driven around while it is off, so the order is that of the cars queued throughout)
     S.slowUpdate();
-    assert.equal(S.order.filter(c => c !== victim).map(c => c.driver.short).join(' '), orderAtDeploy, 'classification unchanged');
+    const names = (cars) => cars.filter(c => queued.has(c)).map(c => c.driver.short).join(' ');
+    assert.equal(names(S.order), names(orderAtDeploy), 'classification unchanged');
     for (const c of S.cars) if (c !== victim) assert.equal(c.lapsDown || 0, lapsDown.get(c), c.driver.short + ' laps down');
     // the race ran on: clock, weather, fuel, tyre wear, compounds, damage, laps
     assert.ok(S.time - before.time > h.total);
@@ -177,9 +183,9 @@ for (const id of ['summit', 'rivermere', 'redridge']) {
     assert.ok(S.cars.every(c => c.vscAhead == null));
   });
 }
-function spread(S, victim) {
-  const m = S.cars.filter(c => S.vscMember(c) && c !== victim).sort((a, b) => b.totalDist - a.totalDist);
-  return m[0].totalDist - m[m.length - 1].totalDist;
+function spread(cars, dist = new Map(cars.map(c => [c, c.totalDist]))) {
+  const d = cars.map(c => dist.get(c));
+  return Math.max(...d) - Math.min(...d);
 }
 function leaderGaps(S, victim) {
   const m = S.cars.filter(c => S.vscMember(c) && c !== victim).sort((a, b) => b.totalDist - a.totalDist);
