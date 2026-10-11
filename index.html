@@ -2363,8 +2363,9 @@ const SIM = (function () {
         // be clipped: stay in the fast lane until our rear is clear of it, then turn in.
         const inTheWay=race.cars.some(o=>o!==car && !o.inGarage && !o.ghost && o.pit && Math.abs(o.d-p.side*p.fastD)>1.2
           && t.dS(o.s,P.stopS)>6 && t.dS(o.s,P.stopS)<55 && t.dS(car.s,o.s)>-6 && t.dS(car.s,o.s)<65);
-        // (alongside it, edge a metre towards the box lane: there is room, and the turn-in after it is shorter)
-        if(inTheWay){d=p.side*(p.fastD+1.0);stayFast=true;}
+        // Keep the full fast-lane clearance past occupied boxes. Cutting a metre
+        // towards them can trap an incoming car beside one waiting to release.
+        if(inTheWay){d=p.side*p.fastD;stayFast=true;}
       }
       // Leave the box along a short diagonal before following the fast lane.
       if(P.phase==='out' && P.departS!=null) {
@@ -2403,7 +2404,14 @@ const SIM = (function () {
         let futureD=t.pitTargetD(o.s,P.phase==='in'&&!stayFast?P.stopS:null);
         if(P.phase==='out' && P.departS!=null)futureD=lerp(p.side*p.boxD,futureD,smooth01(Math.max(0,t.dS(P.departS,o.s))/16));
         const crossing=o.pit && o.pit.phase==='out' && ahead<30 && Math.abs(o.d-p.side*p.fastD)>1;
-        const clearance=ahead<15?Math.min(Math.abs(o.d-car.d),Math.abs(o.d-futureD)):Math.abs(o.d-futureD);
+        // While still approaching, use the lane at the obstacle, so a departing car can
+        // steer away before the next occupied box. Compare current clearance only
+        // when the cars are already alongside; braking earlier here traps the car
+        // at rest before it has enough travel to complete the diagonal.
+        const currentClearance=Math.abs(o.d-car.d), pathClearance=Math.abs(o.d-futureD);
+        const parked=o.pit && ['awaiting','stopped','release'].includes(o.pit.phase);
+        const movingAway=parked && currentClearance>2.1 && pathClearance>2.6;
+        const clearance=ahead<7.5 && !movingAway?Math.min(currentClearance,pathClearance):pathClearance;
         if(clearance>2.6 && !crossing)continue;
         const gap=ahead-7.5;
         target=Math.min(target,o.speed+arcadeStopSpeed(Math.max(0,gap-3),0.45*car.brakeGrip(wet)*car.damage.perf.brake));
@@ -3161,6 +3169,9 @@ const SIM = (function () {
       this.allocatePitBoxes();
       collideCars(this.cars, this);
       this.resolveContacts();
+      // Contact resolution runs after pit logic. Keep cars on their stopped pose
+      // throughout selection, service and release, even if another car touches them.
+      for (const car of this.cars) if (car.pit && ['awaiting','stopped','release'].includes(car.pit.phase)) this.holdPitCar(car);
       if (this.step % 24 === 0) this.slowUpdate();
     }
     updateDRS(car) {
@@ -3293,6 +3304,15 @@ const SIM = (function () {
       const f = (T) => T > 0 ? clamp(el / T, 0, 1) : 1;
       return { tyres: P.changeTyres ? f(P.tyreT) : 1, fuel: P.fuelT > 0 ? f(P.fuelT) : 1, fw: P.fwT > 0 ? f(P.fwT) : 1, rw: P.rwT > 0 ? f(P.rwT) : 1, el };
     }
+    holdPitCar(car) {
+      const P = car.pit;
+      if (!P) return;
+      if (P.stopPose) Object.assign(car, P.stopPose);
+      car.frozen = true;
+      car.vx = car.vz = car.r = car.u = car.v = car.speed = 0;
+      car.input.throttle = car.throttle = 0;
+      car.input.brake = car.brake = 1;
+    }
     pitReleaseClear(car) {
       const t=this.track;
       return !this.cars.some(o=>{
@@ -3300,7 +3320,7 @@ const SIM = (function () {
         const ds=t.dS(car.s,o.s);
         if(o.pit && ['awaiting','stopped','release'].includes(o.pit.phase) && Math.abs(o.d-car.d)>2.6)return false;
         // a car standing still behind the box cannot run into a departing car (it follows it when it moves)
-        if(o.speed<0.5 && ds<-2)return false;
+        if(o.speed<0.5 && (ds<-2 || (ds<0 && Math.abs(o.d-car.d)>2.1)))return false;
         return Math.abs(o.d-t.pit.side*t.pit.fastD)<3 && ds>-Math.max(18,o.speed*1.7+8) && ds<14;
       });
     }
@@ -3320,10 +3340,12 @@ const SIM = (function () {
         // entering pit lane? Steering into the entry commits the car; a request only lets the autopilot take it.
         const committed=car.boxRequest || car.ai && car.ai.pitting;
         const approach=t.dS(car.s,p.entry0), inApproach=committed && approach>=0 && approach<350;
-        const onEntry=(inApproach && (car.ai || car.d*p.side>t.halfW-1.5)) || (q>=0 && q<p.E+20 && car.d*p.side>t.halfW+(committed?-1.5:2));
+        const onEntry=(inApproach && (car.ai || car.d*p.side>t.halfW-1.5)) || (q>=0 && q<p.E+20 && car.d*p.side>t.halfW+(committed?-1.5:0.5));
         if (onEntry && car.d * p.side < p.outerWall) {
           if (this.type === 'quali' && car.q && car.q.phase !== 'waiting') { this.completeQuali(car, 'dnf', 'Returned to the pits'); return; }
-          // committed to the pit lane: the autopilot drives from here; the car joins the queue at the entry line
+          // Crossing the road edge into the entry ramp commits a manual driver too.
+          // Waiting until two metres outside the road delays braking for a full queue.
+          // The autopilot drives from here; the car joins the queue at the entry line.
           car.pit = { phase: 'approach', box: null, boxS: null, stopS: null, timer: 0, entryTime: null, queuePos: 0, d0: car.d, s0: car.s };
           if(car.isPlayer) {
             car.autoDrive=true;car.autopilot.mode='race';car.autopilot.handling.reset();
@@ -3367,7 +3389,8 @@ const SIM = (function () {
         const off = Math.abs(car.d - p.side * p.boxD);
         P.settle = dd < 8 && dd > -6 && car.speed < 0.65 && off < 3 ? (P.settle || 0) + dt : 0;
         if ((dd < 1.5 && dd > -6 && car.speed < 1.4 && off < 0.8) || (P.settle > 1.0 && dd < 3 && off < 2) || P.settle > 3) {
-          car.frozen = true; car.vx = car.vz = car.r = car.u = car.v = car.speed = 0;car.input.throttle=0;car.input.brake=1;
+          P.stopPose = { x: car.x, z: car.z, psi: car.psi };
+          this.holdPitCar(car);
           P.arrivedAt = this.time;
           // a bot that judged its damage hopeless retires in the box (and leaves it to the next car)
           if (car.ai && car.ai.retireInPits && this.type === 'race') { car.dnfReason = 'Damage'; this.retire(car); return; }
@@ -4706,9 +4729,9 @@ function buildWorld(scene, track, T, opts) {
   {
     const rng = seededRand(3); const count = wet ? 0 : Q === 0 ? 14 : 30;
     for (let k = 0; k < count; k++) {
-      const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: T.clouds[k % 3], transparent: true, opacity: 0.92, depthWrite: false, fog: false }));
-      const a = rng() * Math.PI * 2, r = 2600 + rng() * 4200; const s = 1100 + rng() * 1300;
-      sp.userData.cloud=true; sp.position.set(R.center.x + Math.cos(a) * r, 700 + rng() * 900 + r * 0.06, R.center.z + Math.sin(a) * r); sp.scale.set(s, s * 0.5, 1); sp.renderOrder = -5; world.add(sp);
+      const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: T.clouds[k % 3], transparent: true, opacity: 0.45, depthWrite: false, fog: false }));
+      const a = rng() * Math.PI * 2, r = 2600 + rng() * 4200; const s = 900 + rng() * 900;
+      sp.userData.cloud=true; sp.position.set(R.center.x + Math.cos(a) * r, 1800 + rng() * 700 + r * 0.10, R.center.z + Math.sin(a) * r); sp.scale.set(s, s * 0.5, 1); sp.renderOrder = -5; world.add(sp);
     }
   }
   return { world, inLake, terrain };
@@ -7558,9 +7581,9 @@ const _m4 = new THREE.Matrix4(), _q = new THREE.Quaternion(), _v = new THREE.Vec
 const WHEEL_LX = [SIM.SPEC.a, SIM.SPEC.a, -SIM.SPEC.b, -SIM.SPEC.b], WHEEL_LY = [-0.68, 0.68, -0.66, 0.66];
 const RUBBER = [0.02, 0.02, 0.022], RUBBER_WET = [0.05, 0.055, 0.06], RUT_GRAVEL = [0.36, 0.3, 0.21], RUT_GRASS = [0.2, 0.22, 0.12];
 const teamRGB = (car) => car._rgb || (car._rgb = new THREE.Color(car.team.c1).toArray());
-// Effects of normal driving for one car, all read from the simulation: tyre smoke and rubber marks from lock-ups,
-// wheelspin and slides; dust, gravel, grass and ruts off track; floor sparks when the plank touches down (kerbs,
-// braking dive, high-speed bottoming, floor damage); rooster-tail spray and mist in the wet; hot brakes.
+// Normal driving leaves rubber marks, off-track dust/gravel/ruts and floor sparks.
+// Tyre smoke is emitted only during collision-induced scrubbing; ordinary wheelspin,
+// lock-ups and slides do not produce smoke, and tyres do not emit spray or mist.
 function drivingEffects(car,m,dt,dist,wet,near) {
   const R = Math.random, v = car.speed, c = Math.cos(car.psi), s = Math.sin(car.psi);
   const count = (rate) => { const f = rate * dt * near; return Math.floor(f) + (R() < f % 1 ? 1 : 0); };
@@ -7576,7 +7599,7 @@ function drivingEffects(car,m,dt,dist,wet,near) {
     if (i >= 2 && slide > 0.1 && v > 6) scrub = Math.max(scrub, Math.min(1, (slide - 0.1) * 5));
     // shoved sideways by an impact, the tyres scrub across the surface
     if (m.scrubT > 0 && v > 4) scrub = Math.max(scrub, Math.min(1, m.scrubT * 2.5));
-    if (scrub > 0 && !offT && v > 3) {
+    if (m.scrubT > 0 && scrub > 0 && !offT && v > 3) {
       const n = count(48 * scrub * (wet ? 0.25 : 1));
       for (let k = 0; k < n; k++) G.smoke.emit(wx + (R() - .5) * 0.3, 0.18, wz + (R() - .5) * 0.3, car.vx * 0.22 + (R() - .5) * 2, 0.4 + R() * 0.9, car.vz * 0.22 + (R() - .5) * 2, 1.6 + R(), 0.6, 2.6, (wet ? 0.16 : 0.36) * (0.5 + 0.5 * scrub), wet ? [0.8, 0.83, 0.88] : [0.9, 0.9, 0.92]);
     }
@@ -7597,17 +7620,9 @@ function drivingEffects(car,m,dt,dist,wet,near) {
       const ng = count((gravel ? 70 : 26) * k2 * (i >= 2 ? 1.4 : 0.6));
       for (let k = 0; k < ng; k++) G.grit.emit(wx, 0.12, wz, car.vx * (0.35 + R() * 0.4) + (R() - .5) * 5, 1.5 + R() * 4.5, car.vz * (0.35 + R() * 0.4) + (R() - .5) * 5, 1.2, 0.05 + R() * 0.05, 0, 1, gravel ? [0.62 + R() * 0.2, 0.55 + R() * 0.15, 0.42] : [0.2, 0.28, 0.12]);
     }
-    // wet: rooster tail from the rears, side spray from the fronts
-    if(wet>0.025 && v>12 && !offT) {
-      const n = count((i>=2?6+v*0.8:v*0.3)*wet);
-      for (let k = 0; k < n; k++) {
-        const side = (i % 2 ? 1 : -1) * (i < 2 ? 2.5 : 0.8);
-        G.spray.emit(wx - c * 0.35, 0.3, wz - s * 0.35, car.vx * (i >= 2 ? 0.62 : 0.45) - s * side * R() + (R() - .5) * 4, 0.5 + R() * 2.6, car.vz * (i >= 2 ? 0.62 : 0.45) + c * side * R() + (R() - .5) * 4, 0.6 + R() * 0.6, 0.3, 2.5, 0.26);
-      }
-    }
   }
-  // the mist cloud that hangs behind a car in the rain
-  if(wet>0.025 && v>22){const n=count(9*wet); for (let k = 0; k < n; k++) { const [x, z] = carPoint(car, -2.6 - R() * 1.5, (R() - .5) * 1.4); G.spray.emit(x, 0.7, z, car.vx * 0.5, 0.4, car.vz * 0.5, 1.6 + R() * 0.8, 1.8, 4.5, 0.11, [0.84, 0.86, 0.9]); } }
+  // Normal-driving tyre spray and trailing mist are disabled. Rainfall and
+  // surface splashes are independent, as are all collision/damage emitters.
   // floor sparks: the titanium skid blocks touch down over kerbs, in the braking dive, when bottoming at top speed,
   // or constantly with a damaged floor
   let fs = 0;
@@ -8097,7 +8112,8 @@ function updateWeatherView(dt) {
   R.sun.intensity=lerp(3.2,0.42,cloud);R.hemi.intensity=lerp(0.82,0.74,cloud);
   R.sun.color.setHex(0xffe4c2).lerp(new THREE.Color(0xd0d8e2),cloud);
   scene.fog.color.setHex(SKY.dry.fog).lerp(new THREE.Color(SKY.wet.fog),mix);
-  scene.fog.near=lerp(650,95,rain);scene.fog.far=lerp(12500,1400,rain);
+  // Keep local cars and the next braking zone clear, including in a storm.
+  scene.fog.near=lerp(650,180,rain);scene.fog.far=lerp(12500,2200,rain);
   if(w && w.lightning>0) {R.sun.intensity+=w.lightning*5;G.fx.hit=Math.max(G.fx.hit,w.lightning*0.35);}
   if(G.rain){G.rain.visible=rain>0.01;G.rain.material.opacity=0.04+rain*0.24;G.rain.geometry.setDrawRange(0,Math.floor(G.rainDrops.length/3*(0.12+rain*0.88))*2);}
   if(G.splash)G.splash.points.visible=rain>0.01;
@@ -8113,7 +8129,7 @@ function updateWeatherView(dt) {
       const shade=1-local*0.43;for(let c=0;c<3;c++)attrs.color.array[v*3+c]=base[v*3+c]*shade;
     }
     attrs.color.needsUpdate=true;attrs.aRoadWater.needsUpdate=true;
-    G.world.traverse(o=>{if(o.userData.cloud){o.material.opacity=0.30+cloud*0.65;o.material.color.setScalar(1-cloud*0.35);}});
+    G.world.traverse(o=>{if(o.userData.cloud){o.material.opacity=0.22+cloud*0.30;o.material.color.setScalar(1-cloud*0.35);}});
   }
   if(w && sess.time>=(G.nextForecastView||0)) {
     G.nextForecastView=sess.time+1;const f=w.forecast();
