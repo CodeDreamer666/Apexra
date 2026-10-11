@@ -51,6 +51,7 @@ const index = [];
     n++;
     const file = String(n).padStart(3, '0') + '-' + name + '.jpg';
     if (!ONLY || ONLY.some(o => name.includes(o))) {
+      await new Promise(r => setTimeout(r, 900)); // let CSS transitions (panels fading in) finish in real time
       await page.screenshot({ path: path.join(OUT, file), type: 'jpeg', quality: 82 });
       index.push({ file, desc }); console.log('  ' + file + ' — ' + desc);
     }
@@ -170,7 +171,8 @@ const index = [];
       await page.keyboard.press('KeyT'); await frames(30, 1); await shot(tag('race-telemetry'), 'Telemetry overlay (T)'); await page.keyboard.press('KeyT');
       await page.keyboard.press('KeyV'); await frames(3, 1); await shot(tag('race-strategy'), 'Tyres & pits strategy panel (V)'); await page.keyboard.press('KeyV');
       // DRS
-      const drs = await H('H.ff(240, s => p.drsAvail)');
+      // DRS needs a car within a second at the detection point: grant eligibility, as if one were there
+      const drs = await H('H.ff(400, s => { if (s.drsEnabled) for (const z of s.track.drsZones) p["drsElig" + z.start] = true; return p.drsAvail; })');
       if (drs) { await frames(4, 1); await shot(tag('race-drs-available'), 'DRS available in an activation zone'); await page.keyboard.press('KeyG'); await frames(8, 1); await shot(tag('race-drs-open'), 'DRS open'); }
       // engineer radio
       await H('H.ff(400, s => document.getElementById("engineerRadio").getAttribute("aria-hidden")==="false" || (G.radio.update(), false))');
