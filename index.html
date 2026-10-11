@@ -2545,7 +2545,11 @@ const SIM = (function () {
         if (toLim > 0) v = p.limit-0.6 + (HANDLING.brakeRate*car.brakeGrip(car.surfaceWet ?? this.race.wet)*car.damage.perf.brake + HANDLING.coastRate) * 0.95 * toLim; else if (q <= p.len - p.X + 6) v = p.limit - 0.6;
       } else if (this.pitting || car.pit) {
         const toEntry = t.dS(s, p.entry0); const toLim = toEntry + p.E - 3;
-        if (toEntry > 0) v = p.limit-0.6 + (HANDLING.brakeRate*car.brakeGrip(car.surfaceWet ?? this.race.wet)*car.damage.perf.brake + HANDLING.coastRate) * 0.95 * Math.max(0, toLim);
+        if (toEntry > 0) {
+          v = p.limit-0.6 + (HANDLING.brakeRate*car.brakeGrip(car.surfaceWet ?? this.race.wet)*car.damage.perf.brake + HANDLING.coastRate) * 0.95 * Math.max(0, toLim);
+          // and be able to stop at the box it can expect, which may be the first one just past the limit line
+          v = Math.min(v, arcadeStopSpeed(toEntry + t.pitProg(this.race.expectedStopS(car)) - 1.3, car.brakeGrip(car.surfaceWet ?? this.race.wet)*car.damage.perf.brake));
+        }
       }
       if (car.pit && car.pit.phase === 'in') {
         const dd = t.dS(s, car.pit.stopS);
@@ -2652,9 +2656,12 @@ const SIM = (function () {
       // pit entry handling
       if ((this.boxThisLap || this.pitOnly && car.boxRequest) && !car.pit) {
         const toEntry = t.dS(car.s, t.pit.entry0); const q = t.pitProg(car.s);
-        // A call made too late to brake for the entry waits for the next lap instead of overshooting the box.
+        // A call made too late to brake for the entry, or to stop at the box this car can expect, waits for
+        // the next lap instead of overshooting the box. The request stays on.
         const toLim = (q >= 0 ? -q : toEntry) + t.pit.E - 3;
-        const reachable = car.speed < t.pit.limit + 3 + (HANDLING.brakeRate * car.brakeGrip(car.surfaceWet ?? race.wet) + HANDLING.coastRate) * 0.95 * Math.max(0, toLim);
+        const toStop = (q >= 0 ? -q : toEntry) + t.pitProg(race.expectedStopS(car));
+        const reachable = car.speed < t.pit.limit + 3 + (HANDLING.brakeRate * car.brakeGrip(car.surfaceWet ?? race.wet) + HANDLING.coastRate) * 0.95 * Math.max(0, toLim)
+          && car.speed < 0.95 * arcadeStopSpeed(toStop - 1.3, car.brakeGrip(car.surfaceWet ?? race.wet) * car.damage.perf.brake);
         if (!this.pitting && !reachable && (q >= 0 || toEntry < 420)) { this.pitting = false; this.pitEntryBlend = 0; }
         else if (q >= 0 && q < t.pit.E + 30) { this.pitting = true; this.pitEntryBlend = 1; }
         else if (toEntry > 0 && toEntry < 700) { this.pitting = toEntry < 420; this.pitEntryBlend = smooth01((420 - toEntry) / 250); }
@@ -3123,6 +3130,7 @@ const SIM = (function () {
     openRate: 3, minGap: 9, // a car already closer than that opens the gap at openRate m/s, from at least minGap
     closeUse: 0.4,      // share of full braking used to plan the approach to the car ahead
     openK: 0.25, openMax: 4, // m/s slower per metre a car is too close to the car ahead (at most openMax)
+    rejoinV: 8, rejoinD: 4, // a car recovering from an off faster than this (m/s), within this far of the road edge (m), is followed
     brakeGain: 1.2, brakeMax: 7, // progressive braking: m/s² per m/s too fast, at most brakeMax m/s² from the brakes
     closeGain: 2.5, closeMax: 25,  // the same when closer than the following distance and still closing: firmer
     noteE: 25000,       // J: an impact this big is a crash worth watching (well beyond scrapes and taps)
@@ -3442,11 +3450,11 @@ const SIM = (function () {
       order.length = 0;
       for (const c of this.cars) {
         c.slipGoal = 0;
-        // no tow in the pit lane (and none from a car in it), before the start or in handling calibration
+        // no tow in the pit lane (and none from a car in it), before the start, under the VSC or in handling calibration
         if (c.inGarage || c.pit || c.dnf) continue;
         order.push(c);
       }
-      if (this.type === 'calib' || (this.type === 'race' && !this.lightsOut) || order.length < 2) return;
+      if (this.type === 'calib' || (this.type === 'race' && (!this.lightsOut || this.vscActive)) || order.length < 2) return;
       order.sort((a, b) => a.s - b.s);
       const n = order.length;
       for (let k = 0; k < n; k++) {
@@ -3630,7 +3638,10 @@ const SIM = (function () {
       const q = t.pitProg(car.s);
       if (!car.pit) {
         // entering pit lane? Steering into the entry commits the car; a request only lets the autopilot take it.
-        const committed=car.boxRequest || car.ai && car.ai.pitting;
+        // (a player driven automatically, by race control or the autopilot, goes in only if that driver takes
+        // the entry: a request made too late to stop at the box waits for the next lap)
+        const autoDeclined=car.isPlayer && car.autopilot && (car.autoDrive || this.vscControls(car)) && !car.autopilot.pitting;
+        const committed=(car.boxRequest && !autoDeclined) || car.ai && car.ai.pitting;
         const approach=t.dS(car.s,p.entry0), inApproach=committed && approach>=0 && approach<350;
         const onEntry=(inApproach && (car.ai || car.d*p.side>t.halfW-1.5)) || (q>=0 && q<p.E+20 && car.d*p.side>t.halfW+(committed?-1.5:0.5));
         if (onEntry && car.d * p.side < p.outerWall) {
@@ -4222,13 +4233,21 @@ const SIM = (function () {
     }
     // The queue: every member follows the member physically ahead of it on the circuit (by track distance).
     // The race leader leads it; a lapped car stays where it is, so laps-down are kept.
+    // A car rejoining from an off (recovering, moving, at the edge of the road) is not in the queue yet, but
+    // the cars behind hold back behind it rather than drive past it as it comes back on.
+    vscRejoining(o) {
+      if (this.vscMember(o) || o.inGarage || o.ghost || o.dnf || o.retiring || o.finished || o.pit) return false;
+      const drv = o.ai || o.autopilot;
+      return !!(drv && drv.mode === 'recover') && !o.spun && o.speed > VSC.rejoinV && Math.abs(o.d) < this.track.halfW + VSC.rejoinD;
+    }
     vscPlan() {
       const L = this.track.length, m = this._vscMembers || (this._vscMembers = []);
       m.length = 0;
-      for (const c of this.cars) { c.vscAhead = null; c.vscGap = Infinity; if (this.vscMember(c)) m.push(c); }
+      for (const c of this.cars) { c.vscAhead = null; c.vscGap = Infinity; if (this.vscMember(c) || this.vscRejoining(c)) m.push(c); }
       m.sort((a, b) => a.s - b.s || a.id - b.id);
       for (let k = 0; k < m.length; k++) {
         const c = m[k], a = m[(k + 1) % m.length]; if (a === c) break;
+        if (!this.vscMember(c)) continue; // a rejoining car is followed; it does not follow
         let g = a.s - c.s; if (g < 0) g += L;
         c.vscAhead = a; c.vscGap = g;
         if (c.vscFrom !== a) { c.vscFrom = a; c.vscGapFrom = g; c.vscGapAt = this.time; } // a new car to follow
