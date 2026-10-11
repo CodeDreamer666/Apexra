@@ -320,8 +320,6 @@
   .strategyNote { color:var(--dim); font-size:13px; line-height:1.45; }
   #strategyPanel .btn { font-size:14px; padding:8px; }
   #strategyPanel .strategyChoices { margin:10px 0; }
-  #raceBrief .strategyChoices { margin:16px 0; }
-  #raceBrief .dialog { width:min(760px,94vw); }
   /* ---- pit service: status, box occupancy, choices at the box and one animated card per service ---- */
   #pitSvc { position:absolute; z-index:30; right:24px; bottom:24px; width:372px; max-height:calc(100vh / var(--hz) - 48px - 250px); overflow:auto; padding:0 0 12px; pointer-events:auto; scrollbar-width:none;
     --ps-amber:#f5b301; --ps-ok:#2ecc71; --ps-busy:#d9822b; border-top:3px solid var(--gold) !important; animation: psIn .28s ease-out; }
@@ -388,13 +386,123 @@
   @keyframes psFlow { from { background-position: 200% 0; } to { background-position: 0 0; } }
   @keyframes psPop { 0% { transform: scale(.6); } 70% { transform: scale(1.12); } 100% { transform: none; } }
   @media (prefers-reduced-motion: reduce) { #pitSvc, .ps-status::before, .ps-card .ic, .ps-card .bar i { animation:none !important; } .ps-card .bar i { transition:none; } }
-  /* starting fuel in the race brief */
-  .briefFuel { margin:4px 0 6px; padding:12px 14px; border:1px solid var(--line); border-radius:8px; background:rgba(255,255,255,.025); }
-  .briefFuel label { display:flex; justify-content:space-between; font-size:12px; color:var(--dim); letter-spacing:1.5px; text-transform:uppercase; font-weight:600; margin-bottom:6px; }
-  .briefFuel label b { color:#fff; letter-spacing:.3px; font-size:15px; text-transform:none; }
-  .briefFuel input { width:100%; accent-color: var(--yellow); }
-  .briefFuel p { margin:6px 0 0; font-size:13px; color:#cfd5df; line-height:1.4; }
-  @media(max-width:760px) { #raceBrief .strategyChoices { grid-template-columns:1fr 1fr; } }
+  /* Race setup: compound cards, live fuel load and the rules before going to the grid. */
+  #raceBrief { background:rgba(1,6,12,.78); backdrop-filter:blur(6px); --brief-yellow:#ffda18; }
+  #raceBrief .dialog { width:min(1210px,95vw); padding:18px 22px 14px; border:1px solid #365163; border-radius:15px; background:linear-gradient(120deg,rgba(4,14,23,.98),rgba(9,23,35,.97) 65%,rgba(3,12,20,.98)); box-shadow:0 24px 80px #0009; }
+  #raceBrief h2 { margin:0 6px 14px; font-size:clamp(26px,2.75vw,42px); font-weight:900; line-height:1.25; letter-spacing:.6px; }
+  #raceBrief h2 span { color:#ff0808; }
+  .brief-icons { position:absolute; width:0; height:0; overflow:hidden; }
+  .brief-icon { width:32px; height:36px; flex:none; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+  .brief-meta { display:grid; grid-template-columns:1.55fr 1.05fr .76fr 1.05fr .8fr 1.05fr; padding:12px; border:1px solid #3c6079; border-radius:10px; background:linear-gradient(120deg,#06131f,#0b2032a0); }
+  .brief-meta > div { display:flex; align-items:center; gap:12px; padding:0 16px; border-left:1px solid #375267; min-width:0; }
+  .brief-meta > div:first-child { border:0; padding-left:0; }
+  .brief-meta small { display:block; color:#bbd7ee; text-transform:uppercase; font-size:12px; letter-spacing:.6px; }
+  .brief-meta b { display:block; font-size:18px; line-height:1.25; }
+  .brief-meta p { margin:0; font-size:15px; line-height:1.35; }
+  .brief-meta p > span { display:block; color:#bbd7ee; }
+  #briefCircuitMap { width:84px; height:64px; flex:none; fill:none; stroke:#fff; stroke-width:3; stroke-linejoin:round; }
+  .brief-meta .brief-circuit b, #briefWeather { font-size:16px; }
+  #briefWeatherIcon { color:var(--brief-yellow); width:40px; height:42px; }
+  .brief-section-title { display:flex; align-items:center; gap:16px; margin:14px 4px 12px; font-size:27px; line-height:1.3; text-transform:uppercase; }
+  .brief-section-title .brief-icon { width:40px; height:40px; }
+  #briefChoices { display:grid; height:274px; grid-template-columns:repeat(3,minmax(0,1fr)) minmax(0,1.06fr); grid-template-rows:repeat(2,minmax(0,1fr)); gap:12px; }
+  .brief-tyre { position:relative; display:grid; grid-template-columns:100px minmax(0,1fr); gap:6px 12px; min-width:0; padding:20px 18px 18px; color:#f3f6fb; font:400 16px/1.4 var(--font); text-align:left; border:2px solid var(--c); border-radius:10px; background:linear-gradient(125deg,color-mix(in srgb,var(--c) 7%,#10151f),#03131f); cursor:pointer; transition:background .15s,box-shadow .15s; }
+  .brief-tyre[data-c="S"], .brief-tyre[data-c="M"], .brief-tyre[data-c="H"] { grid-row:1 / span 2; min-height:274px; padding-top:25px; }
+  .brief-tyre[data-c="H"] { border-color:#567891; }
+  .brief-tyre:hover { background:linear-gradient(125deg,color-mix(in srgb,var(--c) 13%,#10151f),#0b2333); }
+  .brief-tyre:focus-visible { outline:3px solid #fff; outline-offset:3px; }
+  .brief-tyre[aria-pressed="true"] { border-color:var(--brief-yellow); box-shadow:inset 0 0 0 1px var(--brief-yellow),0 0 24px #ffda1824; background:linear-gradient(125deg,#272818,#03131f 70%); }
+  .brief-selected { position:absolute; top:-1px; right:-1px; display:none; align-items:center; gap:8px; padding:5px 12px; border-radius:0 9px 0 8px; color:#080d13; background:var(--brief-yellow); font-size:13px; font-weight:700; }
+  .brief-selected .brief-icon { width:20px; height:20px; }
+  .brief-tyre[aria-pressed="true"] .brief-selected { display:flex; }
+  .brief-tyre-art { width:100px; height:112px; align-self:center; filter:drop-shadow(0 5px 3px #0009); }
+  .brief-tyre-copy { align-self:center; }
+  .brief-tyre-copy b { display:block; font-size:23px; line-height:1.15; margin-bottom:4px; }
+  .brief-tyre-copy span { display:block; }
+  .brief-tyre-facts { grid-column:1 / -1; border-top:1px solid #3d5465; padding-top:12px; }
+  .brief-tyre-facts p { display:flex; align-items:flex-start; gap:14px; margin:0 0 10px; }
+  .brief-tyre-facts p:last-child { margin:0; }
+  .brief-tyre-facts .brief-icon { width:28px; height:28px; }
+  .brief-tyre[data-c="I"], .brief-tyre[data-c="W"] { grid-template-columns:88px minmax(0,1fr); gap:0 12px; padding:8px 12px; font-size:15px; }
+  .brief-tyre[data-c="I"] { grid-column:4; grid-row:1; }
+  .brief-tyre[data-c="W"] { grid-column:4; grid-row:2; }
+  .brief-tyre[data-c="I"] .brief-tyre-art, .brief-tyre[data-c="W"] .brief-tyre-art { grid-row:1 / span 2; width:88px; height:102px; }
+  .brief-tyre[data-c="I"] .brief-tyre-copy b, .brief-tyre[data-c="W"] .brief-tyre-copy b { font-size:21px; }
+  .brief-tyre[data-c="I"] .brief-tyre-facts, .brief-tyre[data-c="W"] .brief-tyre-facts { grid-column:2; border:0; padding:6px 0 0; font-size:12.5px; line-height:1.3; }
+  .brief-tyre[data-c="I"] .brief-tyre-facts p, .brief-tyre[data-c="W"] .brief-tyre-facts p { gap:8px; margin-bottom:4px; }
+  .brief-tyre[data-c="I"] .brief-tyre-facts .brief-icon, .brief-tyre[data-c="W"] .brief-tyre-facts .brief-icon { width:20px; height:22px; }
+  .brief-tyre[data-c="I"] .brief-selected, .brief-tyre[data-c="W"] .brief-selected { top:4px; left:5px; right:auto; padding:3px 5px; gap:4px; border-radius:5px; font-size:10px; }
+  .brief-tyre[data-c="I"] .brief-selected .brief-icon, .brief-tyre[data-c="W"] .brief-selected .brief-icon { width:14px; height:14px; }
+  .briefFuel { display:grid; grid-template-columns:minmax(0,1fr) 330px; gap:22px; margin:16px 0 12px; padding:8px 8px 8px 20px; border:1px solid #2c4557; border-radius:12px; background:linear-gradient(110deg,#0d1c28,#10212db0); }
+  .brief-fuel-heading { display:flex; align-items:center; gap:16px; }
+  .brief-fuel-heading .brief-icon { width:36px; height:42px; }
+  .briefFuel label { display:block; font-size:23px; text-transform:uppercase; font-weight:700; line-height:1.1; }
+  .briefFuel p { margin:4px 0 0; font-size:16px; line-height:1.35; }
+  #briefFuel { display:block; width:100%; height:26px; margin:4px 0 0; appearance:none; background:transparent; cursor:pointer; }
+  #briefFuel::-webkit-slider-runnable-track { height:10px; border:1px solid #e4cd68; border-radius:6px; background:linear-gradient(90deg,var(--brief-yellow) var(--fuel-fill,100%),#263947 var(--fuel-fill,100%)); }
+  #briefFuel::-moz-range-track { height:8px; border:1px solid #e4cd68; border-radius:6px; background:linear-gradient(90deg,var(--brief-yellow) var(--fuel-fill,100%),#263947 var(--fuel-fill,100%)); }
+  #briefFuel::-webkit-slider-thumb { appearance:none; width:28px; height:28px; margin-top:-10px; border:1px solid #fff2af; border-radius:50%; background:var(--brief-yellow); box-shadow:0 2px 5px #0007; }
+  #briefFuel::-moz-range-thumb { width:26px; height:26px; border:1px solid #fff2af; border-radius:50%; background:var(--brief-yellow); box-shadow:0 2px 5px #0007; }
+  #briefFuel:focus-visible { outline:2px solid #fff; outline-offset:3px; border-radius:6px; }
+  .brief-fuel-scale { display:flex; justify-content:space-between; margin:0 8px; font-size:15px; }
+  .brief-fuel-scale span::before { content:''; display:block; height:7px; width:1px; background:#657883; margin:0 auto 3px; }
+  .brief-fuel-total { display:flex; flex-direction:column; justify-content:center; border:1px solid #3c5262; border-radius:9px; padding:8px 12px; background:#030f1ca0; }
+  #briefFuelVal { display:flex; align-items:center; gap:18px; font-size:23px; font-weight:700; white-space:nowrap; text-transform:uppercase; }
+  #briefFuelVal > span + span { border-left:1px solid #456071; padding-left:18px; }
+  #briefFuelVal b { color:var(--brief-yellow); font-size:30px; line-height:1.1; }
+  #briefFuelVal .brief-kg { text-transform:none; }
+  .brief-fuel-detail { display:flex; align-items:center; gap:12px; margin-top:8px; }
+  .brief-fuel-detail .brief-icon { width:32px; height:34px; }
+  #briefFuelInfo { margin:0; font-size:15px; }
+  .brief-rules { border:2px solid #ff0808; border-radius:10px; padding:10px 18px 14px; background:linear-gradient(165deg,#570909,#220a12 65%,#170c15); }
+  .brief-rules h3 { display:flex; align-items:center; gap:22px; margin:0 0 12px; font-size:27px; text-transform:uppercase; }
+  .brief-rules h3 .brief-icon { width:52px; height:44px; color:#ff2934; fill:#ff2934; stroke:#230207; }
+  .brief-rule-grid { display:grid; grid-template-columns:1.2fr 1.05fr 1.15fr .9fr; }
+  .brief-rule-grid > div { display:flex; align-items:flex-start; gap:18px; padding:0 22px; border-left:1px solid #937480; }
+  .brief-rule-grid > div:first-child { border:0; padding-left:8px; }
+  .brief-rule-grid > div:last-child { padding-right:0; }
+  .brief-rule-grid .brief-icon { width:38px; height:42px; margin-top:5px; }
+  .brief-rule-grid p { margin:0; font-size:15px; line-height:1.35; }
+  .brief-rule-grid b { display:block; font-size:18px; margin-bottom:4px; }
+  #raceBrief .actions { margin-top:14px; align-items:center; }
+  #raceBrief .actions .btn { margin:0; padding:8px 26px; border-radius:8px; font-size:22px; }
+  #briefCancel { margin-right:auto !important; font-size:16px !important; }
+  #briefStart { display:flex; align-items:center; gap:14px; background:#ff0808; border-color:#ff0808; }
+  #briefStart .brief-icon { width:16px; height:24px; }
+  @media(max-width:1100px) {
+    .brief-meta { grid-template-columns:repeat(3,1fr); gap:16px 0; }
+    .brief-meta > div:nth-child(4) { border:0; }
+    #briefChoices { height:auto; grid-template-columns:repeat(6,minmax(0,1fr)); grid-template-rows:auto auto; }
+    .brief-tyre[data-c="S"], .brief-tyre[data-c="M"], .brief-tyre[data-c="H"] { grid-row:1; grid-column:span 2; }
+    .brief-tyre[data-c="I"], .brief-tyre[data-c="W"] { grid-row:2; grid-column:span 3; }
+    .brief-rule-grid { grid-template-columns:1fr 1fr; gap:20px 0; }
+    .brief-rule-grid > div:nth-child(3) { border:0; padding-left:8px; }
+  }
+  @media(max-width:700px) {
+    #raceBrief .dialog { padding:16px 12px; }
+    #raceBrief h2 { margin:0 0 14px; }
+    .brief-meta { grid-template-columns:1fr 1fr; padding:12px 6px; gap:14px 0; }
+    .brief-meta > div { padding:0 8px; gap:8px; }
+    .brief-meta > div:nth-child(odd) { border:0; }
+    .brief-meta > div:nth-child(4) { border-left:1px solid #375267; }
+    .brief-meta .brief-icon { width:25px; }
+    #briefCircuitMap { width:48px; height:48px; }
+    .brief-meta small { font-size:10px; }
+    .brief-meta b, .brief-meta .brief-circuit b, #briefWeather { font-size:14px; }
+    .brief-section-title { font-size:21px; gap:10px; }
+    #briefChoices { grid-template-columns:1fr; grid-template-rows:none; }
+    #briefChoices .brief-tyre { grid-column:1; grid-row:auto; min-height:0; padding:30px 14px 14px; grid-template-columns:90px minmax(0,1fr); }
+    #briefChoices .brief-tyre-art { width:86px; height:98px; grid-row:1 / span 2; }
+    #briefChoices .brief-tyre-facts { grid-column:2; border:0; padding-top:6px; font-size:14px; }
+    #briefChoices .brief-tyre-facts p { gap:8px; margin-bottom:5px; }
+    #briefChoices .brief-tyre-facts .brief-icon { width:22px; height:24px; }
+    .briefFuel { grid-template-columns:1fr; gap:14px; padding:12px; }
+    .brief-rule-grid { grid-template-columns:1fr; gap:16px; }
+    .brief-rule-grid > div { border:0; padding:0 8px; }
+    .brief-rules h3 { font-size:23px; gap:12px; }
+    #raceBrief .actions .btn { padding:10px 14px; font-size:19px; }
+  }
+  @media(prefers-reduced-motion:reduce) { .brief-tyre { transition:none; } }
 
   .dialog, #strategyPanel, .menu-left { scrollbar-width:none; }
   .dialog::-webkit-scrollbar, #strategyPanel::-webkit-scrollbar, .menu-left::-webkit-scrollbar { display:none; }
@@ -554,12 +662,53 @@
 </div>
 
 <div id="raceBrief" class="overlay hidden">
-  <div class="dialog">
-    <h2>Race <span>Start</span>: tyres &amp; fuel</h2><p id="briefSub" class="strategyNote"></p>
-    <div id="briefChoices" class="strategyChoices"></div>
-    <div class="briefFuel"><label for="briefFuel">Starting fuel <b id="briefFuelVal"></b></label><input type="range" id="briefFuel" min="3" max="8" step="0.5" value="8"><p id="briefFuelInfo"></p></div>
-    <p id="briefPlan"></p><p id="briefRule" class="strategyNote"></p>
-    <div class="actions"><button id="briefCancel" class="btn">Back</button><button id="briefStart" class="btn primary">Go to grid</button></div>
+  <svg class="brief-icons" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><defs>
+    <symbol id="bi-wheel" viewBox="0 0 32 32"><circle cx="16" cy="16" r="13" stroke-width="5"/><circle cx="16" cy="16" r="3"/><path d="m16 5 2 8m8-3-7 5m3 10-5-6m-9 6 5-6m-9-9 8 5" stroke-width="3"/></symbol>
+    <symbol id="bi-flag" viewBox="0 0 32 32"><path d="m5 29 5-25c6-5 11 6 19 1l-3 14c-8 5-13-6-19-1"/><path d="m11 4-1 5 6 2 1-5m-7 8-1 4 6 2 1-5m6-7-1 5 6 1 1-5m-12 2-1 4 6 2 1-4" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="bi-teams" viewBox="0 0 32 32"><circle cx="16" cy="8" r="4" fill="currentColor" stroke="none"/><circle cx="6" cy="11" r="3" fill="currentColor" stroke="none"/><circle cx="26" cy="11" r="3" fill="currentColor" stroke="none"/><path d="M10 27V20a6 6 0 0 1 12 0v7M2 26v-7a4 4 0 0 1 5-4m23 11v-7a4 4 0 0 0-5-4" stroke-width="4"/></symbol>
+    <symbol id="bi-sun" viewBox="0 0 32 32"><circle cx="16" cy="16" r="7" fill="currentColor" stroke="none"/><path d="M16 1v5m0 20v5M1 16h5m20 0h5M5 5l4 4m14 14 4 4M5 27l4-4M23 9l4-4"/></symbol>
+    <symbol id="bi-cloud" viewBox="0 0 32 32"><path d="M9 24a7 7 0 1 1 0-14 9 9 0 0 1 17 4 5 5 0 0 1-1 10Z"/></symbol>
+    <symbol id="bi-rain" viewBox="0 0 32 32"><path d="M8 18a6 6 0 1 1 1-12 8 8 0 0 1 15 3 5 5 0 0 1 0 9ZM9 23l-2 5m10-5-2 5m10-5-2 5"/></symbol>
+    <symbol id="bi-temp" viewBox="0 0 32 32"><path d="M13 20V5a3 3 0 0 1 6 0v15a6 6 0 1 1-6 0Z"/><path d="M16 11v13" stroke-width="3"/></symbol>
+    <symbol id="bi-road" viewBox="0 0 32 32"><path d="m1 29 9-26m21 26L22 3M16 3v4m0 5v5m0 6v6" stroke-width="3"/></symbol>
+    <symbol id="bi-clock" viewBox="0 0 32 32"><circle cx="16" cy="19" r="10"/><path d="m16 19 4-7M16 4v5m-4-5h8m3 7 3-3" stroke-width="3"/></symbol>
+    <symbol id="bi-bars" viewBox="0 0 32 32"><path d="M3 18h6v12H3zm10-7h6v19h-6zm10-8h6v27h-6z" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="bi-fuel" viewBox="0 0 32 32"><path d="M4 29V3h15v26M2 29h19M5 13h13M19 12h3v11a3 3 0 0 0 6 0V10l-5-6m2 2v7h3"/><path d="M5 15h12v13H5" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="bi-warning" viewBox="0 0 32 32"><path d="M13 4a3 3 0 0 1 6 0l12 22a3 3 0 0 1-3 4H4a3 3 0 0 1-3-4Z" stroke="none"/><path d="M16 10v9" stroke-width="4"/><circle cx="16" cy="25" r="1" stroke-width="3"/></symbol>
+    <symbol id="bi-garage" viewBox="0 0 32 32"><path d="M3 29V11l13-8 13 8v18M9 29V15h14v14M9 20h14M9 25h14" stroke-width="3"/></symbol>
+    <symbol id="bi-check" viewBox="0 0 32 32"><circle cx="16" cy="16" r="14" fill="currentColor" stroke="none"/><path d="m8 16 5 5 11-11" stroke="#ffda18" stroke-width="3"/></symbol>
+    <symbol id="bi-chevron" viewBox="0 0 32 32"><path d="m11 5 11 11-11 11" stroke-width="3"/></symbol>
+  </defs></svg>
+  <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="briefTitle" tabindex="-1">
+    <h2 id="briefTitle">Race <span>Start</span>: tyres &amp; fuel</h2>
+    <div class="brief-meta" aria-label="Race and track conditions">
+      <div class="brief-circuit"><svg id="briefCircuitMap" viewBox="0 0 88 64" aria-hidden="true"><path id="briefCircuitPath"/></svg><p><small>Circuit</small><b id="briefCircuit"></b></p></div>
+      <div><svg class="brief-icon" aria-hidden="true"><use href="#bi-flag"/></svg><p><small>Race distance</small><b id="briefDistance"></b><span id="briefKm"></span></p></div>
+      <div><svg class="brief-icon" aria-hidden="true"><use href="#bi-teams"/></svg><p><small>Teams</small><b id="briefTeams"></b></p></div>
+      <div><svg id="briefWeatherIcon" class="brief-icon" aria-hidden="true"><use href="#bi-sun"/></svg><p><small>Weather</small><b id="briefWeather"></b></p></div>
+      <div><svg class="brief-icon" aria-hidden="true"><use href="#bi-temp"/></svg><p><small>Air temp</small><b id="briefTemp"></b></p></div>
+      <div><svg class="brief-icon" aria-hidden="true"><use href="#bi-road"/></svg><p><small>Track condition</small><b id="briefCondition"></b><span id="briefWet"></span></p></div>
+    </div>
+    <h3 id="briefTyresTitle" class="brief-section-title"><svg class="brief-icon" aria-hidden="true"><use href="#bi-wheel"/></svg>Choose starting tyres</h3>
+    <div id="briefChoices" role="group" aria-labelledby="briefTyresTitle"></div>
+    <div class="briefFuel">
+      <div>
+        <div class="brief-fuel-heading"><svg class="brief-icon" aria-hidden="true"><use href="#bi-fuel"/></svg><div><label for="briefFuel">Starting fuel</label><p id="briefFuelEstimate"></p></div></div>
+        <input type="range" id="briefFuel" min="3" max="8" step="0.5" value="8" aria-describedby="briefFuelEstimate briefFuelInfo">
+        <div id="briefFuelScale" class="brief-fuel-scale" aria-hidden="true"></div>
+      </div>
+      <div class="brief-fuel-total"><output id="briefFuelVal" for="briefFuel" class="num"></output><div class="brief-fuel-detail"><svg class="brief-icon" aria-hidden="true"><use href="#bi-fuel"/></svg><p id="briefFuelInfo"></p></div></div>
+    </div>
+    <div class="brief-rules">
+      <h3><svg class="brief-icon" aria-hidden="true"><use href="#bi-warning"/></svg>Important rules</h3>
+      <div class="brief-rule-grid">
+        <div><svg class="brief-icon" aria-hidden="true"><use href="#bi-wheel"/></svg><p><b>Use two different dry compounds</b>Use 2 dry compounds unless switching to Inter or Full Wet.</p></div>
+        <div><svg class="brief-icon" aria-hidden="true"><use href="#bi-fuel"/></svg><p><b>Refuelling is allowed</b><span id="briefRefuel"></span></p></div>
+        <div><svg class="brief-icon" aria-hidden="true"><use href="#bi-garage"/></svg><p><b>Four shared pit boxes</b><span id="briefPitLoss"></span></p></div>
+        <div><svg class="brief-icon" aria-hidden="true"><use href="#bi-flag"/></svg><p><b>Grid launch</b>Hold W. Launch control releases the car at lights out.</p></div>
+      </div>
+    </div>
+    <div class="actions"><button id="briefCancel" type="button" class="btn">Back</button><button id="briefStart" type="button" class="btn primary">Go to grid <svg class="brief-icon" aria-hidden="true"><use href="#bi-chevron"/></svg></button></div>
   </div>
 </div>
 
@@ -7377,41 +7526,100 @@ function launchRace(gridOrder, entries, weatherState) {
 function circuitFuelPerLap(track) { return track.def.fuelPerLap || track.length / 6000 * 2.8; }
 function circuitTank(track) { return Math.round(circuitFuelPerLap(track) * SIM.FUEL_TANK_LAPS * 2) / 2; }
 function circuitPitLoss(track) { return track.def.pitLoss || SIM.estimatePitLoss(track); }
+function briefIcon(name) { return '<svg class="brief-icon" aria-hidden="true"><use href="#bi-' + name + '"/></svg>'; }
+function briefTyreArt(c) {
+  // Self-contained vector rubber and sidewall, with the simulation's compound band colour.
+  const color = SIM.COMPOUNDS[c].color, id = 'briefRubber' + c;
+  return `<svg class="brief-tyre-art" viewBox="0 0 120 140" aria-hidden="true">
+    <defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2=".8"><stop stop-color="#131a20"/><stop offset=".22" stop-color="#66747f"/><stop offset=".36" stop-color="#202b34"/><stop offset=".75" stop-color="#05090c"/><stop offset="1" stop-color="#17242d"/></linearGradient>
+    <radialGradient id="${id}Face" cx=".35" cy=".2" r=".8"><stop stop-color="#53606a"/><stop offset=".4" stop-color="#1c272f"/><stop offset="1" stop-color="#02070b"/></radialGradient></defs>
+    <ellipse cx="60" cy="130" rx="42" ry="5" fill="#000" opacity=".5"/>
+    <g transform="rotate(10 60 70)"><ellipse cx="53" cy="68" rx="45" ry="61" fill="url(#${id})" stroke="#74808a" stroke-opacity=".35"/>
+    <path d="M39 12C8 24 4 92 33 120M30 19C6 42 6 86 23 108" fill="none" stroke="#a5bac5" stroke-opacity=".16" stroke-width="2"/>
+    <ellipse cx="65" cy="70" rx="34" ry="54" fill="url(#${id}Face)" stroke="#556570" stroke-opacity=".4"/>
+    <ellipse cx="66" cy="71" rx="25" ry="42" fill="#02090e" stroke="#060a0f" stroke-width="5"/>
+    <ellipse cx="66" cy="71" rx="25" ry="42" fill="none" stroke="${color}" stroke-width="5"/>
+    <ellipse cx="67" cy="71" rx="21" ry="37" fill="none" stroke="#91a5b2" stroke-opacity=".4" stroke-width="2"/>
+    <path d="M67 36C87 46 88 88 70 107" fill="none" stroke="#425c6c" stroke-opacity=".5" stroke-width="5"/>
+    </g></svg>`;
+}
+function drawBriefCircuit(def) {
+  const pts = centreLineOf(def), xs = pts.map(p => p[0]), zs = pts.map(p => p[1]);
+  const minX = Math.min(...xs), minZ = Math.min(...zs), width = Math.max(...xs) - minX, height = Math.max(...zs) - minZ;
+  const scale = Math.min(80 / width, 56 / height), ox = (88 - width * scale) / 2, oy = (64 - height * scale) / 2;
+  $('briefCircuitPath').setAttribute('d', pts.filter((_, i) => i % 3 === 0).map(([x,z], i) =>
+    (i ? 'L' : 'M') + (ox + (x - minX) * scale).toFixed(1) + ' ' + (oy + (z - minZ) * scale).toFixed(1)).join(' ') + 'Z');
+}
 function startRace(gridOrder, entries) {
   G.pendingRace = { gridOrder, entries, weatherState: raceWeatherState() };
   const startWeather = new SIM.DynamicWeather(1, G.pendingRace.weatherState);
   const pitLoss = circuitPitLoss(G.track), fpl = circuitFuelPerLap(G.track), tank = circuitTank(G.track);
   G.briefCompound = S.startTyre; G.briefFuel = S.startFuel;
-  $('briefSub').textContent = G.track.name + ' · 8 laps · 48 km · 20 teams · Now: '+startWeather.label+', '+Math.round(startWeather.ambient)+'°C air, track '+Math.round(startWeather.water*100)+'% wet';
+  $('briefCircuit').textContent = G.track.name; drawBriefCircuit(G.track.def);
+  $('briefDistance').textContent = '8 laps'; $('briefKm').textContent = '(' + (8 * G.track.length / 1000).toFixed(0) + ' km)';
+  $('briefTeams').textContent = (entries || SIM.DRIVERS).length;
+  $('briefWeather').textContent = 'Now: ' + startWeather.label;
+  $('briefWeatherIcon').querySelector('use').setAttribute('href', '#bi-' + (startWeather.rain > .025 ? 'rain' : startWeather.cloud > .35 ? 'cloud' : 'sun'));
+  $('briefTemp').textContent = Math.round(startWeather.ambient) + '°C';
+  $('briefCondition').textContent = startWeather.water >= .7 ? 'Wet' : startWeather.water > .18 ? 'Damp' : startWeather.water > .01 ? 'Drying' : 'Dry';
+  $('briefWet').textContent = Math.round(startWeather.water * 100) + '% wet';
+  $('briefFuelEstimate').textContent = 'Estimated fuel use: ' + fpl.toFixed(1) + ' kg per lap.';
+  const [minFuel, maxFuel] = SIM.START_FUEL_LAPS, slider = $('briefFuel');
+  slider.min = minFuel; slider.max = maxFuel;
+  $('briefFuelScale').innerHTML = Array.from({ length: maxFuel - minFuel + 1 }, (_, i) => '<span>' + (minFuel + i) + (minFuel + i === maxFuel ? ' Laps' : '') + '</span>').join('');
   const fuelInfo = () => {
-    const laps = G.briefFuel, kg = Math.min(tank, laps * fpl + SIM.FUEL_RESERVE), full = Math.min(tank, 8 * fpl + SIM.FUEL_RESERVE);
-    $('briefFuelVal').textContent = laps.toFixed(1) + ' laps · ' + kg.toFixed(1) + ' kg';
-    $('briefFuelInfo').textContent = 'Car ' + Math.round(SIM.SPEC.mass + kg) + ' kg at the start (' + Math.round(SIM.SPEC.mass + full) + ' kg with fuel for all 8 laps). '
-      + 'About ' + fpl.toFixed(1) + ' kg per lap at race pace; the range is an estimate and depends on how you drive. '
-      + (laps < 8 ? 'You will need to refuel before the finish.' : 'Enough for the race distance without refuelling.');
-    $('briefFuel').value = String(laps);
+    const laps = G.briefFuel, kg = Math.min(tank, laps * fpl + SIM.FUEL_RESERVE);
+    $('briefFuelVal').innerHTML = '<span><b>' + laps.toFixed(1) + '</b> Laps</span><span class="brief-kg"><b>' + kg.toFixed(1) + ' kg</b></span>';
+    $('briefFuelInfo').textContent = 'Car ' + (SIM.SPEC.mass + kg).toFixed(1) + ' kg at the start (including fuel). '
+      + (laps < 8 ? 'Refuel before the finish. ' : '') + fpl.toFixed(1) + ' kg per lap at this track (estimate).';
+    slider.value = String(laps);
+    slider.style.setProperty('--fuel-fill', ((laps - minFuel) / (maxFuel - minFuel) * 100) + '%');
+    slider.setAttribute('aria-valuetext', laps.toFixed(1) + ' laps, ' + kg.toFixed(1) + ' kilograms');
   };
-  $('briefFuel').oninput = () => { G.briefFuel = clamp(+$('briefFuel').value, ...SIM.START_FUEL_LAPS); fuelInfo(); };
-  const draw = () => {
-    $('briefChoices').replaceChildren();
-    for(const c of ['S','M','H','I','W']) {
-      const comp=SIM.COMPOUNDS[c], b=document.createElement('button'); b.type='button';
-      b.className='strategyChoice'+(c===G.briefCompound?' sel':''); b.style.setProperty('--c',comp.color);
-      b.innerHTML=comp.name+'<small>Baseline useful life: '+comp.life+' laps</small><small>'+({S:'Highest dry grip',M:'Balanced dry grip and durability',H:'Lower dry grip · longer life',I:'Damp-surface grip · overheats on dry asphalt',W:'Standing-water grip · overheats on dry asphalt'}[c])+'</small>';
-      b.onclick=()=>{ G.briefCompound=c; draw(); }; $('briefChoices').appendChild(b);
-    }
-    fuelInfo();
-    $('briefPlan').textContent='Choose every stint yourself. Tyre condition, fuel and weather change as you drive.';
-    $('briefRule').textContent='Two different dry compounds are required unless you use Intermediate or Full Wet tyres. Refuelling is allowed (tank '+tank.toFixed(1)+' kg, '+SIM.REFUEL.rate.toFixed(1)+' kg/s). A clean tyre-only stop costs ≈ '+Math.round(pitLoss)+' s; fuel, repairs and queueing for one of the four shared boxes add to it. On the grid: hold W; launch control holds the car and launches it automatically when all five red lights go out.';
+  slider.oninput = () => { G.briefFuel = clamp(+slider.value, minFuel, maxFuel); fuelInfo(); };
+  const descriptions = {
+    S: ['Highest grip for shorter stints.', 'Maximum pace (qualifying / short stints)'],
+    M: ['Balanced performance and durability.', 'Versatile option for most races'],
+    H: ['Lower grip, but longer life.', 'Conservative strategy / longer stints'],
+    I: ['For damp conditions.', 'Damp track / overheats on dry asphalt'],
+    W: ['For heavy rain.', 'Standing water / overheats on dry asphalt'],
   };
-  draw(); clearKeys(); G.paused = true; $('raceBrief').classList.remove('hidden');
+  $('briefChoices').replaceChildren();
+  for (const c of ['S','M','H','I','W']) {
+    const comp = SIM.COMPOUNDS[c], b = document.createElement('button'); b.type = 'button';
+    b.className = 'brief-tyre'; b.dataset.c = c; b.style.setProperty('--c', comp.color);
+    b.setAttribute('aria-pressed', String(c === G.briefCompound));
+    b.innerHTML = '<span class="brief-selected" aria-hidden="true">' + briefIcon('check') + 'SELECTED</span>' + briefTyreArt(c)
+      + '<span class="brief-tyre-copy"><b>' + comp.name + '</b><span>' + descriptions[c][0] + '</span></span>'
+      + '<div class="brief-tyre-facts"><p>' + briefIcon('clock') + '<span>Lifespan: ~ <b>' + comp.life + ' laps</b></span></p>'
+      + '<p>' + briefIcon('bars') + '<span>Best use: ' + descriptions[c][1] + '</span></p></div>';
+    b.onclick = () => {
+      G.briefCompound = c;
+      for (const button of $('briefChoices').children) button.setAttribute('aria-pressed', String(button.dataset.c === c));
+    };
+    $('briefChoices').appendChild(b);
+  }
+  $('briefRefuel').textContent = 'Tank ' + tank.toFixed(1) + ' kg · ' + SIM.REFUEL.rate.toFixed(1) + ' kg/s.';
+  $('briefPitLoss').textContent = '~ ' + Math.round(pitLoss) + ' s for tyres; fuel, repairs and queues add time.';
+  fuelInfo(); clearKeys(); G.paused = true; $('raceBrief').classList.remove('hidden');
+  $('briefChoices').querySelector('[aria-pressed="true"]').focus({ preventScroll: true });
 }
 $('briefStart').onclick = () => {
   const pending = G.pendingRace; if (!pending) return;
   S.startTyre = G.briefCompound; S.startFuel = G.briefFuel; saveSettings(); G.pendingRace = null; $('raceBrief').classList.add('hidden'); G.paused = false;
   launchRace(pending.gridOrder, pending.entries, pending.weatherState);
 };
-$('briefCancel').onclick = () => { G.pendingRace = null; $('raceBrief').classList.add('hidden'); G.paused = false; if(G.session && G.session.over) showResults(); };
+$('briefCancel').onclick = () => {
+  G.pendingRace = null; $('raceBrief').classList.add('hidden'); G.paused = false;
+  if (G.session && G.session.over) { showResults(); $('resActions').lastElementChild.focus({ preventScroll: true }); }
+  else { const play = document.querySelector('#menu [data-act="play"]'); if (play) play.focus({ preventScroll: true }); }
+};
+$('raceBrief').addEventListener('keydown', e => {
+  if (e.key !== 'Tab') return;
+  const controls = [...$('raceBrief').querySelectorAll('button, input')], first = controls[0], last = controls[controls.length - 1];
+  if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+  else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+});
 function toggleStrategy() {
   if (!G.session || G.session.type !== 'race' || G.attract || G.mode === 'menu') return;
   const open = $('strategyPanel').classList.contains('hidden');
