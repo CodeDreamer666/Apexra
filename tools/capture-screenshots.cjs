@@ -29,6 +29,7 @@ const index = [];
 (async () => {
   const browser = await chromium.launch({ args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--autoplay-policy=no-user-gesture-required'] });
   const page = await browser.newPage({ viewport: { width: W, height: HT } });
+  page.setDefaultTimeout(240000);
   page.on('pageerror', e => console.log('  [pageerror]', e.message));
   // the render loop runs only when we ask for frames
   await page.addInitScript(() => {
