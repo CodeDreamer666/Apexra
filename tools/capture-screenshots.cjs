@@ -229,7 +229,7 @@ const index = [];
       await settle(4, 1); await shot(tag('flag-blue'), 'Blue flag: a lapping car behind' + (blue ? '' : ' (not triggered)'));
       await H('H.ff(8)');
       // ---------- damage, respawn ----------
-      await H('H.crash(p, 55, 0.45)'); await frames(10, 1);
+      await H('H.crash(p, 32, 0.3)'); await frames(10, 1); // hard enough to damage the car, not to end its race
       await shot(tag('damage-impact'), 'Player crash into the barrier: impact effects');
       await H('H.ff(2)'); await settle(6, 1);
       await shot(tag('damage-status'), 'Vehicle status after the crash');
