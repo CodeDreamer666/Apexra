@@ -4,8 +4,8 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 
-// Shared pit boxes, the pit-lane queue, service at the box, refuelling, automatic wing repairs, manual DRS
-// and the removal of ERS, exercised through the game's own Session, AI and physics.
+// Shared pit boxes, the pit-lane queue, service at the box, refuelling, automatic wing repairs, and the
+// removal of DRS and ERS, exercised through the game's own Session, AI and physics.
 const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
 const context = { module: { exports: {} } };
 vm.runInNewContext(html.match(/<script>([\s\S]*?)<\/script>/)[1], context);
@@ -201,19 +201,17 @@ test('fuel: start loads of 3–8 laps, a lighter car accelerates a little harder
   assert.equal(car.fuel, 0);
 });
 
-test('DRS opens only when asked for, eligible and inside a zone; it closes under braking and at the zone end', () => {
-  const t = tracks.get('redridge'), z = t.drsZones[0];
-  const S = session('redridge', 2); S.lightsOut = true; S.drsEnabled = true;
-  const car = S.cars[0]; car.ai = null; car.intervalAhead = 0.6;
-  const at = (s) => { car.placeAt(t, s, 0, 70); car.idx = car.proj.i; S.updateDRS(car); };
-  at(t.wrapS(z.detect)); // detection: within a second of the car ahead
-  at(t.wrapS(z.start + 30));
-  assert.ok(car.drsAvail && !car.drsOpen, 'available, but closed until the driver asks');
-  car.input.drs = true; at(t.wrapS(z.start + 40)); assert.ok(car.drsOpen);
-  car.input.brake = 0.5; at(t.wrapS(z.start + 50)); assert.ok(!car.drsOpen, 'braking closes it');
-  car.input.brake = 0; at(t.wrapS(z.start + 60)); assert.ok(car.drsOpen);
-  at(t.wrapS(z.end + 20)); assert.ok(!car.drsOpen && !car.drsAvail, 'leaving the zone closes it');
-  // not eligible: more than a second behind at detection
-  car.intervalAhead = 2.5; at(t.wrapS(z.detect)); car.input.drs = true; at(t.wrapS(z.start + 30));
-  assert.ok(!car.drsAvail && !car.drsOpen);
+test('DRS no longer exists: no zones, no eligibility, no control, no drag change, no trace in the game', () => {
+  for (const t of tracks.values()) assert.ok(!('drsZones' in t) && !('drs' in t.def), t.name + ' DRS metadata');
+  const S = session('redridge', 2); S.lightsOut = true; S.time = 400; S.leaderLap = 5;
+  assert.equal(S.updateDRS, undefined); assert.ok(!('drsEnabled' in S));
+  const car = S.cars[0];
+  assert.ok(!('drsOpen' in car) && !('drsAvail' in car) && !('drs' in car.input));
+  // even forcing the old flags changes nothing in the aerodynamics or the race state
+  const cd = car.effCdA(), cl = car.effClA();
+  car.drsOpen = true; car.drsAvail = true; car.input.drs = true; S.fixedStep(SIM.PHYS_DT);
+  assert.equal(car.effCdA(), cd); assert.equal(car.effClA(), cl);
+  for (const m of S.logArr || []) assert.ok(!/drs/i.test(String(m.text || m)));
+  // no DRS key, gamepad button, HUD chip, help text, message, flap animation or comment anywhere in the game
+  assert.equal((html.match(/drs/gi) || []).length, 0, 'DRS references left in index.html');
 });
