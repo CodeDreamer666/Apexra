@@ -223,14 +223,17 @@ test('the pit autopilot stops in a shared box using the arcade handling; the pla
   assert.equal(p.tyre.c, 'H');
 });
 
-test('ERS is gone; DRS still improves arcade speed; loose surfaces slow acceleration', () => {
+test('ERS and DRS are gone; loose surfaces slow acceleration', () => {
   const standard = run(rig(60), raw(0, 1), 2);
   assert.equal(SIM.SPEC.ersMax, undefined);
   for (const k of ['ers', 'ersDeploy', 'harvesting']) assert.ok(!(k in standard.car), 'no ' + k + ' on the car');
   assert.ok(!('ers' in standard.car.input), 'no ERS control input');
-  const drs = rig(60); drs.car.drsOpen = true;
+  for (const k of ['drsOpen', 'drsAvail']) assert.ok(!(k in standard.car), 'no ' + k + ' on the car');
+  assert.ok(!('drs' in standard.car.input), 'no DRS control input');
+  // a stale DRS flag set from outside does nothing: same speed as the standard run
+  const drs = rig(60); drs.car.drsOpen = true; drs.car.input.drs = true;
   run(drs, raw(0, 1), 2);
-  assert.ok(drs.car.speed > standard.car.speed);
+  assert.equal(drs.car.speed, standard.car.speed);
   const gravel = rig(60);
   for (let i = 0; i < 480; i++) {
     gravel.handling.step(gravel.car, dt, { lightsOut: true, wet: 0 }, raw(0, 1));

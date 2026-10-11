@@ -152,18 +152,6 @@ Tyres & pits strategy panel (V)
 
 ![Tyres & pits strategy panel (V)](025-summit-race-strategy.jpg)
 
-### 026-summit-race-drs-available
-
-DRS available in an activation zone
-
-![DRS available in an activation zone](026-summit-race-drs-available.jpg)
-
-### 027-summit-race-drs-open
-
-DRS open
-
-![DRS open](027-summit-race-drs-open.jpg)
-
 ### 028-summit-race-engineer-radio
 
 Race engineer radio message

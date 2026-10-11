@@ -11,10 +11,21 @@ vm.runInNewContext(html.match(/<script>([\s\S]*?)<\/script>/)[1], context);
 const SIM = context.module.exports;
 const tracks = new Map(SIM.CIRCUITS.map(def => [def.id, new SIM.Track(def)]));
 const SPEC = {
-  summit: { corners: [16, 20], drs: 3 },
-  rivermere: { corners: [15, 17], drs: 2 },
-  redridge: { corners: [14, 16], drs: 2 },
+  summit: { corners: [16, 20], straights: 3 },
+  rivermere: { corners: [15, 17], straights: 2 },
+  redridge: { corners: [14, 16], straights: 2 },
 };
+// The circuit's long straights, measured from its racing-line curvature (no straight metadata in the game):
+// a lap is scanned from inside a bend, so a straight across the start/finish line is found once, whole.
+function straights(t) {
+  const N = t.N, sk = t.smoothArr(t.rlKappa.map(Math.abs), 5, 1), found = []; let st = -1, i0 = 0;
+  while (i0 < N && sk[i0] < 1 / 700) i0++;
+  for (let i = i0; i <= i0 + N; i++) {
+    const k = sk[i % N] < 1 / 700;
+    if (k && st < 0) st = i; else if (!k && st >= 0) { if (i - st > 120) found.push([st % N, i - st]); st = -1; }
+  }
+  return found.sort((a, b) => b[1] - a[1]).map(([a, len]) => ({ start: t.wrapS((a + 25) * SIM.DS), len: t.wrapS((len - 70) * SIM.DS) }));
+}
 
 test('three distinct six-kilometre circuits are registered', () => {
   assert.equal(SIM.CIRCUITS.map(c => c.id).join(), 'summit,rivermere,redridge');
@@ -39,20 +50,22 @@ test('every circuit passes the geometry checks: no overlaps, barriers clear of t
   }
 });
 
-test('corner counts, DRS zones, straights and elevation match each circuit brief', () => {
+test('corner counts, straights and elevation match each circuit brief', () => {
   for (const [id, t] of tracks) {
     const spec = SPEC[id];
     assert.ok(t.corners.length >= spec.corners[0] && t.corners.length <= spec.corners[1], id + ' corners ' + t.corners.length);
-    assert.equal(t.drsZones.length, spec.drs, id + ' DRS zones');
-    for (const z of t.drsZones) assert.ok(t.wrapS(z.end - z.start) > 200, id + ' DRS zone length');
-    // the zones are on separate straights
-    const starts = t.drsZones.map(z => z.start).sort((a, b) => a - b);
-    for (let k = 1; k < starts.length; k++) assert.ok(starts[k] - starts[k - 1] > 300, id + ' distinct DRS straights');
+    // the long straights (the circuit layouts are unchanged by the removal of DRS)
+    const long = straights(t).slice(0, spec.straights);
+    assert.equal(long.length, spec.straights, id + ' long straights');
+    for (const z of long) assert.ok(z.len > 200, id + ' straight length');
+    const starts = long.map(z => z.start).sort((a, b) => a - b);
+    for (let k = 1; k < starts.length; k++) assert.ok(starts[k] - starts[k - 1] > 300, id + ' distinct straights');
+    assert.ok(!('drs' in t.def) && !('drsZones' in t), id + ': no DRS metadata');
     const rise = Math.max(...t.elev) - Math.min(...t.elev);
     assert.ok(rise > 8, id + ' elevation change ' + rise.toFixed(1));
     assert.ok(Math.max(...t.grade.map(Math.abs)) < 0.1, id + ' gradient');
   }
-  const mainStraight = t => Math.max(...t.drsZones.map(z => t.wrapS(z.end - z.start)));
+  const mainStraight = t => straights(t)[0].len;
   // Redridge has the longest main straight; Summit climbs the most; Rivermere is the flattest
   assert.ok(mainStraight(tracks.get('redridge')) > mainStraight(tracks.get('summit')));
   assert.ok(mainStraight(tracks.get('redridge')) > mainStraight(tracks.get('rivermere')));
@@ -97,7 +110,7 @@ function race(id, laps, seed) {
   const s = new SIM.Session(t, { type: 'race', laps: 8, entries: SIM.DRIVERS.map(driver => ({ driver })), seed, spectate: true, weather: 'dynamic',
     weatherState: Object.assign(new SIM.DynamicWeather(seed).snapshot(), { pattern: 'dry', regime: 'sunny', rain: 0, water: 0, lineWater: 0, cloud: 0.2, targetCloud: 0.2, targetRain: 0, patternEnds: 1e9, regimeEnds: 1e9 }) });
   s.totalLaps = laps;
-  let drs = 0; const open = new Map(), last = new Map(), pits = { maxBoxes: 0, assigned: [], fifo: true };
+  const last = new Map(), pits = { maxBoxes: 0, assigned: [], fifo: true };
   for (let step = 0; !s.over && s.time < laps * 160 + 200; step++) {
     s.fixedStep(SIM.PHYS_DT);
     // shared boxes: never more than four, never one car in two, and each box goes to the earliest waiting car
@@ -108,19 +121,18 @@ function race(id, laps, seed) {
       for (const w of s.pitQueue) if (w.pit.entryTime < c.pit.entryTime) pits.fifo = false;
     }
     for (const c of s.cars) if (c.pit && c.pit.entryTime != null) assert.ok(s.time - c.pit.entryTime < 150, id + ': ' + c.driver.short + ' stuck in the pit lane');
-    for (const c of s.cars) { if (c.drsOpen && !open.get(c)) drs++; open.set(c, c.drsOpen); }
     if (step % 2400 === 0) for (const c of s.cars) {
       if (c.dnf || c.finished || c.pit || !s.lightsOut) continue;
       const prev = last.get(c); if (prev && prev.t < s.time - 20) assert.ok(c.totalDist - prev.d > 30, id + ': ' + c.driver.short + ' stuck at s=' + c.s.toFixed(0));
       if (!prev || c.totalDist - prev.d > 30) last.set(c, { d: c.totalDist, t: s.time });
     }
   }
-  return { s, drs, pits };
+  return { s, pits };
 }
 
 for (const id of ['summit', 'rivermere', 'redridge']) {
   test(id + ': the full 20-car field starts, races, pits and is classified', () => {
-    const { s, drs, pits } = race(id, 4, 21);
+    const { s, pits } = race(id, 4, 21);
     assert.ok(pits.maxBoxes <= 4 && pits.assigned.length >= 10, id + ' boxes used ' + pits.assigned.length);
     assert.ok(pits.fifo, id + ': a box went to a car that arrived after one still waiting');
     for (const c of s.cars) assert.notEqual(c.dnfReason, 'Out of fuel', id + ': ' + c.driver.short + ' ran out of fuel');
@@ -131,7 +143,8 @@ for (const id of ['summit', 'rivermere', 'redridge']) {
     assert.ok(s.cars.filter(c => c.finished).length >= 12, id + ' finishers');
     assert.ok(s.stats.pitstops >= 15, id + ' pit stops ' + s.stats.pitstops);
     assert.equal(s.stats.boxMissed, 0, id + ': a car overshot its box');
-    assert.ok(drs > 0, id + ' DRS used');
+    // without DRS the field still races: positions change through the tow, braking and racecraft
+    assert.ok(s.stats.overtakes > 0, id + ' overtakes ' + s.stats.overtakes);
     const res = s.results; assert.equal(res.length, 20); res.forEach((r, k) => assert.equal(r.pos, k + 1));
     const winner = res[0].car; assert.equal(winner.laps, 4);
     // the leaders' best laps are realistic for six kilometres
