@@ -45,6 +45,8 @@
   #blueFlag.active { opacity: 1; visibility: visible; transform: translate(-50%, 0); }
   #blueFlag svg { width: 22px; height: 24px; flex-shrink: 0; }
   #blueFlag small { display: block; font-size: 12px; font-weight: 600; letter-spacing: .4px; color: #a9cfff; }
+  #flagbar.vsc { background: repeating-linear-gradient(-45deg, #f5c518 0 16px, #17150a 16px 32px); }
+  #flagbar.green { background: #21c55d; box-shadow: 0 0 12px rgba(33,197,93,.6); }
 
   /* left column: leaderboard, weather, track map */
   #hud-left { position: absolute; left: 24px; top: 24px; bottom: 24px; width: 350px; display: flex; flex-direction: column; gap: 12px; }
@@ -191,6 +193,29 @@
   .msg.yellow { background: rgba(245, 197, 24, .95); color: #111; border-left-color: #111; }
   .msg.purple { border-left-color: var(--purple); }
   @keyframes msgin { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
+  /* Virtual Safety Car: one race-control panel; announcement → slim active strip → countdown → green flag */
+  #vsc { position: relative; display: flex; align-items: center; gap: 14px; padding: 9px 22px 11px 10px; overflow: hidden; white-space: nowrap; border-left: 5px solid #f5c518 !important; animation: msgin .25s ease-out; transition: padding .3s ease; }
+  #hud #vsc.panel { background: rgba(22, 19, 5, .9); }
+  .vsc-badge { font-weight: 800; font-size: 17px; letter-spacing: 2px; padding: 3px 10px 2px; border-radius: 4px; background: #f5c518; color: #141205; transition: font-size .3s ease; }
+  .vsc-main { display: flex; flex-direction: column; line-height: 1.15; }
+  .vsc-main b { font-size: 21px; font-weight: 700; letter-spacing: 1px; transition: font-size .3s ease; }
+  .vsc-main small { font-size: 13px; color: #ddd3a2; font-weight: 600; letter-spacing: .3px; }
+  .vsc-count { font-size: 40px; font-weight: 700; line-height: 1; min-width: 34px; text-align: center; color: #f5c518; }
+  .vsc-count.tick { animation: vsctick .9s ease-out; }
+  @keyframes vsctick { from { transform: scale(1.35); opacity: .35; } 35% { transform: none; opacity: 1; } }
+  .vsc-bar { position: absolute; left: 0; bottom: 0; height: 3px; width: 100%; background: #f5c518; opacity: .75; transform-origin: left center; }
+  #vsc.deploy .vsc-badge { animation: vscblink 1s steps(2, start) 3; }
+  @keyframes vscblink { 50% { background: transparent; color: #f5c518; box-shadow: inset 0 0 0 1.5px #f5c518; } }
+  #vsc.active { padding: 5px 16px 7px 7px; gap: 10px; }
+  #vsc.active .vsc-badge { font-size: 13px; padding: 2px 7px 1px; }
+  #vsc.active .vsc-main b { font-size: 15px; }
+  #vsc.active .vsc-main small { font-size: 12px; }
+  #vsc.green { border-left-color: #21c55d !important; }
+  #hud #vsc.green.panel { background: rgba(6, 26, 12, .9); }
+  #vsc.green .vsc-badge { background: #21c55d; color: #06140a; }
+  #vsc.green .vsc-main small { color: #b9e8c8; }
+  #vsc.green .vsc-bar, #vsc.deploy .vsc-bar { display: none; }
+  #sessName.vsc { color: #f5c518; }
   #launchHint { display: flex; align-items: center; gap: 12px; padding: 10px 22px 10px 14px; font-size: 18px; font-weight: 600; white-space: nowrap; }
   #launchHint kbd { margin: 0; min-width: 0; padding: 3px 18px; font-size: 17px; letter-spacing: 1px; background: rgba(255,255,255,.04); border: 1.5px solid rgba(255,255,255,.75); border-radius: 6px; transition: background .08s, color .08s; }
   #launchHint kbd.on { background: #fff; color: #0b1020; }
@@ -479,6 +504,12 @@
   </div>
   <div id="topc" class="hz">
     <div id="qtimer" class="panel hidden"></div>
+    <div id="vsc" class="panel hidden" role="status" aria-live="assertive">
+      <span class="vsc-badge" id="vscBadge">VSC</span>
+      <div class="vsc-main"><b id="vscTitle">VIRTUAL SAFETY CAR DEPLOYED</b><small id="vscSub"></small></div>
+      <b class="vsc-count num hidden" id="vscCount">5</b>
+      <i class="vsc-bar" id="vscBar"></i>
+    </div>
     <div id="msgs"></div>
     <div id="launchHint" class="panel hidden"><kbd id="kW">W</kbd><span id="launchText">Hold W to rev, launch is automatic when the lights go out</span></div>
     <div id="lights" class="panel hidden"><div class="pod"><i></i><i></i></div><div class="pod"><i></i><i></i></div><div class="pod"><i></i><i></i></div><div class="pod"><i></i><i></i></div><div class="pod"><i></i><i></i></div></div>
@@ -1271,6 +1302,7 @@ const SIM = (function () {
       this.started = false; this.frozen = false; this.ghost = false;
       this.lastDeltaRef = null; this.delta = 0; this.lapTrace = []; this.fastestLapCount = 0;
       this.spun = false; this.offTime = 0; this.collisionCount = 0;
+      this.vscAhead = null; this.vscGap = Infinity; this.vscClose = false; // Virtual Safety Car queue (Session.vscPlan)
       this.ai = null;
     }
     get mass() { return SPEC.mass + this.fuel; }
@@ -2217,11 +2249,25 @@ const SIM = (function () {
       // nurse a punctured car back to the pits off the pace; a shredded tyre is slower still
       if (D.anyPuncture() && !car.pit) vT = Math.min(vT, D.shred[0] || D.shred[1] || D.shred[2] || D.shred[3] ? 20 : 30);
       if (race.type === 'race' && race.finishedFlag && car.finished) vT = Math.min(vT, 45);
+      // Virtual Safety Car: race control's speed for this car in the queue. Where that is what limits the car
+      // (not a corner or traffic), it is met with progressive braking rather than a racing stop.
+      let vscBind = false;
+      if (race.vscActive && race.vscMember(car)) {
+        const vv = race.vscSpeed(car);
+        if (vv < vT - 0.3) vscBind = true;
+        vT = Math.min(vT, vv);
+      }
       // ---- throttle / brake ----
       const dv = vT - speed;
       const overBrake = this.mistake && this.mistake.type === 'lock' && this.mistakeT > 0;
       const earlyThrottle = this.mistake && this.mistake.type === 'throttle' && this.mistakeT > 0;
-      if (dv < -0.25) {
+      this.vscBind = vscBind;
+      if (dv < -0.25 && vscBind) {
+        // deceleration in proportion to the excess speed, gently capped (arcade braking is proportional to speed)
+        const close = car.vscClose;
+        inp.brake = clamp(Math.min(close ? VSC.closeMax : VSC.brakeMax, (close ? VSC.closeGain : VSC.brakeGain) * (-dv - 0.25)) / (HANDLING.brakeRate * Math.max(speed, 8)), 0, close ? 1 : 0.85);
+        inp.throttle = 0; this.smoothThrottle = 0;
+      } else if (dv < -0.25) {
         const precision = (this.p.brake + this.p.tyre) * 0.5;
         inp.brake = overBrake ? 1 : clamp(-dv * 0.3 + 0.48 + 0.22 * (1 - precision) + (this.tyreMode === 'push' ? 0.10 : 0), 0, 1);
         inp.throttle = 0; this.smoothThrottle = 0;
@@ -2252,12 +2298,12 @@ const SIM = (function () {
       // ---- mistake timers ----
       if (this.mistakeT > 0) { this.mistakeT -= dt; if (this.mistakeT <= 0) this.mistake = null; }
       const nc = t.nextCorner[car.idx];
-      if (nc !== this.lastCornerRoll && speed > 35 && !car.pit && race.type !== 'calib') {
+      if (nc !== this.lastCornerRoll && speed > 35 && !car.pit && race.type !== 'calib' && !race.vscActive) {
         const cc = t.corners[nc];
         if (cc && t.rlDist(car.idx, cc.apex) < 180) { this.lastCornerRoll = nc; this.rollMistake(); }
       }
-      // ---- learning (segment adaptation) ----
-      this.learn(latErr, offTrack);
+      // ---- learning (segment adaptation; not from the slow laps under the VSC) ----
+      if (!race.vscActive) this.learn(latErr, offTrack);
     }
     // Damage call (10 Hz): pit when the repairable lap-time loss over the remaining laps outweighs the stop,
     // pit at once for a puncture or a lost wing, and retire in the pits when the car can no longer race.
@@ -2565,8 +2611,9 @@ const SIM = (function () {
         else { this.pitting = false; this.pitEntryBlend = 0; }
       } else if (!car.pit) { this.pitting = false; this.pitEntryBlend = 0; }
       if (car.pit) { this.vLimit = 110; this.laneW = 0; this.blue = this.blueYield = false; return; }
-      // ---- yellow / blue flags ----
-      const yellow = race.yellowAt(car.idx) || race.yellowAt(t.wrapI(car.idx + 60));
+      // ---- yellow / blue flags (under the VSC: no attacking, defending or letting a lapping car by) ----
+      const vscOn = race.vscActive;
+      const yellow = race.yellowAt(car.idx) || race.yellowAt(t.wrapI(car.idx + 60)) || vscOn;
       this.blue = race.type === 'race' && !!car.blueFlag.target && race.blueEligible(car) && !race.blueNeutralized();
       if (race.type === 'quali' && car.q && car.q.phase !== 'flying') { for (const n of nb) if (n.ds < 0 && n.ds > -70 && n.o.q && n.o.q.phase === 'flying') this.blue = true; for (const n of nb) if (n.ds < 0 && n.ds > -70 && n.o.isPlayer && !n.o.pit) this.blue = true; }
       // ---- attack / defend ----
@@ -2610,9 +2657,12 @@ const SIM = (function () {
         cost += Math.abs(cd - curLane) * 0.25;
         let feasible = true;
         for (const n of nb) {
-          const o = n.o; if (o.pit) continue;
+          // (under the VSC a car still peeling off towards the pit entry is driven around like any slow car)
+          const o = n.o; if (o.pit && !(vscOn && o.pit.phase === 'approach')) continue;
           const latGap = n.ds > 0 ? Math.min(Math.abs(o.d - cd), Math.abs(n.pd - cd)) : Math.abs(o.d - cd);
           const alongside = n.ds > -6.5 && n.ds < 6.5;
+          // under the VSC a car in the queue ahead is followed, never a reason to pick a passing lane
+          if (vscOn && !alongside && race.vscMember(o)) continue;
           if (alongside) {
             const minGap=2.55-p.aggr*0.10;
             if (latGap < minGap) feasible = false;
@@ -2628,7 +2678,7 @@ const SIM = (function () {
             if (n.ds < 14 && closing > -2) cost += 6;
             // slipstream: on straights while closing in, sit behind
             if (distToCorner > 350 && n.ds > 12 && n.ds < 70 && closing > 0) cost -= 3.5;
-            if (o.spun || o.speed < 15 || o.retiring || o.damage.anyPuncture()) cost += 60;
+            if (o.spun || o.speed < 15 || o.retiring || o.damage.anyPuncture() || (vscOn && o.pit)) cost += 60;
           }
           if (n.o === blue.target && this.blueYield && n.ds > -80 && latGap < 3) cost += 8;
           if (race.type === 'quali' && n.ds < 0 && n.ds > -30 && this.blue && latGap < 3) cost += 3;
@@ -2644,7 +2694,7 @@ const SIM = (function () {
           }
         }
         // defending: cover the inside before the braking zone (one move)
-        if (behind && race.type === 'race' && !(this.blue && behind.o === blue.target) && !this.blueYield && distToCorner < 300 && distToCorner > 90) {
+        if (behind && race.type === 'race' && !(this.blue && behind.o === blue.target) && !this.blueYield && !vscOn && distToCorner < 300 && distToCorner > 90) {
           const gapB = -behind.ds / Math.max(v, 10);
           if (gapB < 0.6 && behind.dv < 1.5) {
             const insideLane = insideSide * lim * 0.75;
@@ -3004,6 +3054,34 @@ const SIM = (function () {
     }
   }
 
+  /* ------------------------------------------------------------------
+     VIRTUAL SAFETY CAR — race control neutralises the race after a serious accident or a dangerous
+     obstruction (never at random, never for minor contact, harmless debris, running wide or a car that
+     pulls off safely with a routine failure). At most two per race; each lasts 10–20 s in total from the
+     deployment to the green flag, the last five seconds being the restart countdown. While it is out,
+     race control drives every car on the circuit (player and AI alike) through the same arcade
+     controls: a progressive slowdown, then each car follows the car physically ahead of it on the
+     circuit, closing the gap up to a short following distance (a fictional rule that bunches the field
+     for the restart). Nobody passes anyone in the queue, so race order and laps-down are kept.
+     ------------------------------------------------------------------ */
+  const VSC = {
+    max: 2, minT: 10, maxT: 20, countdown: 5,
+    leadV: 28,          // m/s the queue leader runs at (about 100 km/h), less in corners
+    catchV: 55,         // m/s ceiling for cars closing up to the queue (about 200 km/h), less in corners
+    rampDecel: 10,      // m/s² progressive slowdown from the speed each car had at the deployment
+    gap0: 11, gapT: 0.32, // following distance, front to front: gap0 + gapT × speed of the car ahead (m)
+    openRate: 3, minGap: 9, // a car already closer than that opens the gap at openRate m/s, from at least minGap
+    closeUse: 0.4,      // share of full braking used to plan the approach to the car ahead
+    openK: 0.25, openMax: 4, // m/s slower per metre a car is too close to the car ahead (at most openMax)
+    brakeGain: 1.2, brakeMax: 7, // progressive braking: m/s² per m/s too fast, at most brakeMax m/s² from the brakes
+    closeGain: 2.5, closeMax: 25,  // the same when closer than the following distance and still closing: firmer
+    noteE: 25000,       // J: an impact this big is a crash worth watching (well beyond scrapes and taps)
+    seriousE: 60000,    // J: a serious impact (a heavy wall hit or a big rear-end)
+    heavyE: 150000,     // J: a huge impact
+    react: 1.0,         // s: race control's reaction time after an accident that ends a car's race
+    minToGo: 2500,      // m: no deployment when the leader is this close to the flag
+  };
+
   class Session {
     constructor(track, cfg) {
       this.track = track; this.cfg = cfg; this.type = cfg.type; // 'race' | 'quali' | 'calib'
@@ -3039,6 +3117,9 @@ const SIM = (function () {
       this.pitLoss = cfg.pitLoss || track.def.pitLoss || estimatePitLoss(track);
       // the four shared pit boxes (occupant or null), the single pit-lane queue and this step's new arrivals
       this.pitBoxes = new Array(track.pit.boxes.length).fill(null); this.pitQueue = []; this.pitArrivals = [];
+      // Virtual Safety Car: phase idle → deployed → ending (restart countdown) → green; incidents under watch
+      this.vsc = { phase: 'idle', count: 0, start: 0, duration: 0, countdownAt: 0, greenAt: 0, endedAt: -1e9, kind: '', leader: null, history: [] };
+      this.vscWatch = [];
       this.nextQualiExit = 0;
       this.logArr = [];
       this.calib = this.type === 'calib';
@@ -3133,9 +3214,8 @@ const SIM = (function () {
     }
     get leader() { return this.order ? this.order[0] : this.cars[0]; }
     yellowAt(i) { if (this.type !== 'race') return this.yellow[Math.floor(i / this.track.N * this.track.marshalCount)] > 0 && this.type === 'race'; return this.yellow[Math.floor(i / this.track.N * this.track.marshalCount)] > 0; }
-    // The supplied version has sector yellows, but no VSC controller. Keep one
-    // neutralization gate so a VSC controller can suspend detection and sanctions.
-    blueNeutralized() { return !!(this.vscActive || this.vsc && (this.vsc.active || ['active', 'ending'].includes(this.vsc.phase))); }
+    // Blue-flag detection and sanctions are suspended while the VSC is out.
+    blueNeutralized() { return this.vscActive; }
     blueRouteSpeed(car) {
       const h = this.track.heading[car.idx];
       return car.vx * Math.cos(h) + car.vz * Math.sin(h);
@@ -3263,13 +3343,15 @@ const SIM = (function () {
         }
       }
       if (this.type === 'quali') this.qualifyingTick();
+      // Virtual Safety Car: phase changes and the queue order, before anyone drives this step
+      if (this.vsc.phase === 'deployed' || this.vsc.phase === 'ending') this.vscTick();
 
       if (this.step === 1 || this.step % 24 === 0) this.updateBlueFlags(this.step === 1 ? dt : PHYS_DT * 24);
 
       // controls
       for (const car of this.cars) {
         if (car.ai) car.ai.update(dt, this.step);
-        else if(car.isPlayer && (car.autoDrive || car.retiring || car.pit)) car.autopilot.update(dt,this.step);
+        else if(car.isPlayer && (car.autoDrive || car.retiring || car.pit || this.vscControls(car))) car.autopilot.update(dt,this.step);
         else if (car.isPlayer && car.control && !car.inGarage) car.control(dt, this); // human driver, every physics step
       }
       // physics
@@ -3302,6 +3384,9 @@ const SIM = (function () {
     updateDRS(car) {
       const t = this.track; car.drsAvail = false;
       if (this.type === 'calib' || this.wet > 0.25) { car.drsOpen = false; return; }
+      // under the Virtual Safety Car DRS is shut and detection points award nothing; eligibility is earned
+      // again at the first detection point after the green flag
+      if (this.vscActive) { car.drsOpen = false; return; }
       for (const z of t.drsZones) {
         const inZone = t.dS(z.start, car.s) >= 0 && t.dS(car.s, z.end) > 0;
         if (this.type === 'race') {
@@ -3563,7 +3648,7 @@ const SIM = (function () {
           car.lastPit = { ...P, exitTime: this.time };
           car.pit = null;
           car.blueRejoinUntil = this.time + 3;
-          if (car.isPlayer) { car.autoDrive=car.finished;this.events.push({type:'pithandover',car});this.msg('Pit exit — control returned','info',car,2); }
+          if (car.isPlayer) { car.autoDrive=car.finished;this.events.push({type:'pithandover',car});this.msg(this.vscControls(car)?'Pit exit — VSC: automatic driving continues':'Pit exit — control returned','info',car,2); }
           if (car.ai && car.ai.plan) car.ai.lastPlanLap = -1;
         }
       }
@@ -3631,8 +3716,8 @@ const SIM = (function () {
       car.lastLap = lapTime; car.lapTimes.push({ t: lapTime, valid: car.lapValid && fullLap, c: car.tyre.c });
       // the car's own fuel consumption, from complete laps without a pit stop (the range estimate uses it)
       const burnt = (car.lapFuel ?? car.fuel) - car.fuel;
-      if (fullLap && !car.lapHadPit && burnt > 0.3 * this.fuelPerLap) car.fuelPerLapEst = lerp(car.fuelPerLapEst || this.fuelPerLap, burnt, 0.5);
-      car.lapFuel = car.fuel; car.lapHadPit = !!car.pit;
+      if (fullLap && !car.lapHadPit && !car.lapHadVsc && burnt > 0.3 * this.fuelPerLap) car.fuelPerLapEst = lerp(car.fuelPerLapEst || this.fuelPerLap, burnt, 0.5);
+      car.lapFuel = car.fuel; car.lapHadPit = !!car.pit; car.lapHadVsc = this.vscActive;
       // Tyre age is continuous distance, not line crossings (including partial stints).
       if (car.lapValid && fullLap) {
         if (!car.bestLap || lapTime < car.bestLap) { car.bestLap = lapTime; car.bestTrace = car.lapTrace; }
@@ -3736,6 +3821,8 @@ const SIM = (function () {
       }
       const tot = (ev.E + ev.scrape) * share;
       if (tot > 9000) for (const car of ev.b ? [ev.a, ev.b] : [ev.a]) this.addDebris(ev.x, ev.z, 'shard', Math.min(10, 1 + tot / 9000) | 0, car);
+      // race control watches every real crash (not taps or scrapes) to judge whether it needs the VSC
+      if (tot >= VSC.noteE) for (const car of ev.b ? [ev.a, ev.b] : [ev.a]) this.vscNote(car, tot, car === ev.a ? ev.b : ev.a);
       for (const car of ev.b ? [ev.a, ev.b] : [ev.a]) if (!car.dnf && !car.inGarage) this.afterDamage(car, tot);
     }
     damageCar(car, E, scrape, l, ev, other, lo) {
@@ -3866,6 +3953,7 @@ const SIM = (function () {
     startRetirement(car, reason) {
       if (car.retiring || car.dnf || car.finished) return;
       car.retiring = { reason, t0: this.time, stopT: 0, phase: 'stopping' };
+      this.vscNoteRetirement(car);
       car.boxRequest = false; car.autoDrive = false;
       if (car.ai) { car.ai.boxThisLap = false; car.ai.pitting = false; car.ai.pitEntryBlend = 0; }
       this.stats.retirements = (this.stats.retirements || 0) + 1;
@@ -3933,9 +4021,176 @@ const SIM = (function () {
       car.vx = car.vz = car.r = 0; car.gear = 1;
       this.log(car, 'marshal reset');
     }
+    // ---------- Virtual Safety Car ----------
+    get vscActive() { return this.vsc.phase === 'deployed' || this.vsc.phase === 'ending'; }
+    // seconds until the green flag (0 when no VSC is out)
+    vscRemaining() { return this.vscActive ? Math.max(0, this.vsc.greenAt - this.time) : 0; }
+    // Race control drives this car: every car still racing. A car stopping to retire keeps pulling off,
+    // and in the pit lane the pit autopilot keeps driving (it is the same automatic driver).
+    vscControls(car) { return this.vscActive && !car.inGarage && !car.dnf && !car.retiring && !car.finished; }
+    // A car that takes its place in the queue: running on the circuit. A car committed to the pit entry is
+    // leaving the circuit (cars behind may go by it as it peels off) and rejoins the queue where it leaves the
+    // pit exit; a car spun or stranded by the incident is driven around, not followed.
+    vscMember(o) {
+      if (o.inGarage || o.ghost || o.dnf || o.retiring || o.finished || o.spun || o.pit) return false;
+      const drv = o.ai || o.autopilot;
+      return !(drv && drv.mode === 'recover');
+    }
+    vscCanDeploy() {
+      if (this.type !== 'race' || !this.lightsOut || this.finishedFlag || this.over || this.vscActive || this.vsc.count >= VSC.max) return false;
+      // the whole neutralisation must be over before the leader can reach the flag (race distance is
+      // measured from the start line, so the flag falls at totalLaps × lap length)
+      const lead = (this.order || this.cars).find(c => !c.dnf && !c.inGarage);
+      return !!lead && this.totalLaps * this.track.length - lead.totalDist > VSC.minToGo;
+    }
+    // A real crash (well above contact and scraping energy) puts the car under watch for a few seconds.
+    vscNote(car, E, other) {
+      if (this.type !== 'race' || !this.lightsOut || car.inGarage || car.dnf) return;
+      let w = this.vscWatch.find(x => x.car === car && !x.failure && this.time - x.t0 < 8);
+      if (!w) { w = { car, t0: this.time, until: this.time + 8, E: 0, others: [], still: 0, blocking: 0, retire: false, failure: false, handled: this.vscActive }; this.vscWatch.push(w); }
+      w.E = Math.max(w.E, E); if (other && !w.others.includes(other)) w.others.push(other);
+    }
+    // A car starting to retire: after a crash that is a serious accident; after a failure with no crash it
+    // is watched until it has stopped, and only matters if it stops on the racing surface.
+    vscNoteRetirement(car) {
+      if (this.type !== 'race' || !this.lightsOut || car.pit) return;
+      const w = this.vscWatch.find(x => x.car === car && !x.failure && this.time - x.t0 < 8);
+      if (w) { w.retire = true; w.until = Math.max(w.until, this.time + 8); return; }
+      this.vscWatch.push({ car, t0: this.time, until: this.time + 40, E: 0, others: [], still: 0, blocking: 0, retire: true, failure: true, handled: this.vscActive });
+    }
+    // 10 Hz: does an incident under watch need neutralising? Only these do:
+    //   fire — a car on fire stopping beside the circuit;
+    //   crash — a crash that ends a car's race (the car stops at the trackside, marshals recover it);
+    //   stranded — a huge impact (≥ 150 kJ) leaving the car stopped on or at the edge of the track;
+    //   blocking — a serious impact (≥ 60 kJ) leaving the car stopped on the racing surface;
+    //   pileup — two or more crashed cars stopped on or beside the track together;
+    //   obstruction — a car with a failure that came to rest on the racing surface instead of pulling off.
+    // Taps, scrapes, a lost wing, a spin or trip through the gravel with the car driving on, and a failure
+    // where the car pulls off safely are left to the yellow flags.
+    vscAssess(dt) {
+      if (!this.vscWatch.length) return;
+      const t = this.track, rank = { obstruction: 1, blocking: 2, stranded: 2, crash: 3, pileup: 4, fire: 5 };
+      let kind = null; const hit = [];
+      for (const w of this.vscWatch) {
+        const c = w.car, inLane = !!c.pit && t.pitProg(c.s) >= 0, ad = Math.abs(c.d), age = this.time - w.t0;
+        const stopped = !c.inGarage && !inLane && (c.speed < 6 || (c.retiring && c.retiring.phase !== 'stopping'));
+        w.still = stopped && ad < t.halfW + 2 ? w.still + dt : 0;
+        w.blocking = stopped && ad < t.halfW - 0.5 ? w.blocking + dt : 0;
+        if (w.handled || inLane || c.inGarage) continue;
+        let k = null;
+        if (w.retire && c.damage.fire && age >= VSC.react) k = 'fire';
+        else if (w.retire && !w.failure && age >= VSC.react) k = 'crash';
+        else if (w.E >= VSC.heavyE && w.still >= 1.5) k = 'stranded';
+        else if (w.E >= VSC.seriousE && w.blocking >= 2) k = 'blocking';
+        else if (w.failure && c.retiring && c.retiring.phase === 'parked' && ad < t.halfW - 0.5) k = 'obstruction';
+        if (k) { hit.push(w); if (!kind || rank[k] > rank[kind]) kind = k; }
+      }
+      const piled = this.vscWatch.filter(w => !w.handled && !w.failure && w.E >= VSC.noteE && w.still >= 1);
+      if (piled.length >= 2 && Math.max(...piled.map(w => w.t0)) - Math.min(...piled.map(w => w.t0)) < 4) {
+        for (const w of piled) if (!hit.includes(w)) hit.push(w);
+        kind = !kind || rank.pileup > rank[kind] ? 'pileup' : kind;
+      }
+      if (kind) {
+        if (this.vscCanDeploy()) this.vscDeploy(kind, hit);
+        // an incident that cannot have a VSC (two already used, one already out, the flag too close) never gets one later
+        for (const w of hit) w.handled = true;
+      }
+      this.vscWatch = this.vscWatch.filter(w => this.time < w.until && !(w.car.inGarage && w.handled));
+    }
+    vscDeploy(kind, ws) {
+      const t = this.track, v = this.vsc, cars = [...new Set(ws.map(w => w.car))];
+      // Total length, deployment to green flag, by what race control has to deal with: 12–19.5 s.
+      const base = { obstruction: 12, blocking: 13, stranded: 13, crash: 14, pileup: 15, fire: 16 }[kind] || 13;
+      const onRoad = cars.some(c => Math.abs(c.d) < t.halfW - 0.5);
+      const D = clamp(base + (onRoad ? 1.5 : 0) + Math.min(2, cars.length - 1), VSC.minT, VSC.maxT);
+      v.count++; v.phase = 'deployed'; v.kind = kind; v.start = this.time; v.duration = D;
+      v.countdownAt = this.time + D - VSC.countdown; v.greenAt = this.time + D; v.cars = cars;
+      v.sector = Math.floor(cars[0].idx / t.N * t.marshalCount) + 1;
+      v.history.push({ n: v.count, kind, start: this.time, duration: D, end: null, total: null, lap: this.leaderLap + 1, cars: cars.map(c => c.driver.short) });
+      for (const w of this.vscWatch) w.handled = true;
+      for (const c of this.cars) {
+        c.vscV0 = c.speed; c.lapHadVsc = true; c.drsOpen = false;
+        for (const z of t.drsZones) c['drsElig' + z.start] = false;
+        const drv = c.ai || (c.isPlayer ? c.autopilot : null);
+        if (drv) { drv.mistake = null; drv.mistakeT = 0; drv.attackTarget = null; drv.defending = false; }
+        if (c.isPlayer && this.vscControls(c) && !c.pit && !c.autoDrive) this.vscTakeOver(c);
+      }
+      this.vscPlan();
+      this.events.push({ type: 'vsc', phase: 'deployed', n: v.count, kind, duration: D });
+      this.msg('VIRTUAL SAFETY CAR DEPLOYED', 'vsc', null, 4);
+      this.log(cars[0], 'VSC ' + v.count + ' deployed: ' + kind + ', ' + D.toFixed(1) + ' s');
+    }
+    // The automatic driver takes the player's car from the pedals and steering the player was using.
+    vscTakeOver(car) {
+      const ap = car.autopilot; if (!ap) return;
+      ap.mode = 'race'; ap.recoverT = 0; ap.stuckT = 0; ap.handling.reset();
+      ap.handling.steer = car.playerHandling ? car.playerHandling.steer : car.input.steer;
+      ap.handling.th = car.input.throttle; ap.handling.br = car.input.brake; ap.smoothThrottle = car.input.throttle;
+      ap.lastStep = this.step; ap.tactical(); ap.computeEnvelope(); ap.vFollow = ap.followLimit(ap.neighbors, false);
+      car.input.drs = false;
+      this.events.push({ type: 'vsctakeover', car });
+    }
+    // every physics step while the VSC is out
+    vscTick() {
+      const v = this.vsc;
+      if (this.finishedFlag || this.over) { this.vscGreen(); return; }
+      if (v.phase === 'deployed' && this.time >= v.countdownAt) { v.phase = 'ending'; this.events.push({ type: 'vsc', phase: 'ending' }); this.log(null, 'VSC ending'); }
+      if (this.time >= v.greenAt) { this.vscGreen(); return; }
+      this.vscPlan();
+    }
+    // The queue: every member follows the member physically ahead of it on the circuit (by track distance).
+    // The race leader leads it; a lapped car stays where it is, so laps-down are kept.
+    vscPlan() {
+      const L = this.track.length, m = this._vscMembers || (this._vscMembers = []);
+      m.length = 0;
+      for (const c of this.cars) { c.vscAhead = null; c.vscGap = Infinity; if (this.vscMember(c)) m.push(c); }
+      m.sort((a, b) => a.s - b.s || a.id - b.id);
+      for (let k = 0; k < m.length; k++) {
+        const c = m[k], a = m[(k + 1) % m.length]; if (a === c) break;
+        let g = a.s - c.s; if (g < 0) g += L;
+        c.vscAhead = a; c.vscGap = g;
+        if (c.vscFrom !== a) { c.vscFrom = a; c.vscGapFrom = g; c.vscGapAt = this.time; } // a new car to follow
+      }
+      this.vsc.leader = (this.order || this.cars).find(c => this.vscMember(c)) || null;
+    }
+    // Speed race control asks of a queue member: the leader's VSC speed (closing cars may run faster),
+    // reached progressively from the deployment speed, and never more than lets the car settle at the
+    // following distance behind the car ahead without passing it.
+    vscSpeed(car) {
+      const v = this.vsc, a = car.vscAhead;
+      let base = car === v.leader ? VSC.leadV : VSC.catchV;
+      if (car.vscV0 != null) base = Math.max(base, car.vscV0 - VSC.rampDecel * (this.time - v.start));
+      car.vscClose = false;
+      if (!a) return base;
+      // the following distance; a car that was closer when it began following this car eases back to it
+      const gap = car.vscGap, want = Math.min(VSC.gap0 + VSC.gapT * a.speed, Math.max(VSC.minGap, car.vscGapFrom + VSC.openRate * (this.time - car.vscGapAt)));
+      car.vscClose = gap < want && (car.speed > a.speed + 0.5 || gap < VSC.minGap);
+      // (closer than minGap nose to nose, about 3 m between the cars, it drops back more firmly)
+      const follow = gap >= want ? a.speed + arcadeStopSpeed(gap - want, VSC.closeUse)
+        : Math.max(0, a.speed - Math.min(VSC.openMax, VSC.openK * (want - gap)) - Math.max(0, VSC.minGap - gap));
+      return Math.min(base, follow);
+    }
+    // Green flag: control goes back to the drivers in the same physics step for everyone.
+    vscGreen() {
+      const v = this.vsc; v.phase = 'green'; v.endedAt = this.time; v.leader = null;
+      const h = v.history[v.history.length - 1]; if (h && h.end == null) { h.end = this.time; h.total = this.time - h.start; }
+      for (const c of this.cars) {
+        c.vscV0 = null; c.vscAhead = null; c.vscGap = Infinity; c.vscFrom = null; c.vscClose = false;
+        if (c.isPlayer && c.playerHandling && !c.pit && !c.retiring && !c.finished && !c.autoDrive && !c.inGarage) {
+          // the player's handling continues from the pedals and steering race control was using
+          const hd = c.playerHandling; hd.reset(); hd.steer = c.autopilot ? c.autopilot.handling.steer : 0; hd.th = c.input.throttle; hd.br = c.input.brake;
+          c.vscReturnAt = this.time; c.vscReturnSteer = hd.steer;
+          this.events.push({ type: 'vschandover', car: c });
+        }
+      }
+      this.events.push({ type: 'vsc', phase: 'green' });
+      this.msg('GREEN FLAG — RACING RESUMES', 'green', null, 3);
+      this.log(null, 'VSC green flag');
+    }
     slowUpdate() {
       const t = this.track;
       this.damageTick(0.1);
+      if (this.type === 'race') this.vscAssess(0.1);
       // standings
       const order = this.cars.slice().filter(c => true);
       if (this.type === 'race') {
@@ -4157,7 +4412,7 @@ const SIM = (function () {
     return (neg ? '-' : plus ? '+' : '') + str;
   }
 
-  return { G, RHO, PHYS_DT, DS, TEAMS, DRIVERS, TRACK_DEF, CIRCUITS, circuitById, circuitCentreLine, elevationAt, COMPOUNDS, SPEC, Track, Car, Session, AIDriver, planStrategy, wearPerLap, needsCompound, fmtTime, clamp, lerp, makeRng, stepCarPhysics, PlayerHandling, KeyboardDriveInput, HANDLING, USEFUL_WEAR, TYRE_STYLES, drivingStyle, tyreWearGrip, tyreWeatherGrip, tyreMismatch, updateTyres, wetnessFor, weatherCompound, DynamicWeather, CarDamage, DAMAGE_LEVELS, PART_KEYS, PART_NAMES, WHEEL_NAMES, REPAIR_TIME, REFUEL, FUEL_TANK_LAPS, FUEL_RESERVE, START_FUEL_LAPS, estimatePitLoss, chooseStartFuelLaps, normalizeDamageLevel, partExposure, torqueAt, defaultCompoundModel, setSeed: (s) => { rnd = makeRng(s); } };
+  return { G, RHO, PHYS_DT, DS, VSC, TEAMS, DRIVERS, TRACK_DEF, CIRCUITS, circuitById, circuitCentreLine, elevationAt, COMPOUNDS, SPEC, Track, Car, Session, AIDriver, planStrategy, wearPerLap, needsCompound, fmtTime, clamp, lerp, makeRng, stepCarPhysics, PlayerHandling, KeyboardDriveInput, HANDLING, USEFUL_WEAR, TYRE_STYLES, drivingStyle, tyreWearGrip, tyreWeatherGrip, tyreMismatch, updateTyres, wetnessFor, weatherCompound, DynamicWeather, CarDamage, DAMAGE_LEVELS, PART_KEYS, PART_NAMES, WHEEL_NAMES, REPAIR_TIME, REFUEL, FUEL_TANK_LAPS, FUEL_RESERVE, START_FUEL_LAPS, estimatePitLoss, chooseStartFuelLaps, normalizeDamageLevel, partExposure, torqueAt, defaultCompoundModel, setSeed: (s) => { rnd = makeRng(s); } };
 })();
 // ==SIM-END==
 if (typeof module !== 'undefined') module.exports = SIM;
@@ -6497,7 +6752,12 @@ class PlayerControl {
     car.playerHandling=this.handling;
     car.control=(dt,sess)=>{
       if(!car.autoDrive && !car.pit) {
-        this.handling.step(car,dt,sess,readDriveInput(dt));
+        const raw=readDriveInput(dt);
+        // at the VSC green flag the steering eases from race control's position to the player's over 0.4 s
+        // (the pedals already continue from race control's, through the handling's own response)
+        const since=car.vscReturnAt!=null?sess.time-car.vscReturnAt:Infinity;
+        if(since<0.4)raw.steer=lerp(car.vscReturnSteer||0,raw.steer,clamp(since/0.4,0,1));
+        this.handling.step(car,dt,sess,raw);
       }
     };
   }
@@ -6805,6 +7065,7 @@ function startSession(cfg) {
   $('sessName').textContent = cfg.type === 'quali' ? 'ONE-LAP QUALIFYING' : 'GRAND PRIX';
   $('lights').classList.toggle('hidden', cfg.type !== 'race' || !!G.attract);
   G.lightsShown = -1; G.lastLights = 0;
+  G.vscUi = null; $('vsc').classList.add('hidden');
   G.hudDirty = true;
 }
 function startAttract() {
@@ -7051,6 +7312,7 @@ function hudMessages() {
     const m = sess.messages[G.msgSeen++];
     const relevant = !m.car || m.car === G.focus || m.kind === 'purple' || m.kind === 'pen' || m.kind === 'big' || (m.kind === 'pit' && m.car === G.focus);
     if (G.attract) continue;
+    if (m.kind === 'vsc' || m.kind === 'green') continue; // shown by the race-control panel
     if (m.kind === 'pit' && m.car !== G.focus) continue;
     if (m.kind === 'pen' && m.car !== G.focus && sess.cars.length > 12 && !m.car.isPlayer) continue;
     if (relevant) pushMsg(m.text, m.kind, m.dur);
@@ -7327,6 +7589,7 @@ function updateHud(dt) {
   if (G.player) updatePitService(G.player,sess); else $('pitSvc').classList.add('hidden');
   const car = G.focus; if (!car) return;
   hudMessages();
+  updateVscPanel(sess);
   // dashboard (every frame)
   $('spd').textContent = Math.round(speedUnit(car.speed));
   $('gear').textContent = car.gear === -1 ? 'R' : car.gear === 0 ? 'N' : car.inGarage || (car.pit && ['awaiting','stopped','release'].includes(car.pit.phase)) ? 'N' : car.gear;
@@ -7356,7 +7619,7 @@ function updateHud(dt) {
   for (let k = 0; k < 3; k++) { const st = sectorTime(p, k); $('s' + (k + 1)).className = sectorClass(p, k, sess); $('s' + (k + 1) + 't').textContent = st ? (st < 60 ? st.toFixed(3) : fmt(st)) : '--.---'; }
   // DRS / fuel
   $('chipDrs').className = 'chip' + (p.drsOpen ? ' on' : p.drsAvail ? ' avail' : '');
-  $('drsVal').textContent = sess.type === 'race' && !sess.drsEnabled ? 'OFF' : p.drsOpen ? 'OPEN' : p.drsAvail ? 'READY' : 'CLOSED';
+  $('drsVal').textContent = sess.type === 'race' && (!sess.drsEnabled || sess.vscActive) ? 'OFF' : p.drsOpen ? 'OPEN' : p.drsAvail ? 'READY' : 'CLOSED';
   $('chipLim').style.display = p.pit && G.track.inLimiter(p.s) ? '' : 'none';
   const dr = $('chipDrift'); const sa = Math.abs(p.slideAngle || 0);
   if (sa > 0.08 && p.speed > 6) { dr.style.display = ''; dr.textContent = 'SLIDE ' + Math.round(sa * 57.3) + '°'; } else dr.style.display = 'none';
@@ -7383,7 +7646,10 @@ function updateHud(dt) {
   // flags
   const fb = $('flagbar'); const yel = sess.yellowAt(p.idx) || sess.yellowAt(G.track.wrapI(p.idx + 60));
   const blue = sess.type === 'race' ? !!p.blueFlag.target && !sess.over && !sess.finishedFlag && !sess.blueNeutralized() : !!(p.ai && p.ai.blue);
-  fb.className = yel ? 'yellow' : blue ? 'blue' : '';
+  const vscGreen = sess.vsc.phase === 'green' && sess.time - sess.vsc.endedAt < 2.5;
+  fb.className = sess.vscActive ? 'vsc' : vscGreen ? 'green' : yel ? 'yellow' : blue ? 'blue' : '';
+  $('sessName').textContent = sess.type === 'quali' ? 'ONE-LAP QUALIFYING' : sess.vscActive ? 'VSC' : 'GRAND PRIX';
+  $('sessName').classList.toggle('vsc', sess.vscActive);
   const blueIndicator = $('blueFlag');
   blueIndicator.classList.toggle('active', blue);
   blueIndicator.setAttribute('aria-hidden', String(!blue));
@@ -7405,6 +7671,36 @@ function updateHud(dt) {
   $('fps').classList.toggle('hidden', true);
   $('telemetry').classList.toggle('hidden', !G.showTel);
   drawMinimap();
+}
+// Race-control panel for the Virtual Safety Car: the deployment announcement (3 s), then a slim strip while
+// it is out (with a bar for the time left), the five-second countdown, and the green flag (2.5 s).
+function updateVscPanel(sess) {
+  const v = sess.vsc, el = $('vsc'), now = sess.time;
+  const greenShown = v.phase === 'green' && now - v.endedAt < 2.5;
+  const state = !sess.vscActive ? (greenShown ? 'green' : '') : v.phase === 'ending' ? 'ending' : now - v.start < 3 ? 'deploy' : 'active';
+  el.classList.toggle('hidden', !state);
+  if (!state) { G.vscUi = null; return; }
+  const me = G.player, mine = me && sess.vscControls(me);
+  if (!G.vscUi || G.vscUi.state !== state || G.vscUi.n !== v.count) {
+    G.vscUi = { state, n: v.count, count: 0 };
+    el.className = 'panel ' + state;
+    $('vscBadge').textContent = state === 'green' ? 'GREEN' : 'VSC';
+    $('vscTitle').textContent = state === 'deploy' ? 'VIRTUAL SAFETY CAR DEPLOYED' : state === 'active' ? 'VIRTUAL SAFETY CAR' : state === 'ending' ? 'VSC ENDING' : 'GREEN FLAG — RACING RESUMES';
+    $('vscCount').classList.toggle('hidden', state !== 'ending');
+    $('vscSub').textContent = state === 'deploy' ? (mine ? 'Race control has your car · no overtaking' : 'Race control has every car · no overtaking')
+      : state === 'active' ? 'Automatic control · closing up the field'
+      : state === 'ending' ? (mine ? 'Control returns to you at the green flag' : 'Racing resumes at the green flag')
+      : (me && !me.pit && !me.retiring && !me.finished && !me.dnf ? 'You have control' : 'Overtaking allowed');
+  }
+  if (state === 'active') $('vscBar').style.transform = 'scaleX(' + clamp((v.countdownAt - now) / Math.max(1, v.countdownAt - v.start), 0, 1).toFixed(3) + ')';
+  if (state === 'ending') {
+    const n = clamp(Math.ceil(v.greenAt - now), 1, 5), c = $('vscCount');
+    $('vscBar').style.transform = 'scaleX(' + clamp((v.greenAt - now) / 5, 0, 1).toFixed(3) + ')';
+    if (G.vscUi.count !== n) {
+      G.vscUi.count = n; c.textContent = n; c.classList.remove('tick'); void c.offsetWidth; c.classList.add('tick');
+      G.audio.oneShot('beep');
+    }
+  }
 }
 function updateLights() {
   const sess = G.session; if (!sess || sess.type !== 'race') { $('hud').classList.remove('starting'); return; }
@@ -8046,6 +8342,7 @@ function processEvents() {
       }
     } else if (e.type === 'lightsout') { if (!G.attract) G.audio.oneShot('go'); if (G.focus && G.focus.isPlayer) G.camRig.impulse(0.25, -Math.cos(G.focus.psi), -Math.sin(G.focus.psi)); }
     else if (e.type === 'overtake') { if (e.car === G.focus && !G.attract) G.camRig.fovKick = 4; }
+    else if (e.type === 'vsc') { if (!G.attract && e.phase !== 'ending') G.audio.oneShot(e.phase === 'green' ? 'go' : 'beep'); }
     else if (e.type === 'raceover') { if (!G.attract) setTimeout(()=>{if(G.session===sess)showResults();},1200); else setTimeout(() => { if (G.attract && G.mode === 'menu') startAttract(); }, 3000); }
     else if (e.type === 'qualiover') { if (!G.attract) setTimeout(()=>{if(G.session===sess)showResults();},800); }
     else if (e.type === 'pitstop' && e.car === G.focus) G.audio.oneShot('pit');
@@ -8086,7 +8383,7 @@ function handleKeys(dt) {
   const space=takePress('Space');
   const respawn=space && !p.launch.active; // Restore the existing respawn control after launch.
   const reset = takePress('KeyR');
-  if ((respawn || reset) && !p.pit && sess.lightsOut && !p.inGarage && !p.finished && !p.dnf && !p.retiring) {
+  if ((respawn || reset) && !p.pit && sess.lightsOut && !p.inGarage && !p.finished && !p.dnf && !p.retiring && !sess.vscControls(p)) {
     sess.marshalReset(p);
     p.u = p.v = p.speed = p.steer = p.throttle = p.brake = p.slideAngle = 0;
     p.axL = p.ayL = 0;
@@ -8110,7 +8407,11 @@ function playerLogic(dt) {
   const sess = G.session, p = G.player; if (!p) return;
   if (p.inGarage) { p.input.throttle = 0; p.input.brake = 1; return; }
   if(!p.finished && !p.retiring) p.autoDrive=!!p.pit;
-  if(p.pit || p.retiring || p.finished) clearPlayerAssists(p);
+  if(p.pit || p.retiring || p.finished || sess.vscControls(p)) {
+    clearPlayerAssists(p);
+    // under the Virtual Safety Car race control drives: held keys and taps are not stored up for later
+    if(sess.vscControls(p)) { DRIVE_KEYS.clearPending(); G.pc.drsReq=false; }
+  }
   else G.pc.apply(p,dt,sess);
   if (!p.pit) G.pitNoted = false;
 }

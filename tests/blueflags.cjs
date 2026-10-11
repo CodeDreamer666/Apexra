@@ -71,7 +71,7 @@ for (const t of tracks) {
 
   test(t.name + ': pit, rejoin, retirement, finish and neutralization exclusions', () => {
     const r = field(t), [c, o] = r.cars, L = t.length;
-    const setup = () => { r.over = r.finishedFlag = r.vscActive = false; r.vsc = null; c.blueRejoinUntil = o.blueRejoinUntil = 0;
+    const setup = () => { r.over = r.finishedFlag = false; r.vsc.phase = 'idle'; c.blueRejoinUntil = o.blueRejoinUntil = 0;
       place(r, c, L + 400); place(r, o, 2 * L + 360, 60); r.clearBlueFlag(c); };
     for (const who of [c, o]) for (const state of ['pit', 'dnf', 'finished', 'retiring', 'ghost', 'inGarage', 'rejoin', 'entry']) {
       setup();
@@ -84,10 +84,10 @@ for (const t of tracks) {
       who.boxRequest = false;
     }
     setup(); r.updateBlueFlags(.1); assert.equal(c.blueFlag.target, o);
-    c.blueFlag.blocking = 13; c.blueFlag.warned = true; r.vscActive = true;
+    c.blueFlag.blocking = 13; c.blueFlag.warned = true; r.vsc.phase = 'deployed';
     r.updateBlueFlags(.1); assert.equal(c.blueFlag.target, null); assert.equal(c.penalty, 0);
-    r.vscActive = false; r.updateBlueFlags(.1); assert.equal(c.blueFlag.target, o);
-    r.vsc = { phase: 'ending' }; r.updateBlueFlags(.1); assert.equal(c.blueFlag.target, null);
+    r.vsc.phase = 'idle'; r.updateBlueFlags(.1); assert.equal(c.blueFlag.target, o);
+    r.vsc.phase = 'ending'; r.updateBlueFlags(.1); assert.equal(c.blueFlag.target, null);
     setup(); r.finishedFlag = true; r.updateBlueFlags(.1); assert.equal(c.blueFlag.target, null);
     setup(); r.over = true; r.updateBlueFlags(.1); assert.equal(c.blueFlag.target, null);
   });
@@ -155,11 +155,11 @@ test('unsafe corners, wet conditions, same-lap battles and VSC never accrue obst
   place(r, c, L + 150); place(r, o, 2 * L + 135, 50); r.updateBlueFlags(.1);
   for (const condition of ['corner', 'wet', 'battle', 'vsc']) {
     c.blueFlag.moves = 3; c.blueFlag.blocking = 5.9; c.blueFlag.age = 20;
-    r.wet = 0; r.vscActive = false; rival.inGarage = true;
+    r.wet = 0; r.vsc.phase = 'idle'; rival.inGarage = true;
     if (condition === 'corner') c.input.brake = .5; else c.input.brake = 0;
     if (condition === 'wet') r.wet = .8;
     if (condition === 'battle') place(r, rival, L + 165, 50);
-    if (condition === 'vsc') r.vscActive = true;
+    if (condition === 'vsc') r.vsc.phase = 'deployed';
     r.updateBlueFlags(.1);
     assert.equal(c.penalty, 0); assert.equal(c.blueFlag.warned, false, condition);
     assert.ok(c.blueFlag.blocking < 5.9);
