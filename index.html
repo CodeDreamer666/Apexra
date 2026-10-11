@@ -59,7 +59,9 @@
   .bhead, .row { display: grid; grid-template-columns: 26px 5px 1fr auto; gap: 10px; align-items: center; padding: 0 8px; }
   .bhead { height: 24px; margin-top: 8px; border-bottom: 1px solid var(--hl); font-size: 12px; font-weight: 700; letter-spacing: 1.4px; color: var(--hdim); }
   .bhead span:first-child { text-align: right; }
-  #board { padding-top: 3px; font-size: 15px; }
+  /* every car is listed; the rows scroll under the fixed header (wheel / trackpad) with no visible scrollbar */
+  #board { position: relative; padding-top: 3px; font-size: 15px; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; scrollbar-width: none; -ms-overflow-style: none; pointer-events: auto; }
+  #board::-webkit-scrollbar { display: none; width: 0; height: 0; }
   .row { height: 24px; border-radius: 4px; border: 1px solid transparent; }
   .row .p { color: #dfe4ec; text-align: right; }
   .row .bar { width: 5px; height: 16px; border-radius: 1px; }
@@ -71,7 +73,6 @@
   .row .tag.pit { background: #c9a24a; color: #111; }
   .row .tag.pen { background: #b71c1c; }
   .row .tag.out { background: #555; }
-  .row.sep { display: block; height: 14px; line-height: 6px; text-align: center; color: var(--hdim); letter-spacing: 4px; font-size: 14px; }
   .lstack { margin-top: auto; flex-shrink: 0; display: flex; flex-direction: column; gap: 12px; }
   #hud #engineerRadio { padding: 12px 16px; min-height: 104px; opacity: 0; transform: translateY(5px); visibility: hidden;
     transition: opacity .2s, transform .2s, visibility .2s; border-left: 3px solid #448dff; background: rgba(13,35,68,.94); }
@@ -1351,7 +1352,7 @@ const SIM = (function () {
       this.penalty = 0; this.warnings = 0; this.offTrackFlag = false; this.penaltyLog = [];
       this.blueFlag = { target: null, gap: 0, age: 0, receding: 0, safe: false, side: 0, ease: 0, blocking: 0, moves: 0, lastMove: -99, warned: false, penalized: false, lastD: 0, lastTargetD: 0 };
       this.pitStops = 0; this.pit = null; // pit state object when in pit lane
-      this.boxCompound = null; this.outLap = false; this.inGarage = false;
+      this.boxCompound = null; this.inGarage = false;
       this.started = false; this.frozen = false; this.ghost = false;
       this.lastDeltaRef = null; this.delta = 0; this.lapTrace = []; this.fastestLapCount = 0;
       this.spun = false; this.offTime = 0; this.collisionCount = 0;
@@ -2448,7 +2449,6 @@ const SIM = (function () {
         commit *= 1 - mgmt;
         if (race.lap1Caution(car)) commit *= 0.975;
       }
-      if (race.type === 'quali' && car.q && car.q.phase === 'out') commit *= 0.9;
       if (race.wet) commit *= 0.985;
       // a damaged car is driven with more margin
       const D = car.damage; commit *= 1 - 0.08 * Math.min(1, D.severity());
@@ -3456,7 +3456,7 @@ const SIM = (function () {
         });
         if(this.type==='race')this.msg('Hold SPACE + W. Release SPACE when all five red lights go out.', 'info',this.player,6);
       } else if (this.type === 'quali') {
-        // One fresh set and enough fuel for the exit, out-lap and flying lap.
+        // One fresh set and enough fuel for the pit exit and the timed lap.
         // The player requests release with W; AI exits are spaced by the same gate.
         this.cars.forEach((car, k) => {
           this.putInGarage(car);
@@ -3464,10 +3464,10 @@ const SIM = (function () {
             ready: !car.isPlayer || !!car.ai, readyAt: 3 + k * 13, distance: 0, progressAnchor: 0, lastProgressAt: 0 };
           const c = this.wet ? weatherCompound(this.wet) : 'S';
           this.fitTyres(car, c, COMPOUNDS[c].topt - 20);
-          car.fuel = this.fuelPerLap * 2.5 + 2; car.fuelPerLapEst = this.fuelPerLap;
+          car.fuel = this.fuelPerLap * 1.5 + 2; car.fuelPerLapEst = this.fuelPerLap;
         });
         if (this.player) this.player.q.readyAt = 0;
-        this.msg('ONE-LAP QUALIFYING — W to leave the pits. Warm your tyres, then one flying lap.', 'big', this.player, 7);
+        this.msg('Press W to leave the pits.', 'big', this.player, 7);
       }
     }
     fitTyres(car, comp, temp) {
@@ -3502,11 +3502,11 @@ const SIM = (function () {
         if (blocked) return false;
         const qualifyingCompound=this.wet>0.18?weatherCompound(this.wet):'S';
         this.fitTyres(car,qualifyingCompound,COMPOUNDS[qualifyingCompound].topt-20);
-        car.q.phase = 'out'; car.q.lastProgressAt = this.time; car.q.progressAnchor = car.totalDist;
+        car.q.phase = 'exit'; car.q.lastProgressAt = this.time; car.q.progressAnchor = car.totalDist;
         this.nextQualiExit = this.time + 13;
       }
       car.inGarage = false; car.frozen = false; car.pit = { phase: 'out', boxS: null, stopS: 0, timer: 0, departS:car.s };
-      car.outLap = true; car.lapValid = false; car.totalDist = car.s; car.lastLapBase = Math.floor(car.totalDist / this.track.length); car.lastWithin = this.track.wrapS(car.totalDist);
+      car.lapValid = false; car.totalDist = car.s; car.lastLapBase = Math.floor(car.totalDist / this.track.length); car.lastWithin = this.track.wrapS(car.totalDist);
       this.log(car, 'leave garage'); return true;
     }
     get leader() { return this.order ? this.order[0] : this.cars[0]; }
@@ -4661,7 +4661,7 @@ const SIM = (function () {
       for (const car of this.cars) {
         const q = car.q;
         if (q.phase === 'waiting' && q.ready && this.time >= q.readyAt) this.releaseFromGarage(car);
-        if (q.phase === 'out' || q.phase === 'flying') {
+        if (q.phase === 'exit' || q.phase === 'flying') {
           if (car.totalDist - q.progressAnchor > 5) { q.progressAnchor = car.totalDist; q.lastProgressAt = this.time; }
           if (car.dnf || car.qualiOut || car.fuel <= 0 || this.time - q.lastProgressAt > 60) this.completeQuali(car, 'dnf', car.dnfReason || 'Did not finish');
         }
@@ -4699,17 +4699,16 @@ const SIM = (function () {
         }
         return;
       }
-      const crossed = prevS > L * 0.75 && car.s < L * 0.25 && ds > 0 && ds < 30 && !car.pit;
-      if (!crossed) return;
-      const at = this.time - dt + dt * (L - prevS) / ds;
-      if (q.phase === 'out') {
-        // the flying lap is timed from the line; it has earned the part of this step past the line
-        q.phase = 'flying'; q.attempted = true; q.distance = car.s; q.startedAt = at;
-        car.crossings = 1; car.outLap = false; car.lapValid = true; q.reason = '';
-        car.lapStart = car.sectorStart = at; car.sectorIdx = 0; car.curSectors = [0, 0, 0]; car.lapTrace = [];
-        if (car.isPlayer) this.msg('FLYING LAP — your only attempt', 'big', car, 4);
-        this.log(car, 'qualifying flying lap');
-      }
+      // Pit exit: the timed lap starts where the pit lane rejoins the circuit (the end of the exit ramp) and
+      // runs for one full circuit distance of legally earned progress (see above), back to the same point.
+      // Every car, player and AI, leaves from the same lane and is timed over exactly the same distance.
+      if (q.phase !== 'exit' || car.pit) return;
+      const past = t.dS(t.pit.exit1, car.s), on = past >= 0 && past < 30 && ds > past;
+      const at = on ? this.time - dt + dt * clamp((ds - past) / ds, 0, 1) : this.time;
+      q.phase = 'flying'; q.attempted = true; q.distance = on ? past : 0; q.startedAt = at;
+      car.crossings = 1; car.lapValid = true; q.reason = '';
+      car.lapStart = car.sectorStart = at; car.sectorIdx = 0; car.curSectors = [0, 0, 0]; car.lapTrace = [];
+      this.log(car, 'qualifying lap started');
     }
     completeQuali(car, result, reason = '', time = 0) {
       const q = car.q; if (!q || q.phase === 'complete') return;
@@ -5464,10 +5463,24 @@ function buildTrack(scene, track, T, opts) {
   const hw = track.halfW, N = track.N, wet = opts.wet, Q = opts.quality;
   const P = track.pit, side = P.side;
   const objs = { marshal: [], lights: [], gantryLamps: [] };
+  // The one road material (asphalt texture, normal map, rubber/patch vertex shading and the per-vertex wetness
+  // that lowers roughness in the rain). The circuit and the pit lane both use it, so they read as one surface.
+  const roadMaterial = (extra) => {
+    const mat = new THREE.MeshStandardMaterial(Object.assign({ map: T.asphalt, normalMap: T.asphaltN, normalScale: new THREE.Vector2(0.35, 0.35), vertexColors: true, roughness: wet ? 1.0 : 0.86, metalness: 0.0, envMapIntensity: wet ? 1.25 : 0.3 }, extra));
+    T.wetRough.repeat.set(0.35,0.11);mat.roughnessMap=T.wetRough;
+    mat.onBeforeCompile=sh=>{
+      sh.vertexShader=sh.vertexShader.replace('#include <common>','#include <common>\nattribute float aRoadWater; varying float vRoadWater;').replace('#include <begin_vertex>','#include <begin_vertex>\nvRoadWater=aRoadWater;');
+      sh.fragmentShader=sh.fragmentShader.replace('#include <common>','#include <common>\nvarying float vRoadWater;').replace('#include <roughnessmap_fragment>','#include <roughnessmap_fragment>\nroughnessFactor=mix(0.86,max(0.04,roughnessFactor),vRoadWater);');
+    };
+    return mat;
+  };
+  // base asphalt shade at lateral offset d (before rubber): brighter in the 1.6 m band either side of the white
+  // lines, with faint patches; the same function shades the circuit and the pit lane, so they meet seamlessly
+  const nzA = makeNoise(13);
+  const asphaltShade = (ii, d) => { const a = Math.abs(d) - hw; return 0.6 + 0.1 * Math.max(0, a <= 0 ? (a + 1.6) / 1.6 : 1 - a / 1.6) + nzA.fbm(ii * SIM.DS / 140, d / 14, 2) * 0.025; };
   // ---- asphalt with rubbered racing line (vertex colours) ----
   {
     const segs = 16, pos = [], uv = [], col = [], idx = [];
-    const nzA = makeNoise(13);
     for (let i = 0; i <= N; i++) {
       const ii = i % N;
       // braking zones get a darker, wider rubber band
@@ -5477,9 +5490,7 @@ function buildTrack(scene, track, T, opts) {
         pos.push(track.cx[ii] + track.rx[ii] * d, 0, track.cz[ii] + track.rz[ii] * d);
         uv.push(k / segs * 1.4, i * SIM.DS / 9);
         const rl = track.rlOff[ii]; const rub = Math.exp(-((d - rl) ** 2) / (3.2 + brk * 2));
-        const edge = Math.max(0, (Math.abs(d) - hw + 1.6) / 1.6);
-        const patch = nzA.fbm(ii * SIM.DS / 140, d / 14, 2);
-        let v = 0.6 - (0.16 + brk * 0.05) * rub + 0.1 * edge + patch * 0.025;
+        let v = asphaltShade(ii, d) - (0.16 + brk * 0.05) * rub;
         if (wet) v *= 0.55;
         col.push(v, v, v * 1.025);
       }
@@ -5487,12 +5498,7 @@ function buildTrack(scene, track, T, opts) {
     }
     const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3)); g.setIndex(idx);g.computeVertexNormals();g.setAttribute('aRoadWater',new THREE.Float32BufferAttribute(new Float32Array(col.length/3),1));
     T.asphalt.repeat.set(1, 1); T.asphaltN.repeat.set(1, 1);
-    const mat = new THREE.MeshStandardMaterial({ map: T.asphalt, normalMap: T.asphaltN, normalScale: new THREE.Vector2(0.35, 0.35), vertexColors: true, roughness: wet ? 1.0 : 0.86, metalness: 0.0, envMapIntensity: wet ? 1.25 : 0.3 });
-    T.wetRough.repeat.set(0.35,0.11);mat.roughnessMap=T.wetRough;
-    mat.onBeforeCompile=sh=>{
-      sh.vertexShader=sh.vertexShader.replace('#include <common>','#include <common>\nattribute float aRoadWater; varying float vRoadWater;').replace('#include <begin_vertex>','#include <begin_vertex>\nvRoadWater=aRoadWater;');
-      sh.fragmentShader=sh.fragmentShader.replace('#include <common>','#include <common>\nvarying float vRoadWater;').replace('#include <roughnessmap_fragment>','#include <roughnessmap_fragment>\nroughnessFactor=mix(0.86,max(0.04,roughnessFactor),vRoadWater);');
-    };
+    const mat = roadMaterial({});
     const m = new THREE.Mesh(g, mat); m.receiveShadow = true; G.add(m); objs.asphaltMat=mat;objs.asphaltMesh=m;objs.dryColors=col.slice();
   }
   // ---- skid marks in the braking zones (two tyre tracks, several cars' worth) ----
@@ -5557,14 +5563,38 @@ function buildTrack(scene, track, T, opts) {
   // ---- pit lane surface ----
   {
     const i0 = Math.floor(P.entry0 / SIM.DS), len = Math.ceil(P.len / SIM.DS);
-    const g = ribbon(track, i0, i0 + len, 1, (i) => {
-      const s = i * SIM.DS; const q = track.pitProg(s); if (q < 0) return null;
-      const dT = track.pitTargetD(s, null) * side;
-      const inner = track.inPitMain(s) ? hw : Math.max(hw - 0.5, dT - 4.5);
-      return [side * inner, side * (P.outerWall + 0.6), 0.004];
-    }, { flat: true, vScale: 9 });
-    const m = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ map: T.asphalt, color: wet ? 0x6e7276 : 0xa2a5aa, roughness: wet ? .2 : .85, metalness: wet ? .2 : 0, polygonOffset: true, polygonOffsetFactor: -1 }));
-    m.receiveShadow = true; G.add(m);
+    // The pit lane continues the circuit's asphalt: the same material, texture scale (u across, v along, as on the
+    // track), shading and wetness. Its brighter edge band blends into the track's at the white line, and the
+    // fast lane carries only a faint rubber line, as a lightly used lane would.
+    {
+      const segs = 10, pos = [], uv = [], col = [], idx = []; let rows = 0, prevOk = false;
+      const row = (ii, vv) => {
+        const s = ii * SIM.DS, inner = track.inPitMain(s) ? hw : Math.max(hw - 0.5, track.pitTargetD(s, null) * side - 4.5), outer = P.outerWall + 0.6;
+        const fast = Math.abs(track.pitTargetD(s, null));
+        for (let k = 0; k <= segs; k++) {
+          const a = inner + (outer - inner) * k / segs, d = side * a;
+          pos.push(track.cx[ii] + track.rx[ii] * d, 0.004, track.cz[ii] + track.rz[ii] * d);
+          uv.push((d + hw) / (2 * hw) * 1.4, vv);
+          const v = asphaltShade(ii, d) - 0.05 * Math.exp(-((a - fast) ** 2) / 3.2);
+          col.push(v, v, v * 1.025);
+        }
+        if (prevOk) for (let k = 0; k < segs; k++) { const a0 = (rows - 1) * (segs + 1) + k, b0 = a0 + segs + 1; if (side > 0) idx.push(a0, a0 + 1, b0, a0 + 1, b0 + 1, b0); else idx.push(a0, b0, a0 + 1, a0 + 1, b0, b0 + 1); }
+        rows++; prevOk = true;
+      };
+      for (let k = i0; k <= i0 + len; k++) {
+        const ii = ((k % track.N) + track.N) % track.N;
+        if (track.pitProg(ii * SIM.DS) < 0) { prevOk = false; continue; }
+        // the circuit's texture coordinates restart at the line; so do the lane's
+        if (ii === 0 && k > i0) { row(0, track.N * SIM.DS / 9); prevOk = false; }
+        row(ii, ii * SIM.DS / 9);
+      }
+      const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3)); g.setIndex(idx);
+      g.computeVertexNormals(); for (let k = 0; k < g.attributes.normal.count; k++) g.attributes.normal.setXYZ(k, 0, 1, 0);
+      g.setAttribute('aRoadWater', new THREE.Float32BufferAttribute(new Float32Array(col.length / 3), 1));
+      const mat = roadMaterial({ polygonOffset: true, polygonOffsetFactor: -1 });
+      const m = new THREE.Mesh(g, mat); m.receiveShadow = true; G.add(m);
+      objs.pitMat = mat; objs.pitMesh = m; objs.pitDryColors = col.slice();
+    }
     const [entryX,entryZ,entryH]=track.pointAt(P.commit,track.pitTargetD(P.commit,null));
     const entryMark=new THREE.Mesh(new THREE.PlaneGeometry(1.2,3.5),new THREE.MeshStandardMaterial({color:0xf5c518,roughness:.7,polygonOffset:true,polygonOffsetFactor:-2}));
     entryMark.rotation.x=-Math.PI/2;entryMark.rotation.z=-entryH;entryMark.position.set(entryX,.013,entryZ);G.add(entryMark);
@@ -5602,10 +5632,14 @@ function buildTrack(scene, track, T, opts) {
     G.add(new THREE.Mesh(g2, lineMat));
     // box markings
     const boxMat = new THREE.MeshStandardMaterial({ color: 0xf5c518, roughness: .7, polygonOffset: true, polygonOffsetFactor: -2 });
+    // inside the outline: the lane's own asphalt (same texture scale, slightly rubbered), darkened by rain like the road
+    const boxInnerMat = new THREE.MeshStandardMaterial({ map: T.asphalt, normalMap: T.asphaltN, normalScale: new THREE.Vector2(0.35, 0.35), color: new THREE.Color().setRGB(0.56, 0.56, 0.574), roughness: .86, envMapIntensity: .3, polygonOffset: true, polygonOffsetFactor: -3 });
+    objs.boxInnerMat = boxInnerMat; objs.boxInnerColor = boxInnerMat.color.clone();
+    const innerG = new THREE.PlaneGeometry(6.1, 2.8); { const u = innerG.attributes.uv; for (let k = 0; k < u.count; k++) u.setXY(k, u.getX(k) * 6.1 / 10, u.getY(k) * 2.8 / 9); }
     for (let t = 0; t < P.boxes.length; t++) {
       const [x, z, h] = track.pointAt(P.boxes[t], side * P.boxD);
       const box = new THREE.Mesh(new THREE.PlaneGeometry(6.5, 3.2), boxMat); box.rotation.x = -Math.PI / 2; box.rotation.z = -h; box.position.set(x, 0.011, z); G.add(box);
-      const inner = new THREE.Mesh(new THREE.PlaneGeometry(6.1, 2.8), new THREE.MeshStandardMaterial({ color: 0x55585e, roughness: .8, polygonOffset: true, polygonOffsetFactor: -3 })); inner.rotation.copy(box.rotation); inner.position.set(x, 0.012, z); G.add(inner);
+      const inner = new THREE.Mesh(innerG, boxInnerMat); inner.rotation.copy(box.rotation); inner.position.set(x, 0.012, z); inner.receiveShadow = true; G.add(inner);
     }
   }
   // ---- start/finish line, grid boxes ----
@@ -5837,18 +5871,21 @@ function buildGrandstands(G, track, T, opts, objs) {
       const [xa, za] = track.pointAt(sa, side * (P.outerWall + 8)), [xb, zb] = track.pointAt(sb, side * (P.outerWall + 8));
       const len = Math.hypot(xb - xa, zb - za), ang = Math.atan2(zb - za, xb - xa);
       const bld = new THREE.Mesh(new THREE.BoxGeometry(len + 0.2, 9, 14.5), new THREE.MeshStandardMaterial({ color: 0xdfe3e8, roughness: .6, metalness: .1 }));
-      bld.position.set((xa + xb) / 2, 4.5, (za + zb) / 2); bld.rotation.y = -ang; bld.castShadow = true; bld.receiveShadow = true; G.add(bld);
-      const glass = new THREE.Mesh(new THREE.BoxGeometry(len + 0.2, 2.6, 14.7), new THREE.MeshStandardMaterial({ color: 0x1d2a38, roughness: .1, metalness: .8 }));
+      // The low afternoon sun stands behind the building on every circuit, so its shadow (about 16 m) would cover
+      // the whole lane and leave it far darker than the sunlit straight beside it: the lane gets the circuit's daylight.
+      bld.position.set((xa + xb) / 2, 4.5, (za + zb) / 2); bld.rotation.y = -ang; bld.castShadow = false; bld.receiveShadow = true; G.add(bld);
+      const glass = new THREE.Mesh(new THREE.BoxGeometry(len + 0.2, 2.6, 14.7), new THREE.MeshStandardMaterial({ color: 0x343a40, roughness: .15, metalness: .7 }));
       glass.position.set((xa + xb) / 2, 7.4, (za + zb) / 2); glass.rotation.y = -ang; G.add(glass);
     }
     // garages: four identical shared service bays, numbered like the boxes in front of them
     P.boxes.forEach((bs, t) => {
       const [x, z, h] = track.pointAt(bs, side * (P.outerWall + 0.75));
       const tex = canvasTex(512, 256, (g, w, hh) => {
-        g.fillStyle = '#0d0f13'; g.fillRect(0, 0, w, hh);
+        // neutral greys in the circuit's daylight palette (the open garage reads as shade, not a blue-black void)
+        g.fillStyle = '#2a2b2d'; g.fillRect(0, 0, w, hh);
         g.fillStyle = '#c9a24a'; g.fillRect(0, 0, w, 60); g.fillStyle = '#e10600'; g.fillRect(0, 54, w, 8);
         g.fillStyle = '#0d0f13'; g.font = '900 42px Titillium Web, Arial'; g.textAlign = 'center'; g.fillText('SERVICE BOX ' + (t + 1), w / 2, 44);
-        const gr = g.createLinearGradient(0, 70, 0, hh); gr.addColorStop(0, '#3a4048'); gr.addColorStop(1, '#14171c'); g.fillStyle = gr; g.fillRect(20, 70, w - 40, hh - 70);
+        const gr = g.createLinearGradient(0, 70, 0, hh); gr.addColorStop(0, '#5a5c60'); gr.addColorStop(1, '#2e3033'); g.fillStyle = gr; g.fillRect(20, 70, w - 40, hh - 70);
         g.fillStyle = '#c9a24a'; g.globalAlpha = .35; for (let k = 0; k < 6; k++) g.fillRect(40 + k * 75, 150, 50, 106); g.globalAlpha = 1;
       });
       const pl = new THREE.Mesh(new THREE.PlaneGeometry(14, 7.5), new THREE.MeshStandardMaterial({ map: tex, roughness: .6, emissive: 0x222222, emissiveMap: tex, emissiveIntensity: .35 }));
@@ -6941,7 +6978,7 @@ if (!['on','off'].includes(S.quali)) S.quali = 'on';
 if (!SIM.CIRCUITS.some(c => c.id === S.circuit)) S.circuit = SIM.CIRCUITS[0].id;
 const saveSettings = () => { try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(S)); } catch(e) { /* ignore */ } };
 const SCHEMA = [
-  { k:'quali', label:'Single-lap qualifying', type:'seg', opts:[['on','On'],['off','Off']], desc:()=> 'One untimed out-lap, then one flying lap. Disabled: a random grid position.' },
+  { k:'quali', label:'Qualifying', type:'seg', opts:[['on','On'],['off','Off']], desc:()=> 'Leave the pits straight into one timed lap of the full circuit distance. Disabled: a random grid position.' },
   { k:'difficulty', label:'AI difficulty', type:'range', min:0, max:100, fmt:v=>v<25?`Novice (${v})`:v<50?`Club (${v})`:v<75?`Pro (${v})`:v<92?`Expert (${v})`:`Legend (${v})` },
   { k:'team', label:'Your team', type:'select', opts:()=>SIM.TEAMS.map((t,i)=>[i,t.name]) },
   { k:'startTyre', label:'Your starting tyre', type:'seg', opts:[['S','Soft'],['M','Medium'],['H','Hard'],['I','Intermediate'],['W','Full Wet']] },
@@ -7507,7 +7544,7 @@ function startSession(cfg) {
   G.flashes.length = 0; G.hitT.clear(); G.fx.hit = G.fx.dmg = G.fx.cut = G.fx.sev = 0;
   $('hud').classList.toggle('hidden', !!G.attract);
   $('menu').classList.toggle('hidden', !G.attract);
-  $('sessName').textContent = cfg.type === 'quali' ? 'ONE-LAP QUALIFYING' : 'GRAND PRIX';
+  $('sessName').textContent = cfg.type === 'quali' ? '' : 'GRAND PRIX';
   $('lights').classList.toggle('hidden', cfg.type !== 'race' || !!G.attract);
   G.lightsShown = -1; G.lastLights = 0;
   G.vscUi = null; $('vsc').classList.add('hidden');
@@ -7763,6 +7800,10 @@ function initHud() {
   for (let k = 0; k < 10; k++) $('rpmBar').appendChild(document.createElement('i'));
   G.mm = { cvs: $('minimap'), ctx: $('minimap').getContext('2d') };
   fitHud(); window.addEventListener('resize', fitHud);
+  // wheel / trackpad scrolling of the leaderboard stays on the leaderboard
+  const board = $('board');
+  board.addEventListener('wheel', (e) => { e.stopPropagation(); G.boardScrollT = performance.now(); }, { passive: true });
+  board.addEventListener('mousedown', (e) => e.preventDefault());
   G.tel = { cvs: $('telCanvas'), ctx: $('telCanvas').getContext('2d'), g: $('gCanvas').getContext('2d'), buf: [] };
   prepMinimap();
 }
@@ -7778,6 +7819,21 @@ function boardCapacity() {
   const hz = G.hudZoom || 1, room = stack.top - board.top - (12 + 10) * hz;
   G.boardCap = Math.max(4, Math.floor(room / (24 * hz))); G.boardCapT = performance.now() + 1000;
   return G.boardCap;
+}
+// The leaderboard lists the whole field in a scrolling window as tall as the rows it used to show: the whole
+// field on the grid (or on Tab) when it fits, otherwise the eight rows of the condensed view.
+const BOARD_ROWS = 8, BOARD_ROW_H = 24;
+function updateBoard(sess) {
+  const el = $('board'), n = (sess.order || sess.cars).length, cap = boardCapacity();
+  const rows = Math.min(n, (G.showFullBoard || !sess.lightsOut) ? cap : Math.min(cap, BOARD_ROWS));
+  const h = rows * BOARD_ROW_H + 3 + 'px'; if (el.style.maxHeight !== h) el.style.maxHeight = h;
+  el.innerHTML = boardRows();
+  // follow the focus car, unless the player has scrolled the list in the last few seconds
+  if (performance.now() - (G.boardScrollT || -1e9) < 4000) return;
+  const me = el.querySelector('.row.me'); if (!me) return;
+  const top = me.offsetTop, view = el.clientHeight;
+  if (top < el.scrollTop + BOARD_ROW_H * 2 || top + BOARD_ROW_H > el.scrollTop + view - BOARD_ROW_H * 2)
+    el.scrollTop = clamp(top - (view - BOARD_ROW_H) / 2, 0, el.scrollHeight - view);
 }
 function prepMinimap() {
   const t = G.track; let minX = 1e9, maxX = -1e9, minZ = 1e9, maxZ = -1e9;
@@ -7910,25 +7966,12 @@ function drawMinimap() {
     g.lineWidth = me ? 3.5 : 2; g.strokeStyle = me ? '#fff' : 'rgba(0,0,0,.7)'; g.stroke();
   }
 }
-function boardRows(cap) {
+function boardRows() {
   const sess = G.session; const order = sess.order || sess.cars; const focus = G.focus;
-  const n = order.length; const pi = Math.max(0, order.indexOf(focus));
-  let idx = [];
-  // the whole field on the grid (or on Tab) when it fits; otherwise the top three and the cars around the focus car
-  if (n <= Math.min(cap, 8) || ((G.showFullBoard || !sess.lightsOut) && n <= cap)) idx = order.map((c, k) => k);
-  else {
-    let top = 3, r = 2;
-    const build = () => { const a = []; for (let k = 0; k < top; k++) a.push(k); for (let k = Math.max(top, pi - r); k <= Math.min(n - 1, Math.max(pi + r, top + 2 * r)); k++) a.push(k); return [...new Set(a)].filter(k => k < n); };
-    idx = build();
-    while (idx.length + (idx[idx.length - 1] >= idx.length ? 0.5 : 0) > cap && (r > 1 || top > 1)) { if (r > 1) r--; else top--; idx = build(); }
-  }
-  idx = [...new Set(idx)].filter(k => k < n).sort((a, b) => a - b);
-  let html = ''; let prev = -1;
-  for (const k of idx) {
-    if (prev >= 0 && k !== prev + 1) html += '<div class="row sep">•••</div>';
-    prev = k;
+  let html = '';
+  for (let k = 0; k < order.length; k++) {
     const c = order[k]; let gap;
-    if (sess.type === 'quali') { gap = c.bestLap ? (k === 0 ? fmt(c.bestLap) : '+' + (c.bestLap - order[0].bestLap).toFixed(3)) : (c.q.phase === 'out' ? 'OUT LAP' : c.q.phase === 'flying' ? (c.lapValid ? 'FLYING' : 'INVALID') : c.q.phase === 'waiting' ? 'WAITING' : c.q.result === 'invalid' ? 'INVALID' : c.q.result === 'dnf' ? 'DNF' : 'NO TIME'); }
+    if (sess.type === 'quali') { gap = c.bestLap ? (k === 0 ? fmt(c.bestLap) : '+' + (c.bestLap - order[0].bestLap).toFixed(3)) : (c.q.phase === 'exit' ? 'PIT EXIT' : c.q.phase === 'flying' ? (c.lapValid ? 'FLYING' : 'INVALID') : c.q.phase === 'waiting' ? 'WAITING' : c.q.result === 'invalid' ? 'INVALID' : c.q.result === 'dnf' ? 'DNF' : 'NO TIME'); }
     else if (c.dnf) gap = 'DNF';
     else if (k === 0) gap = '--';
     else if (c.lapsDown > 0 && !c.finished) gap = '+' + c.lapsDown + ' LAP' + (c.lapsDown > 1 ? 'S' : '');
@@ -8041,16 +8084,16 @@ function updateHud(dt) {
   // top-left
   if (sess.type === 'race') { $('lapNow').textContent = Math.max(1, Math.min(sess.totalLaps, p.laps + (p.finished ? 0 : 1))); $('lapTot').textContent = '/ ' + sess.totalLaps; }
   $('lapNow').classList.toggle('txt', sess.type !== 'race');
-  if (sess.type !== 'race') { $('lapNow').textContent = p.q.phase === 'waiting' ? 'PIT LANE' : p.q.phase === 'out' ? 'OUT LAP' : p.q.phase === 'flying' ? 'FLYING LAP' : 'COMPLETE'; $('lapTot').textContent = p.q.phase === 'flying' ? '1 / 1' : ''; }
+  if (sess.type !== 'race') { $('lapNow').textContent = p.q.phase === 'waiting' ? 'PIT LANE' : p.q.phase === 'exit' ? 'PIT EXIT' : p.q.phase === 'flying' ? 'FLYING LAP' : 'COMPLETE'; $('lapTot').textContent = p.q.phase === 'flying' ? '1 / 1' : ''; }
   $('boardGapH').textContent = sess.type === 'quali' ? 'TIME' : 'GAP';
-  $('board').innerHTML = boardRows(boardCapacity());
+  updateBoard(sess);
   // top-right
   $('posNow').textContent = p.position || '-'; $('posTot').textContent = '/ ' + sess.cars.length;
   $('tBest').textContent = p.bestLap ? fmt(p.bestLap) : '--:--.---';
   $('tLast').textContent = p.lastLap ? fmt(p.lastLap) : '--:--.---';
   const started = sess.lightsOut && (sess.type !== 'quali' || p.q.phase === 'flying');
   const cur = sess.type === 'quali' && p.q.phase === 'complete' ? p.q.time : started ? sess.time - (sess.type === 'race' && p.crossings === 0 ? sess.lightsOutTime : p.lapStart) : 0;
-  $('tCur').textContent = sess.type === 'quali' && p.q.phase === 'out' ? 'UNTIMED' : sess.type === 'quali' && p.q.phase === 'waiting' ? 'W TO LEAVE' : fmt(Math.max(0, cur)) + (!p.lapValid && sess.type === 'quali' && p.q.attempted ? ' ✕' : '');
+  $('tCur').textContent = sess.type === 'quali' && p.q.phase === 'exit' ? 'PIT EXIT' : sess.type === 'quali' && p.q.phase === 'waiting' ? 'W TO LEAVE' : fmt(Math.max(0, cur)) + (!p.lapValid && sess.type === 'quali' && p.q.attempted ? ' ✕' : '');
   $('tCur').style.color = !p.lapValid && (sess.type === 'race' || p.q.attempted) ? '#ff6b6b' : '';
   if (p.bestTrace && p.bestTrace.length && p.lapTrace.length > 3 && started) { const d = p.delta; $('tDelta').textContent = (d >= 0 ? '+' : '') + d.toFixed(3); $('tDelta').className = 'v num ' + (d >= 0 ? 'delta-pos' : 'delta-neg'); }
   else { $('tDelta').textContent = '--.--'; $('tDelta').className = 'v num'; }
@@ -8086,20 +8129,21 @@ function updateHud(dt) {
   const blue = sess.type === 'race' ? !!p.blueFlag.target && !sess.over && !sess.finishedFlag && !sess.blueNeutralized() : !!(p.ai && p.ai.blue);
   const vscGreen = sess.vsc.phase === 'green' && sess.time - sess.vsc.endedAt < 2.5;
   fb.className = sess.vscActive ? 'vsc' : vscGreen ? 'green' : yel ? 'yellow' : blue ? 'blue' : '';
-  $('sessName').textContent = sess.type === 'quali' ? 'ONE-LAP QUALIFYING' : sess.vscActive ? 'VSC' : 'GRAND PRIX';
+  $('sessName').textContent = sess.type === 'quali' ? '' : sess.vscActive ? 'VSC' : 'GRAND PRIX';
   $('sessName').classList.toggle('vsc', sess.vscActive);
   const blueIndicator = $('blueFlag');
   blueIndicator.classList.toggle('active', blue);
   blueIndicator.setAttribute('aria-hidden', String(!blue));
   $('blueFlagHint').textContent = p.blueFlag.warned ? 'Warning — stop blocking the lapping car' : 'Allow the lapping car to pass safely';
-  // spectator bar / quali timer
+  // qualifying status bar: only what the player needs right now (no session progress counter)
   const qt = $('qtimer');
-  if (sess.type === 'quali' && !G.attract) {
-    qt.classList.remove('hidden');
-    const done = sess.cars.filter(c => c.q.phase === 'complete').length;
-    const q = p.q, phase = q.phase === 'waiting' ? (q.ready ? 'WAITING FOR PIT EXIT' : 'W TO LEAVE THE PITS') : q.phase === 'out' ? 'OUT LAP · WARM YOUR TYRES' : q.phase === 'flying' ? (p.lapValid ? 'ONE FLYING LAP · 1 / 1' : 'LAP INVALID · NO RETRY') : q.result === 'valid' ? 'LAP RECORDED · ' + fmt(q.time) : (q.reason || 'No valid time').toUpperCase();
-    qt.textContent = phase + ' · ' + done + ' / ' + sess.cars.length + ' completed' + (G.timeScale > 1 ? ' · ×' + G.timeScale : '');
-  } else qt.classList.add('hidden');
+  const q = sess.type === 'quali' && !G.attract ? p.q : null;
+  const qText = !q ? '' : q.phase === 'waiting' ? (q.ready ? 'WAITING FOR A CLEAR PIT EXIT' : sess.time >= 7 ? 'PRESS W TO LEAVE THE PITS' : '')
+    : q.phase === 'flying' ? (p.lapValid ? '' : 'LAP INVALID · NO RETRY')
+    : q.phase === 'complete' ? (q.result === 'valid' ? 'LAP RECORDED · ' + fmt(q.time) : (q.reason || 'No valid time').toUpperCase()) : '';
+  const qScale = q && G.timeScale > 1 ? '×' + G.timeScale : '';
+  qt.textContent = qText && qScale ? qText + ' · ' + qScale : qText || qScale;
+  qt.classList.toggle('hidden', !qt.textContent);
   $('fps').classList.toggle('hidden', true);
   $('telemetry').classList.toggle('hidden', !G.showTel);
   drawMinimap();
@@ -8975,7 +9019,9 @@ function updateWeatherView(dt) {
   if(w && w.lightning>0) {R.sun.intensity+=w.lightning*5;G.fx.hit=Math.max(G.fx.hit,w.lightning*0.35);}
   if(G.rain){G.rain.visible=rain>0.01;G.rain.material.opacity=0.04+rain*0.24;G.rain.geometry.setDrawRange(0,Math.floor(G.rainDrops.length/3*(0.12+rain*0.88))*2);}
   if(G.splash)G.splash.points.visible=rain>0.01;
-  const road=G.trackObj.objs.asphaltMat;road.roughness=lerp(0.86,0.15,water);road.envMapIntensity=lerp(0.3,1.25,water);
+  const tob=G.trackObj.objs;
+  for(const road of [tob.asphaltMat,tob.pitMat]){if(!road)continue;road.roughness=lerp(0.86,0.15,water);road.envMapIntensity=lerp(0.3,1.25,water);}
+  if(tob.boxInnerMat){tob.boxInnerMat.roughness=lerp(0.86,0.15,water);tob.boxInnerMat.envMapIntensity=lerp(0.3,1.25,water);tob.boxInnerMat.color.copy(tob.boxInnerColor).multiplyScalar(1-water*0.43);}
   // Recolour once a second, keeping the existing rubber and asphalt detail.
   if(sess.time>=(G.nextRoadWeather||0)) {
     G.nextRoadWeather=sess.time+1;
@@ -8987,6 +9033,12 @@ function updateWeatherView(dt) {
       const shade=1-local*0.43;for(let c=0;c<3;c++)attrs.color.array[v*3+c]=base[v*3+c]*shade;
     }
     attrs.color.needsUpdate=true;attrs.aRoadWater.needsUpdate=true;
+    // the pit lane: little traffic dries no line into it, so it carries the circuit's general water level
+    if(tob.pitMesh){
+      const pa=tob.pitMesh.geometry.attributes, pb=tob.pitDryColors, shade=1-water*0.43;
+      pa.aRoadWater.array.fill(water);for(let k=0;k<pb.length;k++)pa.color.array[k]=pb[k]*shade;
+      pa.color.needsUpdate=true;pa.aRoadWater.needsUpdate=true;
+    }
     G.world.traverse(o=>{if(o.userData.cloud){o.material.opacity=0.22+cloud*0.30;o.material.color.setScalar(1-cloud*0.35);}});
   }
   if(G.rain && rain>0.01)updateRain(G.paused?0:dt);
