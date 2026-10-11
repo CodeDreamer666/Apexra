@@ -41,6 +41,10 @@
   #flagbar { position: absolute; left: 0; right: 0; top: 0; height: 6px; z-index: 2; }
   #flagbar.yellow { background: repeating-linear-gradient(90deg, #f5c518 0 40px, #222 40px 80px); }
   #flagbar.blue { background: #1e88e5; }
+  #blueFlag { position: absolute; top: 24px; left: 50%; transform: translate(-50%, -5px); display: flex; align-items: center; gap: 10px; padding: 9px 16px; border-color: rgba(96,165,255,.65) !important; color: #e5f1ff; font-size: 17px; font-weight: 700; letter-spacing: 1.5px; opacity: 0; visibility: hidden; transition: opacity .2s, transform .2s, visibility .2s; }
+  #blueFlag.active { opacity: 1; visibility: visible; transform: translate(-50%, 0); }
+  #blueFlag svg { width: 22px; height: 24px; flex-shrink: 0; }
+  #blueFlag small { display: block; font-size: 12px; font-weight: 600; letter-spacing: .4px; color: #a9cfff; }
 
   /* left column: leaderboard, weather, track map */
   #hud-left { position: absolute; left: 24px; top: 24px; bottom: 24px; width: 350px; display: flex; flex-direction: column; gap: 12px; }
@@ -395,6 +399,7 @@
 <div id="hud" class="hidden">
   <div id="accentbar"></div>
   <div id="flagbar"></div>
+  <div id="blueFlag" class="panel hz" role="status" aria-live="polite" aria-hidden="true"><svg viewBox="0 0 24 26" aria-hidden="true"><path d="M4 25V2" stroke="#bcdcff" stroke-width="2"/><path d="M5 3C10-1 15 7 22 3V16C15 20 10 12 5 16Z" fill="#3b8bff"/></svg><div>BLUE FLAG<small id="blueFlagHint">Allow the lapping car to pass safely</small></div></div>
   <div id="hud-left" class="hz">
     <div id="hud-tl" class="panel">
       <div class="lap"><span>LAP</span><b class="num" id="lapNow">1</b><span class="tot num" id="lapTot">/ 10</span><span class="sess" id="sessName">RACE</span></div>
@@ -1260,6 +1265,7 @@ const SIM = (function () {
       this.tp = []; this.lapTimes = []; this.position = 0; this.gapLeader = 0; this.gapAhead = 0; this.intervalAhead = 0;
       this.finished = false; this.finishTime = 0; this.dnf = false; this.dnfReason = '';
       this.penalty = 0; this.warnings = 0; this.offTrackFlag = false; this.penaltyLog = [];
+      this.blueFlag = { target: null, gap: 0, age: 0, receding: 0, safe: false, side: 0, ease: 0, blocking: 0, moves: 0, lastMove: -99, warned: false, penalized: false, lastD: 0, lastTargetD: 0 };
       this.pitStops = 0; this.pit = null; // pit state object when in pit lane
       this.boxRequest = false; this.boxCompound = null; this.outLap = false; this.inGarage = false;
       this.started = false; this.frozen = false; this.ghost = false;
@@ -2140,7 +2146,7 @@ const SIM = (function () {
       this.tick = car.id % 24;
       this.neighbors = []; this.attackTarget = null; this.defending = false; this.defMoveUsed = false; this.lastDefendCorner = -1;
       this.followTime = 0; this.plan = null; this.boxThisLap = false; this.lastPlanLap = -1;
-      this.pressure = 0; this.blue = false; this.pushMode = 0; this.tyreMode = 'normal'; this.smoothThrottle = 0;
+      this.pressure = 0; this.blue = false; this.blueYield = false; this.pushMode = 0; this.tyreMode = 'normal'; this.smoothThrottle = 0;
     }
     get diffComp() { return this.race.difficulty; }
     dPlanAt(i) {
@@ -2226,6 +2232,11 @@ const SIM = (function () {
         if (this.steerSat > 0.01) th *= clamp(1 - this.steerSat * 12, 0, 1);
         if (this.steerSat > 0.12 && speed > 15) { th = 0; inp.brake = 0.25; }
         if (earlyThrottle && dv > 0) th = 1;
+        // Ease the accelerator only on a clear straight with the passing lane
+        // open. Never manufacture a braking target or keep slowing indefinitely.
+        const blue = car.blueFlag;
+        if (this.blueYield && blue.target && blue.safe && blue.ease < 4 && blue.gap > -6 && blue.gap < 80 &&
+            speed > 30 && Math.abs(car.d - blue.target.d) > 2.6) th = Math.min(th, .7);
         // overheating: lift and coast to bring the power unit temperature down
         if (D.engT > 122) th = Math.min(th, D.engT > 132 ? 0.55 : 0.8);
         const preserving = this.tyreMode === 'preserve';
@@ -2553,11 +2564,10 @@ const SIM = (function () {
         else if (toEntry > 0 && toEntry < 700) { this.pitting = toEntry < 420; this.pitEntryBlend = smooth01((420 - toEntry) / 250); }
         else { this.pitting = false; this.pitEntryBlend = 0; }
       } else if (!car.pit) { this.pitting = false; this.pitEntryBlend = 0; }
-      if (car.pit) { this.vLimit = 110; this.laneW = 0; return; }
+      if (car.pit) { this.vLimit = 110; this.laneW = 0; this.blue = this.blueYield = false; return; }
       // ---- yellow / blue flags ----
       const yellow = race.yellowAt(car.idx) || race.yellowAt(t.wrapI(car.idx + 60));
-      this.blue = false;
-      for (const n of nb) if (n.ds < 0 && n.ds > -45 && n.o.totalDist > car.totalDist + t.length * 0.5 && race.type === 'race') this.blue = true;
+      this.blue = race.type === 'race' && !!car.blueFlag.target && race.blueEligible(car) && !race.blueNeutralized();
       if (race.type === 'quali' && car.q && car.q.phase !== 'flying') { for (const n of nb) if (n.ds < 0 && n.ds > -70 && n.o.q && n.o.q.phase === 'flying') this.blue = true; for (const n of nb) if (n.ds < 0 && n.ds > -70 && n.o.isPlayer && !n.o.pit) this.blue = true; }
       // ---- attack / defend ----
       let ahead = null, behind = null;
@@ -2570,10 +2580,12 @@ const SIM = (function () {
       const firstLap = race.lap1Caution(car);
       if (ahead && race.type === 'race' && !yellow) {
         const gapT = ahead.ds / Math.max(v, 10);
-        const lappedCar = ahead.o.totalDist < car.totalDist - t.length * 0.5;
-        if (gapT < 1.1 && (ahead.dv > -1 || lappedCar || (ahead.o.ai && ahead.o.ai.blue))) this.attackTarget = { car: ahead.o, gap: gapT, ds: ahead.ds };
+        const lappedCar = race.blueLapping(ahead.o, car, ahead.ds);
+        const safeLapping = !lappedCar || race.bluePassSafe(car) || ahead.ds < 6 && Math.abs(car.d - ahead.o.d) > 2.6;
+        if (gapT < 1.1 && safeLapping && (ahead.dv > -1 || lappedCar || (ahead.o.ai && ahead.o.ai.blue))) this.attackTarget = { car: ahead.o, gap: gapT, ds: ahead.ds };
       }
-      this.defending=!!(behind && race.type==='race' && !yellow && !this.blue && -behind.ds/Math.max(v,10)<0.8 && p.craft>0.6);
+      this.defending=!!(behind && race.type==='race' && !yellow &&
+        !(this.blue && behind.o === car.blueFlag.target) && -behind.ds/Math.max(v,10)<0.8 && p.craft>0.6);
       this.pressure = behind && race.type === 'race' && -behind.ds / Math.max(v, 10) < 0.8 ? 0.4 : 0;
       // ---- lane selection ----
       const lim = t.halfW - 1.3;
@@ -2583,6 +2595,13 @@ const SIM = (function () {
       const distToCorner = corner ? t.rlDist(car.idx, corner.apex) : 1e9;
       const insideSide = corner ? corner.dir : 0;
       const cands = [-lim, -lim * 0.55, -lim * 0.15, lim * 0.15, lim * 0.55, lim, rlA, clamp(car.d, -lim, lim)];
+      const blue = car.blueFlag;
+      const sameLapBattle = nb.some(n => Math.abs(n.o.totalDist - car.totalDist) < 25 && Math.abs(n.ds) < 20 && !n.o.pit);
+      this.blueYield = this.blue && race.type === 'race' && !yellow && !this.pitting &&
+        !sameLapBattle && (blue.safe || blue.side !== 0 && blue.gap < 15);
+      if (this.blueYield && !blue.side) blue.side = Math.abs(rlA) > 1 ? -Math.sign(rlA) : (car.d >= 0 ? 1 : -1);
+      const yieldLane = blue.side * lim * .8;
+      if (this.blueYield) cands.push(yieldLane);
       let bestC = rlA, bestCost = 1e18;
       const horizon = 10 + v * 2.2;
       const curLane = this.laneW > 0.5 ? this.laneD : car.d;
@@ -2611,11 +2630,12 @@ const SIM = (function () {
             if (distToCorner > 350 && n.ds > 12 && n.ds < 70 && closing > 0) cost -= 3.5;
             if (o.spun || o.speed < 15 || o.retiring || o.damage.anyPuncture()) cost += 60;
           }
-          if (n.ds < 0 && n.ds > -30 && this.blue && latGap < 3) cost += 3;
+          if (n.o === blue.target && this.blueYield && n.ds > -80 && latGap < 3) cost += 8;
+          if (race.type === 'quali' && n.ds < 0 && n.ds > -30 && this.blue && latGap < 3) cost += 3;
         }
         if (!feasible) continue;
         // overtaking: prefer inside of the next corner when attacking
-        if (this.attackTarget && !yellow && !firstLap || (this.attackTarget && firstLap && p.aggr > 0.7)) {
+        if (!this.blueYield && (this.attackTarget && !yellow && !firstLap || (this.attackTarget && firstLap && p.aggr > 0.7))) {
           const tgt = this.attackTarget.car; const insideLane = insideSide * lim * 0.85;
           if (distToCorner < 320 && distToCorner > 40) {
             if (Math.abs(cd - insideLane) < 2.5) cost -= 5 * (0.5 + p.craft) * (0.6 + p.aggr * 0.6);
@@ -2624,14 +2644,15 @@ const SIM = (function () {
           }
         }
         // defending: cover the inside before the braking zone (one move)
-        if (behind && race.type === 'race' && !this.blue && distToCorner < 300 && distToCorner > 90) {
+        if (behind && race.type === 'race' && !(this.blue && behind.o === blue.target) && !this.blueYield && distToCorner < 300 && distToCorner > 90) {
           const gapB = -behind.ds / Math.max(v, 10);
           if (gapB < 0.6 && behind.dv < 1.5) {
             const insideLane = insideSide * lim * 0.75;
             if (Math.abs(cd - insideLane) < 2.2) cost -= 4.5 * p.craft * (0.5 + p.aggr * 0.6);
           }
         }
-        if (this.blue && Math.abs(cd - rlA) < 2) cost += 8;
+        if (this.blueYield) cost += Math.abs(cd - yieldLane) * 5;
+        else if (this.blue && race.type === 'quali' && Math.abs(cd - rlA) < 2) cost += 8;
         if (cost < bestCost) { bestCost = cost; bestC = cd; }
       }
       // braking/corner: don't change lane significantly (no moving under braking)
@@ -2647,7 +2668,12 @@ const SIM = (function () {
         bestC = this.limpSide * lim;
       } else this.limpSide = null;
       const offLine = Math.abs(bestC - rlA) > 1.0;
-      if (offLine) { this.laneD = bestC; this.laneWTarget = 1; }
+      if (offLine) {
+        // Bound blue-flag lateral requests as well as the existing lane blend;
+        // the chosen side remains stable for this encounter.
+        this.laneD = this.blueYield ? curLane + clamp(bestC - curLane, -.45, .45) : bestC;
+        this.laneWTarget = 1;
+      }
       else this.laneWTarget = 0;
       // corner exit: return to racing line once clear
       const rate = 0.24 * (1 + v / 40);
@@ -2665,7 +2691,7 @@ const SIM = (function () {
       }
       // Yield by easing off while moving; a blue flag must never request a
       // negative speed and trap a stationary traffic queue indefinitely.
-      if (this.blue && distToCorner > 200 && v > 10) this.vLimit = Math.min(this.vLimit, v - 1);
+      if (this.blue && race.type === 'quali' && distToCorner > 200 && v > 10) this.vLimit = Math.min(this.vLimit, v - 1);
       // push mode (final laps or attacking)
       this.pushMode = this.tyreMode === 'preserve' ? 0 : this.tyreMode === 'push' || this.attackTarget ? 1 : 0;
     }
@@ -3107,6 +3133,103 @@ const SIM = (function () {
     }
     get leader() { return this.order ? this.order[0] : this.cars[0]; }
     yellowAt(i) { if (this.type !== 'race') return this.yellow[Math.floor(i / this.track.N * this.track.marshalCount)] > 0 && this.type === 'race'; return this.yellow[Math.floor(i / this.track.N * this.track.marshalCount)] > 0; }
+    // The supplied version has sector yellows, but no VSC controller. Keep one
+    // neutralization gate so a VSC controller can suspend detection and sanctions.
+    blueNeutralized() { return !!(this.vscActive || this.vsc && (this.vsc.active || ['active', 'ending'].includes(this.vsc.phase))); }
+    blueRouteSpeed(car) {
+      const h = this.track.heading[car.idx];
+      return car.vx * Math.cos(h) + car.vz * Math.sin(h);
+    }
+    blueEligible(car) {
+      return !car.dnf && !car.finished && !car.retiring && !car.ghost && !car.inGarage && !car.pit && !car.spun &&
+        !(car.ai && (car.ai.mode === 'recover' || car.ai.pitting || car.ai.pitEntryBlend > 0)) &&
+        !(car.isPlayer && car.boxRequest && this.track.dS(car.s, this.track.pit.entry0) > -30 && this.track.dS(car.s, this.track.pit.entry0) < 420) &&
+        this.time >= (car.blueRejoinUntil || 0) && Math.abs(car.d) < this.track.halfW - .5;
+    }
+    blueLapping(car, other, gap) {
+      // Align the two total distances to the same place on the racing route.
+      // Across the timing line, completed lap counts can briefly be equal even
+      // though the approaching car is a full lap ahead at this track position.
+      const L = this.track.length, aligned = other.totalDist - car.totalDist + gap;
+      const lapsAhead = Math.round(aligned / L);
+      return other.laps >= car.laps && lapsAhead >= 1 && Math.abs(aligned - lapsAhead * L) < 35;
+    }
+    bluePassSafe(car) {
+      const t = this.track, wet = car.surfaceWet ?? this.wet;
+      if (car.speed < 18 || car.input.brake > .1 || Math.abs(car.slideAngle) > .08 || car.offTrackFlag || this.blueNeutralized()) return false;
+      // Look through the braking zone, not just at the current straight. A
+      // longer clear stretch and less curvature are required on a wet surface.
+      const horizon = Math.max(65, car.speed * (2.5 + wet));
+      for (let ds = 0; ds <= horizon; ds += 8) {
+        const i = t.wrapI(car.idx + Math.round(ds / DS));
+        if (this.yellowAt(i) || Math.abs(t.kappa[i]) > .0025 / (1 + wet * 1.5) || t.refSpeed[i] < Math.max(38, car.speed * .8)) return false;
+      }
+      return true;
+    }
+    clearBlueFlag(car) {
+      const b = car.blueFlag;
+      b.target = null; b.safe = false; b.side = 0; b.receding = b.ease = b.age = b.blocking = b.moves = 0;
+      b.warned = b.penalized = false; b.lastMove = -99;
+      if (car.ai && this.type === 'race') { car.ai.blue = false; car.ai.blueYield = false; }
+    }
+    updateBlueFlags(dt) {
+      const t = this.track;
+      const racing = this.type === 'race' && this.lightsOut && !this.over && !this.finishedFlag && !this.blueNeutralized();
+      const eligible = racing ? this.cars.filter(c => this.blueEligible(c)) : [];
+      for (const car of this.cars) {
+        const b = car.blueFlag;
+        if (!eligible.includes(car)) { this.clearBlueFlag(car); continue; }
+        let target = b.target, gap = target ? t.dS(target.s, car.s) : 0;
+        const range = o => clamp(35 + o.speed * 1.6 + Math.max(0, o.speed - car.speed) * 2, 60, 180);
+        if (target) {
+          b.receding = this.blueRouteSpeed(target) < this.blueRouteSpeed(car) - 1.5 ? b.receding + dt : Math.max(0, b.receding - dt);
+          if (!eligible.includes(target) || !this.blueLapping(car, target, gap) || gap < -10 || gap > range(target) + 65 || b.receding > 2.5) {
+            this.clearBlueFlag(car); target = null;
+          }
+        }
+        if (!target) {
+          let nearest = Infinity;
+          for (const other of eligible) {
+            if (other === car) continue;
+            const ds = t.dS(other.s, car.s), closing = this.blueRouteSpeed(other) - this.blueRouteSpeed(car);
+            if (ds <= 0 || ds > range(other) || ds >= nearest || !this.blueLapping(car, other, ds)) continue;
+            if (this.blueRouteSpeed(other) < 5) continue;
+            // A faster lapped car may unlap itself without being told to yield.
+            if (closing < .5 && !(ds < 25 && closing >= -.5)) continue;
+            target = other; gap = ds; nearest = ds;
+          }
+          if (target) { b.target = target; b.lastD = car.d; b.lastTargetD = target.d; }
+        }
+        if (!target) continue;
+        b.gap = gap; b.age = (b.age || 0) + dt;
+        b.safe = this.bluePassSafe(car) && this.bluePassSafe(target);
+        if (b.safe && gap < 80) b.ease += dt;
+        // Sanctions need evidence of repeated reactive blocking, not merely a
+        // long encounter or an AI that cannot complete its overtaking attempt.
+        if (car.isPlayer && !car.ai && !car.autoDrive) this.blueObstruction(car, dt);
+        b.lastD = car.d; b.lastTargetD = target.d;
+      }
+    }
+    blueObstruction(car, dt) {
+      const b = car.blueFlag, o = b.target, t = this.track;
+      const battling = this.cars.some(n => n !== car && n !== o && this.blueEligible(n) &&
+        Math.abs(n.totalDist - car.totalDist) < 35 && Math.abs(t.dS(car.s, n.s)) < 35);
+      const opportunity = b.safe && this.wet < .45 && b.age > 4 && b.gap > 4 && b.gap < 25 &&
+        car.speed > 30 && o.input.throttle > .5 && !battling;
+      const lateral = Math.abs(o.d - car.d), oldLateral = Math.abs(b.lastTargetD - b.lastD);
+      const playerMove = car.d - b.lastD, otherMove = o.d - b.lastTargetD;
+      if (opportunity && lateral < 2.5 && lateral < oldLateral - .07 && Math.abs(otherMove) > .08 &&
+          playerMove * otherMove > 0 && this.time - b.lastMove > 1.2) { b.moves++; b.lastMove = this.time; }
+      if (opportunity && b.moves >= 2 && lateral < 2.5) b.blocking += dt;
+      else b.blocking = Math.max(0, b.blocking - dt * 2);
+      if (b.blocking >= 6 && !b.warned) {
+        b.warned = true; this.msg('BLUE FLAG — warning: stop blocking the lapping car', 'info', car, 4);
+      }
+      if (b.warned && !b.penalized && b.blocking >= 14 && this.time >= (car.bluePenaltyUntil || 0)) {
+        b.penalized = true; car.bluePenaltyUntil = this.time + 60;
+        this.addPenalty(car, 5, 'Repeated blocking under blue flags');
+      }
+    }
     // ---------- main update ----------
     update(frameDt, timeScale = 1, budgetMs = 24) {
       if (this.over && this.type !== 'race') return;
@@ -3140,6 +3263,8 @@ const SIM = (function () {
         }
       }
       if (this.type === 'quali') this.qualifyingTick();
+
+      if (this.step === 1 || this.step % 24 === 0) this.updateBlueFlags(this.step === 1 ? dt : PHYS_DT * 24);
 
       // controls
       for (const car of this.cars) {
@@ -3437,6 +3562,7 @@ const SIM = (function () {
           const visit = car.pitHistory[car.pitHistory.length - 1]; if (visit && visit.entry === P.entryTime) visit.laneTime = this.time - P.entryTime;
           car.lastPit = { ...P, exitTime: this.time };
           car.pit = null;
+          car.blueRejoinUntil = this.time + 3;
           if (car.isPlayer) { car.autoDrive=car.finished;this.events.push({type:'pithandover',car});this.msg('Pit exit — control returned','info',car,2); }
           if (car.ai && car.ai.plan) car.ai.lastPlanLap = -1;
         }
@@ -7256,8 +7382,12 @@ function updateHud(dt) {
   updateStrategyUI(p, sess);
   // flags
   const fb = $('flagbar'); const yel = sess.yellowAt(p.idx) || sess.yellowAt(G.track.wrapI(p.idx + 60));
-  const blue = p.ai ? p.ai.blue : sess.cars.some(o => o !== p && sess.type === 'race' && o.totalDist > p.totalDist + G.track.length * 0.5 && G.track.dS(o.s, p.s) > 0 && G.track.dS(o.s, p.s) < 50);
+  const blue = sess.type === 'race' ? !!p.blueFlag.target && !sess.over && !sess.finishedFlag && !sess.blueNeutralized() : !!(p.ai && p.ai.blue);
   fb.className = yel ? 'yellow' : blue ? 'blue' : '';
+  const blueIndicator = $('blueFlag');
+  blueIndicator.classList.toggle('active', blue);
+  blueIndicator.setAttribute('aria-hidden', String(!blue));
+  $('blueFlagHint').textContent = p.blueFlag.warned ? 'Warning — stop blocking the lapping car' : 'Allow the lapping car to pass safely';
   // pit request reminder (no compound or fuel choice before the box)
   const bp = $('boxpanel');
   if (G.player && p === G.player && p.boxRequest && !p.pit && $('strategyPanel').classList.contains('hidden')) {
