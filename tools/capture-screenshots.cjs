@@ -33,7 +33,9 @@ const index = [];
   // the render loop runs only when we ask for frames
   await page.addInitScript(() => {
     localStorage.setItem('apexgp.settings.v1', JSON.stringify({ quality: 'high', camera: 'chase', engineerVoice: 'off', volume: 0 }));
-    window.__t = 0; window.requestAnimationFrame = cb => { (window.__rafq = window.__rafq || []).push(cb); return 1; };
+    // only the game's render loop is held; other callbacks (including Playwright's own) run natively
+    const nativeRaf = window.requestAnimationFrame.bind(window);
+    window.__t = 0; window.requestAnimationFrame = cb => { if (!/\bframe\(/.test(String(cb))) return nativeRaf(cb); (window.__rafq = window.__rafq || []).push(cb); return 1; };
     window.__frames = (n, dt = 1000 / 30) => { for (let i = 0; i < n; i++) { const q = window.__rafq || []; window.__rafq = []; window.__t += dt; for (const cb of q) cb(window.__t); } };
   });
   let releaseThree; const threeGate = new Promise(r => { releaseThree = r; });
