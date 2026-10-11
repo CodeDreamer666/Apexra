@@ -514,6 +514,113 @@
   @media(max-width:760px) { .grid2 { grid-template-columns:1fr; } .circuit-card { display:none; } }
   @media (prefers-reduced-motion: reduce) { .cs-card, #circuitSelect, .circuit-card { transition: none; } }
 
+  /* ---------------- career ---------------- */
+  #career .dialog { width:min(1240px,96vw); max-height:94vh; padding:22px 26px 18px; display:flex; flex-direction:column; gap:14px; }
+  .cr-head { display:flex; align-items:flex-end; justify-content:space-between; gap:16px; }
+  .cr-head .sub { margin:0; }
+  .cr-head .btn { width:auto; margin:0; padding:10px 22px; }
+  .cr-badge { display:inline-block; margin-left:10px; padding:1px 9px; border-radius:4px; font-size:12px; font-weight:700; letter-spacing:1.4px; color:#111; background:var(--gold); vertical-align:middle; }
+  .cr-bar { list-style:none; margin:0; padding:0; display:grid; grid-template-columns:repeat(8,minmax(0,1fr)); gap:6px; }
+  .cr-seg { position:relative; width:100%; display:flex; flex-direction:column; align-items:flex-start; gap:2px; padding:12px 10px 9px; text-align:left; color:#fff; cursor:pointer;
+    font:700 15px var(--font); letter-spacing:.3px; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.10); border-radius:6px; transition:background .15s, border-color .15s, box-shadow .2s, opacity .15s; }
+  .cr-seg::before { content:''; position:absolute; left:0; right:0; top:0; height:4px; border-radius:6px 6px 0 0; background:rgba(255,255,255,.16); transition:background .2s; }
+  .cr-seg small { font-size:11px; font-weight:700; letter-spacing:1.4px; color:var(--dim); text-transform:uppercase; }
+  .cr-seg .cr-state { display:flex; align-items:center; gap:5px; min-height:16px; font-size:12px; font-weight:600; color:var(--dim); letter-spacing:.3px; }
+  .cr-seg svg { width:13px; height:13px; flex:none; }
+  .cr-seg:hover, .cr-seg:focus-visible { background:rgba(255,255,255,.08); outline:none; border-color:rgba(255,255,255,.28); }
+  .cr-seg.locked { opacity:.5; }
+  .cr-seg.locked::before { background:repeating-linear-gradient(90deg,rgba(255,255,255,.18) 0 6px,transparent 6px 10px); }
+  .cr-seg.done::before { background:#e9edf3; }
+  .cr-seg.done .cr-state { color:#e9edf3; }
+  .cr-seg.live .cr-state { color:#ff6b62; }
+  .cr-seg.live .cr-state::before { content:''; width:7px; height:7px; border-radius:50%; background:var(--accent); }
+  .cr-seg.champ::before { background:var(--gold); }
+  .cr-seg.champ .cr-state { color:var(--gold); }
+  .cr-seg[aria-selected="true"] { border-color:var(--accent); background:rgba(225,6,0,.12); box-shadow:0 0 0 1px var(--accent), 0 0 22px rgba(225,6,0,.28); opacity:1; }
+  .cr-seg[aria-selected="true"]::before { background:var(--accent); }
+  .cr-seg.unlocked-now { animation:crUnlock 1.1s ease-out 1; }
+  @keyframes crUnlock { 0% { box-shadow:0 0 0 0 rgba(255,255,255,.55); } 100% { box-shadow:0 0 0 14px rgba(255,255,255,0); } }
+  .cr-body { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.08fr); gap:18px; min-height:0; flex:1 1 auto; }
+  .cr-tier { display:flex; flex-direction:column; gap:12px; min-width:0; }
+  .cr-tierhead { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
+  .cr-tierhead small { color:var(--dim); font-size:12px; font-weight:700; letter-spacing:1.6px; text-transform:uppercase; }
+  .cr-tierhead h3 { margin:2px 0 0; font-size:32px; line-height:1.05; letter-spacing:.3px; }
+  .cr-chip { flex:none; padding:3px 10px; border-radius:4px; font-size:12px; font-weight:700; letter-spacing:1.3px; text-transform:uppercase; background:rgba(255,255,255,.08); color:#dfe4ec; border:1px solid rgba(255,255,255,.14); }
+  .cr-chip.live { color:#fff; background:rgba(225,6,0,.22); border-color:rgba(225,6,0,.55); }
+  .cr-chip.done { color:#111; background:#e9edf3; border-color:#e9edf3; }
+  .cr-chip.champ { color:#111; background:var(--gold); border-color:var(--gold); }
+  .cr-req { display:flex; align-items:baseline; gap:12px; flex-wrap:wrap; font-size:15px; color:var(--dim); }
+  .cr-req b { font-size:22px; color:#fff; letter-spacing:.3px; }
+  .cr-races { list-style:none; margin:0; padding:0; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; position:relative; }
+  .cr-race { position:relative; display:flex; flex-direction:column; gap:4px; padding:10px 10px 9px; border:1px solid rgba(255,255,255,.10); border-radius:8px; background:#0c0f15; min-width:0; transition:border-color .2s, opacity .2s; }
+  .cr-race + .cr-race::before { content:''; position:absolute; left:-11px; top:50%; width:10px; height:2px; background:rgba(255,255,255,.18); }
+  .cr-race.done + .cr-race::before { background:#e9edf3; }
+  .cr-race small { font-size:11px; font-weight:700; letter-spacing:1.4px; color:var(--dim); text-transform:uppercase; }
+  .cr-race b { font-size:14px; line-height:1.2; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .cr-race svg.cr-map { width:100%; height:58px; }
+  .cr-race svg.cr-map path { fill:none; stroke:rgba(255,255,255,.4); stroke-width:2.2; stroke-linejoin:round; }
+  .cr-race .cr-rstate { font-size:13px; font-weight:600; color:var(--dim); }
+  .cr-race.done { border-color:rgba(233,237,243,.35); }
+  .cr-race.done svg.cr-map path { stroke:#e9edf3; }
+  .cr-race.done .cr-rstate { color:#e9edf3; }
+  .cr-race.next { border-color:var(--accent); box-shadow:0 0 0 1px rgba(225,6,0,.6); }
+  .cr-race.next svg.cr-map path { stroke:#ff3b2a; filter:drop-shadow(0 0 4px rgba(255,40,20,.6)); }
+  .cr-race.next .cr-rstate { color:#fff; }
+  .cr-race.locked { opacity:.45; }
+  .cr-stats { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
+  .cr-stats > div { padding:9px 12px; border-radius:8px; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08); }
+  .cr-stats small { display:block; font-size:11px; font-weight:700; letter-spacing:1.4px; color:var(--dim); text-transform:uppercase; }
+  .cr-stats b { font-size:24px; line-height:1.2; }
+  .cr-course { font-size:14px; font-weight:600; color:var(--dim); }
+  .cr-course.ok { color:#4be38a; } .cr-course.no { color:#ff7a72; }
+  .cr-team { display:flex; align-items:center; gap:12px; }
+  .cr-team label { font-size:12px; color:var(--dim); letter-spacing:1.5px; text-transform:uppercase; font-weight:700; white-space:nowrap; }
+  .cr-team select { flex:1; padding:8px 10px; font:600 15px var(--font); color:#fff; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.14); border-radius:4px; }
+  .cr-team select option { background:#1b1e26; }
+  .cr-team .tb, .cr-standings .tb, .sum-table .tb { display:inline-block; width:4px; height:15px; vertical-align:middle; margin-right:8px; border-radius:1px; }
+  .cr-actions { display:flex; gap:10px; flex-wrap:wrap; margin-top:auto; }
+  .cr-actions .btn { width:auto; margin:0; padding:12px 22px; }
+  .cr-actions .btn.primary { flex:1 1 auto; justify-content:center; }
+  .cr-note { margin:0; font-size:14px; color:var(--dim); }
+  .cr-table { display:flex; flex-direction:column; min-height:0; min-width:0; border:1px solid rgba(255,255,255,.08); border-radius:8px; background:rgba(0,0,0,.18); }
+  .cr-tablehead { display:flex; justify-content:space-between; align-items:center; gap:10px; padding:10px 12px 6px; font-size:12px; font-weight:700; letter-spacing:1.5px; color:var(--dim); text-transform:uppercase; }
+  .cr-tablehead span:last-child { color:#ff8a80; letter-spacing:.8px; }
+  /* every driver is listed; the rows scroll under the header with no visible scrollbar (as the race leaderboard) */
+  .cr-scroll, .sum-scroll { overflow-y:auto; overflow-x:hidden; overscroll-behavior:contain; scrollbar-width:none; -ms-overflow-style:none; max-height:min(430px,46vh); }
+  .cr-scroll { flex:1 1 0; min-height:220px; max-height:none; }
+  .cr-scroll::-webkit-scrollbar, .sum-scroll::-webkit-scrollbar { display:none; width:0; height:0; }
+  .cr-standings, .sum-table { font-size:14px; }
+  .cr-standings th, .sum-table th { position:sticky; top:0; background:#141821; z-index:1; }
+  .cr-standings td, .sum-table td { padding:5px 8px; }
+  .cr-standings td.r, .cr-standings th.r, .sum-table td.r, .sum-table th.r { text-align:right; }
+  .cr-standings .dim { color:var(--dim); }
+  .cr-standings tr.cut td, .sum-table tr.cut td { border-bottom:2px dashed rgba(225,6,0,.85); }
+  .cr-reset { align-self:flex-start; background:none; border:0; padding:2px 0; color:var(--dim); font:600 13px var(--font); letter-spacing:.4px; cursor:pointer; text-decoration:underline; text-underline-offset:3px; }
+  .cr-reset:hover, .cr-reset:focus-visible { color:#fff; outline:none; }
+  .cr-reset.armed { color:#ff7a72; }
+  .btn.armed { border-color:#ff7a72; background:rgba(225,6,0,.22); }
+  /* career result strip on the race results */
+  .res-career { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:8px; margin:0 0 14px; }
+  .res-career > div { padding:8px 12px; border-radius:8px; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.09); }
+  .res-career small { display:block; font-size:11px; font-weight:700; letter-spacing:1.4px; color:var(--dim); text-transform:uppercase; }
+  .res-career b { font-size:24px; line-height:1.2; }
+  .res-career .ok b { color:#4be38a; } .res-career .no b { color:#ff7a72; }
+  #results .res-scroll { max-height:52vh; overflow-y:auto; scrollbar-width:none; }
+  #results .res-scroll::-webkit-scrollbar { display:none; }
+  /* championship summary */
+  #careerSummary .dialog { width:min(720px,94vw); }
+  .sum-kicker { color:var(--dim); font-size:13px; font-weight:700; letter-spacing:1.6px; text-transform:uppercase; }
+  .sum-hero { display:flex; align-items:center; gap:22px; margin:14px 0 16px; padding:16px 18px; border-radius:10px; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.09); animation:sumIn .45s ease-out both; }
+  .sum-hero > b { font-size:64px; line-height:1; font-style:italic; font-weight:900; }
+  .sum-hero span { display:block; font-size:22px; font-weight:700; }
+  .sum-hero small { display:block; font-size:15px; color:var(--dim); margin-top:2px; }
+  .sum-hero.ok { border-color:rgba(75,227,138,.4); } .sum-hero.ok > b { color:#4be38a; }
+  .sum-hero.no > b { color:#ff7a72; }
+  .sum-hero.champ { border-color:var(--gold); background:linear-gradient(90deg,rgba(201,162,74,.18),rgba(201,162,74,.04)); } .sum-hero.champ > b { color:var(--gold); }
+  @keyframes sumIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+  @media (max-width:980px) { .cr-body { grid-template-columns:1fr; } .cr-scroll { flex:none; max-height:50vh; } .cr-bar { grid-template-columns:repeat(4,minmax(0,1fr)); } .res-career { grid-template-columns:repeat(3,minmax(0,1fr)); } }
+  @media (max-width:560px) { .cr-bar { grid-template-columns:repeat(2,minmax(0,1fr)); } .cr-races, .cr-stats { grid-template-columns:1fr; } .cr-race + .cr-race::before { display:none; } }
+  @media (prefers-reduced-motion: reduce) { .cr-seg, .cr-seg::before, .cr-race { transition:none; } .cr-seg.unlocked-now, .sum-hero { animation:none; } }
 </style>
 </head>
 <body>
@@ -634,6 +741,7 @@
   <div class="menu-left">
     <h1 class="logo">APEX <span>GRAND PRIX</span></h1>
     <button class="btn primary" data-act="play">Start Grand Prix</button>
+    <button class="btn" data-act="career" id="btnCareer">Career <small id="careerTierLabel"></small></button>
     <button class="btn" data-act="settings">Race Settings</button>
     <button class="btn" data-act="controls">Controls</button>
   </div>
@@ -743,7 +851,7 @@
     <button class="btn" data-act="skipquali" id="btnSkipQ">Forfeit attempt &amp; finish qualifying</button>
     <button class="btn" data-act="settings">Race Settings</button>
     <button class="btn" data-act="controls">Controls</button>
-    <button class="btn" data-act="exit">Exit to main menu</button>
+    <button class="btn" data-act="exit" id="btnExit">Exit to main menu</button>
   </div>
 </div>
 
@@ -751,8 +859,37 @@
   <div class="dialog" style="width:min(980px,96vw)">
     <h2 id="resTitle">Race <span>Results</span></h2>
     <div class="sub" id="resSub"></div>
-    <table class="res" id="resTable"></table>
+    <div class="res-career hidden" id="resCareer" aria-live="polite"></div>
+    <div class="res-scroll"><table class="res" id="resTable"></table></div>
     <div class="actions" id="resActions"></div>
+  </div>
+</div>
+
+<div id="career" class="overlay hidden">
+  <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="crTitle">
+    <div class="cr-head">
+      <div><h2 id="crTitle">Ca<span>reer</span></h2><div class="sub" id="crSub">Eight championships, three Grand Prix each. Finish high enough in the standings to unlock the next tier.</div></div>
+      <button class="btn" id="crBack" type="button">Back</button>
+    </div>
+    <ol class="cr-bar" id="crBar" role="listbox" aria-label="Career tiers" aria-orientation="horizontal"></ol>
+    <div class="cr-body">
+      <section class="cr-tier" id="crTier" aria-live="polite"></section>
+      <section class="cr-table" aria-labelledby="crTableTitle">
+        <div class="cr-tablehead"><span id="crTableTitle">Championship standings</span><span id="crCut"></span></div>
+        <div class="cr-scroll" id="crScroll" tabindex="0" aria-label="Championship standings, scrollable"><table class="res cr-standings" id="crStand"></table></div>
+      </section>
+    </div>
+    <button type="button" class="cr-reset" id="crReset">Reset career progress</button>
+  </div>
+</div>
+
+<div id="careerSummary" class="overlay hidden">
+  <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="sumTitle">
+    <div class="sum-kicker" id="sumKicker"></div>
+    <h2 id="sumTitle"></h2>
+    <div class="sum-hero" id="sumHero"><b id="sumPos"></b><div><span id="sumVerdict"></span><small id="sumDetail"></small></div></div>
+    <div class="sum-scroll" tabindex="0" aria-label="Final championship standings, scrollable"><table class="res sum-table" id="sumTable"></table></div>
+    <div class="actions" id="sumActions"></div>
   </div>
 </div>
 
@@ -2326,12 +2463,15 @@ const SIM = (function () {
     const L = race.totalLaps; let best = null;
     for (const c of ['S', 'M', 'H']) {
       const p = planStrategy(race, car, L, c, 0, race.mandatory, 1, 0.5);
-      let cost = p.cost + (gauss() * 0.4 + (car.driver.risk - 0.5) * (c === 'S' ? -3 : c === 'H' ? 2 : 0)) * (1 - car.driver.strat * 0.6) * 6;
+      const d = ratings(car);
+      let cost = p.cost + (gauss() * 0.4 + (d.risk - 0.5) * (c === 'S' ? -3 : c === 'H' ? 2 : 0)) * (1 - d.strat * 0.6) * 6;
       if (!best || cost < best.cost) best = { c, cost };
     }
     return best.c;
   }
 
+  // A driver's ratings as their judgement uses them: AI drivers carry their career-skill profile.
+  const ratings = car => car.ai ? car.ai.p : car.driver;
   // Starting fuel (laps of the circuit's nominal consumption): enough for the planned first stint plus a lap,
   // or the whole race when no stop is planned. Bolder drivers run lighter; careful ones carry more margin.
   function chooseStartFuelLaps(race, car, comp) {
@@ -2340,7 +2480,9 @@ const SIM = (function () {
       const plan = planStrategy(race, car, L, comp, 0, race.mandatory, 1, 0.5);
       if (plan.stops.length) laps = Math.max(1, plan.stops[0].lap) + 2;
     }
-    laps += (0.5 - car.driver.risk) * 1.5 + gauss() * 0.4 * (1 - car.driver.strat);
+    const d = ratings(car), skill = car.ai ? car.ai.skill : 0;
+    // career skill: a better-judged margin (the bold/careful bias shrinks towards the plan)
+    laps += (0.5 - d.risk) * 1.5 * (1 - 0.5 * skill) + gauss() * 0.4 * (1 - d.strat);
     return clamp(Math.round(laps * 2) / 2, START_FUEL_LAPS[0], Math.min(START_FUEL_LAPS[1], L));
   }
   // Geometric fallback for the time a clean tyre-only stop costs (circuits carry a simulated measurement).
@@ -2357,11 +2499,19 @@ const SIM = (function () {
       this.car = car; this.race = race; this.track = race.track; this.p = car.driver;
       this.pitOnly = !!opts.pitOnly; // used for player autopilot
       const diff = race.difficulty;
+      // Career skill above the difficulty-100 baseline (0 = Rookie / standalone, 1 = Legendary). It sharpens the
+      // driver's judgement only: every term below is 0 at skill 0, and nothing touches the car or its physics.
+      // The player's pit/VSC autopilot never gets it.
+      const x = this.skill = this.pitOnly ? 0 : opts.skill != null ? clamp(opts.skill, 0, 1) : race.aiSkill || 0;
+      if (x > 0) this.p = careerProfile(car.driver, x);
       const p = this.p;
-      this.commit = lerp(0.70,0.97,diff) - (1 - p.pace) * 0.05;
-      this.brakeCommit = lerp(0.70,0.985,diff) * (0.965 + 0.035 * p.brake);
-      this.mistakeScale = lerp(1.7, 0.55, diff);
-      this.segMax = 1 + 0.08 * diff * (0.6 + 0.4 * p.pace); // how far a driver will learn to push beyond the safe estimate
+      // commitment: share of the car's own limits used (corner use is capped at the handling's yaw ceiling)
+      this.commit = lerp(0.70,0.97,diff) + 0.02 * x - (1 - p.pace) * 0.05;
+      this.brakeCommit = Math.min(1, (lerp(0.70,0.985,diff) + 0.01 * x) * (0.965 + 0.035 * p.brake));
+      this.mistakeScale = lerp(1.7, 0.55, diff) * (1 - 0.7 * x);
+      this.segMax = 1 + (0.08 + 0.04 * x) * diff * (0.6 + 0.4 * p.pace); // how far a driver will learn to push beyond the safe estimate
+      this.learnRate = 0.006 * (1 + 1.5 * x); // how quickly a clean corner is learned
+      this.tyreSurplus = 0; // laps of tyre life beyond the planned stint (engineer estimate), 0..1
       this.laneD = 0; this.laneW = 0; this.laneWTarget = 0;
       this.vEnv = 110; this.vLimit = 105; this.yawUse = 0;
       this.mode = 'race'; this.recoverT = 0; this.stuckT = 0; this.waitT = 0;
@@ -2490,7 +2640,9 @@ const SIM = (function () {
         if (D.engT > 122) th = Math.min(th, D.engT > 132 ? 0.55 : 0.8);
         const preserving = this.tyreMode === 'preserve';
         const smoothness = clamp(this.p.tyre * 0.6 + this.p.cons * 0.4, 0, 1);
-        const rise = preserving ? 1.3 + (1 - smoothness) * 1.5 : this.tyreMode === 'push' ? 4 + this.p.aggr * 3 : 2.2 + (1 - smoothness) * 3;
+        let rise = preserving ? 1.3 + (1 - smoothness) * 1.5 : this.tyreMode === 'push' ? 4 + this.p.aggr * 3 : 2.2 + (1 - smoothness) * 3;
+        // career skill: feed the power in sooner where the tyres can afford it (still through the handling's own throttle response)
+        if (this.skill > 0 && !preserving) rise += 1.6 * this.skill * (0.5 + 0.5 * this.tyreSurplus);
         // Lift instantly for safety, but feed power in according to judgement and
         // tyre management. Early-throttle mistakes still bypass this caution.
         this.smoothThrottle += clamp(th - this.smoothThrottle, -12 * dt, rise * dt);
@@ -2565,7 +2717,9 @@ const SIM = (function () {
       let commit = this.commit;
       // tyre management: back off slightly unless pushing
       if (race.type === 'race' && !this.pitOnly) {
-        const mgmt = this.tyreMode === 'preserve' ? 0.055 + 0.055 * this.p.tyre : this.tyreMode === 'push' ? -0.065*this.p.aggr : 0.08*this.p.tyre*this.p.cons*(1-this.p.risk)*(this.attackTarget?0.3:1);
+        let mgmt = this.tyreMode === 'preserve' ? 0.055 + 0.055 * this.p.tyre : this.tyreMode === 'push' ? -0.065*this.p.aggr : 0.08*this.p.tyre*this.p.cons*(1-this.p.risk)*(this.attackTarget?0.3:1);
+        // career skill: no needless saving when the tyres already reach the planned stop
+        if (this.skill > 0 && this.tyreMode === 'normal') mgmt *= 1 - 0.65 * this.skill * this.tyreSurplus;
         commit *= 1 - mgmt;
         if (race.lap1Caution(car)) commit *= 0.975;
       }
@@ -2721,17 +2875,18 @@ const SIM = (function () {
       const p = this.p, race = this.race, car = this.car;
       const wear = (car.tyre.wear[0] + car.tyre.wear[1] + car.tyre.wear[2] + car.tyre.wear[3]) / 4;
       const pressure = this.pressure + (this.attackTarget ? 0.3 : 0);
-      let prob = (0.002 + 0.03 * (1 - p.cons)) * (1 + pressure + race.wet * 1.4 + wear * 1.5 + (1 - p.brake)) * this.mistakeScale * race.mistakeMul;
+      // (career skill also brings composure: pressure from a car behind or a chase ahead rattles them less)
+      let prob = (0.002 + 0.03 * (1 - p.cons)) * (1 + pressure * (1 - 0.6 * this.skill) + race.wet * 1.4 + wear * 1.5 + (1 - p.brake)) * this.mistakeScale * race.mistakeMul;
       if (rnd() > prob) return;
       const r = rnd(); const corner = this.track.corners[this.track.nextCorner[car.idx]];
       const out = corner ? -corner.dir : (rnd() < .5 ? 1 : -1);
-      if (r < 0.45) this.mistake = { type: 'late', f: 1.12 + rnd() * 0.18 * (0.5 + p.risk) };
+      if (r < 0.45) { const f = 1.12 + rnd() * 0.18 * (0.5 + p.risk); this.mistake = { type: 'late', f: this.skill > 0 ? 1 + (f - 1) * (1 - 0.4 * this.skill) : f }; }
       else if (r < 0.65) this.mistake = { type: 'lock' };
       else if (r < 0.85) this.mistake = { type: 'wide', side: out };
       else this.mistake = { type: 'throttle' };
       this.mistakeT = this.mistake.type === 'wide' ? 2.6 : this.mistake.type === 'late' ? 3.0 : this.mistake.type === 'lock' ? 0.5 : 1.0;
       if (this.mistake.type === 'throttle') this.mistakeT = 3.0; // applies at exit
-      race.stats.mistakes++;
+      race.stats.mistakes++; car.mistakes = (car.mistakes || 0) + 1;
       race.log(car, 'mistake:' + this.mistake.type);
     }
     learn(latErr, offTrack) {
@@ -2742,7 +2897,7 @@ const SIM = (function () {
         if (st.seg >= 0 && clean && !this.mistake && this.mode === 'race' && this.laneW < 0.3 && !car.pit && car.speed > 15 && !this.race.lap1Caution(car)) {
           const n = this.segAdj.length;
           if (st.off || st.maxErr > 2.2 || st.maxU > 1.6 || st.maxSat > 0.03) { this.segAdj[st.seg] = Math.max(0.82, this.segAdj[st.seg] - 0.02); for (let k = 1; k <= 3; k++) { const pv = (st.seg - k + n) % n; this.segAdj[pv] = Math.max(0.82, this.segAdj[pv] - 0.012 / k); } }
-          else if (st.maxU < 1.05 && st.maxErr < 0.9 && st.maxSat < 0.01) this.segAdj[st.seg] = Math.min(this.segMax, this.segAdj[st.seg] + 0.006);
+          else if (st.maxU < 1.05 && st.maxErr < 0.9 && st.maxSat < 0.01) this.segAdj[st.seg] = Math.min(this.segMax, this.segAdj[st.seg] + this.learnRate);
         }
         st.seg = segI; st.maxU = 0; st.maxErr = 0; st.off = false; st.maxSat = 0;
       }
@@ -2852,6 +3007,12 @@ const SIM = (function () {
         const lappedCar = race.blueLapping(ahead.o, car, ahead.ds);
         const safeLapping = !lappedCar || race.bluePassSafe(car) || ahead.ds < 6 && Math.abs(car.d - ahead.o.d) > 2.6;
         if (gapT < 1.1 && safeLapping && (ahead.dv > -1 || lappedCar || (ahead.o.ai && ahead.o.ai.blue))) this.attackTarget = { car: ahead.o, gap: gapT, ds: ahead.ds };
+        // career skill: look for a move from further back, and pounce on a car ahead that has run wide,
+        // spun, lost its exit or is limping (what is visible from the cockpit, nothing more)
+        else if (this.skill > 0 && safeLapping && gapT < 1.1 + 1.1 * this.skill) {
+          const o = ahead.o, slip = o.offN >= 2 || o.spun || (o.ai && o.ai.mistake) || o.damage.anyPuncture() || ahead.dv > 3;
+          if (slip || (gapT < 1.1 + 0.35 * this.skill && ahead.dv > -1)) this.attackTarget = { car: o, gap: gapT, ds: ahead.ds };
+        }
       }
       this.defending=!!(behind && race.type==='race' && !yellow &&
         !(this.blue && behind.o === car.blueFlag.target) && -behind.ds/Math.max(v,10)<0.8 && p.craft>0.6);
@@ -2899,7 +3060,7 @@ const SIM = (function () {
             else if (n.ds < 25) cost += 2.5;
             if (n.ds < 14 && closing > -2) cost += 6;
             // slipstream: on straights while closing in, sit behind
-            if (distToCorner > 350 && n.ds > 12 && n.ds < 70 && closing > 0) cost -= 3.5;
+            if (distToCorner > 350 && n.ds > 12 && n.ds < 70 && closing > 0) cost -= 3.5 * (1 + 0.6 * this.skill);
             if (o.spun || o.speed < 15 || o.retiring || o.damage.anyPuncture() || (vscOn && o.pit)) cost += 60;
           }
           if (n.o === blue.target && this.blueYield && n.ds > -80 && latGap < 3) cost += 8;
@@ -2909,7 +3070,8 @@ const SIM = (function () {
         // overtaking: prefer inside of the next corner when attacking
         if (!this.blueYield && (this.attackTarget && !yellow && !firstLap || (this.attackTarget && firstLap && p.aggr > 0.7))) {
           const tgt = this.attackTarget.car; const insideLane = insideSide * lim * 0.85;
-          if (distToCorner < 320 && distToCorner > 40) {
+          // (with career skill the line is only given up for the inside once close enough to make the move)
+          if (distToCorner < 320 && distToCorner > 40 && (this.skill === 0 || this.attackTarget.ds < 45)) {
             if (Math.abs(cd - insideLane) < 2.5) cost -= 5 * (0.5 + p.craft) * (0.6 + p.aggr * 0.6);
           } else if (this.attackTarget.ds < 20) {
             if (Math.abs(cd - tgt.d) > 2.6) cost -= 2.5 * (0.5 + p.aggr);
@@ -2918,7 +3080,7 @@ const SIM = (function () {
         // defending: cover the inside before the braking zone (one move)
         if (behind && race.type === 'race' && !(this.blue && behind.o === blue.target) && !this.blueYield && !vscOn && distToCorner < 300 && distToCorner > 90) {
           const gapB = -behind.ds / Math.max(v, 10);
-          if (gapB < 0.6 && behind.dv < 1.5) {
+          if (gapB < 0.6 + 0.25 * this.skill && behind.dv < 1.5 + 1.5 * this.skill) {
             const insideLane = insideSide * lim * 0.75;
             if (Math.abs(cd - insideLane) < 2.2) cost -= 4.5 * p.craft * (0.5 + p.aggr * 0.6);
           }
@@ -2985,7 +3147,7 @@ const SIM = (function () {
         if (yellow && lat <= 6 && o.speed > 20 && !o.spun && gap < 40 && !(o.ai && o.ai.mode === 'recover')) { lim = Math.min(lim, o.speed + Math.max(0, gap - 8) * 0.4); continue; }
         if (lat > 2.3 + clamp((v - o.speed - 8) * 0.06, 0, 1.6) && !pitlane) continue;
         if (pitlane && Math.abs(o.d - car.d) > 2.4) continue;
-        const safe = 1.5 + v * (0.15 - 0.06 * p.aggr) * (cautious ? 1.5 : 1);
+        const safe = 1.5 + v * (0.15 - 0.06 * p.aggr) * (cautious ? 1.5 : 1) * (1 - 0.2 * this.skill);
         // anticipate the car ahead braking (brake lights / closing rate)
         const oBr = o.input.brake > 0.25 ? o.input.brake * 30 * (0.25 + 0.1 * (1 - p.craft)) : 0;
         const brakePerMetre=HANDLING.brakeRate*car.brakeGrip(car.surfaceWet ?? this.race.wet)*car.damage.perf.brake+HANDLING.coastRate;
@@ -3017,6 +3179,8 @@ const SIM = (function () {
       // Analysis belongs to the engineer; the driver decides and presses the
       // same controls as before. A committed stop still requires physical entry.
       this.plan = advice.plan; car.tyreLife = advice.useful;
+      const stint = advice.plan.stops.length ? advice.plan.stops[0].lap : race.lapsLeft(car);
+      this.tyreSurplus = isFinite(advice.useful) ? clamp((advice.useful - stint) / 1.5, 0, 1) : 1;
       this.tyreMode = advice.tyreMode; this.pushMode = advice.push;
       this.fuelSave = advice.conserve && (advice.urgent || this.p.strat > 0.55 || this.p.risk < 0.7);
       if (this.fuelSave) { this.tyreMode = 'preserve'; this.pushMode = 0; }
@@ -3281,8 +3445,10 @@ const SIM = (function () {
       return race.engineerForecast;
     }
     analyse() {
-      const car = this.car, race = this.race, t = race.track, p = car.driver;
+      const car = this.car, race = this.race, t = race.track, p = ratings(car);
       const following = car.ai ? car.ai.followTime : 0, attacking = car.ai ? !!car.ai.attackTarget : false;
+      // career skill (AI engineers only; the player's engineer is never changed by the tier)
+      const x = car.ai ? car.ai.skill : 0;
       const left = race.totalLaps - car.laps - t.wrapS(car.totalDist) / t.length;
       const wear = Math.max(...car.tyre.wear), must = needsCompound(race, car);
       const strategyWeather={...race,wet:car.surfaceWet ?? race.wet, pitLoss:race.pitLoss*(race.vscActive?0.65:1)};
@@ -3305,21 +3471,21 @@ const SIM = (function () {
       const margin = first ? first.lap : 99;
       if (!reason && margin < 4 && left > 3 && wear > 0.30) {
         if (recentRival && p.strat > 0.7) reason = 'cover rival undercut';
-        else if (following > 20 && traffic.length < 2 && p.aggr > 0.6) reason = 'undercut into clear track';
+        else if (following > 20 - 8 * x && traffic.length < 2 && (p.aggr > 0.6 || x * p.strat > 0.5)) reason = 'undercut into clear track';
       }
       // A durable tyre and clear track can buy an extra lap before rejoining traffic.
       if (reason && traffic.length > 1 && wear < 0.65 && left > 3 && !must && p.tyre > 0.85) {
         reason = ''; push = 1; defer = true;
       } else if (!reason) push = following > 20 && p.aggr > 0.65 ? 1 : 0;
-      if(strategyWeather.wet>0.18 && tyreWeatherGrip(car.tyre.c,strategyWeather.wet)<tyreWeatherGrip(weatherCompound(strategyWeather.wet),strategyWeather.wet)*0.80 && left>0.5){reason='weather-compatible tyres';compound=weatherCompound(strategyWeather.wet);}
+      if(strategyWeather.wet>0.18 && tyreWeatherGrip(car.tyre.c,strategyWeather.wet)<tyreWeatherGrip(weatherCompound(strategyWeather.wet),strategyWeather.wet)*(0.80+0.08*x) && left>0.5){reason='weather-compatible tyres';compound=weatherCompound(strategyWeather.wet);}
       const localWet=car.surfaceWet ?? race.wet;
       const suitable=weatherCompound(localWet);
       const forecast=this.forecast();
       // Slicks on a surface that is already wet, with the public forecast saying
       // the rain will persist: come in before the water builds further.
-      if(!reason && localWet>0.24 && car.tyre.c!=='I' && car.tyre.c!=='W' && race.weather && race.weather.raining &&
-        forecast.probability>0.7 && left>0.8)reason='rain expected to continue';
-      if(localWet<0.14 && (car.tyre.c==='I'||car.tyre.c==='W') && left>0.7 &&
+      if(!reason && localWet>0.24-0.05*x && car.tyre.c!=='I' && car.tyre.c!=='W' && race.weather && race.weather.raining &&
+        forecast.probability>0.7-0.05*x && left>0.8)reason='rain expected to continue';
+      if(localWet<0.14+0.015*x && (car.tyre.c==='I'||car.tyre.c==='W') && left>0.7 &&
         (!forecast || forecast.probability<0.75 || Math.max(...car.tyre.temp)>COMPOUNDS[car.tyre.c].topt+18)) {
         reason='drying surface';compound=left>4?'H':left>2.2?'M':'S';
       }
@@ -3370,7 +3536,7 @@ const SIM = (function () {
         const comp = tyre === 'keep' ? car.tyre.c : tyre, wear = tyre === 'keep' ? Math.max(...car.tyre.wear) : 0;
         const used = new Set([...car.tyre.used, comp]);
         const must = race.mandatory && !race.wetRace && !used.has('I') && !used.has('W') && ['S', 'M', 'H'].filter(k => used.has(k)).length < 2;
-        const plan = planStrategy({ ...race, wet: wetHere }, car, left, comp, wear, must, car.driver.strat, car.driver.risk);
+        const plan = planStrategy({ ...race, wet: wetHere }, car, left, comp, wear, must, ratings(car).strat, ratings(car).risk);
         if (plan.stops.length) laps = Math.min(left, Math.max(1, plan.stops[0].lap) + 1);
       }
       const want = (laps + 0.6) * rate + FUEL_RESERVE - car.fuel;
@@ -3390,7 +3556,7 @@ const SIM = (function () {
       if (race.type === 'race' && (forDriver || car.isPlayer || !this.recommendation || signature !== this.planSignature) &&
           (race.time >= this.nextPlan || signature !== this.planSignature)) {
         this.recommendation = this.analyse(); this.revision++;
-        this.nextPlan = race.time + 4 + (1 - car.driver.strat) * 4; this.planSignature = signature;
+        this.nextPlan = race.time + 4 + (1 - ratings(car).strat) * 4; this.planSignature = signature;
       }
       // No speech strings, queues or UI work are created for another team.
       if (!car.isPlayer) return;
@@ -3502,6 +3668,11 @@ const SIM = (function () {
       this.track = track; this.cfg = cfg; this.type = cfg.type; // 'race' | 'quali' | 'calib'
       rnd = makeRng(cfg.seed || (Date.now() & 0xffffff));
       this.difficulty = clamp(cfg.difficulty != null ? cfg.difficulty : 0.8, 0, 1);
+      // Career: the tier's relative AI level. 1 is today's difficulty 100 (the Rookie baseline); above it the
+      // AI's judgement improves (aiSkill 0..1 up to Legendary), never its car.
+      this.aiLevel = cfg.aiLevel != null ? clamp(+cfg.aiLevel || 1, 1, CAREER_MAX_LEVEL) : null;
+      if (this.aiLevel != null) this.difficulty = 1;
+      this.aiSkill = this.aiLevel != null ? (this.aiLevel - 1) / (CAREER_MAX_LEVEL - 1) : 0;
       this.totalLaps=8;
       // Dynamic weather either continues a previous session's state (qualifying ->
       // race) or rolls fresh conditions for this event from its own seed.
@@ -3541,9 +3712,9 @@ const SIM = (function () {
       // build field
       const entries = cfg.entries;
       entries.forEach((e) => this.cars.push(new Car(e, this)));
-      for (const car of this.cars) {
-        if (!car.isPlayer) car.ai = new AIDriver(car, this);
-      }
+      this.cars.forEach((car, k) => {
+        if (!car.isPlayer) car.ai = new AIDriver(car, this, { skill: entries[k].aiSkill });
+      });
       this.player = this.cars.find(c => c.isPlayer) || null;
       if (this.player) this.player.autopilot = new AIDriver(this.player, this, { pitOnly: true });
       this.setup();
@@ -4828,6 +4999,139 @@ const SIM = (function () {
     }
   }
 
+  /* ------------------------------------------------------------------
+     CAREER — eight three-race championships (Summit, Rivermere, Redridge). Pure functions over a plain,
+     JSON-serialisable state so the game can save it and the tests can drive it. Points come only from the
+     race classification (finishRace); standings are always recomputed from the stored race results.
+     ------------------------------------------------------------------ */
+  const CAREER_MAX_LEVEL = 1.75;
+  // level: relative AI difficulty (1 = difficulty 100); target: final championship position needed to advance
+  const CAREER_TIERS = [
+    { id: 'rookie', name: 'Rookie', level: 1.00, target: 12 },
+    { id: 'amateur', name: 'Amateur', level: 1.10, target: 10 },
+    { id: 'challenger', name: 'Challenger', level: 1.20, target: 8 },
+    { id: 'contender', name: 'Contender', level: 1.30, target: 6 },
+    { id: 'pro', name: 'Pro', level: 1.40, target: 5 },
+    { id: 'elite', name: 'Elite', level: 1.50, target: 4 },
+    { id: 'master', name: 'Master', level: 1.60, target: 3 },
+    { id: 'legendary', name: 'Legendary', level: 1.75, target: 1 },
+  ];
+  const CAREER_POINTS = [25, 20, 16, 13, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1];
+  const CAREER_CIRCUITS = ['summit', 'rivermere', 'redridge'];
+  const CAREER_VERSION = 1, CAREER_FIELD = 20;
+  const careerPoints = (pos, dnf) => dnf ? 0 : CAREER_POINTS[pos - 1] || 0;
+  function careerNew() { return { v: CAREER_VERSION, unlocked: 0, completed: [], best: new Array(CAREER_TIERS.length).fill(0), champion: false, active: null }; }
+  // A driver's career-skill profile: judgement ratings move towards perfect; personality (aggression, risk) stays.
+  function careerProfile(d, x) {
+    const up = (v, k) => v + (1 - v) * k * x;
+    return { ...d, pace: up(d.pace, 0.5), cons: up(d.cons, 0.8), brake: up(d.brake, 0.7), craft: up(d.craft, 0.7),
+      tyre: up(d.tyre, 0.7), strat: up(d.strat, 0.8) };
+  }
+  // One race's classification as the career stores it: driver index, classified position, retired or not.
+  function careerRaceRecord(results) {
+    return results.map(r => ({ d: DRIVERS.indexOf(r.car.driver), pos: r.pos, dnf: !!r.dnf }));
+  }
+  const intIn = (v, lo, hi) => Number.isInteger(v) && v >= lo && v <= hi;
+  function careerValidRace(race, k) {
+    if (!race || race.circuit !== CAREER_CIRCUITS[k] || typeof race.id !== 'string' || !Array.isArray(race.results) || race.results.length !== CAREER_FIELD) return false;
+    const ds = new Set(), ps = new Set();
+    for (const r of race.results) {
+      if (!r || !intIn(r.d, 0, CAREER_FIELD - 1) || !intIn(r.pos, 1, CAREER_FIELD) || typeof r.dnf !== 'boolean') return false;
+      ds.add(r.d); ps.add(r.pos);
+    }
+    return ds.size === CAREER_FIELD && ps.size === CAREER_FIELD;
+  }
+  // Validate a saved career, keeping whatever is sound: a broken championship in progress is dropped without
+  // touching unlocked tiers, and anything unreadable becomes a fresh career. Stored points are never trusted.
+  function careerLoad(raw) {
+    const st = careerNew();
+    if (!raw || typeof raw !== 'object' || raw.v !== CAREER_VERSION) return st;
+    const n = CAREER_TIERS.length;
+    st.completed = Array.isArray(raw.completed) ? [...new Set(raw.completed.filter(k => intIn(k, 0, n - 1)))].sort((a, b) => a - b) : [];
+    st.unlocked = intIn(raw.unlocked, 0, n - 1) ? raw.unlocked : 0;
+    for (const k of st.completed) st.unlocked = Math.max(st.unlocked, Math.min(n - 1, k + 1));
+    if (Array.isArray(raw.best)) for (let k = 0; k < n; k++) st.best[k] = intIn(raw.best[k], 1, CAREER_FIELD) ? raw.best[k] : 0;
+    st.champion = raw.champion === true && st.completed.includes(n - 1);
+    const a = raw.active;
+    if (a && typeof a === 'object' && intIn(a.tier, 0, st.unlocked) && intIn(a.team, 0, CAREER_FIELD - 1) &&
+        Array.isArray(a.races) && a.races.length <= CAREER_CIRCUITS.length && a.races.every(careerValidRace) &&
+        new Set(a.races.map(r => r.id)).size === a.races.length) {
+      st.active = { tier: a.tier, team: a.team, attempt: intIn(a.attempt, 1, 1e6) ? a.attempt : 1,
+        races: a.races.map(r => ({ circuit: r.circuit, id: r.id, results: r.results.map(x => ({ d: x.d, pos: x.pos, dnf: x.dnf })) })) };
+      st.active.points = careerStandings(st.active).map(() => 0);
+      for (const row of careerStandings(st.active)) st.active.points[row.d] = row.points;
+    }
+    return st;
+  }
+  // Championship standings for an active championship: all 20 drivers, ranked by points, then countback of
+  // classified finishes (wins, seconds, thirds, ...), then the better result in the latest race, then car number.
+  function careerStandings(active) {
+    const races = active ? active.races : [];
+    const rows = DRIVERS.map((drv, d) => ({ d, team: drv.team, points: 0, counts: new Array(CAREER_FIELD + 1).fill(0), results: [] }));
+    for (const race of races) {
+      const seen = new Array(CAREER_FIELD).fill(null);
+      for (const r of race.results) seen[r.d] = r;
+      rows.forEach((row, d) => {
+        const r = seen[d]; row.results.push(r ? { pos: r.pos, dnf: r.dnf, points: careerPoints(r.pos, r.dnf) } : null);
+        if (!r) return;
+        row.points += careerPoints(r.pos, r.dnf);
+        if (!r.dnf) row.counts[r.pos]++;
+      });
+    }
+    const last = races.length - 1;
+    rows.sort((a, b) => {
+      if (b.points !== a.points) return b.points - a.points;
+      for (let p = 1; p <= CAREER_FIELD; p++) if (b.counts[p] !== a.counts[p]) return b.counts[p] - a.counts[p];
+      if (last >= 0) {
+        const ra = a.results[last], rb = b.results[last];
+        const pa = ra ? ra.pos : 99, pb = rb ? rb.pos : 99;
+        if (pa !== pb) return pa - pb;
+      }
+      return DRIVERS[a.d].num - DRIVERS[b.d].num;
+    });
+    rows.forEach((row, k) => { row.rank = k + 1; });
+    return rows;
+  }
+  function careerStart(st, tier, team) {
+    if (!intIn(tier, 0, st.unlocked) || !intIn(team, 0, CAREER_FIELD - 1)) return false;
+    const attempt = st.active && st.active.tier === tier ? (st.active.attempt || 1) + 1 : 1;
+    st.active = { tier, team, attempt, races: [], points: new Array(CAREER_FIELD).fill(0) };
+    return true;
+  }
+  // The championship's state for the player: next race, position, and the verdict once all three are run.
+  function careerStatus(st) {
+    const a = st.active; if (!a) return null;
+    const tier = CAREER_TIERS[a.tier], table = careerStandings(a), me = table.find(r => r.d === a.team);
+    const done = a.races.length >= CAREER_CIRCUITS.length;
+    return { tier: a.tier, target: tier.target, raceIndex: a.races.length, nextCircuit: done ? null : CAREER_CIRCUITS[a.races.length],
+      complete: done, rank: me.rank, points: me.points, onCourse: me.rank <= tier.target, success: done && me.rank <= tier.target, table };
+  }
+  // Record a finished race exactly once. `race.id` identifies the session that produced it; a second report of
+  // the same race (or of a race that is not the next one in this championship) changes nothing.
+  function careerRecord(st, info, results) {
+    const a = st.active;
+    if (!a || !info || a.tier !== info.tier || a.team !== info.team || a.races.length !== info.race || info.race >= CAREER_CIRCUITS.length) return { ok: false, reason: 'not-current' };
+    if (a.races.some(r => r.id === info.id)) return { ok: false, reason: 'duplicate' };
+    const race = { circuit: CAREER_CIRCUITS[info.race], id: String(info.id), results: Array.isArray(results) && results[0] && results[0].car ? careerRaceRecord(results) : results };
+    if (!careerValidRace(race, info.race)) return { ok: false, reason: 'invalid' };
+    a.races.push(race);
+    const status = careerStatus(st);
+    a.points = new Array(CAREER_FIELD).fill(0); for (const row of status.table) a.points[row.d] = row.points;
+    let unlockedNow = false;
+    if (status.complete) {
+      st.best[a.tier] = st.best[a.tier] ? Math.min(st.best[a.tier], status.rank) : status.rank;
+      if (status.success) {
+        if (!st.completed.includes(a.tier)) st.completed.push(a.tier), st.completed.sort((x, y) => x - y);
+        if (a.tier + 1 < CAREER_TIERS.length && st.unlocked < a.tier + 1) { st.unlocked = a.tier + 1; unlockedNow = true; }
+        if (a.tier === CAREER_TIERS.length - 1) st.champion = true;
+      }
+    }
+    return { ok: true, status, unlockedNow };
+  }
+  const CAREER = { TIERS: CAREER_TIERS, POINTS: CAREER_POINTS, CIRCUITS: CAREER_CIRCUITS, VERSION: CAREER_VERSION, MAX_LEVEL: CAREER_MAX_LEVEL,
+    points: careerPoints, create: careerNew, load: careerLoad, standings: careerStandings, start: careerStart, status: careerStatus,
+    record: careerRecord, raceRecord: careerRaceRecord, profile: careerProfile };
+
   function defaultCompoundModel() {
     const degr = w => 45 * (1 / tyreWearGrip(w) - 1);
     return Object.fromEntries(Object.keys(COMPOUNDS).map(c => [c, {
@@ -4843,7 +5147,7 @@ const SIM = (function () {
     return (neg ? '-' : plus ? '+' : '') + str;
   }
 
-  return { G, RHO, PHYS_DT, DS, VSC, TEAMS, DRIVERS, TRACK_DEF, CIRCUITS, circuitById, circuitCentreLine, elevationAt, COMPOUNDS, SPEC, Track, Car, Session, AIDriver, RaceEngineer, planStrategy, wearPerLap, needsCompound, fmtTime, clamp, lerp, makeRng, stepCarPhysics, SLIPSTREAM, slipstreamStrength, OFF_TRACK, PlayerHandling, KeyboardDriveInput, HANDLING, USEFUL_WEAR, TYRE_STYLES, drivingStyle, tyreWearGrip, tyreWeatherGrip, tyreMismatch, updateTyres, wetnessFor, weatherCompound, DynamicWeather, CarDamage, DAMAGE_LEVELS, PART_KEYS, PART_NAMES, WHEEL_NAMES, REPAIR_TIME, REFUEL, FUEL_TANK_LAPS, FUEL_RESERVE, START_FUEL_LAPS, estimatePitLoss, chooseStartFuelLaps, normalizeDamageLevel, partExposure, torqueAt, defaultCompoundModel, setSeed: (s) => { rnd = makeRng(s); } };
+  return { G, RHO, PHYS_DT, DS, VSC, CAREER, TEAMS, DRIVERS, TRACK_DEF, CIRCUITS, circuitById, circuitCentreLine, elevationAt, COMPOUNDS, SPEC, Track, Car, Session, AIDriver, RaceEngineer, planStrategy, wearPerLap, needsCompound, fmtTime, clamp, lerp, makeRng, stepCarPhysics, SLIPSTREAM, slipstreamStrength, OFF_TRACK, PlayerHandling, KeyboardDriveInput, HANDLING, USEFUL_WEAR, TYRE_STYLES, drivingStyle, tyreWearGrip, tyreWeatherGrip, tyreMismatch, updateTyres, wetnessFor, weatherCompound, DynamicWeather, CarDamage, DAMAGE_LEVELS, PART_KEYS, PART_NAMES, WHEEL_NAMES, REPAIR_TIME, REFUEL, FUEL_TANK_LAPS, FUEL_RESERVE, START_FUEL_LAPS, estimatePitLoss, chooseStartFuelLaps, normalizeDamageLevel, partExposure, torqueAt, defaultCompoundModel, setSeed: (s) => { rnd = makeRng(s); } };
 })();
 // ==SIM-END==
 if (typeof module !== 'undefined') module.exports = SIM;
@@ -7004,8 +7308,8 @@ if (!SIM.CIRCUITS.some(c => c.id === S.circuit)) S.circuit = SIM.CIRCUITS[0].id;
 const saveSettings = () => { try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(S)); } catch(e) { /* ignore */ } };
 const SCHEMA = [
   { k:'quali', label:'Qualifying', type:'seg', opts:[['on','On'],['off','Off']], desc:()=> 'Leave the pits straight into one timed lap of the full circuit distance. Disabled: a random grid position.' },
-  { k:'difficulty', label:'AI difficulty', type:'range', min:0, max:100, fmt:v=>v<25?`Novice (${v})`:v<50?`Club (${v})`:v<75?`Pro (${v})`:v<92?`Expert (${v})`:`Legend (${v})` },
-  { k:'team', label:'Your team', type:'select', opts:()=>SIM.TEAMS.map((t,i)=>[i,t.name]) },
+  { k:'difficulty', label:'AI difficulty', type:'range', min:0, max:100, fmt:v=>v<25?`Novice (${v})`:v<50?`Club (${v})`:v<75?`Pro (${v})`:v<92?`Expert (${v})`:`Legend (${v})`, desc:()=>'Grand Prix only. Career tiers set the AI level themselves.' },
+  { k:'team', label:'Your team', type:'select', opts:()=>SIM.TEAMS.map((t,i)=>[i,t.name]), desc:()=>'Grand Prix team. A Career championship keeps the team chosen when it starts.' },
   { k:'startTyre', label:'Your starting tyre', type:'seg', opts:[['S','Soft'],['M','Medium'],['H','Hard'],['I','Intermediate'],['W','Full Wet']] },
   { k:'quality', label:'Graphics quality', type:'seg', opts:[['low','Low'],['medium','Medium'],['high','High']], desc:()=>QUALITY_DESC[S.quality] },
   { k:'speedBlur', label:'Speed effects (Medium/High)', type:'seg', opts:[['on','On'],['off','Off']] },
@@ -7349,12 +7653,20 @@ function qualityLevel() { return S.quality === 'low' ? 0 : S.quality === 'medium
 function speedUnit(v) { return v * 3.6; }
 
 function buildEntries(background = false) {
-  return SIM.DRIVERS.map((driver,i)=>({ driver, isPlayer:!background && i === +S.team }));
+  const team = G.career ? G.career.team : +S.team;
+  return SIM.DRIVERS.map((driver,i)=>({ driver, isPlayer:!background && i === team }));
+}
+// A Career weekend takes its AI level from the tier (difficulty 100 is the Rookie baseline), never from the
+// standalone slider; each race session carries a fresh id so its result can only be counted once.
+function careerSessionConfig(type) {
+  if (!G.career || G.attract) return {};
+  const tier = SIM.CAREER.TIERS[G.career.tier];
+  return { difficulty: 1, aiLevel: tier.level, career: type === 'race' ? { ...G.career, id: Date.now().toString(36) + Math.random().toString(36).slice(2, 8) } : null };
 }
 function sessionConfig(type, extra = {}) {
   return Object.assign({ type, laps:8, difficulty:S.difficulty/100, weather:'dynamic',
     tyreWear:'normal', mandatory:true, damage:'realistic', startCompound:S.startTyre, startFuelLaps:S.startFuel,
-    seed:(Math.random()*1e9)|0 }, extra);
+    seed:(Math.random()*1e9)|0 }, careerSessionConfig(type), extra);
 }
 function quickGridOrder(entries) {
   const order = entries.map((e,i)=>i);
@@ -7491,7 +7803,7 @@ function startSession(cfg) {
   G.flashes.length = 0; G.hitT.clear(); G.fx.hit = G.fx.dmg = G.fx.cut = G.fx.sev = 0;
   $('hud').classList.toggle('hidden', !!G.attract);
   $('menu').classList.toggle('hidden', !G.attract);
-  $('sessName').textContent = cfg.type === 'quali' ? '' : 'GRAND PRIX';
+  $('sessName').textContent = cfg.type === 'quali' ? '' : cfg.career ? SIM.CAREER.TIERS[cfg.career.tier].name.toUpperCase() + ' · R' + (cfg.career.race + 1) : 'GRAND PRIX';
   $('lights').classList.toggle('hidden', cfg.type !== 'race' || !!G.attract);
   G.lightsShown = -1; G.lastLights = 0;
   G.vscUi = null; $('vsc').classList.add('hidden');
@@ -7775,7 +8087,11 @@ function updateStrategyUI(p, sess) {
   $('pitFacts').textContent=p.pit?'Pit stop in progress — see the pit service panel.':'A clean tyre-only stop costs ≈ '+sess.pitLoss.toFixed(0)+' s here. Four shared boxes, first come first served at the pit entry: '+sess.pitBoxesInUse()+' in use'+(sess.pitQueue.length?', '+sess.pitQueue.length+' queueing':'')+'. Refuelling '+SIM.REFUEL.rate.toFixed(1)+' kg/s. '+(repair.items.length?'Damaged '+repair.items.join(' and ').toLowerCase()+' replaced automatically; ':'Damaged wings are replaced automatically; ')+'structural, suspension and power-unit damage remains.';
   $('strategyRule').textContent=(SIM.needsCompound(sess,p)?'Second dry compound still required. ':'Compound rule satisfied or exempt. ')+'Steer into the pit entry at the '+(G.track.pit.side>0?'right':'left')+' track edge. Cross the gold entry gate to engage automatic braking and pit driving. Tyres and fuel are chosen when you stop in your box; the race keeps running while you decide. Control returns at pit exit.';
 }
-function exitToMenu() { G.paused = false; hideAllOverlays(); startAttract(); }
+function exitToMenu() {
+  const career = !!G.career; G.career = null;
+  G.paused = false; hideAllOverlays(); startAttract();
+  if (career) openCareer();
+}
 
 /* ---------------- HUD ---------------- */
 const msgQueue = [];
@@ -7926,17 +8242,20 @@ function closeCircuitSelect() {
   CS.open = false; $('menu').classList.remove('selecting'); $('circuitSelect').setAttribute('aria-hidden', 'true');
   const play = document.querySelector('#menu [data-act="play"]'); if (play) play.focus({ preventScroll: true });
 }
+// Build a circuit's world behind a short loading screen (no-op when it is already loaded).
+async function ensureCircuit(def) {
+  if (G.track.def === def) return;
+  $('loadBar').style.width = '60%'; $('loading').classList.remove('hidden');
+  await new Promise(r => requestAnimationFrame(() => setTimeout(r, 30)));
+  try { loadCircuit(def.id); startAttract(); }
+  finally { $('loadBar').style.width = '100%'; $('loading').classList.add('hidden'); }
+}
 async function confirmCircuit() {
   if (!CS.open) return;
   const def = SIM.CIRCUITS[CS.idx];
+  G.career = null;
   S.circuit = def.id; saveSettings(); closeCircuitSelect(); updateCircuitCard();
-  if (G.track.def !== def) {
-    // build the circuit's world behind a short loading screen, then race on it
-    $('loadBar').style.width = '60%'; $('loading').classList.remove('hidden');
-    await new Promise(r => requestAnimationFrame(() => setTimeout(r, 30)));
-    try { loadCircuit(def.id); startAttract(); }
-    finally { $('loadBar').style.width = '100%'; $('loading').classList.add('hidden'); }
-  }
+  await ensureCircuit(def);
   if (S.quali === 'on') startQuali(); else { G.weekend = null; startRace(); }
 }
 $('csPrev').onclick = () => selectCircuit(CS.idx - 1);
@@ -7954,6 +8273,206 @@ window.addEventListener('keydown', (e) => {
   e.preventDefault(); e.stopPropagation();
 }, true);
 window.addEventListener('resize', () => { if (G.track) updateCircuitCard(); if (CS.open) [...$('csCards').children].forEach((b, i) => drawCircuitMap(b.querySelector('canvas'), SIM.CIRCUITS[i])); });
+/* ---------------- career ----------------
+   Eight three-race championships. Progress lives in its own localStorage entry (settings are untouched); the
+   rules, points and standings are SIM.CAREER's, and each race's result is recorded once, from the real race
+   classification, the moment the chequered flag classifies the field. */
+const CAREER_KEY = 'apexgp.career.v1';
+const CT = SIM.CAREER.TIERS;
+function loadCareer() { try { return SIM.CAREER.load(JSON.parse(localStorage.getItem(CAREER_KEY) || 'null')); } catch (e) { return SIM.CAREER.create(); } }
+function saveCareer() { try { localStorage.setItem(CAREER_KEY, JSON.stringify(CR)); } catch (e) { /* storage unavailable */ } }
+let CR = loadCareer();
+const CRUI = { open: false, sel: 0, team: null, flash: -1 };
+const CR_ICON = {
+  lock: '<svg viewBox="0 0 16 16" aria-hidden="true"><rect x="3" y="7" width="10" height="8" rx="1.5" fill="currentColor"/><path d="M5 7V5a3 3 0 0 1 6 0v2" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>',
+  check: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="m3 8.5 3 3 7-7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  star: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="m8 1.5 2 4.3 4.6.5-3.4 3.1 1 4.6L8 11.6 3.8 14l1-4.6L1.4 6.3 6 5.8Z" fill="currentColor"/></svg>',
+};
+const teamColour = (k) => SIM.TEAMS[k].c1 === '#141414' ? '#c9a24a' : SIM.TEAMS[k].c1;
+const ordinalTarget = (target) => target === 1 ? 'Win the championship' : 'Finish Top ' + target;
+function circuitSvg(def) {
+  const pts = centreLineOf(def), xs = pts.map(p => p[0]), zs = pts.map(p => p[1]);
+  const minX = Math.min(...xs), minZ = Math.min(...zs), w = Math.max(...xs) - minX, h = Math.max(...zs) - minZ;
+  const sc = Math.min(112 / w, 50 / h), ox = (120 - w * sc) / 2, oy = (58 - h * sc) / 2;
+  const d = pts.filter((_, i) => i % 4 === 0).map(([x, z], i) => (i ? 'L' : 'M') + (ox + (x - minX) * sc).toFixed(1) + ' ' + (oy + (z - minZ) * sc).toFixed(1)).join('') + 'Z';
+  return '<svg class="cr-map" viewBox="0 0 120 58" aria-hidden="true"><path d="' + d + '"/></svg>';
+}
+// Record the finished race into the championship it belongs to (once: the career rejects a repeat of a race id).
+function recordCareerRace(sess) {
+  const info = sess.cfg.career;
+  if (!info || sess.careerOutcome || !sess.results) return;
+  sess.careerOutcome = SIM.CAREER.record(CR, info, sess.results);
+  if (sess.careerOutcome.ok) { saveCareer(); if (sess.careerOutcome.unlockedNow) CRUI.flash = CR.unlocked; }
+  updateCareerButton();
+}
+function renderCareerStrip(outcome, sess) {
+  const el = $('resCareer'); el.classList.toggle('hidden', !outcome);
+  if (!outcome) return;
+  const st = outcome.status, me = sess.results.find(r => r.car.isPlayer), pts = me ? SIM.CAREER.points(me.pos, me.dnf) : 0;
+  const ok = st.rank <= st.target, cell = (label, value, cls = '') => '<div class="' + cls + '"><small>' + label + '</small><b class="num">' + value + '</b></div>';
+  el.innerHTML = cell('Race finish', me ? (me.dnf ? 'DNF' : 'P' + me.pos) : '—') + cell('Points earned', '+' + pts) + cell('Championship total', st.points)
+    + cell(st.complete ? 'Final position' : 'Championship', 'P' + st.rank, ok ? 'ok' : 'no')
+    + cell(st.complete ? (ok ? 'Target reached' : 'Target missed') : ok ? 'Target · on course' : 'Target · below cutoff', 'Top ' + st.target, ok ? 'ok' : 'no');
+}
+function updateCareerButton() {
+  const a = CR.active, label = CR.champion ? 'Champion' : a && a.races.length < 3 ? CT[a.tier].name + ' · R' + (a.races.length + 1) : CT[CR.unlocked].name;
+  $('careerTierLabel').textContent = label;
+}
+function openCareer(sel) {
+  CR = loadCareer();
+  CRUI.open = true; CRUI.team = null;
+  CRUI.sel = sel != null ? sel : CR.active && CR.active.races.length < 3 ? CR.active.tier : CR.unlocked;
+  $('career').classList.remove('hidden');
+  renderCareer();
+  const seg = $('crBar').querySelector('[aria-selected="true"]'); if (seg) seg.focus({ preventScroll: true });
+}
+function closeCareer() {
+  CRUI.open = false; $('career').classList.add('hidden');
+  const b = $('btnCareer'); if (b && G.mode === 'menu') b.focus({ preventScroll: true });
+}
+function selectTier(k) { CRUI.sel = clamp(k, 0, CT.length - 1); CRUI.team = null; renderCareer(); const seg = $('crBar').children[CRUI.sel]; if (seg) seg.firstChild.focus({ preventScroll: true }); }
+// Two clicks for anything that throws away progress: the first arms the button for a few seconds.
+function armed(btn, label, fn) {
+  if (btn.dataset.armed) { fn(); return; }
+  const old = btn.textContent; btn.dataset.armed = '1'; btn.classList.add('armed'); btn.textContent = label;
+  setTimeout(() => { if (btn.isConnected && btn.dataset.armed) { delete btn.dataset.armed; btn.classList.remove('armed'); btn.textContent = old; } }, 4000);
+}
+function renderCareer() {
+  const sel = CRUI.sel, tier = CT[sel], a = CR.active, mine = a && a.tier === sel ? a : null;
+  const status = mine ? SIM.CAREER.status(CR) : null, unlocked = sel <= CR.unlocked, done = CR.completed.includes(sel);
+  $('crSub').innerHTML = CR.champion ? 'Legendary championship won.<span class="cr-badge">CAREER CHAMPION</span>'
+    : 'Eight championships, three Grand Prix each. Finish high enough in the standings to unlock the next tier.';
+  // progression bar
+  const bar = $('crBar'); bar.replaceChildren();
+  CT.forEach((t, k) => {
+    const li = document.createElement('li'), b = document.createElement('button');
+    const isDone = CR.completed.includes(k), isLive = a && a.tier === k && a.races.length < 3, locked = k > CR.unlocked;
+    const champ = isDone && k === CT.length - 1;
+    b.type = 'button'; b.className = 'cr-seg' + (locked ? ' locked' : '') + (isDone ? ' done' : '') + (champ ? ' champ' : '') + (isLive ? ' live' : '') + (CRUI.flash === k ? ' unlocked-now' : '');
+    b.setAttribute('role', 'option'); b.setAttribute('aria-selected', String(k === sel)); b.tabIndex = k === sel ? 0 : -1;
+    const state = champ ? CR_ICON.star + 'Champion' : isDone ? CR_ICON.check + 'Completed' : isLive ? 'Race ' + (a.races.length + 1) + ' of 3' : locked ? CR_ICON.lock + 'Locked' : 'Unlocked';
+    b.innerHTML = '<small>Tier ' + (k + 1) + '</small>' + t.name + '<span class="cr-state">' + state + '</span>';
+    b.setAttribute('aria-label', 'Tier ' + (k + 1) + ', ' + t.name + ', ' + (champ ? 'champion' : isDone ? 'completed' : isLive ? 'in progress' : locked ? 'locked' : 'unlocked'));
+    b.onclick = () => selectTier(k);
+    li.appendChild(b); bar.appendChild(li);
+  });
+  CRUI.flash = -1;
+  // tier detail
+  const box = $('crTier');
+  const chip = !unlocked ? ['Locked', ''] : sel === CT.length - 1 && CR.champion ? ['Champion', 'champ'] : mine && !status.complete ? ['In progress', 'live'] : done ? ['Completed', 'done'] : ['Unlocked', ''];
+  let h = '<div class="cr-tierhead"><div><small>Tier ' + (sel + 1) + ' of 8 · AI level ' + Math.round(tier.level * 100) + '%</small><h3>' + tier.name + '</h3></div>'
+    + '<span class="cr-chip ' + chip[1] + '">' + chip[0] + '</span></div>'
+    + '<div class="cr-req"><b>' + ordinalTarget(tier.target) + '</b><span>in the final standings' + (sel < CT.length - 1 ? ' to unlock ' + CT[sel + 1].name : ' to become Career Champion') + '</span>'
+    + (CR.best[sel] ? '<span>· Best: P' + CR.best[sel] + '</span>' : '') + '</div>';
+  h += '<ol class="cr-races">' + SIM.CAREER.CIRCUITS.map((id, k) => {
+    const def = SIM.circuitById(id), race = mine && mine.races[k];
+    const me = race && race.results.find(r => r.d === mine.team);
+    const cls = race ? 'done' : unlocked && (mine ? mine.races.length === k : k === 0) ? 'next' : 'locked';
+    const st = race ? (me.dnf ? 'DNF · 0 pts' : 'P' + me.pos + ' · +' + SIM.CAREER.points(me.pos, me.dnf) + ' pts') : cls === 'next' ? (mine && mine.races.length ? 'Next race' : 'Race 1 · ready') : CR_ICON.lock.replace('<svg', '<svg style="width:11px;height:11px;vertical-align:-1px"') + ' After race ' + k;
+    return '<li class="cr-race ' + cls + '"><small>Race ' + (k + 1) + '</small><b>' + def.name + '</b>' + circuitSvg(def) + '<span class="cr-rstate">' + st + '</span></li>';
+  }).join('') + '</ol>';
+  if (mine) {
+    const ok = status.rank <= tier.target;
+    h += '<div class="cr-stats"><div><small>Points</small><b class="num">' + status.points + '</b></div><div><small>Position</small><b class="num">P' + status.rank + '</b></div>'
+      + '<div><small>Races</small><b class="num">' + mine.races.length + ' / 3</b></div></div>'
+      + '<p class="cr-course ' + (mine.races.length ? ok ? 'ok' : 'no' : '') + '">' + (status.complete ? (status.success ? 'Target reached — ' + (sel < CT.length - 1 ? CT[sel + 1].name + ' unlocked.' : 'Career Champion.') : 'Target missed: P' + status.rank + ', Top ' + tier.target + ' needed.')
+      : mine.races.length ? (ok ? 'On course: inside the Top ' + tier.target + '.' : 'Below the cutoff: Top ' + tier.target + ' needed after race 3.') : 'Championship ready. Points carry over all three races.') + '</p>';
+  } else if (unlocked) h += '<p class="cr-note">Three eight-lap Grand Prix with qualifying' + (S.quali === 'on' ? '' : ' (off in Race Settings)') + ', the same 20 teams in every race, points 25-20-16-13-11-10-9-8-7-6-5-4-3-2-1.</p>';
+  else h += '<p class="cr-note">' + CR_ICON.lock.replace('<svg', '<svg style="width:12px;height:12px;vertical-align:-1px"') + ' Finish ' + (CT[sel - 1].target === 1 ? 'P1' : 'Top ' + CT[sel - 1].target) + ' in the ' + CT[sel - 1].name + ' championship to unlock.</p>';
+  const canPickTeam = unlocked && (!mine || mine.races.length === 0 || status.complete);
+  if (canPickTeam) {
+    const cur = CRUI.team != null ? CRUI.team : mine ? mine.team : +S.team;
+    h += '<div class="cr-team"><label for="crTeam">Your team</label><select id="crTeam">' + SIM.TEAMS.map((t, k) => '<option value="' + k + '"' + (k === cur ? ' selected' : '') + '>' + t.name + '</option>').join('') + '</select></div>';
+  } else if (mine) h += '<div class="cr-team"><label>Your team</label><span><span class="tb" style="background:' + teamColour(mine.team) + '"></span>' + SIM.TEAMS[mine.team].name + '</span></div>';
+  h += '<div class="cr-actions" id="crActions"></div>';
+  box.innerHTML = h;
+  if (canPickTeam) $('crTeam').onchange = (e) => { CRUI.team = +e.target.value; };
+  // actions
+  const acts = $('crActions');
+  const mk = (txt, fn, cls = '') => { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn ' + cls; b.textContent = txt; b.onclick = () => fn(b); acts.appendChild(b); return b; };
+  const pickedTeam = () => CRUI.team != null ? CRUI.team : $('crTeam') ? +$('crTeam').value : +S.team;
+  const other = a && a.tier !== sel && a.races.length > 0 && a.races.length < 3 ? a : null;
+  const begin = () => { SIM.CAREER.start(CR, sel, pickedTeam()); saveCareer(); careerContinue(); };
+  if (!unlocked) mk('Locked', () => {}, 'primary').disabled = true;
+  else if (mine && !status.complete && mine.races.length > 0) {
+    mk('Continue · Race ' + (mine.races.length + 1) + ': ' + SIM.circuitById(status.nextCircuit).name + ' ▸', () => careerContinue(), 'primary');
+    mk('Restart attempt', (b) => armed(b, 'Confirm restart from Race 1', () => { SIM.CAREER.start(CR, sel, mine.team); saveCareer(); renderCareer(); }));
+  } else if (mine && status.complete) {
+    if (status.success && sel < CT.length - 1) mk('Next tier: ' + CT[sel + 1].name + ' ▸', () => selectTier(sel + 1), 'primary');
+    mk('Championship summary', () => openSummary());
+    mk('Replay ' + tier.name, begin, status.success && sel < CT.length - 1 ? '' : 'primary');
+  } else if (mine) mk('Start Race 1: ' + SIM.circuitById(SIM.CAREER.CIRCUITS[0]).name + ' ▸', () => { mine.team = pickedTeam(); saveCareer(); careerContinue(); }, 'primary');
+  else if (other) mk('Start championship ▸', (b) => armed(b, 'Abandon ' + CT[other.tier].name + ' (race ' + (other.races.length + 1) + ' of 3)? Click again', begin), 'primary');
+  else mk('Start championship ▸', begin, 'primary');
+  renderStandings(sel, mine);
+  updateCareerButton();
+}
+function renderStandings(sel, mine) {
+  const tier = CT[sel], table = SIM.CAREER.standings(mine), team = mine ? mine.team : null;
+  $('crCut').textContent = tier.target === 1 ? 'P1 advances' : 'Top ' + tier.target + ' advance';
+  $('crTableTitle').textContent = mine ? 'Championship standings' : 'Championship standings · not started';
+  let h = '<tr><th>Pos</th><th>Team</th>' + SIM.CAREER.CIRCUITS.map((_, k) => '<th class="r">R' + (k + 1) + '</th>').join('') + '<th class="r">Pts</th></tr>';
+  for (const row of table) {
+    const res = row.results.map(r => '<td class="r num' + (r ? '' : ' dim') + '">' + (!r ? '—' : r.dnf ? 'DNF' : r.pos) + '</td>').join('')
+      + '<td class="r dim">—</td>'.repeat(3 - row.results.length);
+    h += '<tr class="' + (row.d === team ? 'me' : '') + (row.rank === tier.target ? ' cut' : '') + '"><td class="num">' + row.rank + '</td><td><span class="tb" style="background:' + teamColour(row.team) + '"></span>'
+      + SIM.TEAMS[row.team].name + '</td>' + res + '<td class="r num"><b>' + row.points + '</b></td></tr>';
+  }
+  $('crStand').innerHTML = h;
+  // keep the player's row in view
+  const me = $('crStand').querySelector('tr.me'), sc = $('crScroll');
+  if (me) sc.scrollTop = Math.max(0, me.offsetTop - sc.clientHeight / 2);
+}
+// Start (or resume) the next race of the active championship: its circuit, the championship's team and the tier's AI.
+async function careerContinue() {
+  const st = SIM.CAREER.status(CR); if (!st || st.complete) return;
+  const a = CR.active;
+  G.career = { tier: a.tier, team: a.team, race: st.raceIndex };
+  hideAllOverlays();
+  await ensureCircuit(SIM.circuitById(st.nextCircuit));
+  if (S.quali === 'on') startQuali(); else { G.weekend = null; startRace(); }
+}
+function openSummary() {
+  CR = loadCareer();
+  const st = SIM.CAREER.status(CR); if (!st || !st.complete) { openCareer(); return; }
+  const tier = CT[st.tier], last = st.tier === CT.length - 1, champ = st.success && last;
+  $('career').classList.add('hidden'); CRUI.open = false;
+  $('sumKicker').textContent = tier.name + ' championship · final standings';
+  $('sumTitle').innerHTML = champ ? 'Career <span>Champion</span>' : st.success ? 'Champion<span>ship complete</span>' : 'Target <span>missed</span>';
+  $('sumHero').className = 'sum-hero ' + (champ ? 'champ' : st.success ? 'ok' : 'no');
+  $('sumPos').textContent = 'P' + st.rank;
+  $('sumVerdict').textContent = champ ? 'Legendary champion. Career complete.' : st.success ? CT[st.tier + 1].name + ' unlocked' : 'Top ' + tier.target + ' needed to advance';
+  $('sumDetail').textContent = st.points + ' points · target ' + (tier.target === 1 ? 'P1' : 'Top ' + tier.target) + (st.success ? ' reached' : '') + (st.success ? '' : '. Replay to try again.');
+  const team = CR.active.team;
+  let h = '<tr><th>Pos</th><th>Team</th>' + SIM.CAREER.CIRCUITS.map((_, k) => '<th class="r">R' + (k + 1) + '</th>').join('') + '<th class="r">Pts</th></tr>';
+  for (const row of st.table) h += '<tr class="' + (row.d === team ? 'me' : '') + (row.rank === tier.target ? ' cut' : '') + '"><td class="num">' + row.rank + '</td><td><span class="tb" style="background:' + teamColour(row.team) + '"></span>' + SIM.TEAMS[row.team].name + '</td>'
+    + row.results.map(r => '<td class="r num">' + (r.dnf ? 'DNF' : r.pos) + '</td>').join('') + '<td class="r num"><b>' + row.points + '</b></td></tr>';
+  $('sumTable').innerHTML = h;
+  const acts = $('sumActions'); acts.innerHTML = '';
+  const mk = (txt, fn, primary) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn' + (primary ? ' primary' : ''); b.textContent = txt; b.onclick = fn; acts.appendChild(b); return b; };
+  mk('Career', () => { $('careerSummary').classList.add('hidden'); openCareer(st.tier); }, champ);
+  if (st.success && !last) mk('Next tier: ' + CT[st.tier + 1].name + ' ▸', () => { $('careerSummary').classList.add('hidden'); openCareer(st.tier + 1); }, true);
+  else if (!st.success) mk('Replay ' + tier.name + ' ▸', () => { $('careerSummary').classList.add('hidden'); SIM.CAREER.start(CR, st.tier, team); saveCareer(); careerContinue(); }, true);
+  $('careerSummary').classList.remove('hidden');
+  const me = $('sumTable').querySelector('tr.me'), sc = $('sumTable').parentElement;
+  if (me) sc.scrollTop = Math.max(0, me.offsetTop - sc.clientHeight / 2);
+  acts.lastElementChild.focus({ preventScroll: true });
+}
+$('crBack').onclick = () => closeCareer();
+$('crReset').onclick = () => armed($('crReset'), 'Click again to erase all Career progress', () => {
+  CR = SIM.CAREER.create(); saveCareer(); CRUI.sel = 0; renderCareer();
+  const b = $('crReset'); delete b.dataset.armed; b.classList.remove('armed'); b.textContent = 'Reset career progress';
+});
+window.addEventListener('keydown', (e) => {
+  if (!$('careerSummary').classList.contains('hidden') && e.code === 'Escape') { e.preventDefault(); e.stopPropagation(); $('careerSummary').classList.add('hidden'); openCareer(); return; }
+  if (!CRUI.open || $('career').classList.contains('hidden')) return;
+  if (e.code === 'Escape') { e.preventDefault(); e.stopPropagation(); closeCareer(); return; }
+  if (!e.target.closest || !e.target.closest('#crBar')) return;
+  if (e.code === 'ArrowLeft') { e.preventDefault(); selectTier(CRUI.sel - 1); }
+  else if (e.code === 'ArrowRight') { e.preventDefault(); selectTier(CRUI.sel + 1); }
+}, true);
+window.addEventListener('storage', (e) => { if (e.key === CAREER_KEY) { CR = loadCareer(); updateCareerButton(); if (CRUI.open) renderCareer(); } });
+updateCareerButton();
 function drawMinimap() {
   const { g, tf } = G.mmT; const t = G.track, sess = G.session; const W = G.mm.cvs.width, H = G.mm.cvs.height;
   g.clearRect(0, 0, W, H); g.drawImage(G.mmStatic, 0, 0);
@@ -8132,7 +8651,7 @@ function updateHud(dt) {
   const blue = sess.type === 'race' ? !!p.blueFlag.target && !sess.over && !sess.finishedFlag && !sess.blueNeutralized() : !!(p.ai && p.ai.blue);
   const vscGreen = sess.vsc.phase === 'green' && sess.time - sess.vsc.endedAt < 2.5;
   fb.className = sess.vscActive ? 'vsc' : vscGreen ? 'green' : yel ? 'yellow' : blue ? 'blue' : '';
-  $('sessName').textContent = sess.type === 'quali' ? '' : sess.vscActive ? 'VSC' : 'GRAND PRIX';
+  $('sessName').textContent = sess.type === 'quali' ? '' : sess.vscActive ? 'VSC' : sess.cfg.career ? SIM.CAREER.TIERS[sess.cfg.career.tier].name.toUpperCase() + ' · R' + (sess.cfg.career.race + 1) : 'GRAND PRIX';
   $('sessName').classList.toggle('vsc', sess.vscActive);
   const blueIndicator = $('blueFlag');
   blueIndicator.classList.toggle('active', blue);
@@ -8770,7 +9289,7 @@ function processEvents() {
     } else if (e.type === 'lightsout') { if (!G.attract) G.audio.oneShot('go'); if (G.focus && G.focus.isPlayer) G.camRig.impulse(0.25, -Math.cos(G.focus.psi), -Math.sin(G.focus.psi)); }
     else if (e.type === 'overtake') { if (e.car === G.focus && !G.attract) G.camRig.fovKick = 4; }
     else if (e.type === 'vsc') { if (!G.attract && e.phase !== 'ending') G.audio.oneShot(e.phase === 'green' ? 'go' : 'beep'); }
-    else if (e.type === 'raceover') { if (!G.attract) setTimeout(()=>{if(G.session===sess)showResults();},1200); else setTimeout(() => { if (G.attract && G.mode === 'menu') startAttract(); }, 3000); }
+    else if (e.type === 'raceover') { if (!G.attract) { recordCareerRace(sess); setTimeout(()=>{if(G.session===sess)showResults();},1200); } else setTimeout(() => { if (G.attract && G.mode === 'menu') startAttract(); }, 3000); }
     else if (e.type === 'qualiover') { if (!G.attract) setTimeout(()=>{if(G.session===sess)showResults();},800); }
     else if (e.type === 'pitstop' && e.car === G.focus) G.audio.oneShot('pit');
     else if (e.type === 'qualiplayerdone') G.timeScale = 4;
@@ -8852,7 +9371,7 @@ function director(dt) {
 }
 
 /* ---------------- menus & overlays ---------------- */
-function hideAllOverlays() { for (const id of ['settings', 'controls', 'pause', 'results', 'raceBrief','pitSvc']) $(id).classList.add('hidden'); }
+function hideAllOverlays() { for (const id of ['settings', 'controls', 'pause', 'results', 'raceBrief','pitSvc','career','careerSummary']) $(id).classList.add('hidden'); CRUI.open = false; }
 function togglePause() {
   if (!$('settings').classList.contains('hidden') || !$('controls').classList.contains('hidden')) { $('settings').classList.add('hidden'); $('controls').classList.add('hidden'); if (G.paused) $('pause').classList.remove('hidden'); return; }
   if (!$('raceBrief').classList.contains('hidden')) { $('briefCancel').click(); return; }
@@ -8861,7 +9380,9 @@ function togglePause() {
   G.paused = !G.paused; $('pause').classList.toggle('hidden', !G.paused);
   const sess = G.session;
   $('btnSkipQ').classList.toggle('hidden', !(sess && sess.type === 'quali' && !sess.over && G.player));
-  $('pauseSub').textContent = sess ? (sess.type === 'quali' ? 'Qualifying' : 'Grand Prix') + ' · ' + G.track.name : '';
+  $('pauseSub').textContent = sess ? (G.career ? 'Career · ' + SIM.CAREER.TIERS[G.career.tier].name + ' · Race ' + (G.career.race + 1) + ' of 3 · ' : '')
+    + (sess.type === 'quali' ? 'Qualifying' : 'Grand Prix') + ' · ' + G.track.name : '';
+  $('btnExit').textContent = G.career ? 'Exit to Career (race not counted)' : 'Exit to main menu';
 }
 function buildSettingsUI() {
   const grid = $('setGrid'); grid.innerHTML = '';
@@ -8898,7 +9419,10 @@ function showResults() {
   const tbl = $('resTable'); const quali = sess.type === 'quali';
   $('resTitle').innerHTML = quali ? 'Qualifying <span>Results</span>' : 'Race <span>Results</span>';
   $('resSub').classList.toggle('hidden', quali);
-  $('resSub').textContent = quali ? '' : G.track.name + ' · ' + sess.totalLaps + ' laps · ' + (sess.weather?sess.weather.label:sess.wet?'wet':'dry')+' · AI ' + Math.round(sess.difficulty * 100) + '% · ' + sess.damageLevel.name + ' damage';
+  const career = !quali && sess.cfg.career ? sess.careerOutcome : null, counted = career && career.ok;
+  $('resSub').textContent = quali ? '' : G.track.name + ' · ' + sess.totalLaps + ' laps · ' + (sess.weather?sess.weather.label:sess.wet?'wet':'dry')+' · AI ' + (sess.aiLevel ? SIM.CAREER.TIERS[sess.cfg.career ? sess.cfg.career.tier : 0].name + ' (' + Math.round(sess.aiLevel * 100) + '%)' : Math.round(sess.difficulty * 100) + '%') + ' · ' + sess.damageLevel.name + ' damage';
+  if (!quali && sess.cfg.career) $('resTitle').innerHTML = SIM.CAREER.TIERS[sess.cfg.career.tier].name + ' · Race ' + (sess.cfg.career.race + 1) + ' of 3 <span>Results</span>';
+  renderCareerStrip(counted ? career : null, sess);
   let h = '';
   if (quali) {
     h = '<tr><th>Grid</th><th>Team</th><th>Lap time</th><th>Gap to pole</th><th>Result</th></tr>';
@@ -8908,30 +9432,36 @@ function showResults() {
       h += `<tr class="${c.isPlayer ? 'me' : ''}"><td>P${r.pos}</td><td><span class="tb" style="background:${c.team.c1 === '#141414' ? '#c9a24a' : c.team.c1}"></span>${c.team.name}</td><td class="num">${r.best ? fmt(r.best) : '—'}</td><td class="num">${r.best && poleTime ? r.pos === 1 ? '—' : '+' + (r.best - poleTime).toFixed(3) : '—'}</td><td>${result}${r.reason ? '<small style="display:block;color:var(--dim)">' + r.reason + '</small>' : ''}</td></tr>`;
     }
   } else {
-    h = '<tr><th>Pos</th><th>Team</th><th>Laps</th><th>Time / Gap</th><th>Best lap</th><th>Stops</th><th>Pen.</th><th>Pts</th></tr>';
+    h = '<tr><th>Pos</th><th>Team</th><th>Laps</th><th>Time / Gap</th><th>Best lap</th><th>Stops</th><th>Pen.</th><th>Pts</th>' + (counted ? '<th>Total</th>' : '') + '</tr>';
+    const totals = counted ? new Map(career.status.table.map(row => [row.d, row])) : null;
     const win = sess.results[0];
     const fastest = sess.bestLap.car;
     for (const r of sess.results) {
       const c = r.car; let tm;
       if (r.dnf) tm = 'DNF (' + c.dnfReason + ')'; else if (r.pos === 1) tm = fmt(r.time); else if (r.time != null && r.laps === win.laps) tm = '+' + (r.time - win.time).toFixed(3); else if (r.laps < win.laps) tm = '+' + (win.laps - r.laps) + ' lap' + (win.laps - r.laps > 1 ? 's' : ''); else tm = '—';
-      h += `<tr class="${c.isPlayer ? 'me' : ''}"><td>${r.pos}</td><td><span class="tb" style="background:${c.team.c1 === '#141414' ? '#c9a24a' : c.team.c1}"></span>${c.team.name}${c === fastest ? ' <span class="pill" style="background:#7b1fa2">FL</span>' : ''}</td><td>${r.laps}</td><td class="num">${tm}</td><td class="num">${r.best ? fmt(r.best) : '-'}</td><td>${r.pits} <span style="color:var(--dim)">${[...c.tyre.used].join('')}</span></td><td>${r.pen ? r.pen + 's' : ''}</td><td>${r.points || ''}</td></tr>`;
+      h += `<tr class="${c.isPlayer ? 'me' : ''}"><td>${r.pos}</td><td><span class="tb" style="background:${c.team.c1 === '#141414' ? '#c9a24a' : c.team.c1}"></span>${c.team.name}${c === fastest ? ' <span class="pill" style="background:#7b1fa2">FL</span>' : ''}</td><td>${r.laps}</td><td class="num">${tm}</td><td class="num">${r.best ? fmt(r.best) : '-'}</td><td>${r.pits} <span style="color:var(--dim)">${[...c.tyre.used].join('')}</span></td><td>${r.pen ? r.pen + 's' : ''}</td>${counted ? `<td class="cpts">${SIM.CAREER.points(r.pos, r.dnf) || ''}</td><td class="cpts">${totals.get(SIM.DRIVERS.indexOf(c.driver)).points} <span style="color:var(--dim)">P${totals.get(SIM.DRIVERS.indexOf(c.driver)).rank}</span></td>` : `<td>${r.points || ''}</td>`}</tr>`;
     }
   }
   tbl.innerHTML = h;
   const acts = $('resActions'); acts.innerHTML = '';
   const mk = (txt, fn, primary) => { const b = document.createElement('button'); b.className = 'btn' + (primary ? ' primary' : ''); b.textContent = txt; b.onclick = fn; acts.appendChild(b); };
   if (quali) {
-    mk('Main menu', () => exitToMenu());
+    mk(G.career ? 'Career' : 'Main menu', () => exitToMenu());
     mk('Start the race ▸', () => { hideAllOverlays(); startRace(sess.gridOrder, G.session.cfg.entries); }, true);
+  } else if (counted) {
+    mk('Career', () => exitToMenu());
+    if (career.status.complete) mk('Championship summary ▸', () => { hideAllOverlays(); G.career = null; startAttract(); openSummary(); }, true);
+    else mk('Next race: ' + SIM.circuitById(career.status.nextCircuit).name + ' ▸', () => careerContinue(), true);
   } else {
-    mk('Main menu', () => exitToMenu());
+    mk(sess.cfg.career ? 'Career' : 'Main menu', () => exitToMenu());
   }
   $('results').classList.remove('hidden');
 }
 function onAction(act) {
   G.audio.init();
   switch (act) {
-    case 'play': openCircuitSelect(); break;
+    case 'play': G.career = null; openCircuitSelect(); break;
+    case 'career': if (CS.open) closeCircuitSelect(); openCareer(); break;
     case 'settings': buildSettingsUI(); $('settings').classList.remove('hidden'); $('pause').classList.add('hidden'); break;
     case 'settingsClose':
       $('settings').classList.add('hidden');
