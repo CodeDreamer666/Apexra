@@ -990,28 +990,31 @@ const SIM = (function () {
     { id: 'team-s', name: 'Team S', full: 'Team S', c1: '#adbdc9', c2: '#f2c500', c3: '#ffffff', power: 1, clA: 1, cdA: 1 },
     { id: 'team-t', name: 'Team T', full: 'Team T', c1: '#da8e22', c2: '#0f6b3a', c3: '#ffffff', power: 1, clA: 1, cdA: 1 },
   ];
-  // pace, consistency, braking, racecraft, aggression, risk, tyre management, strategy, start
+  // pace, consistency, braking, racecraft, aggression, risk, tyre management, strategy, start, and two racing
+  // temperament traits: patience (waiting for a better chance rather than forcing one) and adaptability (how quickly
+  // the driver reads changing grip and learns a rival's habits). They are the drivers' persistent personalities:
+  // the same in every mode and every round of a Career.
   const DRIVERS = [
-    { name: 'Team A', short: 'Team A', num: 1, team: 0, pace: .90, cons: .88, brake: .88, craft: .86, aggr: .6, risk: .55, tyre: .82, strat: .8, start: .8 },
-    { name: 'Team B', short: 'Team B', num: 2, team: 1, pace: .87, cons: .85, brake: .86, craft: .82, aggr: .55, risk: .5, tyre: .86, strat: .78, start: .75 },
-    { name: 'Team C', short: 'Team C', num: 3, team: 2, pace: .96, cons: .86, brake: .93, craft: .9, aggr: .82, risk: .72, tyre: .78, strat: .82, start: .86 },
-    { name: 'Team D', short: 'Team D', num: 4, team: 3, pace: .9, cons: .9, brake: .87, craft: .84, aggr: .5, risk: .45, tyre: .88, strat: .85, start: .8 },
-    { name: 'Team E', short: 'Team E', num: 5, team: 4, pace: .98, cons: .93, brake: .95, craft: .95, aggr: .7, risk: .6, tyre: .9, strat: .9, start: .9 },
-    { name: 'Team F', short: 'Team F', num: 6, team: 5, pace: .89, cons: .88, brake: .88, craft: .85, aggr: .45, risk: .4, tyre: .85, strat: .8, start: .82 },
-    { name: 'Team G', short: 'Team G', num: 7, team: 6, pace: .94, cons: .9, brake: .9, craft: .9, aggr: .62, risk: .55, tyre: .9, strat: .86, start: .85 },
-    { name: 'Team H', short: 'Team H', num: 8, team: 7, pace: .88, cons: .82, brake: .9, craft: .8, aggr: .78, risk: .75, tyre: .76, strat: .7, start: .78 },
-    { name: 'Team I', short: 'Team I', num: 9, team: 8, pace: .93, cons: .94, brake: .9, craft: .92, aggr: .5, risk: .45, tyre: .93, strat: .92, start: .84 },
-    { name: 'Team J', short: 'Team J', num: 10, team: 9, pace: .88, cons: .86, brake: .85, craft: .82, aggr: .6, risk: .6, tyre: .84, strat: .8, start: .76 },
-    { name: 'Team K', short: 'Team K', num: 11, team: 10, pace: .87, cons: .84, brake: .86, craft: .8, aggr: .68, risk: .65, tyre: .8, strat: .74, start: .8 },
-    { name: 'Team L', short: 'Team L', num: 12, team: 11, pace: .86, cons: .87, brake: .84, craft: .83, aggr: .48, risk: .4, tyre: .87, strat: .8, start: .74 },
-    { name: 'Team M', short: 'Team M', num: 13, team: 12, pace: .88, cons: .8, brake: .88, craft: .78, aggr: .85, risk: .85, tyre: .74, strat: .68, start: .82 },
-    { name: 'Team N', short: 'Team N', num: 14, team: 13, pace: .86, cons: .86, brake: .84, craft: .8, aggr: .56, risk: .5, tyre: .82, strat: .78, start: .77 },
-    { name: 'Team O', short: 'Team O', num: 15, team: 14, pace: .87, cons: .89, brake: .85, craft: .86, aggr: .52, risk: .48, tyre: .86, strat: .84, start: .8 },
-    { name: 'Team P', short: 'Team P', num: 16, team: 15, pace: .85, cons: .83, brake: .83, craft: .78, aggr: .6, risk: .58, tyre: .8, strat: .75, start: .72 },
-    { name: 'Team Q', short: 'Team Q', num: 17, team: 16, pace: .86, cons: .81, brake: .86, craft: .79, aggr: .74, risk: .7, tyre: .78, strat: .72, start: .79 },
-    { name: 'Team R', short: 'Team R', num: 18, team: 17, pace: .84, cons: .85, brake: .83, craft: .8, aggr: .5, risk: .45, tyre: .84, strat: .78, start: .74 },
-    { name: 'Team S', short: 'Team S', num: 19, team: 18, pace: .85, cons: .8, brake: .84, craft: .76, aggr: .66, risk: .66, tyre: .79, strat: .7, start: .76 },
-    { name: 'Team T', short: 'Team T', num: 20, team: 19, pace: .84, cons: .84, brake: .82, craft: .78, aggr: .55, risk: .52, tyre: .83, strat: .76, start: .73 },
+    { name: 'Team A', short: 'Team A', num: 1, team: 0, pace: .90, cons: .88, brake: .88, craft: .86, aggr: .6, risk: .55, tyre: .82, strat: .8, start: .8, patience: .62, adapt: .80 },
+    { name: 'Team B', short: 'Team B', num: 2, team: 1, pace: .87, cons: .85, brake: .86, craft: .82, aggr: .55, risk: .5, tyre: .86, strat: .78, start: .75, patience: .72, adapt: .74 },
+    { name: 'Team C', short: 'Team C', num: 3, team: 2, pace: .96, cons: .86, brake: .93, craft: .9, aggr: .82, risk: .72, tyre: .78, strat: .82, start: .86, patience: .35, adapt: .78 },
+    { name: 'Team D', short: 'Team D', num: 4, team: 3, pace: .9, cons: .9, brake: .87, craft: .84, aggr: .5, risk: .45, tyre: .88, strat: .85, start: .8, patience: .78, adapt: .82 },
+    { name: 'Team E', short: 'Team E', num: 5, team: 4, pace: .98, cons: .93, brake: .95, craft: .95, aggr: .7, risk: .6, tyre: .9, strat: .9, start: .9, patience: .66, adapt: .90 },
+    { name: 'Team F', short: 'Team F', num: 6, team: 5, pace: .89, cons: .88, brake: .88, craft: .85, aggr: .45, risk: .4, tyre: .85, strat: .8, start: .82, patience: .84, adapt: .70 },
+    { name: 'Team G', short: 'Team G', num: 7, team: 6, pace: .94, cons: .9, brake: .9, craft: .9, aggr: .62, risk: .55, tyre: .9, strat: .86, start: .85, patience: .70, adapt: .86 },
+    { name: 'Team H', short: 'Team H', num: 8, team: 7, pace: .88, cons: .82, brake: .9, craft: .8, aggr: .78, risk: .75, tyre: .76, strat: .7, start: .78, patience: .30, adapt: .60 },
+    { name: 'Team I', short: 'Team I', num: 9, team: 8, pace: .93, cons: .94, brake: .9, craft: .92, aggr: .5, risk: .45, tyre: .93, strat: .92, start: .84, patience: .88, adapt: .90 },
+    { name: 'Team J', short: 'Team J', num: 10, team: 9, pace: .88, cons: .86, brake: .85, craft: .82, aggr: .6, risk: .6, tyre: .84, strat: .8, start: .76, patience: .55, adapt: .66 },
+    { name: 'Team K', short: 'Team K', num: 11, team: 10, pace: .87, cons: .84, brake: .86, craft: .8, aggr: .68, risk: .65, tyre: .8, strat: .74, start: .8, patience: .45, adapt: .62 },
+    { name: 'Team L', short: 'Team L', num: 12, team: 11, pace: .86, cons: .87, brake: .84, craft: .83, aggr: .48, risk: .4, tyre: .87, strat: .8, start: .74, patience: .80, adapt: .72 },
+    { name: 'Team M', short: 'Team M', num: 13, team: 12, pace: .88, cons: .8, brake: .88, craft: .78, aggr: .85, risk: .85, tyre: .74, strat: .68, start: .82, patience: .22, adapt: .55 },
+    { name: 'Team N', short: 'Team N', num: 14, team: 13, pace: .86, cons: .86, brake: .84, craft: .8, aggr: .56, risk: .5, tyre: .82, strat: .78, start: .77, patience: .60, adapt: .68 },
+    { name: 'Team O', short: 'Team O', num: 15, team: 14, pace: .87, cons: .89, brake: .85, craft: .86, aggr: .52, risk: .48, tyre: .86, strat: .84, start: .8, patience: .74, adapt: .80 },
+    { name: 'Team P', short: 'Team P', num: 16, team: 15, pace: .85, cons: .83, brake: .83, craft: .78, aggr: .6, risk: .58, tyre: .8, strat: .75, start: .72, patience: .50, adapt: .58 },
+    { name: 'Team Q', short: 'Team Q', num: 17, team: 16, pace: .86, cons: .81, brake: .86, craft: .79, aggr: .74, risk: .7, tyre: .78, strat: .72, start: .79, patience: .40, adapt: .64 },
+    { name: 'Team R', short: 'Team R', num: 18, team: 17, pace: .84, cons: .85, brake: .83, craft: .8, aggr: .5, risk: .45, tyre: .84, strat: .78, start: .74, patience: .70, adapt: .66 },
+    { name: 'Team S', short: 'Team S', num: 19, team: 18, pace: .85, cons: .8, brake: .84, craft: .76, aggr: .66, risk: .66, tyre: .79, strat: .7, start: .76, patience: .42, adapt: .52 },
+    { name: 'Team T', short: 'Team T', num: 20, team: 19, pace: .84, cons: .84, brake: .82, craft: .78, aggr: .55, risk: .52, tyre: .83, strat: .76, start: .73, patience: .64, adapt: .60 },
   ];
 
   /* ------------------------------------------------------------------
@@ -1022,10 +1025,11 @@ const SIM = (function () {
   // radius, height in metres) and the scenery the renderer builds around it.
   // pitLoss (s) is the time a clean tyre-only stop loses against staying out and fuelPerLap (kg) the
   // race-pace consumption, both measured by simulating this circuit. The connected 300 m approach and 200 m limiter zone
-  // retain real braking/service time: paired four-lap, tyre-only runs lose 20.52 / 20.50 / 20.37 s.
+  // retain real braking/service time: paired four-lap, tyre-only runs lose 21.34 / 22.13 / 21.30 s (the AI's
+  // racing line, measured by tests/pitstops.cjs; fuelPerLap is kept as the tank and fuel-load reference).
   const CIRCUITS = [
     {
-      id: 'summit', name: 'Summit Grand Circuit', country: 'Alpine Highlands', halfW: 7.0, length: 6000, pitLoss: 20.5, fuelPerLap: 2.78,
+      id: 'summit', name: 'Summit Grand Circuit', country: 'Alpine Highlands', halfW: 7.0, length: 6000, pitLoss: 21.3, fuelPerLap: 2.78,
       pts: [[-821, 427], [39, 427], [859, 427], [961, 423], [1020, 399], [1051, 360], [1063, 321], [1063, 286], [1039, 255], [1028, 220], [1043, 181], [1039, 153], [1004, 130], [953, 95], [906, 59], [852, 63], [813, 102], [785, 149], [754, 192], [707, 185], [680, 130], [652, 9], [637, -81], [660, -136], [727, -155], [820, -136], [891, -120], [930, -140], [922, -187], [859, -249], [785, -335], [734, -402], [676, -437], [617, -425], [566, -398], [430, -312], [293, -226], [246, -187], [207, -167], [156, -198], [109, -218], [62, -198], [23, -148], [-28, -89], [-94, -66], [-153, -73], [-192, -105], [-223, -148], [-266, -171], [-340, -171], [-408, -164], [-462, -126], [-520, -84], [-580, -66], [-640, -28], [-790, 48], [-899, 102], [-958, 130], [-1005, 149], [-1040, 185], [-1059, 231], [-1063, 298], [-1048, 337], [-1016, 360], [-1005, 399], [-969, 431], [-891, 435]],
       start: [39, 427],
       elev: [[880, -230, 420, 34], [600, -360, 260, 10], [230, -190, 300, 9], [-420, -120, 380, -6], [960, 200, 200, 6]],
@@ -1033,7 +1037,7 @@ const SIM = (function () {
       env: { style: 'alpine', lake: { x: 1300, z: -1050, a: 700, b: 330, rot: 0.3 }, castle: null, hill: 1.35, mountain: 1.25, snowLine: 620, forest: 1.1, broadleaf: 0.12, grass: [0.92, 1.0, 0.9], village: { x: -1250, z: -900 } },
     },
     {
-      id: 'rivermere', name: 'Rivermere Grand Prix', country: 'Rivermere Valley', halfW: 7.0, length: 6000, pitLoss: 20.5, fuelPerLap: 2.76,
+      id: 'rivermere', name: 'Rivermere Grand Prix', country: 'Rivermere Valley', halfW: 7.0, length: 6000, pitLoss: 22.1, fuelPerLap: 2.76,
       pts: [[-370, 369], [69, 379], [738, 394], [805, 385], [838, 335], [855, 239], [884, 172], [926, 151], [959, 185], [972, 294], [988, 373], [1039, 415], [1089, 406], [1106, 335], [1093, 231], [1043, 143], [968, 89], [257, -170], [-370, -371], [-495, -417], [-566, -392], [-579, -287], [-495, -187], [-487, -124], [-554, -91], [-637, -99], [-679, -162], [-692, -246], [-738, -275], [-934, -283], [-997, -262], [-1009, -212], [-972, -166], [-959, -124], [-1009, -87], [-1076, -37], [-1105, 14], [-1093, 68], [-1005, 110], [-850, 193], [-775, 268], [-696, 281], [-596, 260], [-495, 294], [-428, 352]],
       start: [69, 379],
       elev: [[-760, -150, 420, 9], [420, -260, 520, 6], [1000, 280, 260, -4]],
@@ -1042,7 +1046,7 @@ const SIM = (function () {
         river: [[-2900, -560], [-2000, -640], [-1300, -760], [-650, -720], [0, -660], [600, -700], [1150, -830], [1500, -960], [2100, -1080], [2900, -1150]] },
     },
     {
-      id: 'redridge', name: 'Redridge International Circuit', country: 'Redridge Canyon', halfW: 7.0, length: 6000, pitLoss: 20.4, fuelPerLap: 2.69,
+      id: 'redridge', name: 'Redridge International Circuit', country: 'Redridge Canyon', halfW: 7.0, length: 6000, pitLoss: 21.3, fuelPerLap: 2.69,
       pts: [[-1001, 344], [-106, 344], [890, 346], [1033, 331], [1054, 290], [1064, 200], [1067, 110], [1058, 36], [988, -18], [894, -10], [829, 38], [764, 91], [666, 106], [516, 87], [443, 34], [390, -55], [309, -116], [239, -128], [168, -96], [81, -63], [-15, -79], [-90, -120], [-269, -189], [-452, -267], [-631, -332], [-733, -352], [-859, -340], [-944, -269], [-956, -173], [-889, -92], [-747, -10], [-631, 79], [-574, 152], [-594, 219], [-676, 246], [-787, 254], [-832, 209], [-848, 161], [-909, 144], [-970, 177], [-1066, 266], [-1082, 321]],
       start: [-106, 344],
       elev: [[-820, -140, 430, 18], [330, -60, 360, 9], [980, 140, 260, 7], [-120, -330, 260, -5]],
@@ -1142,6 +1146,7 @@ const SIM = (function () {
       this.buildPit();
       this.buildTimingAndZones();
       this.buildGrid();
+      this.aiLines = buildAILines(this);
     }
     elevAt(x, z) { return elevationAt(this.elevField, x, z); }
     // Geometry checks for a circuit definition: separate parts of the lap stay
@@ -1455,6 +1460,158 @@ const SIM = (function () {
       } else out.innerPit = 0;
       out.l = wl; out.r = wr; return out;
     }
+  }
+
+  /* ------------------------------------------------------------------
+     AI REFERENCE LINES (per circuit, cached)
+     ------------------------------------------------------------------ */
+  // The circuit's geometric line (Track.rlOff) is an elastic band: every point relaxes towards the midpoint of its
+  // neighbours. That shortens the path, so it wraps around the inside kerb for the whole corner (90-100% of every
+  // corner sits on the inside limit) and even approaches on the inside. It still segments the corners, places the
+  // braking boards and times the laps, but the AI no longer drives it.
+  //
+  // The AI drives minimum-curvature lines instead. In the small-angle limit, minimising the sum of k(s)^2 over the
+  // lateral offsets gives the condition k_i = (k_(i-1) + k_(i+1)) / 2: curvature varies linearly between the points
+  // where the line touches a track limit. That is the classic outside - apex - outside line, with clothoid-like
+  // entries and exits. Points that limit speed are weighted more, so the line opens the tight corners first; corner
+  // speed in this handling is proportional to the radius. Four reference lines are solved once per circuit:
+  //   racing:    the free line over the full usable width
+  //   inside:    the inside half held from 100 m before turn-in to the apex (defending, or diving down the inside);
+  //              it gives up exit speed, as it should
+  //   outside:   the outer half held through entry and apex (around the outside, or setting up the next corner)
+  //   late-apex: wide entry, curvature penalised after the apex: a slower entry for a straighter, faster exit
+  //              (switchbacks, exits onto long straights)
+  // A driver's actual path is a smooth blend of these lines with ramped lateral offsets (see AIDriver.planTrajectory),
+  // so drivers never jump between a few fixed lanes. Every line stays inside the white lines with a tyre's margin,
+  // so the planner cannot cut a corner or bypass the race-progress checks.
+  const AI_LINE_CACHE = new Map();
+  const LINE_RL = 0, LINE_IN = 1, LINE_OUT = 2, LINE_LATE = 3, LINE_NAMES = ['racing', 'inside', 'outside', 'late-apex'];
+  // full-throttle acceleration of the car (m/s^2) at speed v (m/s), measured on the circuit's main straight with the
+  // shared drivetrain and arcade handling (medium fuel); the planner uses it to project speeds, as a driver knows the car
+  const AI_ACCEL = (() => {
+    const pts = [[0, 9.4], [20, 9.6], [40, 10.2], [50, 9.8], [56, 8.4], [62, 6.6], [68, 5.4], [72, 4.6], [77, 4.2], [80, 2.9], [85, 2.0], [88, 1.2], [90.5, 0.15], [95, 0]];
+    const tab = new Float32Array(97);
+    for (let v = 0; v <= 96; v++) { let k = 0; while (k < pts.length - 2 && pts[k + 1][0] < v) k++; const [a, fa] = pts[k], [b, fb] = pts[k + 1]; tab[v] = Math.max(0, fa + (fb - fa) * clamp((v - a) / (b - a), 0, 1)); }
+    return tab;
+  })();
+  const aiAccel = (v) => { const f = clamp(v, 0, 95), i = f | 0; return AI_ACCEL[i] + (AI_ACCEL[i + 1] - AI_ACCEL[i]) * (f - i); };
+  // signed curvature of the path through three points (positive turns towards +d)
+  function curv3(ax, az, bx, bz, cx, cz) {
+    const abx = bx - ax, abz = bz - az, bcx = cx - bx, bcz = cz - bz, cax = ax - cx, caz = az - cz;
+    const den = Math.sqrt((abx * abx + abz * abz) * (bcx * bcx + bcz * bcz) * (cax * cax + caz * caz));
+    return den > 1e-9 ? 2 * (abx * bcz - abz * bcx) / den : 0;
+  }
+  // One relaxation sweep: curvature of every point from its chord neighbours, then a damped Newton step of each
+  // offset towards the curvature-balancing condition, within the bounds. Returns the largest move (m).
+  function mcSweep(M, cx, cz, rx, rz, o, l2, h2, ia, ic, px, pz, kap, w, gain) {
+    for (let j = 0; j < M; j++) { px[j] = cx[j] + rx[j] * o[j]; pz[j] = cz[j] + rz[j] * o[j]; }
+    for (let j = 0; j < M; j++) {
+      const a = ia[j], c = ic[j], ax = px[a], az = pz[a], bx = px[j], bz = pz[j];
+      const abx = bx - ax, abz = bz - az, bcx = px[c] - bx, bcz = pz[c] - bz, cax = ax - px[c], caz = az - pz[c];
+      const den = Math.sqrt((abx * abx + abz * abz) * (bcx * bcx + bcz * bcz) * (cax * cax + caz * caz));
+      kap[j] = den > 1e-9 ? 2 * (abx * bcz - abz * bcx) / den : 0;
+    }
+    let moved = 0;
+    for (let j = 0; j < M; j++) {
+      const a = ia[j], c = ic[j], wj = w[j];
+      const tgt = (w[a] * kap[a] + w[c] * kap[c]) / (2 * wj);
+      let step = -(tgt - kap[j]) * gain * Math.min(1, (w[a] + w[c]) / (2 * wj));
+      step = step < -0.5 ? -0.5 : step > 0.5 ? 0.5 : step;
+      let nv = o[j] + step; nv = nv < l2[j] ? l2[j] : nv > h2[j] ? h2[j] : nv;
+      const dm = nv > o[j] ? nv - o[j] : o[j] - nv; if (dm > moved) moved = dm;
+      o[j] = nv;
+    }
+    return moved;
+  }
+  // speed-limiting curvature (radius under ~40 m) weighs more; a 9-point running mean keeps the weights from rippling
+  function mcWeights(M, kap, wm, ws, w) {
+    for (let j = 0; j < M; j++) { const q = Math.abs(kap[j]) * 40; ws[j] = (1 + q * q) * wm[j]; }
+    let sm = 0; for (let q = -4; q <= 4; q++) sm += ws[(q + M) % M];
+    for (let j = 0; j < M; j++) { w[j] = sm / 9; sm += ws[(j + 5) % M] - ws[(j - 4 + M) % M]; }
+  }
+  // Bounded, weighted minimum-curvature solve on every third centre-line sample (6 m; the line's features are
+  // longer than 12 m). lo/hi bound the offset, wMul scales the curvature weight per sample; init warm-starts it.
+  // Coarse-to-fine chord lengths converge the fourth-order (curvature-balancing) relaxation quickly.
+  function solveMinCurvature(t, lo, hi, wMul, init, schedule) {
+    const N = t.N, M = Math.floor(N / 3), F = (n) => new Float64Array(n), at = new Int32Array(M);
+    for (let j = 0; j < M; j++) at[j] = Math.round(j * N / M) % N;
+    const cx = F(M), cz = F(M), rx = F(M), rz = F(M), o = F(M), l2 = F(M), h2 = F(M), wm = F(M).fill(1);
+    for (let j = 0; j < M; j++) { const i = at[j]; cx[j] = t.cx[i]; cz[j] = t.cz[i]; rx[j] = t.rx[i]; rz[j] = t.rz[i]; l2[j] = lo[i]; h2[j] = hi[i]; }
+    if (wMul) for (let j = 0; j < M; j++) wm[j] = wMul[at[j]];
+    if (init) for (let j = 0; j < M; j++) o[j] = clamp(init[at[j]], l2[j], h2[j]);
+    const px = F(M), pz = F(M), kap = F(M), w = F(M).fill(1), ws = F(M), ia = new Int32Array(M), ic = new Int32Array(M);
+    for (const [k, iters] of schedule) {
+      const L = k * DS * N / M, gain = 0.35 * L * L / 2;
+      for (let j = 0; j < M; j++) { ia[j] = (j - k + M) % M; ic[j] = (j + k) % M; }
+      for (let it = 0; it < iters; it++) {
+        if (it % 20 === 0) { mcSweep(M, cx, cz, rx, rz, o, l2, h2, ia, ic, px, pz, kap, w, 0); mcWeights(M, kap, wm, ws, w); }
+        if (mcSweep(M, cx, cz, rx, rz, o, l2, h2, ia, ic, px, pz, kap, w, gain) < 2e-4 && it > 20) break; // converged at this chord length
+      }
+    }
+    // back to every sample, lightly smoothed
+    const out = F(N);
+    for (let i = 0; i < N; i++) { const f = i * M / N, j = Math.floor(f) % M; out[i] = lerp(o[j], o[(j + 1) % M], f - Math.floor(f)); }
+    return t.smoothArr(out, 3, 1);
+  }
+  function buildAILines(t) {
+    const key = t.def.id + ':' + t.halfW + ':' + t.N + ':' + t.corners.length;
+    if (AI_LINE_CACHE.has(key)) return AI_LINE_CACHE.get(key);
+    const N = t.N, lim = t.halfW - 1.35;
+    const full = () => ({ lo: new Float64Array(N).fill(-lim), hi: new Float64Array(N).fill(lim), w: new Float64Array(N).fill(1) });
+    const fwd = (a, b) => (b - a + N) % N;
+    const rl = solveMinCurvature(t, full().lo, full().hi, null, null, [[13, 150], [7, 200], [3, 250], [2, 150]]);
+    // constrained variants, warm-started from the racing line; a corner's region never reaches back past the
+    // previous corner's apex, so S-bends keep consistent bounds
+    const IN = full(), OUT = full(), LATE = full();
+    const cs = t.corners, nc = cs.length;
+    const span = (from, to, f) => { const n = fwd(from, to); for (let q = 0; q <= n; q++) f((from + q) % N); };
+    cs.forEach((c, k) => {
+      const prev = cs[(k - 1 + nc) % nc], dir = c.dir;
+      const back = (want) => fwd(prev.apex, c.start) > want + 15 ? (c.start - want + N) % N : (prev.apex + 15) % N;
+      const inside = (arr, i, v) => { if (dir > 0) arr.lo[i] = Math.max(arr.lo[i], v); else arr.hi[i] = Math.min(arr.hi[i], -v); };
+      const outside = (arr, i, v) => { if (dir > 0) arr.hi[i] = Math.min(arr.hi[i], v); else arr.lo[i] = Math.max(arr.lo[i], -v); };
+      // the inside is taken before the braking zone (on the straight) and held to the apex: no moving under braking
+      const brakeLen = c.brakePoint != null ? fwd(c.brakePoint, c.start) + 15 : 50;
+      span(back(Math.max(50, Math.min(140, brakeLen))), c.apex, i => inside(IN, i, 0.30 * lim));
+      span(back(8), (c.apex + 8) % N, i => outside(OUT, i, 0));
+      span(back(12), c.start, i => outside(LATE, i, -0.55 * lim));
+      span(c.apex, (c.end + 15) % N, i => { LATE.w[i] = 4; });
+    });
+    for (const B of [IN, OUT, LATE]) for (let i = 0; i < N; i++) if (B.lo[i] > B.hi[i]) B.lo[i] = B.hi[i] = 0.5 * (B.lo[i] + B.hi[i]);
+    const fine = [[7, 120], [3, 150], [2, 100]];
+    const off = [rl, solveMinCurvature(t, IN.lo, IN.hi, null, rl, fine), solveMinCurvature(t, OUT.lo, OUT.hi, null, rl, fine), solveMinCurvature(t, LATE.lo, LATE.hi, LATE.w, rl, fine)];
+    const kap = off.map(o => {
+      const k = new Float64Array(N);
+      for (let i = 0; i < N; i++) {
+        const a = (i - 3 + N) % N, c = (i + 3) % N;
+        k[i] = curv3(t.cx[a] + t.rx[a] * o[a], t.cz[a] + t.rz[a] * o[a], t.cx[i] + t.rx[i] * o[i], t.cz[i] + t.rz[i] * o[i], t.cx[c] + t.rx[c] * o[c], t.cz[c] + t.rz[c] * o[c]);
+      }
+      return t.smoothArr(k, 3, 2);
+    });
+    // reference speed along the racing line for an average car on fresh dry tyres: what a driver expects another
+    // car to do (scaled at run time by the observer's own read of the grip)
+    const seg = new Float64Array(N);
+    for (let i = 0; i < N; i++) { const j = (i + 1) % N; seg[i] = Math.hypot(t.cx[j] + t.rx[j] * rl[j] - t.cx[i] - t.rx[i] * rl[i], t.cz[j] + t.rz[j] * rl[j] - t.cz[i] - t.rz[i] * rl[i]); }
+    const vRef = new Float64Array(N);
+    for (let i = 0; i < N; i++) vRef[i] = Math.min(92, arcadeCornerSpeed(kap[0][i], 1.6, 0.97));
+    const dec = (HANDLING.brakeRate + HANDLING.coastRate) * 0.95;
+    for (let rep = 0; rep < 2; rep++) {
+      for (let i = 2 * N - 2; i >= 0; i--) { const a = i % N, b = (i + 1) % N; vRef[a] = Math.min(vRef[a], vRef[b] + dec * seg[a]); }
+      for (let i = 1; i < 2 * N; i++) { const a = (i - 1) % N, b = i % N; vRef[b] = Math.min(vRef[b], Math.sqrt(vRef[a] * vRef[a] + 2 * aiAccel(vRef[a]) * seg[a])); }
+    }
+    // corner windows (where a corner's alternative lines apply) and the straight after each corner
+    const win = cs.map((c, k) => {
+      const prev = cs[(k - 1 + nc) % nc], next = cs[(k + 1) % nc];
+      const a = fwd(prev.apex, c.start) > 75 ? (c.start - 60 + N) % N : (prev.apex + 15) % N;
+      const b = fwd(c.end, next.start) > 30 ? (c.end + 20) % N : (c.end + Math.floor(fwd(c.end, next.start) / 2)) % N;
+      return { k, a, apex: c.apex, b, start: c.start, end: c.end, dir: c.dir, straight: fwd(c.end, next.start) * DS, brakeZone: !!c.brakeZone };
+    });
+    // which corner window each sample lies in (-1 on a straight)
+    const winOf = new Int16Array(N).fill(-1);
+    for (const w of win) span(w.a, w.b, i => { winOf[i] = w.k; });
+    const res = { lim, off, kap, vRef, win, winOf, names: LINE_NAMES };
+    AI_LINE_CACHE.set(key, res);
+    return res;
   }
 
   /* ------------------------------------------------------------------
@@ -2537,6 +2694,59 @@ const SIM = (function () {
   /* ------------------------------------------------------------------
      AI DRIVER
      ------------------------------------------------------------------ */
+  /* ------------------------------------------------------------------
+     AI RACECRAFT — personality, trajectory planning, opponent prediction
+     ------------------------------------------------------------------ */
+  // The AI is organised in four layers that run at different rates:
+  //   strategic (10 Hz, cheap): pit/tyre/fuel calls (RaceEngineer + strategy()), plus how much risk this race
+  //     situation is worth (laps left, gaps, damage, recent scares, elimination danger)
+  //   tactical (10 Hz): follow / prepare / attack / defend / yield / abort / recover, with commitment periods and
+  //     hysteresis so a driver does not flip between behaviours
+  //   trajectory planning (10 Hz): smooth candidate paths built from the circuit's reference lines, scored with
+  //     the car's own corner-speed, braking and acceleration limits against short-horizon predictions of the cars
+  //     around it
+  //   vehicle control (240 Hz): pure-pursuit steering and the speed envelope turn the chosen path into the same
+  //     steer / throttle / brake inputs the player presses, through the same PlayerHandling and physics; a 60 Hz
+  //     safety layer (followLimit, the room kept from a car alongside) stays responsive between plans
+  const AI_PATH_N = 200, AI_EVAL_M = 100, AI_PRED_N = 17, AI_PRED_DT = 0.25;
+  const AI_EV_STEP = 3; // candidate paths are evaluated every 3 samples (6 m)
+  // prediction weights on the fixed 0.25 s grid (precomputed: no exp() per rival per step)
+  const AI_PW = (() => { const n = AI_PRED_N, W = { drift: new Float64Array(n), settle: new Float64Array(n), kv: new Float64Array(n), kd: new Float64Array(n) };
+    for (let q = 0; q < n; q++) { const tn = (q + 1) * AI_PRED_DT; W.drift[q] = 0.7 * (1 - Math.exp(-tn / 0.7)); W.settle[q] = Math.exp(-tn / 1.8); W.kv[q] = smooth01(tn / 0.8); W.kd[q] = smooth01(tn / 1.4); }
+    return W; })();
+  // weight of a window with ramps a->b (in) and c->d (out), in samples relative to the plan origin
+  const winW = (r, a, b, c, d) => r <= a || r >= d ? 0 : r < b ? smooth01((r - a) / Math.max(1, b - a)) : r <= c ? 1 : 1 - smooth01((r - c) / Math.max(1, d - c));
+  const smoothStep = (x, a, b) => smooth01((x - a) / (b - a));
+  // A driver's racing mind: the persistent personality (aggression, patience, risk tolerance, racecraft,
+  // adaptability, consistency) combined with the difficulty slider (0..1) and Career skill (0..1). It shapes
+  // judgement only (how well rivals are read, how well paths are judged, how precisely they are executed,
+  // how long a driver waits); it never touches the car.
+  function racingMind(p, diff, skill) {
+    const patience = p.patience ?? 0.6, adaptRaw = p.adapt ?? 0.7;
+    const craft = clamp(p.craft * (0.8 + 0.2 * diff) + 0.12 * skill, 0, 1);
+    const cons = clamp(p.cons * (0.85 + 0.15 * diff), 0, 1);
+    const adapt = clamp(adaptRaw * (0.85 + 0.15 * diff) + 0.1 * skill, 0, 1);
+    return {
+      aggr: p.aggr, patience, risk: p.risk, craft, adapt, cons,
+      // how well a rival's next seconds are anticipated (0: only extrapolates what it is doing now)
+      predict: clamp(0.25 + 0.6 * craft + 0.15 * skill, 0, 1),
+      // scatter in judging which path is quicker (s)
+      judge: 0.05 * (1 - craft) + 0.025 * (1 - diff) + 0.005,
+      // execution scatter: apex placement (m) and braking point (share of the braking used)
+      apexSd: 0.8 * Math.pow(1 - cons, 1.1) * (1.3 - 0.3 * diff) * (1 - 0.5 * skill),
+      brakeSd: 0.03 * (1 - cons) * (1.3 - 0.3 * diff) * (1 - 0.5 * skill),
+      // move repertoire: 0 inside/outside/slipstream, 1 + switchbacks, 2 + two-corner set-ups
+      repertoire: craft > 0.84 || skill > 0.35 ? 2 : craft > 0.74 ? 1 : 0,
+      // seconds of following before an impatient driver starts forcing a move
+      frustration: lerp(6, 45, patience),
+    };
+  }
+  const newPath = () => ({ valid: false, i0: 0, n: 0, slot: '', d: new Float32Array(AI_PATH_N), k: new Float32Array(AI_PATH_N), kind: 'line', label: 'racing', side: 0, maneuver: null, cost: 0, risk: 0, time: 0, vEnd: 0, born: 0 });
+  const newCand = () => ({ kind: 'line', label: 'racing', fam: 0, amt: 0, w0: 0, w1: 0, w2: 0, w3: 0, fam2: 0, amt2: 0, v0: 0, v1: 0, v2: 0, v3: 0,
+    off: 0, offA: 0, offL: 1, offE: 0, carry: 0, carryL: 1, side: 0, maneuver: null, feasible: true, cost: 0, time: 0, tExit: 0, risk: 0, minGap: 9, lead: 0, vEnd: 0,
+    blocked: 0, overlap: 9, dTurn: 0, dMid: 0, sideApex: 0, raw: 0, success: 0, overlapTurn: 99, blend: false, slot: '', why: '', m: 0, dbg: null });
+  const newOpp = () => ({ car: null, near: false, ds: 0, d: 0, v: 0, a: 0, vlat: 0, brake: false, along: false, so: new Float32Array(AI_PRED_N), dd: new Float32Array(AI_PRED_N), vv: new Float32Array(AI_PRED_N) });
+
   class AIDriver {
     constructor(car, race, opts = {}) {
       this.car = car; this.race = race; this.track = race.track; this.p = car.driver;
@@ -2555,7 +2765,7 @@ const SIM = (function () {
       this.segMax = 1 + (0.08 + 0.04 * x) * diff * (0.6 + 0.4 * p.pace); // how far a driver will learn to push beyond the safe estimate
       this.learnRate = 0.006 * (1 + 1.5 * x); // how quickly a clean corner is learned
       this.tyreSurplus = 0; // laps of tyre life beyond the planned stint (engineer estimate), 0..1
-      this.laneD = 0; this.laneW = 0; this.laneWTarget = 0;
+      this.laneD = 0; this.laneW = 0; // (the planned offset and whether it is off the racing line; kept for logs)
       this.vEnv = 110; this.vLimit = 105; this.yawUse = 0;
       this.mode = 'race'; this.recoverT = 0; this.stuckT = 0; this.waitT = 0;
       this.mistake = null; this.mistakeT = 0; this.lastCornerRoll = -1;
@@ -2567,29 +2777,62 @@ const SIM = (function () {
       if (race.segBase) this.segAdj.set(race.segBase);
       this.segStat = { seg: -1, maxU: 0, maxErr: 0, off: false, maxSat: 0 };
       this.tick = car.id % 24;
-      this.neighbors = []; this.attackTarget = null; this.defending = false; this.defMoveUsed = false; this.lastDefendCorner = -1;
+      this.neighbors = []; this.attackTarget = null; this.defending = false;
       this.followTime = 0; this.plan = null; this.boxThisLap = false; this.lastPlanLap = -1;
       this.pressure = 0; this.blue = false; this.blueYield = false; this.pushMode = 0; this.tyreMode = 'normal'; this.smoothThrottle = 0;
+      // ---- racecraft: personality, the tactical state, the planned path, predictions and short-term memory ----
+      this.mind = racingMind(p, diff, x);
+      // each driver has its own random stream, seeded by the session and the driver: the same seed and grid
+      // reproduce the same decisions (for debugging), and one driver's dice never shift another's
+      this.rng = makeRng((((race.cfg && race.cfg.seed) | 0) ^ Math.imul(car.driver.num + 17, 0x9E3779B1)) >>> 0);
+      this.state = 'race'; this.stateT = 0; this.maneuver = null; this.why = ''; this.notes = [];
+      this.conviction = 0; this.cooldown = 0; this.attackT = 0; this.badT = 0; this.attempts = 0;
+      this.caution = 0; this.riskBudget = 0.5; this.tolerance = 0.3; this.cruise = false; this.rejoinT = 0;
+      this.muRead = 0; this.gripBelief = 1; this.misread = null;
+      this.defSide = 0; this.defMoves = 0; this.defCorner = -1; this.defLock = false; this.defTurnD = 0;
+      this.exeCorner = -1; this.exeApex = 0; this.exeBrake = 0;
+      this.roomLo = -99; this.roomHi = 99; this.brakeAt = -1; this.onLine = true;
+      this.mem = new Map(); // what this driver has learnt about each rival this race (observed behaviour only)
+      this.path = newPath(); this.pathAlt = newPath();
+      this.cands = Array.from({ length: 20 }, newCand); this.nCand = 0; this.best = null; this.passEval = null;
+      this.opp = Array.from({ length: 8 }, newOpp); this.nOpp = 0; this.target = null; this.threat = null;
+      const E = AI_EVAL_M + 2; this.evD = new Float64Array(E); this.evX = new Float64Array(E); this.evZ = new Float64Array(E); this.evK = new Float64Array(E);
+      this.evV = new Float64Array(E); this.evS = new Float64Array(E); this.evT = new Float64Array(E); this.evR = new Float64Array(AI_PATH_N);
+      this.stats = { attempts: 0, passes: 0, aborts: 0, defends: 0, switchbacks: 0, kinds: {} };
     }
     get diffComp() { return this.race.difficulty; }
+    // a decision worth keeping for the diagnostics view (bounded)
+    note(text) { this.why = text; this.notes.push((this.race.time || 0).toFixed(1) + ' ' + text); if (this.notes.length > 8) this.notes.shift(); }
+    // lateral offset of the planned path at sample i (the racing line beyond the plan's horizon)
+    pathD(i) {
+      const P = this.path, t = this.track, N = t.N, rl = t.aiLines.off[0];
+      if (!P.valid) return rl[i];
+      let r = i - P.i0; if (r < -N / 2) r += N; else if (r > N / 2) r -= N;
+      if (r < 0) return P.d[0];
+      if (r < P.n) return P.d[r];
+      const e = P.d[P.n - 1] - rl[(P.i0 + P.n - 1) % N];
+      return rl[i] + e * (1 - smooth01((r - P.n + 1) / 40));
+    }
+    pathK(i) {
+      const P = this.path, t = this.track, N = t.N;
+      if (!P.valid) return t.aiLines.kap[0][i];
+      let r = i - P.i0; if (r < -N / 2) r += N; else if (r > N / 2) r -= N;
+      return r >= 0 && r < P.n ? P.k[r] : t.aiLines.kap[0][i];
+    }
     dPlanAt(i) {
       const t = this.track, car = this.car;
       if (car.pit || this.pitting) return t.pitTargetD(i * DS, car.pit ? car.pit.boxS : null);
-      const base = t.rlOff[i];
-      let d = base + (this.laneD - base) * this.laneW;
-      if (this.mistake && this.mistake.type === 'wide' && this.mistakeT > 0) d += this.mistake.side * 3.5 * Math.min(1, this.mistakeT);
+      let d = this.pathD(i);
+      // running wide: the corner was misjudged, so the car is placed progressively wider and back (no steering jolt)
+      if (this.mistake && this.mistake.type === 'wide' && this.mistakeT > 0) d += this.mistake.side * 2.6 * Math.sin(Math.PI * clamp(1 - this.mistakeT / this.mistake.dur, 0, 1));
       if (this.pitEntryBlend > 0) d = lerp(d, t.pit.side * (t.halfW - 2.0), this.pitEntryBlend);
       const lim = t.halfW - 1.15;
-      return clamp(d, -lim, lim);
+      d = clamp(d, -lim, lim);
+      // racing room: never aim into the space a car alongside occupies (the 60 Hz safety layer)
+      if (!this.pitEntryBlend && (this.roomLo > -50 || this.roomHi < 50)) d = this.roomLo <= this.roomHi ? clamp(d, this.roomLo, this.roomHi) : 0.5 * (this.roomLo + this.roomHi);
+      return d;
     }
-    kappaAt(i) {
-      const t = this.track; const k0 = t.rlKappa[i];
-      if (this.laneW < 0.05 || this.car.pit) return k0;
-      const kc = t.kappa[i]; const dd = this.laneD;
-      const kl = kc / Math.max(0.3, 1 - kc * dd);
-      // lane path is a blend; tighter of the two approximations
-      return lerp(k0, Math.abs(kl) > Math.abs(k0) ? kl : (k0 + kl) / 2, this.laneW);
-    }
+    kappaAt(i) { return this.pathK(i); }
     update(dt, step) {
       this.decide(dt, step);
       this.handling.step(this.car, dt, this.race, this.cmd);
@@ -2606,9 +2849,10 @@ const SIM = (function () {
         return;
       }
       const fresh = this.lastStep !== step - 1; this.lastStep = step;
+      if (fresh) { this.path.valid = false; this.state = 'race'; this.maneuver = null; }
       const decisionSteps = race.eliminationMode && !this.pitOnly ? (race.eliminationUrgency(car) > .75 ? 8 : 12) : 24;
-      if ((step + this.tick) % decisionSteps === 0 || fresh) this.tactical();
-      if (fresh) { this.computeEnvelope(); this.vFollow = this.followLimit(this.neighbors, !!car.pit); this.laneW = 0; }
+      if ((step + this.tick) % decisionSteps === 0 || fresh) this.tactical(decisionSteps * dt);
+      if (fresh) { this.computeEnvelope(); this.vFollow = this.followLimit(this.neighbors, !!car.pit); }
       // On the grid a bot holds full throttle, as a player holding W does; the shared launch control
       // regulates the rpm and releases the clutch at lights out.
       if(race.type==='race' && !this.pitOnly && car.launch.active && !race.lightsOut){inp.brake=0;inp.throttle=1;inp.steer=0;return;}
@@ -2640,7 +2884,7 @@ const SIM = (function () {
       this.yawUse = use; this.steerSat = speed > 6 ? Math.max(0, use - 1) : 0;
       inp.steer = rCap > 1e-3 ? Math.sign(rDes) * Math.pow(Math.min(1, use), 1 / arcadeSteerShape(speed)) : clamp(alpha * 2, -1, 1);
       // ---- speed envelope ----
-      if ((step + this.tick) % 4 === 0) { this.computeEnvelope(); this.vFollow = this.followLimit(this.neighbors, !!car.pit); }
+      if ((step + this.tick) % 4 === 0) { this.updateRoom(); this.computeEnvelope(); this.vFollow = this.followLimit(this.neighbors, !!car.pit); }
       let vT = Math.min(this.vEnv, this.vLimit, this.vFollow != null ? this.vFollow : 110);
       if (this.cornerUse && this.mode === 'race') { const kNeed = 2 * Math.sin(alpha) / dist; vT = Math.min(vT, arcadeCornerSpeed(kNeed, grip, Math.min(1, this.cornerUse * 1.04), D)); }
       if (car.pit || this.pitting) vT = Math.min(vT, this.pitSpeed());
@@ -2703,7 +2947,7 @@ const SIM = (function () {
       const nc = t.nextCorner[car.idx];
       if (nc !== this.lastCornerRoll && speed > 35 && !car.pit && race.type !== 'calib' && !race.vscActive) {
         const cc = t.corners[nc];
-        if (cc && t.rlDist(car.idx, cc.apex) < 180) { this.lastCornerRoll = nc; this.rollMistake(); }
+        if (cc && t.rlDist(car.idx, cc.apex) < 180) { this.lastCornerRoll = nc; this.rollExecution(nc); this.rollMistake(); }
       }
       // ---- learning (segment adaptation; not from the slow laps under the VSC) ----
       if (!race.vscActive) this.learn(latErr, offTrack);
@@ -2781,6 +3025,8 @@ const SIM = (function () {
         if (race.lap1Caution(car)) commit *= 0.975;
       }
       if (race.wet) commit *= 0.985;
+      // rejoining after a spin or an off: a few seconds with a little more margin while confidence returns
+      if (this.rejoinT > 0) commit *= 0.96;
       // a damaged car is driven with more margin
       const D = car.damage; commit *= 1 - 0.08 * Math.min(1, D.severity());
       // share of the steering's yaw-rate ceiling the driver will use in a corner (corner speed scales with
@@ -2789,22 +3035,32 @@ const SIM = (function () {
       // Higher commitment moves the braking point later, within the very same
       // measured brake/tyre/damage envelope. Neither forces nor grip are changed.
       const attackBrake = race.eliminationMode && this.attackTarget && !race.vscActive && !race.yellowAt(car.idx) ? race.eliminationUrgency(car) * .08 : 0;
-      let brakeC = (attackBrake ? Math.min(.995, this.brakeCommit + attackBrake) : this.brakeCommit) * D.perf.brake * car.brakeGrip(race.wet); if (this.tyreMode === 'preserve') brakeC *= 0.86; if (race.wet) brakeC *= 0.95;
+      // attacking into a braking zone alongside or just behind: brake a little later (within the car's own braking)
+      const mv = this.maneuver, outbrake = this.state === 'attack' && mv && mv.kind !== 'slipstream' && t.dS(car.s, mv.car.s) < 12 ? 1 + 0.025 * (0.5 + this.mind.aggr) : 1;
+      let brakeC = Math.min(1, (attackBrake ? Math.min(.995, this.brakeCommit + attackBrake) : this.brakeCommit) * outbrake) * D.perf.brake * car.brakeGrip(race.wet); if (this.tyreMode === 'preserve') brakeC *= 0.86; if (race.wet) brakeC *= 0.95;
       if (this.mistake && this.mistake.type === 'late' && this.mistakeT > 0) brakeC *= this.mistake.f;
-      const mu = car.gripEstimate(race.wet);
+      // execution scatter: this corner's braking point is a touch early or late (consistency decides how much)
+      if (this.exeBrake && !this.pitOnly) brakeC *= 1 + this.exeBrake;
+      // the driver's read of the grip (it lags changing conditions; see readGrip) — and a misjudged corner
+      const misjudged = this.mistake && this.mistakeT > 0 && (this.mistake.type === 'grip' || this.mistake.type === 'wide') ? this.mistake.f || 1.04 : 1;
+      const mu = car.gripEstimate(race.wet) * (this.pitOnly ? 1 : this.gripBelief) * misjudged;
+      this.muUse = mu; this.brakeUse = brakeC;
       const v = car.speed;
       const seg = (i) => this.segAdj[Math.floor(i * DS / 50) % this.segAdj.length];
       const look = Math.min(180, 30 + Math.round(v / ((HANDLING.brakeRate + HANDLING.coastRate) * brakeC) / DS)) & ~1;
-      let vNext = 110;
+      let vNext = 110, brakeJ = -1;
       for (let j = look; j >= 0; j -= 2) {
         const i = t.wrapI(car.idx + j);
         let vc = arcadeCornerSpeed(this.kappaAt(i), mu, Math.min(1, cornerUse * seg(i)), D);
         if (race.yellowAt(i) && !car.pit) vc *= 0.93;
         if (j === look) { vNext = vc; continue; }
-        const dist = t.rlDist(i, t.wrapI(i + 2));
+        // path length of this step: shorter on the inside of a bend, longer on the outside
+        const dist = 2 * DS * Math.max(0.5, 1 - t.kappa[i] * this.pathD(i));
         // above walking pace arcade braking sheds a fixed amount of speed per metre
         vNext = Math.min(vc, vNext + (HANDLING.brakeRate + HANDLING.coastRate) * brakeC * dist);
+        if (vNext < v - 0.5) brakeJ = j;
       }
+      this.brakeAt = brakeJ >= 0 ? t.wrapI(car.idx + brakeJ) : -1; // where this driver intends to be braking by
       this.cornerUse = cornerUse;
       this.vEnv = vNext;
     }
@@ -2931,30 +3187,53 @@ const SIM = (function () {
       }
       return v;
     }
+    // gaussian draw from this driver's own stream
+    gauss() { let u = 0, v = 0; while (u === 0) u = this.rng(); v = this.rng(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
+    // Execution, not intention: every corner is driven a little differently. The apex is missed by a few tens of
+    // centimetres and the braking point drifts slightly; consistent drivers (and higher Career tiers) scatter less.
+    rollExecution(nc) {
+      const M = this.mind;
+      this.exeCorner = nc;
+      this.exeApex = clamp(this.gauss() * M.apexSd, -1.6, 1.6);
+      this.exeBrake = clamp(this.gauss() * M.brakeSd, -0.07, 0.05);
+    }
+    // Mistakes come from the situation: pressure from behind, an attack in progress, a grip read that lags the
+    // conditions, worn tyres, rain, and the driver's consistency, difficulty and Career skill. Each one is a
+    // misjudgement that the shared physics then plays out (too late on the brakes, too fast into the corner,
+    // too much throttle), never a scripted spin or crash.
     rollMistake() {
-      const p = this.p, race = this.race, car = this.car;
+      const p = this.p, race = this.race, car = this.car, M = this.mind, rng = this.rng;
       const wear = (car.tyre.wear[0] + car.tyre.wear[1] + car.tyre.wear[2] + car.tyre.wear[3]) / 4;
-      const pressure = this.pressure + (this.attackTarget ? 0.3 : 0);
+      const attacking = this.state === 'attack' || this.state === 'prepare', defending = this.state === 'defend';
+      const pressure = this.pressure + (attacking ? 0.3 + 0.2 * M.aggr : 0) + (defending ? 0.2 : 0) + (this.rejoinT > 0 ? 0.3 : 0);
+      const misread = Math.max(0, this.gripBelief - 1) * 12; // overestimating the grip after the conditions changed
       // (career skill also brings composure: pressure from a car behind or a chase ahead rattles them less)
-      let prob = (0.002 + 0.03 * (1 - p.cons)) * (1 + pressure * (1 - 0.6 * this.skill) + race.wet * 1.4 + wear * 1.5 + (1 - p.brake)) * this.mistakeScale * race.mistakeMul;
-      if (rnd() > prob) return;
-      const r = rnd(); const corner = this.track.corners[this.track.nextCorner[car.idx]];
-      const out = corner ? -corner.dir : (rnd() < .5 ? 1 : -1);
-      if (r < 0.45) { const f = 1.12 + rnd() * 0.18 * (0.5 + p.risk); this.mistake = { type: 'late', f: this.skill > 0 ? 1 + (f - 1) * (1 - 0.4 * this.skill) : f }; }
-      else if (r < 0.65) this.mistake = { type: 'lock' };
-      else if (r < 0.85) this.mistake = { type: 'wide', side: out };
-      else this.mistake = { type: 'throttle' };
-      this.mistakeT = this.mistake.type === 'wide' ? 2.6 : this.mistake.type === 'late' ? 3.0 : this.mistake.type === 'lock' ? 0.5 : 1.0;
-      if (this.mistake.type === 'throttle') this.mistakeT = 3.0; // applies at exit
+      let prob = (0.002 + 0.03 * (1 - p.cons)) * (1 + pressure * (1 - 0.6 * this.skill) + race.wet * 1.4 + wear * 1.5 + (1 - p.brake) + misread) * this.mistakeScale * race.mistakeMul;
+      if (rng() > prob) return;
+      const corner = this.track.corners[this.track.nextCorner[car.idx]];
+      const out = corner ? -corner.dir : (rng() < .5 ? 1 : -1);
+      // which mistake fits the moment
+      const wLate = 0.40 + (attacking ? 0.35 : 0), wLock = 0.15, wWide = 0.20 + (defending ? 0.12 : 0) + 0.1 * race.wet;
+      const wThrottle = 0.12 + 0.35 * wear, wGrip = 0.04 + misread + 0.12 * race.wet, wRead = this.target ? 0.08 * (1 - M.craft) + 0.03 : 0;
+      let r = rng() * (wLate + wLock + wWide + wThrottle + wGrip + wRead);
+      let type = 'late';
+      for (const [k, w] of [['late', wLate], ['lock', wLock], ['wide', wWide], ['throttle', wThrottle], ['grip', wGrip], ['misread', wRead]]) { if (r < w) { type = k; break; } r -= w; }
+      if (type === 'late') { const f = 1.12 + rng() * 0.18 * (0.5 + p.risk); this.mistake = { type, f: this.skill > 0 ? 1 + (f - 1) * (1 - 0.4 * this.skill) : f, dur: 3.0 }; }
+      else if (type === 'lock') this.mistake = { type, dur: 0.5 };
+      else if (type === 'wide') this.mistake = { type, side: out, f: 1.03 + 0.02 * rng(), dur: 2.6 };
+      else if (type === 'throttle') this.mistake = { type, dur: 3.0 }; // applies at the exit
+      else if (type === 'grip') this.mistake = { type, f: 1.04 + 0.03 * rng() * (1 - 0.5 * this.skill), dur: 3.0 };
+      else { this.mistake = { type, dur: 5.0 }; this.misread = { car: this.target, f: 0.93 + 0.03 * rng(), until: race.time + 5 }; } // underestimates the rival's pace
+      this.mistakeT = this.mistake.dur;
       race.stats.mistakes++; car.mistakes = (car.mistakes || 0) + 1;
-      race.log(car, 'mistake:' + this.mistake.type);
+      race.log(car, 'mistake:' + this.mistake.type); this.note('mistake: ' + this.mistake.type);
     }
     learn(latErr, offTrack) {
       const car = this.car; const segI = Math.floor(car.s / 50) % this.segAdj.length;
       const st = this.segStat;
       if (segI !== st.seg) {
         const clean = !this.neighbors.some(nn => nn.ds > -8 && nn.ds < 45 && !nn.o.pit);
-        if (st.seg >= 0 && clean && !this.mistake && this.mode === 'race' && this.laneW < 0.3 && !car.pit && car.speed > 15 && !this.race.lap1Caution(car)) {
+        if (st.seg >= 0 && clean && !this.mistake && this.mode === 'race' && this.onLine && !car.pit && car.speed > 15 && !this.race.lap1Caution(car)) {
           const n = this.segAdj.length;
           if (st.off || st.maxErr > 2.2 || st.maxU > 1.6 || st.maxSat > 0.03) { this.segAdj[st.seg] = Math.max(0.82, this.segAdj[st.seg] - 0.02); for (let k = 1; k <= 3; k++) { const pv = (st.seg - k + n) % n; this.segAdj[pv] = Math.max(0.82, this.segAdj[pv] - 0.012 / k); } }
           else if (st.maxU < 1.05 && st.maxErr < 0.9 && st.maxSat < 0.01) this.segAdj[st.seg] = Math.min(this.segMax, this.segAdj[st.seg] + this.learnRate);
@@ -2999,7 +3278,11 @@ const SIM = (function () {
       else this.stuckT = Math.max(0, this.stuckT - dt);
       // done?
       if (Math.abs(hErr) < 0.35 && Math.abs(car.d) < t.halfW + 0.5 && speed > 8 && !blocked) {
-        this.mode = 'race'; this.laneD = car.d; this.laneW = 1; this.laneWTarget = 0; car.spun = false; this.recoverT = 0; this.waitT = 0;
+        this.mode = 'race'; car.spun = false; this.recoverT = 0; this.waitT = 0;
+        // rejoin: re-plan from where the car is and merge back gradually, with less confidence for a few seconds
+        this.path.valid = false; this.state = 'race'; this.maneuver = null; this.conviction = 0;
+        this.rejoinT = lerp(5, 2.5, this.mind.adapt); this.note('rejoined the track');
+        this.planTrajectory();
       }
       if (this.recoverT > 22 + this.waitT * 0.5 && this.waitT < 30) { // marshal assistance
         this.respawn(); this.mode = 'race'; this.recoverT = 0; this.waitT = 0;
@@ -3011,11 +3294,10 @@ const SIM = (function () {
       car.u = car.v = car.speed = car.steer = car.throttle = car.brake = car.slideAngle = 0; car.axL = car.ayL = 0;
       this.handling.reset(); this.cmd.steer = this.cmd.throttle = this.cmd.brake = 0;
     }
-    tactical() {
-      const car = this.car, race = this.race, t = this.track;
-      if (car.eliminated) { this.attackTarget = null; this.defending = false; return; }
+    tactical(dtT = 0.1) {
+      const car = this.car, race = this.race, t = this.track, L = t.aiLines;
+      if (car.eliminated) { this.attackTarget = null; this.defending = false; this.maneuver = null; this.state = 'race'; return; }
       const urgency = this.pitOnly ? 0 : race.eliminationUrgency(car);
-      const p = urgency ? { ...this.p, aggr: Math.min(1, this.p.aggr + .25 + .25 * urgency), risk: Math.min(1, this.p.risk + .2 * urgency) } : this.p;
       this.survivalUrgency = urgency;
       const v = car.speed;
       // ---- neighbors ----
@@ -3025,7 +3307,7 @@ const SIM = (function () {
         if (!!o.pit !== !!car.pit && !(this.pitting && o.pit)) { if (o.pit && t.inPitMain(o.s)) continue; if (car.pit && t.inPitMain(car.s)) continue; }
         const ds = t.dS(car.s, o.s);
         if (ds < -60 || ds > 170) continue;
-        nb.push({ o, ds, dd: o.d, dv: v - o.speed, pd: ds > 0 ? this.predictD(o, ds - 5.6) : o.d });
+        nb.push({ o, ds, dd: o.d, dv: v - o.speed });
       }
       // ---- strategy & pit decisions ----
       if (race.type === 'race' && !this.pitOnly) this.strategy();
@@ -3051,143 +3333,93 @@ const SIM = (function () {
         else if (toEntry > 0 && toEntry < 700) { this.pitting = toEntry < 420; this.pitEntryBlend = smooth01((420 - toEntry) / 250); }
         else { this.pitting = false; this.pitEntryBlend = 0; }
       } else if (!car.pit) { this.pitting = false; this.pitEntryBlend = 0; }
-      if (car.pit) { this.vLimit = 110; this.laneW = 0; this.blue = this.blueYield = false; return; }
+      if (car.pit) { this.vLimit = 110; this.laneW = 0; this.blue = this.blueYield = false; this.path.valid = false; this.maneuver = null; this.state = 'race'; return; }
       // ---- yellow / blue flags (under the VSC: no attacking, defending or letting a lapping car by) ----
       const vscOn = race.vscActive;
       const yellow = race.yellowAt(car.idx) || race.yellowAt(t.wrapI(car.idx + 60)) || vscOn;
       this.blue = race.type === 'race' && !!car.blueFlag.target && race.blueEligible(car) && !race.blueNeutralized();
       if (race.type === 'quali' && car.q && car.q.phase !== 'flying') { for (const n of nb) if (n.ds < 0 && n.ds > -70 && n.o.q && n.o.q.phase === 'flying') this.blue = true; for (const n of nb) if (n.ds < 0 && n.ds > -70 && n.o.isPlayer && !n.o.pit) this.blue = true; }
-      // ---- attack / defend ----
+      // ---- what the driver can see: nearby cars, their motion, and short predictions of where they are going ----
+      const M = this.mind;
+      this.readGrip(dtT);
+      this.observe(nb);
+      // ---- strategic layer: how much risk this race situation is worth ----
+      this.strategic(dtT, urgency);
+      // ---- tactical layer: who to race, and how ----
       let ahead = null, behind = null;
       for (const n of nb) {
         if (n.o.pit || n.o.eliminated || (race.eliminationMode && (n.o.retiring || n.o.dnf))) continue;
         if (n.ds > 0 && (!ahead || n.ds < ahead.ds)) ahead = n;
         if (n.ds < 0 && (!behind || n.ds > behind.ds)) behind = n;
       }
-      this.attackTarget = null;
       const firstLap = race.lap1Caution(car);
+      // the car to race ahead (a lapped car too, once passing it is safe)
+      let target = null;
       if (ahead && race.type === 'race' && !yellow) {
         const gapT = ahead.ds / Math.max(v, 10);
         const lappedCar = race.blueLapping(ahead.o, car, ahead.ds);
         const safeLapping = !lappedCar || race.bluePassSafe(car) || ahead.ds < 6 && Math.abs(car.d - ahead.o.d) > 2.6;
-        if (gapT < 1.1 + .65 * urgency && safeLapping && (ahead.dv > -1 - 2 * urgency || lappedCar || (ahead.o.ai && ahead.o.ai.blue))) this.attackTarget = { car: ahead.o, gap: gapT, ds: ahead.ds };
-        // career skill: look for a move from further back, and pounce on a car ahead that has run wide,
-        // spun, lost its exit or is limping (what is visible from the cockpit, nothing more)
+        const range = 1.3 + 0.65 * urgency + 0.5 * this.skill + 0.3 * M.craft;
+        if (safeLapping && gapT < range && (ahead.dv > -1.5 - 2 * urgency || lappedCar || (ahead.o.ai && ahead.o.ai.blue) || gapT < 0.8)) target = ahead.o;
+        // career skill: pounce from further back on a car that has run wide, spun, lost its exit or is limping
         else if (this.skill > 0 && safeLapping && gapT < 1.1 + 1.1 * this.skill) {
           const o = ahead.o, slip = o.offN >= 2 || o.spun || (o.ai && o.ai.mistake) || o.damage.anyPuncture() || ahead.dv > 3;
-          if (slip || (gapT < 1.1 + 0.35 * this.skill && ahead.dv > -1)) this.attackTarget = { car: o, gap: gapT, ds: ahead.ds };
+          if (slip) { target = o; this.conviction = Math.max(this.conviction, 0.5); }
         }
       }
-      this.defending=!!(behind && race.type==='race' && !yellow &&
-        !(this.blue && behind.o === car.blueFlag.target) && -behind.ds/Math.max(v,10)<0.8 + .35 * urgency && p.craft>0.6 - .2 * urgency);
+      // a committed move keeps its rival as the target while drawing alongside and past it
+      if (this.state === 'attack' && this.maneuver && !yellow && race.type === 'race') {
+        const mc = this.maneuver.car, ds = t.dS(car.s, mc.s);
+        if (ds > -10 && ds < 80 && !mc.pit) target = mc;
+      }
+      this.target = target;
+      this.attackTarget = target ? { car: target, gap: t.dS(car.s, target.s) / Math.max(v, 10), ds: t.dS(car.s, target.s) } : null;
+      // the car behind that is racing this one for position (not one lapping it, and not a lapped car)
+      let threat = null;
+      if (behind && race.type === 'race' && !yellow && !this.blueYield && !(this.blue && behind.o === car.blueFlag.target)) {
+        const gapB = -behind.ds / Math.max(v, 10), sameLap = Math.abs(behind.o.totalDist - car.totalDist) < t.length / 2;
+        // racecraft spots a threat a little earlier; an attacker dropping away is no threat
+        const range = (this.state === 'defend' ? 0.15 : 0) + 0.3 + 0.3 * M.craft + 0.15 * this.skill + 0.3 * urgency;
+        if (sameLap && gapB < range && (behind.dv < 1 + M.craft || gapB < 0.3)) threat = behind.o;
+      }
+      this.threat = threat;
       this.pressure = behind && race.type === 'race' && -behind.ds / Math.max(v, 10) < 0.8 ? 0.4 : 0;
-      // ---- lane selection ----
+      // ---- blue flags: yielding to a lapping car (unchanged rules) ----
       const lim = t.halfW - 1.3;
-      const iAhead = t.wrapI(car.idx + Math.round((12 + v * 0.8) / DS));
-      const rlA = t.rlOff[iAhead];
-      const ci = t.nextCorner[car.idx]; const corner = t.corners[ci];
-      const distToCorner = corner ? t.rlDist(car.idx, corner.apex) : 1e9;
-      const insideSide = corner ? corner.dir : 0;
-      const cands = [-lim, -lim * 0.55, -lim * 0.15, lim * 0.15, lim * 0.55, lim, rlA, clamp(car.d, -lim, lim)];
+      const rlA = L.off[0][t.wrapI(car.idx + Math.round((12 + v * 0.8) / DS))];
       const blue = car.blueFlag;
       const sameLapBattle = nb.some(n => Math.abs(n.o.totalDist - car.totalDist) < 25 && Math.abs(n.ds) < 20 && !n.o.pit);
       this.blueYield = this.blue && race.type === 'race' && !yellow && !this.pitting &&
         !sameLapBattle && (blue.safe || blue.side !== 0 && blue.gap < 15);
       if (this.blueYield && !blue.side) blue.side = Math.abs(rlA) > 1 ? -Math.sign(rlA) : (car.d >= 0 ? 1 : -1);
-      const yieldLane = blue.side * lim * .8;
-      if (this.blueYield) cands.push(yieldLane);
-      let bestC = rlA, bestCost = 1e18;
-      const horizon = 10 + v * 2.2;
-      const curLane = this.laneW > 0.5 ? this.laneD : car.d;
-      for (const cd of cands) {
-        let cost = Math.abs(cd - rlA) * (distToCorner < 220 ? 1.1 : 0.35) * (1 - .35 * urgency);
-        cost += Math.abs(cd - curLane) * 0.25 / (1 + urgency);
-        let feasible = true;
-        for (const n of nb) {
-          // (under the VSC a car still peeling off towards the pit entry is driven around like any slow car)
-          const o = n.o; if (o.pit && !(vscOn && o.pit.phase === 'approach')) continue;
-          const latGap = n.ds > 0 ? Math.min(Math.abs(o.d - cd), Math.abs(n.pd - cd)) : Math.abs(o.d - cd);
-          const alongside = n.ds > -6.5 && n.ds < 6.5;
-          // under the VSC a car in the queue ahead is followed, never a reason to pick a passing lane
-          if (vscOn && !alongside && race.vscMember(o)) continue;
-          if (alongside) {
-            const minGap=2.55-this.p.aggr*0.10; // survival urgency never reduces the collision clearance
-            if (latGap < minGap) feasible = false;
-            // can't cut across a car alongside
-            if ((o.d - car.d) * (o.d - cd) < 0 && n.ds > -6 && n.ds < 6) feasible = false;
-            continue;
-          }
-          // a car closing fast on a much slower one leaves it more room
-          if (n.ds > 0 && n.ds < horizon && latGap < 2.4 + clamp((n.dv - 8) * 0.06, 0, 1.6)) {
-            const closing = n.dv; // >0 when we're faster
-            if (closing > 0.3) cost += 26 / (n.ds / closing + 0.6) + 3;
-            else if (n.ds < 25) cost += 2.5;
-            if (n.ds < 14 && closing > -2) cost += 6;
-            // slipstream: on straights while closing in, sit behind
-            if (distToCorner > 350 && n.ds > 12 && n.ds < 70 && closing > 0) cost -= 3.5 * (1 + 0.6 * this.skill);
-            if (o.spun || o.speed < 15 || o.retiring || o.damage.anyPuncture() || (vscOn && o.pit)) cost += 60;
-          }
-          if (n.o === blue.target && this.blueYield && n.ds > -80 && latGap < 3) cost += 8;
-          if (race.type === 'quali' && n.ds < 0 && n.ds > -30 && this.blue && latGap < 3) cost += 3;
-        }
-        if (!feasible) continue;
-        // overtaking: prefer inside of the next corner when attacking
-        if (!this.blueYield && (this.attackTarget && !yellow && !firstLap || (this.attackTarget && firstLap && p.aggr > 0.7))) {
-          const tgt = this.attackTarget.car; const insideLane = insideSide * lim * 0.85;
-          // (with career skill the line is only given up for the inside once close enough to make the move)
-          if (distToCorner < 320 && distToCorner > 40 && (this.skill === 0 || this.attackTarget.ds < 45)) {
-            if (Math.abs(cd - insideLane) < 2.5) cost -= 5 * (0.5 + p.craft) * (0.6 + p.aggr * 0.6) * (1 + urgency);
-            // A clear outside lane is a real alternative when the rival covers
-            // the inside. Existing feasibility, turn limits and braking still win.
-            const outsideLane = -insideSide * lim * .65;
-            if (urgency && Math.abs(cd - outsideLane) < 2.2 && Math.abs(cd - tgt.d) > 2.6) cost -= 5 * urgency * (0.5 + p.craft);
-          } else if (this.attackTarget.ds < 20) {
-            if (Math.abs(cd - tgt.d) > 2.6) cost -= 2.5 * (0.5 + p.aggr);
-          }
-        }
-        // defending: cover the inside before the braking zone (one move)
-        if (behind && race.type === 'race' && !(this.blue && behind.o === blue.target) && !this.blueYield && !vscOn && distToCorner < 300 && distToCorner > 90) {
-          const gapB = -behind.ds / Math.max(v, 10);
-          if (gapB < 0.6 + .35 * urgency + 0.25 * this.skill && behind.dv < 1.5 + 1.5 * this.skill && (!race.eliminationMode || !yellow)) {
-            const insideLane = insideSide * lim * 0.75;
-            if (Math.abs(cd - insideLane) < 2.2) cost -= 4.5 * p.craft * (0.5 + p.aggr * 0.6) * (1 + urgency);
-          }
-        }
-        if (this.blueYield) cost += Math.abs(cd - yieldLane) * 5;
-        else if (this.blue && race.type === 'quali' && Math.abs(cd - rlA) < 2) cost += 8;
-        if (cost < bestCost) { bestCost = cost; bestC = cd; }
-      }
-      // braking/corner: don't change lane significantly (no moving under braking)
-      const braking = car.input.brake > 0.3;
-      if (braking && this.laneW > 0.5 && Math.abs(bestC - this.laneD) > 1.0) {
-        // keep current lane unless it's infeasible
-        let ok = true; for (const n of nb) if (n.ds > -6 && n.ds < 6 && Math.abs(n.o.d - this.laneD) < 2.2) ok = false;
-        if (ok) bestC = this.laneD;
-      }
+      this.yieldLane = blue.side * lim * .8;
       // a limping car (puncture, or heading in to retire) holds one lane well off the racing line
-      if (car.damage.anyPuncture() || this.retireInPits) {
-        if (this.limpSide == null) this.limpSide = Math.abs(rlA) > 1 ? -Math.sign(rlA) : (car.d >= 0 ? 1 : -1);
-        bestC = this.limpSide * lim;
-      } else this.limpSide = null;
-      const offLine = Math.abs(bestC - rlA) > 1.0;
-      if (offLine) {
-        // Bound blue-flag lateral requests as well as the existing lane blend;
-        // the chosen side remains stable for this encounter.
-        this.laneD = this.blueYield ? curLane + clamp(bestC - curLane, -.45, .45) : bestC;
-        this.laneWTarget = 1;
-      }
-      else this.laneWTarget = 0;
-      // corner exit: return to racing line once clear
-      const rate = 0.24 * (1 + v / 40) / (urgency ? (this.race.eliminationUrgency(car) > .75 ? 3 : 2) : 1);
-      this.laneW += clamp(this.laneWTarget - this.laneW, -rate, rate);
-      this.laneW = clamp(this.laneW, 0, 1);
+      if (car.damage.anyPuncture() || this.retireInPits) { if (this.limpSide == null) this.limpSide = Math.abs(rlA) > 1 ? -Math.sign(rlA) : (car.d >= 0 ? 1 : -1); }
+      else this.limpSide = null;
+      // no racing under yellow or the VSC, while rejoining, limping, pitting or after the flag
+      const noRace = race.type !== 'race' || !race.lightsOut || yellow || this.pitting || this.blueYield || car.finished || this.limpSide != null || this.rejoinT > 0 || this.pitOnly;
+      const attackBan = noRace || (firstLap && M.aggr < 0.7 && !urgency) || this.cruise && !this.attackBias;
+      this.updateState(dtT, target, threat, attackBan, noRace);
+      this.defending = this.state === 'defend';
+      // ---- trajectory planning (alone on the road, half as often: nothing changes quickly) ----
+      this.planTick = (this.planTick || 0) + 1;
+      if (!this.path.valid || this.state !== 'race' || !this.ctx || this.ctx.nNear || this.mistake || (this.planTick & 1)) this.planTrajectory();
+      // lining up a move and the planner now prefers the passing path: that is the commitment
+      if (this.state === 'prepare' && this.best && this.best.kind === 'pass' && this.best.feasible && this.target)
+        this.startAttack({ car: this.target, maneuver: this.best.maneuver, side: this.best.side, corner: this.ctx.k1 });
+      else if (this.state === 'attack') this.reviewAttack(dtT); // (a move committed this tick is judged from the next plan)
+      this.laneD = this.pathD(car.idx); this.onLine = Math.abs(this.laneD - L.off[0][car.idx]) < 0.6; this.laneW = this.onLine ? 0 : 1;
       // ---- tactical speed limits (following is evaluated continuously in update) ----
       this.vLimit = 110;
-      // yield when alongside on the outside entering a corner
+      const ci = t.nextCorner[car.idx]; const corner = t.corners[ci];
+      const distToCorner = corner ? t.rlDist(car.idx, corner.apex) : 1e9;
+      const insideSide = corner ? corner.dir : 0;
+      // concede when alongside on the outside entering a corner (unless committed around the outside with room)
       if (corner && distToCorner < 160) {
         for (const n of nb) {
           if (n.ds > -4 && n.ds < 4 && Math.sign(n.o.d - car.d) === insideSide && Math.abs(n.o.d - car.d) < 4) {
-            if ((n.ds > 0 || p.risk < 0.55) && n.o.speed > 8 && v > 8) this.vLimit = Math.min(this.vLimit, Math.max(4, n.o.speed - 1.5));
+            const goingAround = this.state === 'attack' && this.maneuver && this.maneuver.car === n.o && this.maneuver.kind === 'outside' && this.best && this.best.feasible && this.best.risk <= this.tolerance;
+            if (!goingAround && (n.ds > 0 || M.risk < 0.55) && n.o.speed > 8 && v > 8) this.vLimit = Math.min(this.vLimit, Math.max(4, n.o.speed - 1.5));
           }
         }
       }
@@ -3197,9 +3429,623 @@ const SIM = (function () {
       // push mode (final laps or attacking)
       this.pushMode = this.tyreMode === 'preserve' ? 0 : this.tyreMode === 'push' || this.attackTarget ? 1 : 0;
     }
+    // ---------------- strategic layer ----------------
+    // How much risk the race situation is worth: running out of laps raises it; a comfortable gap, damage, worn
+    // tyres, fuel or tyre saving and a recent scare lower it; Elimination danger raises it.
+    strategic(dt, urgency) {
+      const car = this.car, race = this.race, M = this.mind;
+      this.caution *= Math.exp(-dt / 20);
+      if (race.type !== 'race') { this.riskBudget = 0.3; this.tolerance = 0.15; this.attackBias = 0; this.cruise = false; return; }
+      const lapsLeft = race.lapsLeft(car), D = car.damage;
+      const wear = (car.tyre.wear[0] + car.tyre.wear[1] + car.tyre.wear[2] + car.tyre.wear[3]) / 4;
+      const lateRace = smoothStep(2.5 - lapsLeft, 0, 2.5);
+      let b = 0.3 + 0.5 * M.risk + 0.25 * lateRace;
+      const order = race.order || race.cars, pos = order.indexOf(car), back = order[pos + 1];
+      const gapAhead = pos > 0 ? car.intervalAhead || 99 : 99, gapBehind = back && !back.dnf && !back.eliminated ? back.intervalAhead || 99 : 99;
+      this.cruise = gapAhead > 3.5 && gapBehind > 3 && lapsLeft > 0.5;
+      if (this.cruise) b -= 0.2;
+      if (pos === 0 && gapBehind > 2) b -= 0.1; // leading comfortably: nothing to gain from risks
+      b -= 0.45 * Math.min(1, D.severity()) + 0.3 * this.caution + (this.fuelSave || this.tyreMode === 'preserve' ? 0.08 : 0) + 0.15 * Math.max(0, wear - 0.6);
+      b += 0.35 * urgency;
+      this.riskBudget = clamp(b, 0.05, 1);
+      this.attackBias = clamp(lateRace * (0.5 + 0.5 * M.aggr) + 0.5 * urgency - 0.4 * this.caution - (this.cruise ? 0.3 : 0), -0.5, 1);
+      // acceptable predicted-contact index for a move (see evalCand)
+      this.tolerance = clamp(0.08 + 0.5 * this.riskBudget, 0.06, 0.6);
+    }
+    // The driver's read of the grip follows the real grip with a lag (adaptable drivers, and higher Career tiers,
+    // read it faster). When rain arrives the read is briefly optimistic and the physics punishes it; a slide or a
+    // wheel off corrects it at once. The error is bounded (-7 % .. +5 %).
+    readGrip(dt) {
+      const car = this.car, trueMu = car.gripEstimate(this.race.wet);
+      if (!this.muRead || this.pitOnly) this.muRead = trueMu;
+      const tau = lerp(16, 3, this.mind.adapt) * (1 - 0.4 * this.skill);
+      this.muRead += (trueMu - this.muRead) * Math.min(1, dt / tau);
+      if ((this.steerSat > 0.04 || car.offN > 0) && this.muRead > trueMu) this.muRead = lerp(this.muRead, trueMu, 0.5);
+      this.muRead = clamp(this.muRead, trueMu * 0.93, trueMu * 1.05);
+      this.gripBelief = this.muRead / trueMu;
+    }
+    memFor(o) {
+      let m = this.mem.get(o.id);
+      if (!m) { m = { pace: 1, lineIn: 0, defIn: 0.3, fails: {}, succ: {}, lastIdx: -1 }; this.mem.set(o.id, m); }
+      return m;
+    }
+    // ---------------- opponent awareness and prediction ----------------
+    // Observable state only: position, speed, longitudinal acceleration, brake lights, lateral motion. A rival's
+    // next four seconds are predicted by blending what it is doing now (kinematics) with what a racing driver
+    // would expect it to do (follow the racing line at the speed the grip allows, adjusted by what this driver has
+    // seen of it). Racecraft sets how much of the expectation is used. Nothing is read from the rival's own plan.
+    observe(nb) {
+      const car = this.car, t = this.track, L = t.aiLines, N = t.N, M = this.mind, rl = L.off[0], race = this.race;
+      // a rival is expected to drive like this driver would (same read of the grip, same commitment), until seen otherwise
+      const scale = clamp(car.gripEstimate(race.wet) * this.gripBelief / 1.6, 0.45, 1.05) * (this.cornerUse || 0.97) / 0.97;
+      this.nOpp = 0;
+      // the closest (by gap along the lap) eight cars that can matter within the planning horizon
+      const pick = this.oppPick || (this.oppPick = []); pick.length = 0;
+      for (const n of nb) if (n.ds > -45 && n.ds < 200 && !(n.o.pit && t.inPitMain(n.o.s)) && !n.o.inGarage) pick.push(n);
+      pick.sort((a, b) => Math.abs(a.ds) - Math.abs(b.ds));
+      for (let k = 0; k < pick.length && this.nOpp < this.opp.length; k++) {
+        const n = pick[k], o = n.o, R = this.opp[this.nOpp++], mem = this.memFor(o);
+        R.car = o; R.ds = n.ds; R.d = o.d; R.v = o.speed; R.a = clamp(o.axL, -30, 11); R.brake = o.input.brake > 0.25;
+        R.vlat = o.vx * t.rx[o.idx] + o.vz * t.rz[o.idx];
+        R.along = Math.abs(n.ds) < 5.2 && Math.abs(o.d - car.d) > 1.5 && Math.abs(o.d - car.d) < 3.6; // side by side
+        this.learnRival(o, mem, n.ds, scale);
+        const slow = this.misread && this.misread.car === o && race.time < this.misread.until ? this.misread.f : 1;
+        const stopped = o.spun || o.retiring || (o.ai && o.ai.mode === 'recover') || o.speed < 6;
+        const kq = stopped ? 0 : M.predict;
+        const targetOf = this.state === 'attack' || this.state === 'prepare' ? this.target === o : false;
+        let s = 0, vv = o.speed, d = o.d, iO = o.idx;
+        const off0 = o.d - rl[o.idx];
+        for (let q = 0; q < AI_PRED_N; q++) {
+          const tau = q * AI_PRED_DT;
+          R.so[q] = n.ds + s; R.dd[q] = d; R.vv[q] = vv * slow;
+          // speed: kinematic extrapolation blended with the speed the corner ahead allows
+          const iA = t.wrapI(iO + Math.round(vv * AI_PRED_DT / DS));
+          const vInt = Math.min(vv + aiAccel(vv) * AI_PRED_DT, L.vRef[iA] * scale * mem.pace);
+          const vKin = clamp(R.v + R.a * (tau + AI_PRED_DT), 0, 95);
+          const vn = Math.max(0, lerp(vKin, vInt, kq * AI_PW.kv[q]));
+          s += 0.5 * (vv + vn) * AI_PRED_DT / Math.max(0.6, 1 - t.kappa[iO] * d); vv = vn;
+          iO = t.wrapI(o.idx + Math.round(s / DS));
+          // lateral: current drift, settling back towards its usual line (and its habits in this corner)
+          const dKin = R.d + R.vlat * AI_PW.drift[q];
+          let dInt = rl[iO] + off0 * AI_PW.settle[q];
+          const wk = L.winOf[iO];
+          if (wk >= 0) {
+            const W = L.win[wk];
+            dInt += mem.lineIn * W.dir * 0.5;
+            // it has covered the inside against this driver before: expect it again
+            if (targetOf && mem.defIn > 0.3) dInt = lerp(dInt, L.off[LINE_IN][iO], (mem.defIn - 0.3) * 1.2);
+          }
+          d = clamp(lerp(dKin, dInt, kq * AI_PW.kd[q]), -t.halfW - 1.5, t.halfW + 1.5);
+        }
+      }
+    }
+    // Bounded learning from what is seen of a rival: its speed through corners (relative to what this driver
+    // expects), where it places the car at the apex, and whether it covers the inside when attacked.
+    learnRival(o, mem, ds, scale) {
+      if (ds < 0 || ds > 90 || o.pit) { mem.lastIdx = o.idx; return; }
+      const t = this.track, L = t.aiLines, N = t.N, rate = 0.25 * this.mind.adapt, rl = L.off[0];
+      const prev = mem.lastIdx; mem.lastIdx = o.idx;
+      if (prev < 0) return;
+      const moved = (o.idx - prev + N) % N; if (moved > 120) return;
+      const wk = L.winOf[o.idx] >= 0 ? L.winOf[o.idx] : L.winOf[prev]; if (wk < 0) return;
+      const W = L.win[wk], crossed = (i) => (i - prev + N) % N <= moved && (i - prev + N) % N > 0;
+      if (crossed(W.apex)) {
+        mem.pace += (clamp(o.speed / Math.max(5, L.vRef[W.apex] * scale), 0.85, 1.12) - mem.pace) * rate;
+        mem.lineIn += (clamp((o.d - rl[W.apex]) * W.dir, -3, 3) - mem.lineIn) * rate;
+      }
+      if (crossed(W.start) && this.target === o && ds < 1.3 * Math.max(10, this.car.speed)) {
+        const covered = (o.d - rl[W.start]) * W.dir > 2.0 ? 1 : 0;
+        mem.defIn += (covered - mem.defIn) * 1.4 * rate;
+      }
+    }
+    onContact(other) {
+      this.caution = Math.min(1, this.caution + 0.3);
+      if (this.state === 'attack' && this.maneuver && this.maneuver.car === other) this.endAttack('contact with ' + other.driver.short, false);
+    }
+    // ---------------- tactical layer ----------------
+    setState(s, why) { if (s !== this.state) { this.state = s; this.stateT = 0; if (why) this.note(s + ': ' + why); } }
+    updateState(dt, target, threat, attackBan, defendBan) {
+      const M = this.mind, car = this.car, t = this.track;
+      this.stateT += dt; this.cooldown = Math.max(0, this.cooldown - dt); this.rejoinT = Math.max(0, this.rejoinT - dt);
+      if (this.mode === 'recover') { this.maneuver = null; this.setState('recover'); return; }
+      if (this.blueYield) { this.maneuver = null; this.conviction = 0; this.setState('yield', 'blue flag'); return; }
+      // an attack in progress carries on until it succeeds, is called off (reviewAttack) or becomes impossible
+      if (this.state === 'attack') {
+        const tg = this.maneuver && this.maneuver.car;
+        if (!tg || attackBan || tg.pit || tg.eliminated) { this.endAttack(attackBan ? 'racing restricted' : 'target gone', false); }
+        else if (t.dS(car.s, tg.s) < -4) { this.endAttack('passed ' + tg.driver.short, true); }
+        else if (t.dS(car.s, tg.s) > 80) { this.endAttack('dropped back', false); }
+        else return;
+      }
+      if (this.state === 'abort' && this.cooldown > 0) return;
+      // under attack: defend (committed through the braking zone and corner). In a train a driver races the car
+      // ahead and keeps an eye on the one behind; only an imminent threat (alongside, or right on the gearbox)
+      // takes priority over building a move of its own.
+      const gapB = threat ? t.dS(threat.s, car.s) / Math.max(10, car.speed) : 9;
+      const imminent = threat && (gapB < 0.3 || Math.abs(t.dS(threat.s, car.s)) < 6);
+      if (threat && !defendBan && (imminent || !target || attackBan) && !(target && this.conviction > 0.7 && !attackBan)) {
+        if (this.state !== 'defend') { this.defMoves = 0; this.defSide = this.pathSide(); this.defLock = false; this.stats.defends++; }
+        this.setState('defend', 'under attack from ' + threat.driver.short);
+        return;
+      }
+      if (this.state === 'defend' && this.defLock && threat) return;
+      this.defLock = false;
+      if (target && !attackBan) {
+        // the urge to pass builds over consecutive evaluations: patient drivers want a clearer chance,
+        // and frustration after a long time behind lowers the bar
+        const P = this.passEval;
+        let score = -1;
+        if (P && P.feasible) {
+          const frus = smoothStep(this.followTime, 0, M.frustration);
+          const need = lerp(0.03, 0.22, M.patience) * (1 - 0.6 * frus) * (1 - 0.35 * this.attackBias);
+          // a patient driver also wants the move to look likely to work before committing to it
+          const sure = lerp(0.2, 0.6, M.patience) * (1 - 0.5 * frus);
+          score = P.gain + P.success * P.value * (0.5 + M.aggr) / 1.3 - need - (P.risk > this.tolerance ? 1 : 0.3 * P.risk) - (P.success < sure && P.gain < 0.15 ? 0.3 : 0);
+        }
+        this.conviction = clamp(this.conviction + dt * (score > 0 ? 2.2 * (0.6 + M.aggr) * Math.min(1, score * 6 + 0.3) : -1.2), -0.5, 1.2);
+        if (this.conviction >= 1 && P && P.feasible) { this.startAttack(P); return; }
+        this.setState(this.conviction > 0.35 ? 'prepare' : 'follow', this.conviction > 0.35 ? 'lining up ' + (P ? P.maneuver : 'a move') + ' on ' + target.driver.short : 'following ' + target.driver.short);
+        return;
+      }
+      this.conviction = Math.max(0, this.conviction - dt);
+      this.setState('race');
+    }
+    startAttack(P) {
+      const tg = P.car;
+      this.maneuver = { car: tg, kind: P.maneuver, side: P.side, corner: P.corner, t0: this.race.time, switched: false };
+      this.attackT = 0; this.badT = 0; this.conviction = 0.6; this.stats.attempts++;
+      this.stats.kinds[P.maneuver] = (this.stats.kinds[P.maneuver] || 0) + 1;
+      this.setState('attack', P.maneuver + ' move on ' + tg.driver.short);
+      this.race.log(this.car, 'attack ' + P.maneuver + ' ' + tg.driver.short);
+    }
+    endAttack(why, success) {
+      const mv = this.maneuver;
+      if (mv && mv.car) {
+        const m = this.memFor(mv.car), bag = success ? m.succ : m.fails;
+        bag[mv.kind] = (bag[mv.kind] || 0) + 1;
+        if (success && m.fails[mv.kind]) m.fails[mv.kind] = Math.max(0, m.fails[mv.kind] - 1);
+      }
+      this.maneuver = null;
+      if (success) { this.stats.passes++; this.conviction = 0; this.followTime = 0; this.setState('race', why); }
+      else {
+        this.stats.aborts++; this.conviction = -0.4;
+        this.cooldown = lerp(1.2, 3.5, this.mind.patience) + 1.5 * this.caution;
+        this.setState('abort', why); this.race.log(this.car, 'abort: ' + why);
+      }
+    }
+    // An attack in progress is re-judged every plan: it is called off when the gap closes, contact becomes likely,
+    // the braking zone arrives without an overlap, or it is costing time; a defender covering the inside can turn
+    // it into a switchback.
+    reviewAttack(dt) {
+      const A = this.attackEval, mv = this.maneuver, car = this.car, t = this.track, M = this.mind;
+      if (!mv) return;
+      this.attackT += dt;
+      const unsafe = A && A.feasible && A.risk > this.tolerance * 1.6 + 0.05;
+      if (!A || !A.feasible || unsafe) {
+        // the door is closing on the inside: a good racer turns it into a switchback instead of giving up
+        if (A && A.switchback && M.repertoire >= 1 && !mv.switched && mv.kind !== 'slipstream') { mv.kind = 'switchback'; mv.side = -mv.side; mv.switched = true; this.attackT = 0; this.stats.switchbacks++; this.stats.kinds.switchback = (this.stats.kinds.switchback || 0) + 1; this.note('switchback: ' + mv.car.driver.short + ' covered the inside'); return; }
+        return this.endAttack(unsafe ? 'unsafe: contact risk ' + A.risk.toFixed(2) : 'door closed: ' + (A ? A.why || 'no room' : 'no room'), false);
+      }
+      const ds = t.dS(car.s, mv.car.s);
+      const braking = this.brakeAt >= 0 && (this.brakeAt - car.idx + t.N) % t.N < 10 || car.input.brake > 0.3;
+      if (braking && mv.kind !== 'slipstream' && ds > 5.0 && A.lead < 0 && !(M.aggr > 0.75 && this.riskBudget > 0.7 && ds < 6.5))
+        return this.endAttack('no overlap at the braking point', false);
+      this.badT = A.gain < -0.12 && A.lead < 0 ? this.badT + dt : Math.max(0, this.badT - dt);
+      if (this.badT > 0.8) return this.endAttack('losing momentum', false);
+      if (this.attackT > 6 + 6 * M.patience && ds > 2) return this.endAttack('the pass is not on', false);
+    }
+    // side of the planned path at the next turn-in: +1 inside, -1 outside, 0 on the racing line
+    pathSide() {
+      const t = this.track, L = t.aiLines, i0 = this.car.idx;
+      let k = L.winOf[i0] >= 0 ? L.winOf[i0] : t.nextCorner[i0];
+      if (((L.win[k].apex - i0 + t.N) % t.N) > t.N / 2 || L.win[k].apex === i0) k = (k + 1) % L.win.length;
+      const W = L.win[k], e = (this.pathD(W.start) - L.off[0][W.start]) * W.dir;
+      return e > 1.2 ? 1 : e < -1.2 ? -1 : 0;
+    }
+    // 60 Hz: keep a car's width of room from any car alongside
+    updateRoom() {
+      const car = this.car, t = this.track; let lo = -99, hi = 99;
+      if (!car.pit && !this.pitting) for (const n of this.neighbors) {
+        const o = n.o; if (o.pit || o.inGarage || o.ghost) continue;
+        const ds = t.dS(car.s, o.s); if (ds < -6.2 || ds > 6.2) continue;
+        const g = o.d - car.d; if (Math.abs(g) > 3.6) continue;
+        if (g > 0) hi = Math.min(hi, o.d - 2.7); else lo = Math.max(lo, o.d + 2.7);
+      }
+      this.roomLo = lo; this.roomHi = hi;
+    }
+    // ---------------- trajectory planning ----------------
+    // lateral offset of candidate c at sample r ahead of the plan origin (track sample i)
+    candD(c, r, i) {
+      if (c.kind === 'keep') return this.pathD(i);
+      const L = this.track.aiLines, rl = L.off[0][i];
+      let d = rl;
+      if (c.amt) d += c.amt * winW(r, c.w0, c.w1, c.w2, c.w3) * (L.off[c.fam][i] - rl);
+      if (c.amt2) d += c.amt2 * winW(r, c.v0, c.v1, c.v2, c.v3) * (L.off[c.fam2][i] - rl);
+      if (c.off) d += c.off * (c.offE > 0 ? winW(r, c.offA, c.offA + c.offL, c.offE, c.offE + c.offL) : smooth01((r - c.offA) / c.offL));
+      const X = this.exeNow; if (X.v) d += X.v * winW(r, X.a, X.b, X.b, X.c);
+      if (c.carry) d += c.carry * (1 - smooth01(r / c.carryL));
+      const lim = L.lim; d = d < -lim ? -lim : d > lim ? lim : d;
+      // receding-horizon commitment: up to about the steering look-ahead the path is the one already being driven;
+      // a new choice blends in beyond it, so the target the car steers at never jumps
+      if (c.blend) { const C = this.ctx, w = smooth01((r - C.rF) / C.rB); if (w < 1) d = this.pathD(i) + (d - this.pathD(i)) * w; }
+      return d;
+    }
+    addCand(kind, label, maneuver, side) {
+      if (this.nCand >= this.cands.length) return null;
+      const c = this.cands[this.nCand++];
+      c.kind = kind; c.label = label; c.maneuver = maneuver || null; c.side = side || 0;
+      c.fam = 0; c.amt = 0; c.fam2 = 0; c.amt2 = 0; c.off = 0; c.offE = 0; c.offA = 0; c.offL = 1; c.carry = 0; c.carryL = 1; c.why = '';
+      c.slot = label;
+      return c;
+    }
+    // use reference line `fam` (blend amount `amt`) through corner window W
+    useLine(c, second, fam, amt, W, X) {
+      const rel = X.rel, rin = X.rin;
+      const a = rel(W.a), b = rel(W.b);
+      if (second) { c.fam2 = fam; c.amt2 = amt; c.v0 = a - rin; c.v1 = a; c.v2 = b; c.v3 = b + 25; }
+      else { c.fam = fam; c.amt = amt; c.w0 = a - rin; c.w1 = a; c.w2 = b; c.w3 = b + 25; }
+      return c;
+    }
+    // ramped lateral offset (m, relative to the racing line), from sample `from`, held until `until` (0: to the end)
+    useOffset(c, off, from, until) {
+      c.off = off; c.offA = Math.max(0, from); c.offL = Math.max(12, Math.abs(off) / 0.07 / DS); c.offE = until > 0 ? Math.max(c.offA + c.offL, until) : 0;
+      return c;
+    }
+    planTrajectory() {
+      const car = this.car, race = this.race, t = this.track, L = t.aiLines, N = t.N, M = this.mind;
+      const v = Math.max(car.speed, 5), i0 = car.idx;
+      const n = Math.min(AI_PATH_N - 2, Math.max(72, Math.round((80 + 3.0 * v) / DS))), m = Math.min(AI_EVAL_M, Math.floor(n / AI_EV_STEP));
+      const rel = (i) => { let r = i - i0; if (r < -N / 2) r += N; else if (r > N / 2) r -= N; return r; };
+      const X = this.ctx || (this.ctx = {});
+      X.i0 = i0; X.n = n; X.m = m; X.rel = rel; X.v0 = car.speed; X.rin = clamp(Math.round(v * 1.1 / DS), 15, 50);
+      X.mu = this.muUse || car.gripEstimate(race.wet); X.use = Math.min(1, this.cornerUse || 0.95);
+      X.dec = (HANDLING.brakeRate + HANDLING.coastRate) * (this.brakeUse || this.brakeCommit) * 0.97;
+      // a committed attacker brakes a little later (see computeEnvelope): the same judgement when weighing a move
+      const bc = this.brakeCommit || 1; X.outbrake = Math.min(1, bc * (1 + 0.025 * (0.5 + M.aggr))) / bc;
+      X.power = car.damage.perf.power; X.dmg = car.damage.perf.turnLoss > 0 || car.damage.perf.aeroTurnLoss > 0 ? car.damage : null;
+      X.wRisk = lerp(3.5, 1.2, this.riskBudget) * (1 + this.caution);
+      // corner windows in reach: the one being driven (or next), and the one after it
+      // the corner to plan for: the one being driven, or once its apex is behind (the exit), the next one
+      let k1 = L.winOf[i0] >= 0 ? L.winOf[i0] : t.nextCorner[i0];
+      if (rel(L.win[k1].apex) <= 4) k1 = (k1 + 1) % L.win.length;
+      X.k1 = k1;
+      const W1 = L.win[k1], W2 = L.win[(k1 + 1) % L.win.length];
+      const r1s = rel(W1.start), r1ap = rel(W1.apex), r2ap = rel(W2.apex);
+      const w1live = rel(W1.a) < n && r1ap > 4, w2live = w1live && rel(W2.a) < n && r2ap > 0;
+      X.qTurn = r1s > 2 && r1s < AI_EV_STEP * m ? Math.round(r1s / AI_EV_STEP) : -1; X.qApex = r1ap > 2 && r1ap < AI_EV_STEP * m ? Math.round(r1ap / AI_EV_STEP) : -1; X.dir = W1.dir;
+      // the straight after the horizon (exit value: how the path's end speed pays off down the next straight)
+      const iEnd = (i0 + AI_EV_STEP * m) % N;
+      X.straightL = L.winOf[iEnd] < 0 ? Math.min(400, ((L.win[t.nextCorner[iEnd]].a - iEnd + N) % N) * DS) : 0;
+      // execution scatter at this corner's apex (common to every candidate: execution, not intention)
+      const E = this.exeNow || (this.exeNow = { v: 0, a: 0, b: 0, c: 0 });
+      E.v = this.exeCorner === W1.k && w1live && !this.pitOnly ? this.exeApex : 0; E.a = r1ap - 25; E.b = r1ap; E.c = r1ap + 25;
+      // the cars that matter
+      X.opps = this.opp; X.nOpp = this.nOpp; X.tgt = null; X.thr = null; X.nNear = 0;
+      const reachS = AI_EV_STEP * m * DS + 60;
+      for (let k = 0; k < this.nOpp; k++) {
+        const R = this.opp[k]; if (R.car === this.target) X.tgt = R; if (R.car === this.threat) X.thr = R;
+        // early elimination: a rival that never comes within reach of this horizon cannot affect any candidate
+        let lo = 1e9, hi = -1e9; for (let q = 0; q < AI_PRED_N; q++) { const so = R.so[q]; if (so < lo) lo = so; if (so > hi) hi = so; }
+        R.near = hi > -12 && lo < reachS; if (R.near) X.nNear++;
+      }
+      const st = this.state, tgtR = X.tgt, fight = st === 'follow' || st === 'prepare' || st === 'attack';
+      // ---- candidates ----
+      this.nCand = 0;
+      const keepOK = this.path.valid && race.time - this.path.born < 3 && Math.abs(car.d - this.pathD(i0)) < 2.2;
+      if (keepOK) this.addCand('keep', 'keep: ' + this.path.label, this.path.maneuver, this.path.side);
+      this.addCand('line', 'racing line');
+      if (this.limpSide != null) {
+        this.useOffset(this.addCand('limp', 'limp off line'), this.limpSide * (t.halfW - 1.3) - L.off[0][i0], 0, 0);
+      } else if (st === 'yield') {
+        this.useOffset(this.addCand('yield', 'yield lane'), this.yieldLane - L.off[0][(i0 + 40) % N], 0, 0);
+      } else if (!this.pitOnly) {
+        if (w1live) {
+          this.useLine(this.addCand('line', 'late apex'), false, LINE_LATE, 1, W1, X);
+          if (X.nNear) { // alone, the racing line is the line; the variants matter in company
+            this.useLine(this.addCand('line', 'tighter entry'), false, LINE_IN, 0.55, W1, X);
+            this.useLine(this.addCand('line', 'wider line'), false, LINE_OUT, 0.6, W1, X);
+          }
+          if (st === 'defend') {
+            this.useLine(this.addCand('line', 'cover inside', null, 1), false, LINE_IN, 1, W1, X);
+            // the attacker is already committed up the inside: take the wider entry and the better exit instead
+            const T = this.threat;
+            if (T && (T.d - car.d) * W1.dir > 1.5 && t.dS(T.s, car.s) < 8) this.useLine(this.addCand('line', 'concede inside, cut back', null, -1), false, LINE_LATE, 1, W1, X);
+          }
+        }
+        if (fight && tgtR && !this.noRaceNow()) this.passCandidates(X, W1, W2, w1live, w2live);
+        // slow or stopped cars ahead: go around them
+        for (let k = 0; k < this.nOpp; k++) {
+          const R = this.opp[k], o = R.car;
+          if (R.ds < 3 || R.ds > AI_EV_STEP * m * DS || R === tgtR) continue;
+          const broken = o.speed < 15 || o.spun || o.retiring || (o.ai && o.ai.mode === 'recover');
+          if (!(broken || o.speed < 0.6 * car.speed)) continue;
+          // under the VSC (or a yellow) a car in the queue ahead is followed, never driven around: only a stricken car is
+          if ((race.vscActive && race.vscMember(o) || race.yellowAt(car.idx)) && !broken) continue;
+          const meet = Math.round(R.ds / DS), rlm = L.off[0][(i0 + meet) % N];
+          for (const sg of [-1, 1]) this.useOffset(this.addCand('avoid', 'avoid ' + o.driver.short), clamp(o.d + sg * 3.3, -L.lim, L.lim) - rlm, 0, meet + 30);
+          break;
+        }
+      }
+      // continuity: every new path starts where the current one is and merges over a distance the steering
+      // can follow (no lateral jumps); keep is the current path itself
+      const onPath = this.path.valid && Math.abs(car.d - this.pathD(i0)) < 2.2;
+      X.rF = Math.round((13 + 0.34 * v) / DS); X.rB = Math.round(Math.max(30, 0.6 * v) / DS); // (steering look-ahead is 9 + 0.34 v)
+      for (let k = 0; k < this.nCand; k++) {
+        const c = this.cands[k]; if (c.kind === 'keep') continue;
+        c.carry = 0; c.blend = false;
+        if (onPath) c.blend = true; // continue from the path being driven
+        else { c.carry = car.d - this.candD(c, 0, i0); c.carryL = Math.max(15, Math.max(30, 0.9 * v, Math.abs(c.carry) / 0.07) / DS); } // re-plan from where the car is
+      }
+      // ---- evaluation ----
+      for (let k = 0; k < this.nCand; k++) this.evalCand(this.cands[k], X);
+      this.choose(X, W1, w1live);
+    }
+    // persistent misjudgement of a candidate path (s): drawn once per corner and kind of line
+    judgeOf(key) {
+      const J = this.judge || (this.judge = { corner: -1, map: new Map() });
+      const k1 = this.ctx ? this.ctx.k1 : -1;
+      if (J.corner !== k1) { J.corner = k1; J.map.clear(); }
+      let b = J.map.get(key);
+      if (b == null) { b = this.gauss() * this.mind.judge; J.map.set(key, b); }
+      return b;
+    }
+    noRaceNow() { const r = this.race; return r.type !== 'race' || r.vscActive || this.pitting || this.rejoinT > 0 || this.limpSide != null || this.car.finished; }
+    // overtaking candidates against the target: inside, outside, slipstream pass on a straight, switchback, set-up
+    passCandidates(X, W1, W2, w1live, w2live) {
+      const t = this.track, L = t.aiLines, N = t.N, M = this.mind, R = X.tgt, o = R.car, car = this.car, i0 = X.i0;
+      const closing = Math.max(0.5, car.speed - o.speed + 1), tm = clamp(R.ds / closing, 0.5, 3.5);
+      const q = Math.min(AI_PRED_N - 1, Math.round(tm / AI_PRED_DT)), dT = R.dd[q];
+      const meet = Math.round(Math.max(0, R.ds) / DS), rlm = L.off[0][(i0 + meet) % N];
+      const cornerFar = !w1live || X.rel(W1.a) * DS > R.ds + 60;
+      if (cornerFar) {
+        // a straight: pull out of the tow late and go by on either side
+        const until = w1live ? X.rel(W1.a) : 0, from = Math.round(Math.max(0, R.ds - 25) / DS);
+        for (const sg of [-1, 1]) {
+          const side = w1live ? (sg === W1.dir ? 1 : -1) : sg;
+          this.useOffset(this.addCand('pass', 'slipstream pass ' + (sg > 0 ? 'right' : 'left'), 'slipstream', side), clamp(dT + sg * 3.2, -L.lim, L.lim) - rlm, from, until);
+        }
+      }
+      if (w1live) {
+        const dir = W1.dir;
+        // inside: the inside line, pulled alongside the rival if it sits on the inside part of the road
+        const cIn = this.useLine(this.addCand('pass', 'inside move', 'inside', 1), false, LINE_IN, 1, W1, X);
+        if (cIn && (dT * dir) > -1.0) this.useOffset(cIn, clamp((dT * dir + 3.0) * dir, -L.lim, L.lim) - rlm, Math.round(Math.max(0, R.ds - 30) / DS), X.rel(W1.start));
+        this.useLine(this.addCand('pass', 'around the outside', 'outside', -1), false, LINE_OUT, 1, W1, X);
+        // switchback: the rival covers the inside, so enter wide, cut back under it and get the better exit
+        // (judged on where the rival is now as well as where it is predicted: it is visibly sitting on the inside)
+        // (an inside attack always keeps the switchback in mind as its fall-back)
+        if (M.repertoire >= 1 && (Math.max(dT * dir, o.d * dir) > 1.2 || this.maneuver && this.maneuver.kind === 'inside')) this.useLine(this.addCand('pass', 'switchback', 'switchback', -1), false, LINE_LATE, 1, W1, X);
+        // set-up: give up a little in this corner to be on the inside for the next one
+        if (M.repertoire >= 2 && w2live && W2.dir !== dir) {
+          const c = this.useLine(this.addCand('pass', 'set-up for next corner', 'setup', -1), false, LINE_OUT, 1, W1, X);
+          if (c) this.useLine(c, true, LINE_IN, 1, W2, X);
+        }
+      }
+    }
+    // Score a candidate: drive it in thought with this car's own limits (corner speed from its read of the grip,
+    // braking, acceleration, the tow), against the predicted cars around it.
+    evalCand(c, X) {
+      const t = this.track, N = t.N, m = X.m, D = this.evD, PX = this.evX, PZ = this.evZ, K = this.evK, VB = this.evV, SG = this.evS;
+      for (let q = 0; q <= m; q++) { const r = AI_EV_STEP * q, i = (X.i0 + r) % N, d = this.candD(c, r, i); D[q] = d; PX[q] = t.cx[i] + t.rx[i] * d; PZ[q] = t.cz[i] + t.rz[i] * d; }
+      for (let q = 1; q < m; q++) K[q] = curv3(PX[q - 1], PZ[q - 1], PX[q], PZ[q], PX[q + 1], PZ[q + 1]);
+      K[0] = K[1]; K[m] = K[m - 1];
+      for (let q = 0; q < m; q++) { const dx = PX[q + 1] - PX[q], dz = PZ[q + 1] - PZ[q]; SG[q] = Math.sqrt(dx * dx + dz * dz); }
+      // corner speed the handling allows on this curvature (arcadeCornerSpeed, inlined for an undamaged car)
+      const A = clamp(X.mu / 1.6, 0.45, 1.05) * X.use, r0 = HANDLING.turnRate[0], gg = (HANDLING.turnRate[1] - r0) / 58, kMax = ARCADE_KGEOM * X.use;
+      const cv = (k) => {
+        if (X.dmg) return arcadeCornerSpeed(k, X.mu, X.use, X.dmg);
+        k = k < 0 ? -k : k; if (k < 1e-5) return 110; if (k >= kMax) return 4;
+        const a = A / k; let vv = a * r0;
+        if (vv > 12) { vv = a * (r0 - 12 * gg) / (1 - a * gg); if (!(vv > 0) || vv > 70) vv = a * HANDLING.turnRate[1]; }
+        return vv < 110 ? vv : 110;
+      };
+      const dec = X.dec * (c.kind === 'pass' && c.maneuver !== 'slipstream' ? X.outbrake : 1);
+      VB[m] = cv(K[m]);
+      for (let q = m - 1; q >= 0; q--) { const vc = cv(K[q]), vb = VB[q + 1] + dec * SG[q]; VB[q] = vc < vb ? vc : vb; }
+      // early elimination: a path that needs far more than this car can do from here is not a path
+      c.feasible = VB[0] > X.v0 - 6 || c.kind === 'keep' || c.kind === 'line';
+      let v = X.v0, tt = 0, risk = 0, minGap = 9, blocked = 0, tow = 0, lead = -50, overlap = 99; this.evT[0] = 0; c.overlapTurn = 99;
+      const opps = X.opps, no = X.nOpp, tmax = (AI_PRED_N - 1) * AI_PRED_DT;
+      c.dTurn = X.qTurn >= 0 ? D[X.qTurn] : D[0]; c.dMid = D[m >> 1];
+      for (let q = 0; q < m; q++) {
+        let vn = Math.min(VB[q + 1], Math.sqrt(v * v + 2 * (aiAccel(v) * X.power + tow) * SG[q]));
+        let dt = 2 * SG[q] / Math.max(0.5, v + vn);
+        const tq = tt + dt, sc = (q + 1) * AI_EV_STEP * DS, f = Math.min(tq, tmax) / AI_PRED_DT, j = Math.min(AI_PRED_N - 2, f | 0), u = Math.min(1, f - j);
+        tow = 0;
+        for (let k = 0; k < no; k++) {
+          const R = opps[k]; if (!R.near) continue;
+          const so = R.so[j] + (R.so[j + 1] - R.so[j]) * u + (tq > tmax ? (tq - tmax) * R.vv[AI_PRED_N - 1] : 0);
+          const ds = so - sc; if (ds < -9 || ds > 60) continue;
+          const dd = R.dd[j] + (R.dd[j + 1] - R.dd[j]) * u - D[q + 1], ad = dd < 0 ? -dd : dd;
+          const w = 1 / (1 + 0.5 * tq); // nearer moments are more certain
+          if (ds > -5.8 && ds < 5.8) {
+            if (ad < minGap) minGap = ad;
+            // established side by side, both drivers are expected to leave racing room (every AI does): less risk
+            if (ad < 2.1) risk += (ds > -4 && ds < 4 ? 0.14 : 0.35) * w;
+            // leave a car's width to a car that is alongside now: squeezing it is not an option
+            if (R.along && ad < 2.45) { c.feasible = false; c.why = 'would squeeze ' + R.car.driver.short; }
+          }
+          if (ds >= 0 && ad < 2.25) {
+            // in line behind it: cannot drive through it, closes up at most to a following distance
+            const vo = R.vv[j] + (R.vv[j + 1] - R.vv[j]) * u, gap = ds - 5.6, want = 1.5 + 0.12 * vo;
+            if (gap < want && vn > vo) { vn = Math.max(0, vo + Math.max(0, gap - 1.5) * 0.5); dt = 2 * SG[q] / Math.max(0.5, v + vn); blocked += dt; }
+            if (gap < 0.4) risk += 0.2 * w;
+            // the same automatic slipstream every car gets: less drag in the wake
+            if (ds > 6 && ds < 60 && ad < 1.6 && vo > 25 && v > 25) tow = Math.max(tow, 0.15 * 9.5 * (v / 90) * (v / 90) * clamp(1 - (ds - 8) / 57, 0, 1));
+          }
+          if (R === X.tgt) {
+            if (q + 1 === X.qApex) { overlap = ds; c.sideApex = (D[q + 1] - (R.dd[j] + (R.dd[j + 1] - R.dd[j]) * u)) * X.dir; }
+            if (q + 1 === X.qTurn) c.overlapTurn = ds;
+            if (q === m - 1) lead = -ds + (vn - (R.vv[j] + (R.vv[j + 1] - R.vv[j]) * u)) * 0.8;
+          }
+        }
+        tt += dt; v = vn; this.evT[q + 1] = tt;
+      }
+      // exit value: the time down the straight after the horizon from this end speed
+      let tExit = 0;
+      if (X.straightL > 0) { let vv = v; const stepL = X.straightL / 4; for (let k = 0; k < 4; k++) { const v2 = Math.min(91, Math.sqrt(vv * vv + 2 * aiAccel(vv) * X.power * stepL)); tExit += 2 * stepL / Math.max(1, vv + v2); vv = v2; } }
+      c.time = tt; c.tExit = tExit; c.vEnd = v; c.risk = risk; c.minGap = minGap; c.blocked = blocked; c.lead = lead; c.overlap = overlap; c.m = m;
+      if (this.race.aiDebug) { if (!c.dbg) c.dbg = new Float32Array(AI_EVAL_M + 2); for (let q = 0; q <= m; q++) c.dbg[q] = D[q]; }
+    }
+    // Pick the path: projected time + exit + risk, plus what the tactical state wants, with hysteresis
+    choose(X, W1, w1live) {
+      const M = this.mind, race = this.race, car = this.car, t = this.track, L = t.aiLines, st = this.state, mv = this.maneuver;
+      const wet = race.wet, tgtR = X.tgt;
+      const mem = tgtR ? this.memFor(tgtR.car) : null;
+      let followRaw = 1e9, followRisk = 0, passBest = null, passRaw = 1e9, keep = null, rlC = null;
+      // raw cost: what the path is worth on its own
+      for (let k = 0; k < this.nCand; k++) {
+        const c = this.cands[k];
+        // judgement: each corner is read slightly wrongly in a way that persists through it (not dice every tick)
+        let raw = c.time + c.tExit + c.risk * X.wRisk + (c.kind === 'keep' ? this.judgeOf(this.path.slot) : this.judgeOf(c.slot));
+        if (c.fam === LINE_OUT || c.fam2 === LINE_OUT) raw += 0.12 * wet;
+        if (c.fam === LINE_LATE) raw += 0.04 * wet;
+        if (c.maneuver && mem) raw += 0.07 * (mem.fails[c.maneuver] || 0) * (0.5 + M.adapt);
+        c.raw = raw;
+        if (c.kind === 'keep') keep = c;
+        if (c.kind === 'line' && c.label === 'racing line') rlC = c;
+        if (!c.feasible) continue;
+        // a pass only counts if it can actually get alongside: overlapping the rival by the apex, or level with it
+        // by the end of the plan (otherwise it is just a different line behind it)
+        // (a corner move needs to be alongside by the turn-in: outbraking from further back is a lunge, not a pass)
+        const along = c.maneuver === 'slipstream' ? c.overlap < 7 : c.overlapTurn < 6 && c.overlap < 6;
+        // (the lead is discounted by the few metres the projection of this car's own path gains in traffic)
+        c.success = c.kind === 'pass' ? Math.max(smoothStep(c.lead - 3, -3, 6), along ? 0.45 + 0.4 * smoothStep(-c.overlap, -7, 0) : 0) : 0;
+        if (c.kind === 'pass') { const sc = raw - 0.3 * c.success; if (c.success > 0.05 && sc < passRaw) { passRaw = sc; passBest = c; } }
+        else if (c.kind !== 'avoid' && c.overlap > 5.8 && raw < followRaw) { followRaw = raw; followRisk = c.risk; }
+      }
+      // what an overtake is worth now (fed to the tactical layer's conviction)
+      // (risk counted is what the move adds to simply following: traffic both would meet is not the move's risk)
+      // reach: close enough now (about a quarter of a second) or closing clearly; the projection of this car's own
+      // path is a little optimistic in traffic, so a move is not committed on a prediction alone
+      const reach = tgtR && (tgtR.ds < 8 + 0.3 * car.speed || car.speed - tgtR.v > 2 && tgtR.ds < 35);
+      if (!reach) passBest = null;
+      // what the place is worth beyond this horizon: the time a slower rival would keep costing over the laps left
+      // (from its observed pace through the corners), plus the place itself
+      let posValue = 0.3;
+      if (tgtR) { const lapsLeft = race.type === 'race' ? race.lapsLeft(car) : 0; posValue += clamp((1 - mem.pace) * 80 * Math.min(lapsLeft, 4), 0, 3); }
+      this.posValue = posValue;
+      this.passEval = passBest && tgtR ? { car: tgtR.car, feasible: passBest.feasible, risk: Math.max(0, passBest.risk - followRisk), gain: followRaw > 1e8 ? 0 : followRaw - passBest.raw,
+        success: passBest.success, value: posValue, maneuver: passBest.maneuver, side: passBest.side, corner: W1.k, why: passBest.label } : null;
+      // defence: exposure of the inside at the turn-in to a car close behind
+      const thr = X.thr, lapsLeft = race.type === 'race' ? race.lapsLeft(car) : 9;
+      let tl = 0;
+      const guarding = thr && w1live && (st === 'defend' || st === 'follow' || st === 'race');
+      if (guarding) {
+        const gapB = -thr.ds / Math.max(10, car.speed), closing = thr.v - car.speed;
+        tl = smoothStep(0.75 + 0.2 * M.craft - gapB, 0, 0.5) * (0.4 + 0.6 * smoothStep(closing, -1, 3)) * (st === 'defend' ? 1 : 0.5);
+        // one move: the side chosen on this straight stays until the corner; locked once braking is near
+        const nearTurn = X.qTurn >= 0 && X.qTurn * 2 * DS < Math.max(35, car.speed * 1.1) || car.input.brake > 0.3;
+        if (nearTurn) this.defLock = true;
+      }
+      // the one-move rule applies while defending with the turn-in still ahead; its baseline is the path being driven
+      const defMoveRule = st === 'defend' && guarding && X.qTurn > 0;
+      if (defMoveRule && this.defCorner !== W1.k) { this.defCorner = W1.k; this.defMoves = 0; this.defSide = this.pathSide(); this.defTurnD = keep ? keep.dTurn : this.pathD(W1.start); }
+      const wPos = (0.25 + 0.5 * M.aggr + 0.3 * this.riskBudget) * (st === 'attack' ? 1.5 : st === 'prepare' ? 0.6 : 0.2) * (0.7 + (this.posValue || 0.3));
+      const wDef = 0.25 + 0.4 * M.aggr + 0.3 * this.riskBudget + (lapsLeft < 2 ? 0.2 : 0);
+      const keepSide = keep ? this.pathSide() : 0;
+      let best = null, bestCost = 1e18, attackBest = null, attackCost = 1e18, swBest = null;
+      for (let k = 0; k < this.nCand; k++) {
+        const c = this.cands[k];
+        let cost = c.raw;
+        if (!c.feasible) cost += 1e3 + 100 * c.risk;
+        if (st === 'yield') cost += 2 * Math.abs(c.dMid - this.yieldLane);
+        else if (st === 'attack' && mv) {
+          // the committed move: same side of the rival (a slipstream run may finish on either side at the corner)
+          const consistent = c.kind === 'pass' && (mv.kind === 'slipstream' || c.side === mv.side || c.maneuver === mv.kind) || c.kind === 'keep' && !!c.maneuver;
+          if (consistent) {
+            cost -= wPos * smoothStep(c.lead, -4, 6) + (c.overlap < 5.5 && c.sideApex * (mv.side || 1) > 0 ? 0.4 * wPos : 0);
+            if (cost < attackCost && c.feasible) { attackCost = cost; attackBest = c; }
+          } else cost += c.kind === 'pass' ? 0.35 : 0.15;
+          if (c.maneuver === 'switchback' && c.feasible && (!swBest || c.raw < swBest.raw)) swBest = c;
+        } else if (c.kind === 'pass') cost += st === 'prepare' ? 0.06 : 1; // no move until the tactical layer commits
+        else if ((st === 'follow' || st === 'race') && tgtR && c.overlap < 5.8 && c.kind !== 'avoid') cost += 0.25 + 0.3 * M.patience;
+        if (guarding) {
+          const gapIn = L.lim - c.dTurn * X.dir;
+          cost += tl * wDef * smoothStep(gapIn, 1.8, 3.4);
+          // an attacker set up wide is lining up a switchback: keep the exit strong
+          if (thr.d * X.dir < car.d * X.dir - 1.5 && rlC) cost += tl * 0.5 * M.craft * Math.max(0, rlC.vEnd - c.vEnd) / 8;
+          // a blocking move is shifting the planned turn-in more than 2 m towards the attacker: one per approach and
+          // none once braking (no weaving); moving away to leave an attacker room is always allowed
+          if (defMoveRule && (c.dTurn - this.defTurnD) * Math.sign(thr.d - car.d) > 2 && (this.defLock || this.defMoves >= 1)) cost += 5;
+        }
+        // hysteresis: a new path has to be clearly better than the one being driven
+        if (keep && c !== keep) {
+          const side = c.side || 0;
+          cost += 0.05 + (side !== keepSide && side && keepSide ? 0.12 : 0);
+        }
+        c.cost = cost;
+        if (cost < bestCost) { bestCost = cost; best = c; }
+      }
+      // the attack's own view of itself (reviewAttack): best consistent path versus simply following
+      const swOK = !!swBest && mv && mv.kind !== 'switchback' && swBest.risk - (followRaw < 1e8 ? followRisk : 0) <= this.tolerance;
+      this.attackEval = st === 'attack' && mv ? (attackBest ? { feasible: true, risk: Math.max(0, attackBest.risk - (followRaw < 1e8 ? followRisk : 0)), gain: followRaw > 1e8 ? 0 : followRaw - attackBest.raw, lead: attackBest.lead, why: attackBest.label, switchback: swOK }
+        : { feasible: false, risk: 9, gain: -1, lead: -9, why: this.attackWhy(mv), switchback: swOK }) : null;
+      if (defMoveRule && best && Math.abs(best.dTurn - this.defTurnD) > 2) {
+        const side = (best.dTurn - L.off[0][W1.start]) * X.dir > 1.2 ? 1 : (best.dTurn - L.off[0][W1.start]) * X.dir < -1.2 ? -1 : 0;
+        const blocking = (best.dTurn - this.defTurnD) * Math.sign(thr.d - car.d) > 0;
+        if (blocking) this.defMoves++;
+        this.defSide = side; this.defTurnD = best.dTurn;
+        this.note('defend: ' + (blocking ? '' : 'give room, ') + (side > 0 ? 'cover the inside' : side < 0 ? 'outside line' : 'racing line'));
+      }
+      this.best = best;
+      if (best && best.kind !== 'keep') this.commitPath(best, X);
+      else if (best && keep) { this.path.cost = best.cost; this.path.risk = best.risk; }
+    }
+    attackWhy(mv) {
+      const R = this.ctx && this.ctx.tgt; if (!R) return 'target out of reach';
+      return mv.kind === 'inside' ? 'inside covered by ' + R.car.driver.short : mv.kind === 'outside' ? 'squeezed on the outside' : 'no room';
+    }
+    // Development diagnostics (the AI overlay): a snapshot of what this driver is thinking. It allocates, and is
+    // only called by the overlay while it is switched on (which also makes the planner keep candidate geometry).
+    diagnostics() {
+      const car = this.car, race = this.race, t = this.track, L = t.aiLines, N = t.N, X = this.ctx || {}, M = this.mind, p = this.p;
+      const pt = (i, d) => [t.cx[i] + t.rx[i] * d, t.cz[i] + t.rz[i] * d];
+      const cands = [];
+      for (let k = 0; k < this.nCand; k++) {
+        const c = this.cands[k], pts = [];
+        if (c.dbg && X.m) for (let q = 0; q <= c.m; q++) pts.push(pt((X.i0 + AI_EV_STEP * q) % N, c.dbg[q]));
+        cands.push({ label: c.label, kind: c.kind, maneuver: c.maneuver, feasible: c.feasible, cost: c.cost, time: c.time, risk: c.risk, lead: c.lead, chosen: c === this.best, why: c.why, pts });
+      }
+      const path = []; if (this.path.valid) for (let r = 0; r < this.path.n; r += 2) path.push(pt((this.path.i0 + r) % N, this.path.d[r]));
+      const racing = []; for (let r = -20; r < 200; r += 3) { const i = t.wrapI(car.idx + r); racing.push(pt(i, L.off[0][i])); }
+      const preds = [];
+      for (let k = 0; k < this.nOpp; k++) {
+        const R = this.opp[k], pts = [];
+        for (let q = 0; q < AI_PRED_N; q += 2) pts.push(pt(t.wrapI(car.idx + Math.round(R.so[q] / DS)), R.dd[q]));
+        preds.push({ name: R.car.driver.short, pts, along: R.along, target: R.car === this.target, threat: R.car === this.threat });
+      }
+      const mv = this.maneuver, mem = mv ? this.mem.get(mv.car.id) : this.target ? this.mem.get(this.target.id) : null;
+      return {
+        name: car.driver.name, num: car.num, state: this.mode === 'recover' ? 'recover' : this.state, stateT: this.stateT, why: this.why, notes: this.notes.slice(),
+        maneuver: mv ? { kind: mv.kind, side: mv.side, on: mv.car.driver.short, t: this.attackT } : null,
+        target: this.target ? this.target.driver.short : null, threat: this.threat ? this.threat.driver.short : null,
+        traits: { aggression: p.aggr, patience: M.patience, risk: p.risk, racecraft: p.craft, adaptability: p.adapt ?? 0.7, consistency: p.cons },
+        skill: { difficulty: race.difficulty, career: this.skill, level: race.aiLevel, craft: M.craft, predict: M.predict, judge: M.judge, apexSd: M.apexSd, brakeSd: M.brakeSd, repertoire: M.repertoire, commit: this.commit, brakeCommit: this.brakeCommit, mistakeScale: this.mistakeScale },
+        mood: { riskBudget: this.riskBudget, tolerance: this.tolerance, caution: this.caution, conviction: this.conviction, cruise: this.cruise, gripBelief: this.gripBelief, rejoin: this.rejoinT, posValue: this.posValue || 0 },
+        rival: mem ? { pace: mem.pace, lineIn: mem.lineIn, coversInside: mem.defIn, fails: { ...mem.fails } } : null,
+        mistake: this.mistake && this.mistakeT > 0 ? this.mistake.type : null, path: this.path.label, stats: { ...this.stats, kinds: { ...this.stats.kinds } },
+        brake: this.brakeAt >= 0 ? [pt(this.brakeAt, -t.halfW), pt(this.brakeAt, t.halfW)] : null,
+        cands, pathPts: path, racing, preds, x: car.x, z: car.z, psi: car.psi, halfW: t.halfW,
+        edges: (() => { const l = [], r = []; for (let q = -20; q < 200; q += 3) { const i = t.wrapI(car.idx + q); l.push(pt(i, -t.halfW)); r.push(pt(i, t.halfW)); } return [l, r]; })(),
+      };
+    }
+    // Write the chosen candidate into the path buffers the controller reads (lateral offset and curvature per sample).
+    commitPath(c, X) {
+      const t = this.track, N = t.N, P = this.pathAlt, n = X.n, Kr = this.evR;
+      for (let r = 0; r < n; r++) P.d[r] = this.candD(c, r, (X.i0 + r) % N);
+      for (let r = 3; r < n - 3; r++) {
+        const a = (X.i0 + r - 3) % N, i = (X.i0 + r) % N, b = (X.i0 + r + 3) % N;
+        Kr[r] = curv3(t.cx[a] + t.rx[a] * P.d[r - 3], t.cz[a] + t.rz[a] * P.d[r - 3], t.cx[i] + t.rx[i] * P.d[r], t.cz[i] + t.rz[i] * P.d[r], t.cx[b] + t.rx[b] * P.d[r + 3], t.cz[b] + t.rz[b] * P.d[r + 3]);
+      }
+      for (let r = 0; r < 3; r++) { Kr[r] = Kr[3]; Kr[n - 1 - r] = Kr[n - 4]; }
+      for (let r = 0; r < n; r++) { let s = 0, cnt = 0; for (let q = Math.max(0, r - 3); q <= Math.min(n - 1, r + 3); q++) { s += Kr[q]; cnt++; } P.k[r] = s / cnt; }
+      P.valid = true; P.i0 = X.i0; P.n = n; P.kind = c.kind; P.label = c.label; P.side = c.side; P.maneuver = c.maneuver; P.cost = c.cost; P.risk = c.risk; P.slot = c.label;
+      P.time = c.time; P.vEnd = c.vEnd; P.born = this.race.time;
+      this.pathAlt = this.path; this.path = P;
+    }
     followLimit(nb, pitlane) {
       const car = this.car, v = car.speed, p = this.p, t = this.track; let lim = 110;
-      const myD = this.laneW > 0.5 ? this.laneD : car.d;
       const yellow = !pitlane && this.race.yellowAt(car.idx);
       const cautious = this.race.lap1Caution(car);
       for (const n of nb) {
@@ -3208,14 +4054,22 @@ const SIM = (function () {
         if (ds <= 0 || ds > 150) continue;
         if (!pitlane && o.pit && t.inPitMain(o.s)) continue;
         const gap = ds - 5.6;
-        // also where the car ahead will be when we reach it: it may be sweeping across to its line
+        // where this car's path will be when it reaches the car ahead (both are moving: at a closing speed the meeting
+        // point is the distance this car covers meanwhile, not the gap), and where that car will be by then
+        // (only a fast closing speed, a car braking early or limping, makes the meeting point matter; in ordinary
+        // racing the near path decides, so a car can still draw alongside to pass)
+        const closing = v - o.speed, reachAt = closing > 8 ? Math.min(160, Math.max(gap, v * Math.max(0, gap) / closing)) : Math.max(0, gap);
         const pd = this.predictD(o, gap);
-        const lat = Math.min(Math.abs(o.d - car.d), Math.abs(o.d - myD) + 0.3, Math.abs(pd - car.d), Math.abs(pd - myD) + 0.3);
+        let lat = Math.min(Math.abs(o.d - car.d), Math.abs(pd - car.d));
+        if (!pitlane) { const myD = this.dPlanAt(t.wrapI(car.idx + Math.round(reachAt / DS))); lat = Math.min(lat, Math.abs(o.d - myD) + 0.3, Math.abs(pd - myD) + 0.3); }
         // no overtaking under yellow: hold station behind healthy cars even in another lane
         if (yellow && lat <= 6 && o.speed > 20 && !o.spun && gap < 40 && !(o.ai && o.ai.mode === 'recover')) { lim = Math.min(lim, o.speed + Math.max(0, gap - 8) * 0.4); continue; }
-        if (lat > 2.3 + clamp((v - o.speed - 8) * 0.06, 0, 1.6) && !pitlane) continue;
+        // a car closing very fast keeps a wider margin (a small lateral misjudgement at 20 m/s is a big accident)
+        if (lat > 2.3 + clamp((v - o.speed - 8) * 0.06, 0, 1.6) + clamp((v - o.speed - 10) * 0.05, 0, 0.8) && !pitlane) continue;
         if (pitlane && Math.abs(o.d - car.d) > 2.4) continue;
-        const safe = 1.5 + v * (0.15 - 0.06 * p.aggr) * (cautious ? 1.5 : 1) * (1 - 0.2 * this.skill);
+        // lining up a move: sit closer, in the tow (a judgement of the gap, never of the car's braking)
+        const hunting = this.target === o ? (this.state === 'prepare' || this.state === 'attack' ? 0.7 : this.state === 'follow' ? 0.85 : 1) : 1;
+        const safe = 1.5 + v * (0.15 - 0.06 * p.aggr) * (cautious ? 1.5 : 1) * (1 - 0.2 * this.skill) * hunting;
         // anticipate the car ahead braking (brake lights / closing rate)
         const oBr = o.input.brake > 0.25 ? o.input.brake * 30 * (0.25 + 0.1 * (1 - p.craft)) : 0;
         const brakePerMetre=HANDLING.brakeRate*car.brakeGrip(car.surfaceWet ?? this.race.wet)*car.damage.perf.brake+HANDLING.coastRate;
@@ -3225,14 +4079,17 @@ const SIM = (function () {
       }
       return Math.max(lim, 0);
     }
-    // lateral position of car o by the time this car closes a gap of `gap` metres on it
+    // lateral position of car o by the time this car closes a gap of `gap` metres on it, from what can be seen
+    // (its lateral motion now, and the racing line it is expected to settle back towards)
     predictD(o, gap) {
       const closing = this.car.speed - o.speed;
       if (closing < 4 || gap > 80 || o.pit) return o.d;
-      const t = this.track, tc = Math.min(2.5, Math.max(0, gap) / closing);
-      if (o.ai && o.ai.mode === 'race' && !o.retiring) return o.ai.dPlanAt(t.wrapI(o.idx + Math.round(o.speed * tc / DS)));
+      const t = this.track, tc = Math.min(2.5, Math.max(0, gap) / closing), rl = t.aiLines.off[0];
       const vlat = o.vx * t.rx[o.idx] + o.vz * t.rz[o.idx];
-      return clamp(o.d + vlat * tc, -t.halfW - 2, t.halfW + 2);
+      const dk = o.d + vlat * 0.7 * (1 - Math.exp(-tc / 0.7));
+      const iF = t.wrapI(o.idx + Math.round(o.speed * tc / DS));
+      const di = rl[iF] + (o.d - rl[o.idx]) * Math.exp(-tc / 1.8);
+      return clamp(lerp(dk, di, (this.mind ? this.mind.predict : 0.5) * smooth01(tc / 1.4)), -t.halfW - 2, t.halfW + 2);
     }
     strategy() {
       const car = this.car, race = this.race;
@@ -4511,7 +5368,7 @@ const SIM = (function () {
       if (this.type !== 'calib' && !car.pit) {
         if (car.offN === 4 && !car.offTrackFlag) {
           car.offTrackFlag = true; car.offStart = this.time;
-          if (car.ai) this.log(car, 'off s' + car.s.toFixed(0) + ' c' + ((t.cornerAt(car.idx) || {}).num || '-') + ' lw' + car.ai.laneW.toFixed(1) + ' ln' + car.ai.laneD.toFixed(1) + ' m' + (car.ai.mistake ? car.ai.mistake.type : '-') + ' v' + (car.speed * 3.6).toFixed(0) + ' L' + car.laps);
+          if (car.ai) this.log(car, 'off s' + car.s.toFixed(0) + ' c' + ((t.cornerAt(car.idx) || {}).num || '-') + ' ' + car.ai.state + ' ' + car.ai.path.label + ' ln' + car.ai.laneD.toFixed(1) + ' m' + (car.ai.mistake ? car.ai.mistake.type : '-') + ' v' + (car.speed * 3.6).toFixed(0) + ' L' + car.laps);
         } else if (car.offN === 0) car.offTrackFlag = false;
       } else car.offTrackFlag = false;
     }
@@ -4575,7 +5432,7 @@ const SIM = (function () {
     onCollision(A, B, j, x, z, nx, nz, vn, vt, jt, mEff) {
       if (j >= 300) {
         this.events.push({ type: 'collision', a: A, b: B, j, x, z, nx, nz, vt });
-        if (this.time - (A.lastHitT || 0) > 1.2 && this.time - (B.lastHitT || 0) > 1.2) { this.stats.collisions++; this.log(A, 'contact ' + B.driver.short + ' j=' + j.toFixed(0)); }
+        if (this.time - (A.lastHitT || 0) > 1.2 && this.time - (B.lastHitT || 0) > 1.2) { this.stats.collisions++; this.log(A, 'contact ' + B.driver.short + ' j=' + j.toFixed(0)); if (A.ai) A.ai.onContact(B); if (B.ai) B.ai.onContact(A); }
         A.lastHitT = B.lastHitT = this.time;
       }
       this.recordContact(A.id < B.id ? A.id * 4096 + B.id : B.id * 4096 + A.id, A, B, x, z, nx, nz, vn, vt, jt, mEff);
@@ -5264,11 +6121,11 @@ const SIM = (function () {
   const CAREER_VERSION = 1, CAREER_FIELD = 20;
   const careerPoints = (pos, dnf) => dnf ? 0 : CAREER_POINTS[pos - 1] || 0;
   function careerNew() { return { v: CAREER_VERSION, unlocked: 0, completed: [], best: new Array(CAREER_TIERS.length).fill(0), champion: false, active: null }; }
-  // A driver's career-skill profile: judgement ratings move towards perfect; personality (aggression, risk) stays.
+  // A driver's career-skill profile: judgement ratings move towards perfect; personality (aggression, risk, patience) stays.
   function careerProfile(d, x) {
     const up = (v, k) => v + (1 - v) * k * x;
     return { ...d, pace: up(d.pace, 0.5), cons: up(d.cons, 0.8), brake: up(d.brake, 0.7), craft: up(d.craft, 0.7),
-      tyre: up(d.tyre, 0.7), strat: up(d.strat, 0.8) };
+      tyre: up(d.tyre, 0.7), strat: up(d.strat, 0.8), adapt: up(d.adapt, 0.6) };
   }
   // One race's classification as the career stores it: driver index, classified position, retired or not.
   function careerRaceRecord(results) {
@@ -9597,6 +10454,7 @@ function handleKeys(dt) {
   if (takePress('KeyV')) toggleStrategy();
   if (takePress('KeyM')) { const m = G.audio.toggleMute(); pushMsg(m ? 'Audio muted' : 'Audio on', 'info', 1.2); }
   if (takePress('KeyI')) G.boardMode = G.boardMode === 'interval' ? 'leader' : 'interval';
+  if (takePress('F9')) { if (KEYS.ShiftLeft || KEYS.ShiftRight) { if (!AIDIAG.on) aiDiagToggle(true); aiDiagNext(); } else aiDiagToggle(!AIDIAG.on); } // AI diagnostics (development)
 
   const p = G.player; if (!p) return;
   // after retiring, the driver can watch the rest of the race
@@ -9854,6 +10712,77 @@ function updateRain(dt) {
 }
 
 /* ---------------- main loop ---------------- */
+/* ---------- AI diagnostics (development only; off by default) ----------
+   Switch on with ?aidebug in the URL or F9 during a session; Shift+F9 picks the next AI car. While it is off nothing
+   here runs, draws or allocates, and the planner keeps no candidate geometry. The panel shows one AI driver's mind:
+   its tactical state and why, the chosen path and the candidates it weighed, where it predicts the cars around it
+   will be, where it means to brake, its personality and skill, and its recent decisions (moves, aborts, mistakes). */
+const AIDIAG = { on: /[?&]aidebug\b/.test(location.search), focus: null, el: null, cvs: null, txt: null, t: 0 };
+function aiDiagFocus(sess) {
+  const F = AIDIAG.focus;
+  if (F && F.ai && sess.cars.includes(F) && !F.inGarage) return F;
+  if (G.focus && G.focus.ai) return G.focus;
+  // otherwise the AI car just ahead of the car the camera follows
+  const f = G.focus || sess.cars[0], t = sess.track; let best = null, bd = 1e9;
+  for (const c of sess.cars) if (c.ai && !c.inGarage && !c.dnf) { const d = t.dS(f.s, c.s), k = d > 0 ? d : d + t.length; if (k < bd) { bd = k; best = c; } }
+  return best;
+}
+function aiDiagNext() {
+  const sess = G.session; if (!sess) return;
+  const ais = sess.cars.filter(c => c.ai && !c.inGarage && !c.dnf); if (!ais.length) return;
+  const cur = aiDiagFocus(sess); AIDIAG.focus = ais[(ais.indexOf(cur) + 1) % ais.length];
+}
+function aiDiagToggle(on, quiet) {
+  AIDIAG.on = on;
+  if (on && !AIDIAG.el) {
+    const el = document.createElement('div'); el.id = 'aiDiag';
+    el.style.cssText = 'position:fixed;right:12px;top:64px;width:340px;z-index:60;pointer-events:none;background:rgba(8,10,14,.86);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:8px;color:#d8dee8;font:11px/1.35 ui-monospace,Menlo,Consolas,monospace;';
+    const cvs = document.createElement('canvas'); cvs.width = 324; cvs.height = 300; cvs.style.cssText = 'display:block;width:324px;height:300px;border-radius:4px;background:#11151b';
+    const txt = document.createElement('pre'); txt.style.cssText = 'margin:6px 0 0;white-space:pre-wrap;max-height:46vh;overflow:hidden';
+    el.append(cvs, txt); document.body.appendChild(el); Object.assign(AIDIAG, { el, cvs, txt });
+  }
+  if (AIDIAG.el) AIDIAG.el.style.display = on ? '' : 'none';
+  if (G.session) G.session.aiDebug = on;
+  if (!quiet) pushMsg(on ? 'AI diagnostics on — Shift+F9: next AI car' : 'AI diagnostics off', 'info', 1.5);
+}
+function drawAIDiag(dt) {
+  const sess = G.session; if (!sess) return;
+  if (!AIDIAG.el) aiDiagToggle(true, true);
+  sess.aiDebug = true;
+  if ((AIDIAG.t += dt) < 0.1) return; AIDIAG.t = 0; // 10 Hz is plenty
+  const car = aiDiagFocus(sess); if (!car || !car.ai) { AIDIAG.txt.textContent = 'No AI car to inspect.'; return; }
+  const D = car.ai.diagnostics(), cv = AIDIAG.cvs, g = cv.getContext('2d'), W = cv.width, H = cv.height, sc = 1.25;
+  const c = Math.cos(D.psi), sn = Math.sin(D.psi);
+  // top-down view, car pointing up
+  const P = ([x, z]) => { const dx = x - D.x, dz = z - D.z, lx = dx * c + dz * sn, ly = -dx * sn + dz * c; return [W / 2 + ly * sc * 2.2, H * 0.86 - lx * sc]; };
+  const line = (pts, col, w, dash) => { if (pts.length < 2) return; g.strokeStyle = col; g.lineWidth = w; g.setLineDash(dash || []); g.beginPath(); pts.forEach((p, k) => { const [X, Y] = P(p); k ? g.lineTo(X, Y) : g.moveTo(X, Y); }); g.stroke(); g.setLineDash([]); };
+  g.clearRect(0, 0, W, H);
+  line(D.edges[0], '#e8edf3', 1.5); line(D.edges[1], '#e8edf3', 1.5);
+  line(D.racing, 'rgba(160,170,185,.55)', 1, [4, 4]);
+  for (const k of D.cands) if (!k.chosen && k.pts.length) line(k.pts, k.feasible ? 'rgba(90,170,255,.45)' : 'rgba(255,90,90,.35)', 1);
+  line(D.pathPts, '#3ce07a', 2.5);
+  if (D.brake) line(D.brake, '#ff4d4d', 2);
+  for (const p of D.preds) {
+    const col = p.target ? '#ffcc33' : p.threat ? '#ff8a1f' : '#c9d1dc';
+    p.pts.forEach((q, k) => { const [X, Y] = P(q); g.fillStyle = col; g.globalAlpha = 1 - k / (p.pts.length + 1); g.fillRect(X - (k ? 1.5 : 3), Y - (k ? 1.5 : 5), k ? 3 : 6, k ? 3 : 10); });
+    g.globalAlpha = 1; const [X0, Y0] = P(p.pts[0]); g.fillStyle = col; g.fillText(p.name.replace('Team ', ''), X0 + 5, Y0 + 3);
+  }
+  g.fillStyle = '#3ce07a'; g.fillRect(W / 2 - 3, H * 0.86 - 5, 6, 10);
+  const f2 = (v) => v == null ? '-' : (+v).toFixed(2), T = D.traits, K = D.skill, Mo = D.mood;
+  const top = D.cands.slice().sort((a, b) => a.cost - b.cost).slice(0, 6)
+    .map(k => (k.chosen ? '>' : ' ') + k.label.padEnd(24).slice(0, 24) + ' ' + (k.feasible ? f2(k.cost).padStart(6) : '  n/a ') + ' r' + f2(k.risk) + (k.why ? ' ' + k.why : '')).join('\n');
+  AIDIAG.txt.textContent =
+    `#${D.num} ${D.name}  ${D.state.toUpperCase()} ${D.stateT.toFixed(1)}s` + (D.maneuver ? `  ${D.maneuver.kind} on ${D.maneuver.on} (${D.maneuver.t.toFixed(1)}s)` : '') +
+    `\npath: ${D.path}${D.mistake ? '  MISTAKE: ' + D.mistake : ''}\nwhy: ${D.why || '-'}` +
+    `\ntarget ${D.target || '-'}  threat ${D.threat || '-'}  conviction ${f2(Mo.conviction)}  place worth ${f2(Mo.posValue)}s` +
+    `\nrisk budget ${f2(Mo.riskBudget)} tol ${f2(Mo.tolerance)} caution ${f2(Mo.caution)} grip read ${f2(Mo.gripBelief)}${Mo.cruise ? ' cruise' : ''}${Mo.rejoin > 0 ? ' rejoining' : ''}` +
+    `\ntraits aggr ${f2(T.aggression)} pat ${f2(T.patience)} risk ${f2(T.risk)} craft ${f2(T.racecraft)} adapt ${f2(T.adaptability)} cons ${f2(T.consistency)}` +
+    `\nskill diff ${f2(K.difficulty)} career ${f2(K.career)}${K.level ? ' (' + Math.round(K.level * 100) + '%)' : ''} predict ${f2(K.predict)} judge ${f2(K.judge)}s apex±${f2(K.apexSd)}m brake±${(K.brakeSd * 100).toFixed(1)}% moves ${K.repertoire}` +
+    (D.rival ? `\nrival read: pace ${f2(D.rival.pace)} line-in ${f2(D.rival.lineIn)} covers-inside ${f2(D.rival.coversInside)} fails ${JSON.stringify(D.rival.fails)}` : '') +
+    `\nmoves ${D.stats.attempts} passes ${D.stats.passes} aborts ${D.stats.aborts} switchbacks ${D.stats.switchbacks} defences ${D.stats.defends}` +
+    `\n-- candidates (cost s) --\n${top}\n-- recent --\n${D.notes.slice(-5).join('\n')}` +
+    `\n[green path · blue/red candidates (feasible/not) · yellow target, orange threat, dots = predicted 0.5 s steps · red bar = braking point]`;
+}
 let lastT = performance.now(), fpsAcc = 0, fpsN = 0, errShown = false;
 function frame(now) {
   requestAnimationFrame(frame);
@@ -9885,6 +10814,7 @@ function frame(now) {
       if (G.focus && G.mode !== 'menu') drawTelemetry(G.focus, dt);
       G.radio.update();
       updateHud(dt);
+      if (AIDIAG.on) drawAIDiag(dt);
       G.audio.update(G, dt);
     }
     if (R.waterMat && R.waterMat.userData.shader) R.waterMat.userData.shader.uniforms.uTime.value = now / 1000;

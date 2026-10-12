@@ -230,7 +230,9 @@ function cornerRun(cut) {
         this.handling.step(car, dt, S, { steer: Math.max(-1, Math.min(1, Math.atan2(ly, lx) * 3)), throttle: 1, brake: 0, analog: true });
       };
     }
-    if (cut && t0 != null && car.ai.update !== own && Math.hypot(car.x - B[0], car.z - B[1]) < 6) car.ai.update = own;
+    // hand back to the AI at the aim point, or once past it along the lap (the AI's racing line reaches this corner
+    // faster than the old inside line did, and the scripted cut can then swing wide of the point)
+    if (cut && t0 != null && car.ai.update !== own && (Math.hypot(car.x - B[0], car.z - B[1]) < 6 || S.time - t0 > 1 && t.dS(ib * 2, car.s) > -2 && t.dS(ib * 2, car.s) < 60)) car.ai.update = own;
     const prevS = car.s;
     S.fixedStep(dt);
     if (t0 != null) maxOff = Math.max(maxOff, car.offN);
