@@ -10,7 +10,7 @@ const context = { module: { exports: {} } };
 vm.runInNewContext(html.match(/<script>([\s\S]*?)<\/script>/)[1], context);
 const SIM = context.module.exports;
 const dt = SIM.PHYS_DT;
-const track = { cx: [0], cz: [0], rx: [0], rz: [1], surfaceAt: () => 0, pit: { limit: 22 } };
+const track = { cx: [0], cz: [0], rx: [0], rz: [1], surfaceAt: () => 0, pit: { limit: 22 }, pitAt() { return this.pit; } };
 const env = { wet: 0, wearScale: 0, fuelRate: 0, pitLimiter: false, holdStart: false };
 const raw = (steer = 0, throttle = 0, brake = 0) => ({ steer, throttle, brake, analog: false });
 function rig(speed = 30) {
