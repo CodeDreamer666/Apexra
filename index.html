@@ -942,13 +942,16 @@
 const SIM = (function () {
   'use strict';
   const G = 9.81, RHO = 1.225, PHYS_DT = 1 / 240, DS = 2.0;
-  // One universal off-track surface (grass, gravel, sand, asphalt runoff alike). What matters is how many tyres are
+  // One universal off-track surface (grass, gravel, sand and unpainted terrain). What matters is how many tyres are
   // off: level[n] sets how far grip falls towards `grip` and how much of the resistance acts. At v m/s the full
   // resistance is drag.k2 × v² + drag.k1 × (v − drag.v1) above drag.v1, at most drag.max m/s²: a fast car slows hard
   // but progressively (280 km/h falls to about 80 km/h in roughly three seconds), and a car with all four tyres off
   // settles at about 68 km/h on full throttle. The level follows the tyre count within `rise` seconds and
   // recovers over `fall` seconds once the tyres are back on the track.
   const OFF_TRACK = { grip: 0.5, level: [0, 0.25, 0.55, 0.8, 1], drag: { k2: 0.0088, k1: 0.8, v1: 22, max: 30 }, rise: 0.05, fall: 0.5, tyreHalf: 0.2 };
+  // Green painted asphalt is drivable: tyre count reduces available grip, never speed or resistance.
+  // Keep this separate from OFF_TRACK so paint cannot erase drag from a tyre still on grass/gravel.
+  const GREEN_RUNOFF = { width: 3.8, loss: [0, 0.025, 0.065, 0.11, 0.18], rise: 0.12, fall: 0.3 };
   const clamp = (x, a, b) => (x < a ? a : x > b ? b : x);
   const lerp = (a, b, t) => a + (b - a) * t;
   const smooth01 = (t) => { t = clamp(t, 0, 1); return t * t * (3 - 2 * t); };
@@ -1420,10 +1423,14 @@ const SIM = (function () {
       out.s = this.wrapS(bi * DS + along);
       return out;
     }
+    hasPaintedRunoff(i, side) {
+      // Same mask as the green ribbon: the pit-side shoulder is not painted along the pit route.
+      return side !== this.pit.side || this.pitProg(i * DS) < 0;
+    }
     surfaceAt(i, d, inPitLane) {
-      // returns surface code: 0 asphalt,1 kerb,2 paint runoff,3 grass,4 gravel. Codes 0 and 1 are the legal track
-      // (a tyre counts as on it while any of its width is inside the white line); 2–4 are off-track, which the
-      // physics treats as one surface (OFF_TRACK) and only the visuals tell apart. A legitimately used pit lane is legal.
+      // 0 asphalt, 1 kerb, 2 green painted runoff, 3 grass/unpainted terrain, 4 gravel.
+      // Only 0/1 count as track for shortcut validation; 2 is drivable with a mild grip loss.
+      // A tyre counts as on the track while any of its width is inside the white line.
       const hw = this.halfW, ad = Math.abs(d), right = d > 0;
       if (ad <= hw + OFF_TRACK.tyreHalf) return 0;
       const s = i * DS; const p = this.pit;
@@ -1436,7 +1443,7 @@ const SIM = (function () {
       }
       const kerb = right ? this.kerbR[i] : this.kerbL[i];
       if (kerb && ad <= hw + 1.3) return 1;
-      if (ad <= hw + 3.8) return 2;
+      if (ad <= hw + GREEN_RUNOFF.width && this.hasPaintedRunoff(i, right ? 1 : -1)) return 2;
       const gravel = right ? this.gravelR[i] : this.gravelL[i];
       if (gravel && ad > hw + 5) return 4;
       return 3;
@@ -1639,6 +1646,7 @@ const SIM = (function () {
       this.axL = 0; this.ayL = 0; this.gLong = 0; this.gLat = 0;
       this.load = new Float64Array(4); this.slipA = new Float64Array(4); this.lock = new Uint8Array(4); this.spin = new Uint8Array(4);
       this.slipPow = new Float64Array(4); this.surf = new Uint8Array(4); this.offN = 0; this.offLvl = 0; this.offGrip = 1; this.wheelRot = new Float64Array(4); this.util = new Float64Array(4);
+      this.terrainN = 0; this.runoffN = 0; this.runoffLoss = 0; this.runoffGrip = 1;
       // Launch control (race starts): the automatic clutch stays open on the grid and engages after lights out.
       this.launch={active:race.type==='race',engagement:race.type==='race'?0:1,releasedAt:null}; this.surfaceWet=null;
       this.engineResponse = 0; this.driveForce = 0; this.pitHistory = [];
@@ -1792,29 +1800,35 @@ const SIM = (function () {
     const cd = Math.cos(delta), sd = Math.sin(delta);
     // ---- surface under each tyre ----
     // Each tyre is placed against the legal track edge at its own position along the circuit (not the car's centre).
-    // Every off-track surface is the same: the count of tyres off sets one level that lowers grip and adds resistance.
-    let offN = 0;
+    // Keep tyres outside the original track boundary counted for race progress, even on drivable paint.
+    // Only grass/gravel/unpainted terrain drive the existing severe grip loss and resistance.
+    let offN = 0, terrainN = 0, runoffN = 0;
     for (let i = 0; i < 4; i++) {
       const wx = car.x + c * WHEEL_X[i] - s * WHEEL_Y[i], wz = car.z + s * WHEEL_X[i] + c * WHEEL_Y[i];
       let iw = car.idx;
       if (track.tx) iw = track.wrapI(iw + Math.round(((wx - track.cx[iw]) * track.tx[iw] + (wz - track.cz[iw]) * track.tz[iw]) / DS));
       const dw = (wx - track.cx[iw]) * track.rx[iw] + (wz - track.cz[iw]) * track.rz[iw];
       const surf = track.surfaceAt(iw, dw, !!car.pit); car.surf[i] = surf; if (surf >= 2) offN++;
+      if (surf === 2) runoffN++; else if (surf >= 3) terrainN++;
     }
-    const offTarget = OFF_TRACK.level[offN];
-    car.offN = offN;
+    const offTarget = OFF_TRACK.level[terrainN];
+    car.offN = offN; car.terrainN = terrainN; car.runoffN = runoffN;
     car.offLvl += (offTarget - car.offLvl) * Math.min(1, dt / (offTarget > car.offLvl ? OFF_TRACK.rise : OFF_TRACK.fall));
     const offGrip = car.offGrip = 1 - car.offLvl * (1 - OFF_TRACK.grip);
+    const runoffTarget = GREEN_RUNOFF.loss[runoffN];
+    car.runoffLoss += (runoffTarget - car.runoffLoss) * Math.min(1, dt / (runoffTarget > car.runoffLoss ? GREEN_RUNOFF.rise : GREEN_RUNOFF.fall));
+    car.runoffGrip = 1 - car.runoffLoss;
+    const surfaceGrip = offGrip * car.runoffGrip;
     for (let i = 0; i < 4; i++) {
       const xi = WHEEL_X[i], yi = WHEEL_Y[i];
       const vxw = u - r * yi, vyw = v + r * xi;
       const front = i < 2;
       let lon, lat;
       if (front) { lon = vxw * cd + vyw * sd; lat = -vxw * sd + vyw * cd; } else { lon = vxw; lat = vyw; }
-      const legal = car.surf[i] < 2 ? car.surf[i] : 0; // off-track tyres take the universal off-track grip below
+      const legal = car.surf[i] < 2 ? car.surf[i] : 0; // paint rolls like asphalt; terrain resistance is applied below
       const Fz = ld[i];
       const ls = clamp(1 - 0.12 * (Fz / 3500 - 1), 0.72, 1.15);
-      const mu = car.tyreMu(i, wet) * SURF_MU[legal] * offGrip * ls * (front ? 1 : sp.rearGrip);
+      const mu = car.tyreMu(i, wet) * SURF_MU[legal] * surfaceGrip * ls * (front ? 1 : sp.rearGrip);
       const Fmax = mu * Fz;
       // longitudinal demand
       let fx = 0;
@@ -1907,7 +1921,7 @@ const SIM = (function () {
       for (let i = 2; i < 4; i++) {
         const loadSensitivity = clamp(1 - 0.12 * (ld[i] / 3500 - 1), 0.72, 1.15);
         const lateralUse = clamp(Math.abs(car.slipA[i]) / sp.aPk, 0, 0.88);
-        rearTraction += car.tyreMu(i, wet) * SURF_MU[car.surf[i] < 2 ? car.surf[i] : 0] * offGrip * loadSensitivity * ld[i] *
+        rearTraction += car.tyreMu(i, wet) * SURF_MU[car.surf[i] < 2 ? car.surf[i] : 0] * surfaceGrip * loadSensitivity * ld[i] *
           sp.rearGrip * Math.sqrt(1 - lateralUse * lateralUse);
       }
       const response = car.throttle > 0 ? Math.min(1, car.engineResponse / car.throttle) : 0;
@@ -1922,7 +1936,7 @@ const SIM = (function () {
       const coastAero = H.coastRate * Math.abs(u);
       const poweredDrag = (Math.max(coastAero * car.slipDragMul(), Math.abs(drag) * 1.06 / m) - coastAero) * car.throttle;
       const drive = fuelOk ? car.driveForce / m - poweredDrag : 0;
-      const braking = car.brake * Math.max(H.brakeFloor, Math.abs(u) * H.brakeRate * offGrip) * DP.brake * car.brakeGrip(wet);
+      const braking = car.brake * Math.max(H.brakeFloor, Math.abs(u) * H.brakeRate * offGrip) * car.runoffGrip * DP.brake * car.brakeGrip(wet);
       const coast = H.coastRate * u + Math.sign(u) * Math.max(0, rollingResistance / m - 0.15);
       FxSum = m * (drive - coast - Math.sign(u) * braking);
       // Match the planted arcade car's rapid rotation and automatic slide catch.
@@ -1932,7 +1946,7 @@ const SIM = (function () {
         const A = car.aids;
         Mz = sp.Iz * ((A.turnRate - r) * A.turnResponse + 0.6 * r);
         const targetV = Math.max(u, 0) * Math.tan(A.slideTarget);
-        FySum = m * (u * r + (targetV - v) * A.lateralResponse);
+        FySum = m * (u * r + (targetV - v) * A.lateralResponse * car.runoffGrip);
       }
       if (env.pitLimiter && u > track.pit.limit) FxSum = Math.min(FxSum, -m * (u - track.pit.limit) * 4);
     }
@@ -2060,7 +2074,7 @@ const SIM = (function () {
     reset() { this.steer = 0; this.th = 0; this.br = 0; this.rDes = 0; this.drift = 0; this.mu = 0; }
     // grip the arcade steering works with: tyre grip on the surface under the car
     grip(car, wet) {
-      let sm = 0; for (let i = 0; i < 4; i++) sm += SURF_MU[car.surf[i] < 2 ? car.surf[i] : 0]; sm = sm / 4 * car.offGrip;
+      let sm = 0; for (let i = 0; i < 4; i++) sm += SURF_MU[car.surf[i] < 2 ? car.surf[i] : 0]; sm = sm / 4 * car.offGrip * car.runoffGrip;
       return Math.max(0.4, car.gripEstimate(wet)) * sm;
     }
     // raw: { steer -1..1, throttle 0..1, brake 0..1, analog }
@@ -2617,7 +2631,7 @@ const SIM = (function () {
       const speed = car.speed, D = car.damage;
       // ---- recovery detection ----
       const hErr = this.headingError();
-      const offTrack = Math.abs(car.d) > t.halfW + 1.5 && !car.pit;
+      const offTrack = Math.abs(car.d) > t.halfW + 1.5 && car.terrainN > 0 && !car.pit;
       if (this.mode !== 'recover' && !car.pit && (Math.abs(hErr) > 1.25 || (offTrack && speed < 8 && race.time > 5))) { this.mode = 'recover'; this.recoverT = 0; car.spun = Math.abs(hErr) > 1.25; }
       if (this.mode === 'recover') { this.recover(dt, hErr, offTrack); return; }
       // ---- steering (pure pursuit on the arcade yaw-rate steering) ----
@@ -2706,7 +2720,7 @@ const SIM = (function () {
         if (cc && t.rlDist(car.idx, cc.apex) < 180) { this.lastCornerRoll = nc; this.rollMistake(); }
       }
       // ---- learning (segment adaptation; not from the slow laps under the VSC) ----
-      if (!race.vscActive) this.learn(latErr, offTrack);
+      if (!race.vscActive) this.learn(latErr, offTrack || car.runoffN > 0);
     }
     // Damage call (10 Hz): pit when the repairable lap-time loss over the remaining laps outweighs the stop,
     // pit at once for a puncture or a lost wing, and retire in the pits when the car can no longer race.
@@ -2791,7 +2805,8 @@ const SIM = (function () {
       const attackBrake = race.eliminationMode && this.attackTarget && !race.vscActive && !race.yellowAt(car.idx) ? race.eliminationUrgency(car) * .08 : 0;
       let brakeC = (attackBrake ? Math.min(.995, this.brakeCommit + attackBrake) : this.brakeCommit) * D.perf.brake * car.brakeGrip(race.wet); if (this.tyreMode === 'preserve') brakeC *= 0.86; if (race.wet) brakeC *= 0.95;
       if (this.mistake && this.mistake.type === 'late' && this.mistakeT > 0) brakeC *= this.mistake.f;
-      const mu = car.gripEstimate(race.wet);
+      brakeC *= car.runoffGrip;
+      const mu = car.gripEstimate(race.wet) * car.runoffGrip;
       const v = car.speed;
       const seg = (i) => this.segAdj[Math.floor(i * DS / 50) % this.segAdj.length];
       const look = Math.min(180, 30 + Math.round(v / ((HANDLING.brakeRate + HANDLING.coastRate) * brakeC) / DS)) & ~1;
@@ -2998,7 +3013,8 @@ const SIM = (function () {
       if (speed < 0.6 && inp.throttle > 0.1) { this.stuckT += dt; if (this.stuckT > 1.4) { this.respawn(); this.stuckT = 0; } }
       else this.stuckT = Math.max(0, this.stuckT - dt);
       // done?
-      if (Math.abs(hErr) < 0.35 && Math.abs(car.d) < t.halfW + 0.5 && speed > 8 && !blocked) {
+      const rejoined = Math.abs(car.d) < t.halfW + 0.5 || (car.runoffN > 0 && car.terrainN === 0);
+      if (Math.abs(hErr) < 0.35 && rejoined && speed > 8 && !blocked) {
         this.mode = 'race'; this.laneD = car.d; this.laneW = 1; this.laneWTarget = 0; car.spun = false; this.recoverT = 0; this.waitT = 0;
       }
       if (this.recoverT > 22 + this.waitT * 0.5 && this.waitT < 30) { // marshal assistance
@@ -5390,7 +5406,7 @@ const SIM = (function () {
     return (neg ? '-' : plus ? '+' : '') + str;
   }
 
-  return { G, RHO, PHYS_DT, DS, VSC, GAME_MODES, CAREER, TEAMS, DRIVERS, TRACK_DEF, CIRCUITS, circuitById, circuitCentreLine, elevationAt, COMPOUNDS, SPEC, Track, Car, Session, AIDriver, RaceEngineer, planStrategy, wearPerLap, needsCompound, fmtTime, clamp, lerp, makeRng, stepCarPhysics, SLIPSTREAM, slipstreamStrength, OFF_TRACK, PlayerHandling, KeyboardDriveInput, HANDLING, USEFUL_WEAR, TYRE_STYLES, drivingStyle, tyreWearGrip, tyreWeatherGrip, tyreMismatch, updateTyres, wetnessFor, weatherCompound, DynamicWeather, CarDamage, DAMAGE_LEVELS, PART_KEYS, PART_NAMES, WHEEL_NAMES, REPAIR_TIME, REFUEL, FUEL_TANK_LAPS, FUEL_RESERVE, START_FUEL_LAPS, estimatePitLoss, chooseStartFuelLaps, normalizeDamageLevel, partExposure, torqueAt, defaultCompoundModel, setSeed: (s) => { rnd = makeRng(s); } };
+  return { G, RHO, PHYS_DT, DS, VSC, GAME_MODES, CAREER, TEAMS, DRIVERS, TRACK_DEF, CIRCUITS, circuitById, circuitCentreLine, elevationAt, COMPOUNDS, SPEC, Track, Car, Session, AIDriver, RaceEngineer, planStrategy, wearPerLap, needsCompound, fmtTime, clamp, lerp, makeRng, stepCarPhysics, SLIPSTREAM, slipstreamStrength, OFF_TRACK, GREEN_RUNOFF, PlayerHandling, KeyboardDriveInput, HANDLING, USEFUL_WEAR, TYRE_STYLES, drivingStyle, tyreWearGrip, tyreWeatherGrip, tyreMismatch, updateTyres, wetnessFor, weatherCompound, DynamicWeather, CarDamage, DAMAGE_LEVELS, PART_KEYS, PART_NAMES, WHEEL_NAMES, REPAIR_TIME, REFUEL, FUEL_TANK_LAPS, FUEL_RESERVE, START_FUEL_LAPS, estimatePitLoss, chooseStartFuelLaps, normalizeDamageLevel, partExposure, torqueAt, defaultCompoundModel, setSeed: (s) => { rnd = makeRng(s); } };
 })();
 // ==SIM-END==
 if (typeof module !== 'undefined') module.exports = SIM;
@@ -6191,8 +6207,8 @@ function buildTrack(scene, track, T, opts) {
   for (const sgn of [-1, 1]) {
     const arr = sgn > 0 ? track.kerbR : track.kerbL;
     const g = ribbon(track, 0, N, 2, (i) => {
-      if (sgn === side && track.pitProg(i * SIM.DS) >= 0) return null;
-      return [sgn * (hw + (arr[i] ? 1.3 : 0)), sgn * (hw + 3.8), 0.006];
+      if (!track.hasPaintedRunoff(i, sgn)) return null;
+      return [sgn * (hw + (arr[i] ? 1.3 : 0)), sgn * (hw + SIM.GREEN_RUNOFF.width), 0.006];
     }, { flat: true, vScale: 6 });
     G.add(Object.assign(new THREE.Mesh(g, paintMat), { receiveShadow: true }));
     const gr = sgn > 0 ? track.gravelR : track.gravelL; const wall = sgn > 0 ? track.wallR : track.wallL;
