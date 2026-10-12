@@ -48,7 +48,7 @@ const JOBS = {
     const entries = tierBehind ? [{ driver: d, aiSkill: 0 }, { driver: twin }] : [{ driver: d }, { driver: twin, aiSkill: 0 }];
     const s = new S.Session(t, { type: 'race', seed: 5 + start, aiLevel: S.CAREER.TIERS[tier].level, weather: 'dynamic', weatherState: weather(S, 5),
       tyreWear: 'off', mandatory: false, damage: 'realistic', entries });
-    s.lightsOut = true; s.time = 50; s.lightsOutTime = 0; s.totalLaps = 99;
+    s.lightsOut = true; s.time = 50; s.lightsOutTime = 0; s.totalLaps = 3; // the duel ends before the flag; no fuel stop is due
     const [front, back] = s.cars, L = t.length, s0 = t.wrapS(start * L / 6 + 200);
     for (const [c, ds] of [[front, 30], [back, 0]]) {
       c.placeAt(t, t.wrapS(s0 + ds), 0, 50); c.speed = c.u = 50; c.launch.active = false; c.launch.engagement = 1;
