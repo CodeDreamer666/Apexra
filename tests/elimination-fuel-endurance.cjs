@@ -17,7 +17,11 @@ function session(track, mode = 'elimination', extra = {}, sim = SIM) {
 // Run the actual simulation for a full event. Extend only the test duration to 15 laps on an older
 // checkout; production phase rules are deliberately owned by a separate change.
 for (const track of tracks) test(track.name + ': 15-lap fuel endurance with dynamic weather and AI stops', () => {
-  const sim = loadSim(), S = session(track, 'elimination', { weather: 'dynamic', startCompound: 'auto' }, sim);
+  const sim = loadSim();
+  // Start dry with a front due after two minutes, so the weather changes however quickly the event runs.
+  const weatherState = Object.assign(new sim.DynamicWeather(73).snapshot(), { pattern: 'dry', regime: 'sunny', rain: 0, water: 0,
+    lineWater: 0, cloud: .2, targetCloud: .2, targetRain: 0, patternEnds: 120, regimeEnds: 1e9 });
+  const S = session(track, 'elimination', { weather: 'dynamic', weatherState, startCompound: 'auto' }, sim);
   S.totalLaps = Math.max(15, S.totalLaps);
   const p = S.player; p.ai = new sim.AIDriver(p, S);
   for (const c of S.cars) Object.defineProperty(c, 'fuel', { get: () => 20, set: () => assert.fail('Fuel was written after setup') });
