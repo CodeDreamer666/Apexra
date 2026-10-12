@@ -46,7 +46,7 @@ All five compounds and the existing 2/3/5/3/5-lap useful-life targets remain unc
 
 Dynamic weather continues through every phase. Both human and AI engineers use the same observed conditions and uncertain forecasts. Phase 1/2 strategy compares observed position, elimination risk, likely rejoin distance, tyre wear, weather, station distance, observed occupancy, compound compliance and repairs against measured stop loss. Optional stops / repairs can be deferred near the cut; urgent safety and fuel needs remain meaningful. Phase 3 removes physical-position undercut incentives and compares estimated remaining tyre / repair time recovery against stop and queue cost, while enforcing the compound rule. No future weather knowledge or privileged servicing is added.
 
-Fuel capacity, consumption, reserve, starting-load limits and refuelling mechanics are unchanged. Existing fuel planning receives the new race distance; no new fuel rule or balancing is introduced. Saved mode selections use the updated `GAME_MODES` lap count; there is no persisted live race state to migrate.
+Elimination has no fuel management: every car carries a fixed 20 kg reference load that never burns, refuelling and fuel strategy are absent, and an empty tank cannot cause retirement (see the README's *Pit stops and fuel*). Grand Prix and Career keep their fuel capacity, consumption, reserve, starting-load limits and refuelling mechanics unchanged. Saved mode selections use the updated `GAME_MODES` lap count; there is no persisted live race state to migrate.
 
 ## Verification
 

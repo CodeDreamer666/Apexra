@@ -174,6 +174,8 @@ Every driver gets one timed attempt, with no out-lap or warm-up lap. The player 
 
 ## Pit stops and fuel
 
+**Elimination Mode** has no fuel management. All 20 cars carry a fixed 20 kg reference load, set once at event setup. Fuel does not burn or change the car’s mass, and an empty tank cannot cut engine power or cause retirement. Starting fuel, range estimates, fuel strategy, refuelling controls and progress, and fuel engineer messages are absent. Service still supports all five tyre compounds and eligible wing repairs with the normal job durations, queue, stopping and safe release. Grand Prix and Career retain the fuel systems described below.
+
 **Pit lane.** Each circuit has a 203 m pit lane beside its main straight: a 70 m entry ramp, the 80 km/h zone with four shared service boxes 16 m apart, and a 60 m exit ramp that merges back into the circuit. The speed limit runs from the end of the entry ramp to the start of the exit ramp; speeding costs 5 s. A clean tyre-only stop loses about 14.4–14.8 s against staying out (Rivermere 14.4 s, Redridge 14.7 s, Summit 14.8 s, measured by simulation and checked by the tests). Queueing, refuelling and repairs add to that.
 
 **Four shared boxes, first come, first served.** There are no team garages, reservations or priorities. A car joins the pit queue when it physically crosses the pit-entry line. If a box is free, the earliest arrival gets one at once (the furthest free box down the lane with a clear approach); otherwise cars wait, in arrival order, in one queue on the entry ramp, and the earliest waiting car takes the next box that comes free. Cars arriving in the same physics step are ordered by how far into the lane they are, then by car number. The player and the AI follow exactly the same rules.
@@ -253,6 +255,8 @@ Run `node tests/career.cjs` to check Career Mode: the tier table, points, accumu
 
 Run `node tests/circuits.cjs` to build, validate and race all three circuits: lengths, overlap and barrier checks, corner counts and long straights, the grid and level pit lane on each main straight, the menu maps matching the playable centre line, the effect of gradients on a coasting car, a full 20-car field starting, racing, pitting (never more than four boxes in use, boxes given in arrival order, nobody stuck in the lane, overshooting a box or running out of fuel), overtaking and being classified on every circuit, and qualifying on each (no out-lap: every car is timed from the pit exit over exactly one circuit distance, and the grid follows the times).
 
+Run `node tests/elimination-fuel.cjs` to verify Elimination’s fixed load, fuel bypass, all five compounds, tyre and wing services, FIFO queue and safe release, AI and engineer strategy, Grand Prix/Career fuel isolation on all three circuits. Run `node tests/elimination-fuel-endurance.cjs` for the slower 15-lap runs with dynamic weather and AI stops. The endurance test extends the test session only; it does not alter production Elimination phases or scoring.
+
 ### Elimination redesign
 
-See [the implementation and verification report](docs/elimination-redesign.md) for checkpoint resolution, individual final-phase clocks, distributed station geometry, queues, strategy, measurements and test commands. Fuel mechanics and Grand Prix / Career rules are preserved.
+See [the implementation and verification report](docs/elimination-redesign.md) for checkpoint resolution, individual final-phase clocks, distributed station geometry, queues, strategy, measurements and test commands. Grand Prix / Career rules are preserved; Elimination has no fuel management (see Pit stops and fuel).

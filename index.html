@@ -149,6 +149,7 @@
 
   /* bottom centre: speed, gear, rpm, fuel */
   #hud-bc { position: absolute; left: 50%; bottom: 24px; transform: translateX(-50%); width: 600px; height: 162px; }
+  #hud-bc.compact { height: 128px; }
   #dash { position: absolute; inset: 0; }
   #dash .leds { position: absolute; left: 0; right: 0; top: 0; height: 9px; display: flex; gap: 4px; justify-content: center; }
   #dash .leds i { width: 20px; height: 8px; border-radius: 2px; background: rgba(120, 130, 150, .45); transition: background .04s; }
@@ -458,6 +459,7 @@
   .brief-rules h3 { display:flex; align-items:center; gap:22px; margin:0 0 12px; font-size:27px; text-transform:uppercase; }
   .brief-rules h3 .brief-icon { width:52px; height:44px; color:#ff2934; fill:#ff2934; stroke:#230207; }
   .brief-rule-grid { display:grid; grid-template-columns:1.2fr 1.05fr 1.15fr .9fr; }
+  #raceBrief.no-fuel .brief-rule-grid { grid-template-columns:1.2fr 1.15fr .9fr; }
   .brief-rule-grid > div { display:flex; align-items:flex-start; gap:18px; padding:0 22px; border-left:1px solid #937480; }
   .brief-rule-grid > div:first-child { border:0; padding-left:8px; }
   .brief-rule-grid > div:last-child { padding-right:0; }
@@ -498,6 +500,7 @@
     #briefChoices .brief-tyre-facts .brief-icon { width:22px; height:24px; }
     .briefFuel { grid-template-columns:1fr; gap:14px; padding:12px; }
     .brief-rule-grid { grid-template-columns:1fr; gap:16px; }
+    #raceBrief.no-fuel .brief-rule-grid { grid-template-columns:1fr; }
     .brief-rule-grid > div { border:0; padding:0 8px; }
     .brief-rules h3 { font-size:23px; gap:12px; }
     #raceBrief .actions .btn { padding:10px 14px; font-size:19px; }
@@ -719,7 +722,7 @@
         <div class="gear num" id="gear">N</div>
         <div class="rpm"><b class="num" id="rpm">0</b><small>RPM</small></div>
       </div>
-      <div class="sub panel">
+      <div class="sub panel" id="dashStatus">
         <span class="chip warn" id="chipLim" style="display:none">PIT LIMITER</span>
         <span class="chip ot" id="chipDrift" style="display:none">SLIDE</span>
         <span class="chip" id="chipFuel"><span class="k">FUEL</span><b class="num" id="fuelVal">+0.0</b></span>
@@ -740,7 +743,7 @@
     <div id="launchStatus" class="panel hidden" aria-live="polite"><span class="k">LAUNCH</span><b id="launchState">STANDBY</b><i class="vsep"></i><b class="num" id="launchRpm">4000</b><span class="k">RPM</span><span id="rpmBar"></span></div>
   </div>
   <div id="strategyPanel" class="panel hz hidden" aria-label="Race strategy">
-    <h3>TYRES, FUEL &amp; PIT STOP</h3><p id="strategyCurrent"></p><p id="strategyFuel"></p><p id="pitFacts"></p>
+    <h3 id="strategyTitle">TYRES, FUEL &amp; PIT STOP</h3><p id="strategyCurrent"></p><p id="strategyFuel"></p><p id="pitFacts"></p>
     <p class="strategyNote" id="strategyRule"></p>
   </div>
   <section id="pitSvc" class="panel hz hidden" role="region" aria-labelledby="psTitle">
@@ -750,9 +753,9 @@
     <div id="psSelect" class="hidden">
       <div class="ps-sec"><span>TYRES</span><small id="psTyreNow"></small></div>
       <div class="ps-tyres" id="psTyres" role="group" aria-label="Tyres"></div>
-      <div class="ps-sec"><span>FUEL TO ADD</span><small id="psFuelNow"></small></div>
+      <div id="psFuelSection"><div class="ps-sec"><span>FUEL TO ADD</span><small id="psFuelNow"></small></div>
       <input type="range" id="psFuel" min="0" max="20" step="0.5" value="0" aria-label="Fuel to add, kilograms">
-      <div class="ps-fuelinfo" id="psFuelInfo"></div>
+      <div class="ps-fuelinfo" id="psFuelInfo"></div></div>
       <p class="ps-err" id="psErr" role="alert"></p>
       <button id="psConfirm" class="btn primary" type="button">Confirm service</button>
     </div>
@@ -829,7 +832,7 @@
     </div>
     <h3 id="briefTyresTitle" class="brief-section-title"><svg class="brief-icon" aria-hidden="true"><use href="#bi-wheel"/></svg>Choose starting tyres</h3>
     <div id="briefChoices" role="group" aria-labelledby="briefTyresTitle"></div>
-    <div class="briefFuel">
+    <div class="briefFuel" id="briefFuelSection">
       <div>
         <div class="brief-fuel-heading"><svg class="brief-icon" aria-hidden="true"><use href="#bi-fuel"/></svg><div><label for="briefFuel">Starting fuel</label><p id="briefFuelEstimate"></p></div></div>
         <input type="range" id="briefFuel" min="3" max="8" step="0.5" value="8" aria-describedby="briefFuelEstimate briefFuelInfo">
@@ -841,7 +844,7 @@
       <h3><svg class="brief-icon" aria-hidden="true"><use href="#bi-warning"/></svg>Important rules</h3>
       <div class="brief-rule-grid">
         <div><svg class="brief-icon" aria-hidden="true"><use href="#bi-wheel"/></svg><p><b>Use two different dry compounds</b>Use 2 dry compounds unless switching to Inter or Full Wet.</p></div>
-        <div><svg class="brief-icon" aria-hidden="true"><use href="#bi-fuel"/></svg><p><b>Refuelling is allowed</b><span id="briefRefuel"></span></p></div>
+        <div id="briefRefuelRule"><svg class="brief-icon" aria-hidden="true"><use href="#bi-fuel"/></svg><p><b>Refuelling is allowed</b><span id="briefRefuel"></span></p></div>
         <div><svg class="brief-icon" aria-hidden="true"><use href="#bi-garage"/></svg><p><b>Four shared pit boxes</b><span id="briefPitLoss"></span></p></div>
         <div><svg class="brief-icon" aria-hidden="true"><use href="#bi-flag"/></svg><p><b>Grid launch</b>Hold W. Launch control releases the car at lights out.</p></div>
       </div>
@@ -861,7 +864,7 @@
 <div id="controls" class="overlay hidden">
   <div class="dialog">
     <h2>Con<span>trols</span></h2>
-    <div class="sub">Super Star Car-style keyboard controls: WASD / arrows to drive. On the grid, hold W to rev to the launch rpm; launch control holds the car and releases it automatically when the red lights go out. Steer into the marked pit entry and cross the gold gate for automatic braking and control, choose tyres and fuel when you stop in one of the four shared boxes, and resume driving at pit exit. Gamepad: left stick steer, RT throttle, LT brake, Start pause.</div>
+    <div class="sub">Super Star Car-style keyboard controls: WASD / arrows to drive. On the grid, hold W to rev to the launch rpm; launch control holds the car and releases it automatically when the red lights go out. Steer into the marked pit entry and cross the gold gate for automatic braking and control, <span id="controlsPitChoice">choose tyres and fuel</span> when you stop in one of the four shared boxes, and resume driving at pit exit. Gamepad: left stick steer, RT throttle, LT brake, Start pause.</div>
     <div class="keys">
       <div>Accelerate <span><kbd>W</kbd><kbd>↑</kbd></span></div>
       <div>Brake <span><kbd>S</kbd><kbd>↓</kbd></span></div>
@@ -1694,7 +1697,7 @@ const SIM = (function () {
       this.launch={active:race.type==='race',engagement:race.type==='race'?0:1,releasedAt:null}; this.surfaceWet=null;
       this.engineResponse = 0; this.driveForce = 0; this.pitHistory = [];
       this.tyre = { distance: 0, measuredWpl: 0, stress: 0.50, style: drivingStyle(0.50), lastThrottle: 0, c: 'M', wear: new Float64Array(4), temp: new Float64Array([80, 80, 80, 80]), age: 0, used: new Set() };
-      this.fuel = 50;
+      this.fuel = race.fuelEnabled === false ? ELIMINATION_FUEL_MASS : 50;
       this.slipstream = 0; this.slipGoal = 0; // slipstream: smoothed wake strength 0..1 and its target
       this.damage = new CarDamage(); this.lastHit = 0; this.retiring = null;
       this.idx = 0; this.s = 0; this.d = 0; this.proj = { i: 0, d: 0, s: 0 }; this.wallTmp = { l: 0, r: 0, innerPit: 0 };
@@ -1714,7 +1717,9 @@ const SIM = (function () {
       this.vscAhead = null; this.vscGap = Infinity; this.vscClose = false; // Virtual Safety Car queue (Session.vscPlan)
       this.ai = null;
     }
-    get mass() { return SPEC.mass + this.fuel; }
+    // Elimination carries the same reference load throughout; never replenish a tank per frame.
+    // Ignore stale tank values in this mode so every driver retains the ordinary car balance.
+    get mass() { return SPEC.mass + (this.race.fuelEnabled === false ? ELIMINATION_FUEL_MASS : this.fuel); }
     placeAt(track, s, d, speed = 0) {
       const [x, z, h] = track.pointAt(s, d); this.x = x; this.z = z; this.psi = h;
       this.vx = Math.cos(h) * speed; this.vz = Math.sin(h) * speed; this.r = 0;
@@ -1799,7 +1804,8 @@ const SIM = (function () {
     } else { car.rpm = lerp(car.rpm, sp.idle + car.throttle * 4000, Math.min(1, dt * 10)); }
     // ---- engine force ----
     let fDrive = 0;
-    const fuelOk = car.fuel > 0;
+    const fuelEnabled = car.race.fuelEnabled !== false;
+    const fuelOk = !fuelEnabled || car.fuel > 0;
     if (car.gear > 0 && fuelOk) {
       const ratio = sp.gears[car.gear - 1];
       let T = torqueAt(car.rpm) * car.team.power;
@@ -1809,12 +1815,12 @@ const SIM = (function () {
       fDrive = T * car.throttle * ratio * 0.92 / sp.Rw;
       if(launch && launch.active)fDrive*=launch.engagement;
       // The grid is not metered, so revving early does not change the fuel load (and the car's mass).
-      if (!gridHold) car.fuel -= env.fuelRate * (0.15 + 0.85 * car.throttle) * (car.rpm / 12000) * dt;
+      if (fuelEnabled && !gridHold) car.fuel -= env.fuelRate * (0.15 + 0.85 * car.throttle) * (car.rpm / 12000) * dt;
     } else if (car.gear === -1) {
       fDrive = -car.throttle * 4500 * (u > -6 ? 1 : 0);
       car.rpm = lerp(car.rpm, sp.idle + car.throttle * 5000, Math.min(1, dt * 10));
     }
-    if (car.fuel < 0) car.fuel = 0;
+    if (fuelEnabled && car.fuel < 0) car.fuel = 0;
     // engine braking
     if (car.throttle < 0.05 && u > 10 && car.gear > 0) fDrive -= 500 + car.rpm * 0.05;
     // ---- aero ----
@@ -2218,6 +2224,7 @@ const SIM = (function () {
   const REFUEL = { rate: 3.0, connect: 0.5 }; // kg/s, s (connect + disconnect)
   const FUEL_TANK_LAPS = 8.5;   // tank capacity, in laps of the circuit's nominal consumption
   const FUEL_RESERVE = 0.6;     // kg carried on top of any 'laps of fuel' figure
+  const ELIMINATION_FUEL_MASS = 20; // kg: identical reference load, fixed for the entire event
   const START_FUEL_LAPS = [3, 8]; // selectable starting range for the 8-lap race
   const nearBox = (lx, ly, x0, x1, y0, y1, r) => {
     const dx = Math.max(x0 - lx, 0, lx - x1), dy = Math.max(y0 - ly, 0, ly - y1);
@@ -2575,6 +2582,7 @@ const SIM = (function () {
   // Starting fuel (laps of the circuit's nominal consumption): enough for the planned first stint plus a lap,
   // or the whole race when no stop is planned. Bolder drivers run lighter; careful ones carry more margin.
   function chooseStartFuelLaps(race, car, comp) {
+    if (race.fuelEnabled === false) return null;
     const L = race.totalLaps; let laps = L;
     if (race.tyreWearOn && !(race.wet > 0.18)) {
       const plan = planStrategy(race, car, L, comp, 0, race.mandatory, 1, 0.5);
@@ -2739,7 +2747,7 @@ const SIM = (function () {
         if (this.blueYield && blue.target && blue.safe && blue.ease < 4 && blue.gap > -6 && blue.gap < 80 &&
             speed > 30 && Math.abs(car.d - blue.target.d) > 2.6) th = Math.min(th, .7);
         // Engineer fuel saving uses a real lift of the accelerator, not an efficiency bonus.
-        if (this.fuelSave && !car.pit && !race.vscActive && speed > 20) {
+        if (race.fuelEnabled && this.fuelSave && !car.pit && !race.vscActive && speed > 20) {
           th = Math.min(th, this.p.strat > .75 ? .68 : .78);
           if (this.vEnv < speed + 3 && dv < 5) th = 0;
         }
@@ -3317,7 +3325,7 @@ const SIM = (function () {
       const stint = advice.plan.stops.length ? advice.plan.stops[0].lap : race.lapsLeft(car);
       this.tyreSurplus = isFinite(advice.useful) ? clamp((advice.useful - stint) / 1.5, 0, 1) : 1;
       this.tyreMode = advice.tyreMode; this.pushMode = advice.push;
-      this.fuelSave = advice.conserve && (advice.urgent || this.p.strat > 0.55 || this.p.risk < 0.7);
+      this.fuelSave = race.fuelEnabled && advice.conserve && (advice.urgent || this.p.strat > 0.55 || this.p.risk < 0.7);
       if (this.fuelSave) { this.tyreMode = 'preserve'; this.pushMode = 0; }
       if (this.boxThisLap) return;
       if (advice.defer) {
@@ -3637,8 +3645,8 @@ const SIM = (function () {
       if (must && left < 1.8 && left > 0.35) { reason = 'mandatory second compound'; if (compound === car.tyre.c) compound = car.tyre.c === 'H' ? 'M' : 'H'; }
       // Fuel: box at the coming entry when what is in the tank reaches neither the flag nor the entry after it.
       // The stop is then used for tyres too if their own stop is near or the compound rule still needs it.
-      const range = race.fuelRange(car), toEntry = t.wrapS(t.pitForCar(car).entry0 - car.s) / t.length;
-      if (!reason && range < left + 0.05 && range < toEntry + 1.35) {
+      const range = race.fuelEnabled ? race.fuelRange(car) : Infinity, toEntry = race.fuelEnabled ? t.wrapS(t.pitForCar(car).entry0 - car.s) / t.length : 0;
+      if (race.fuelEnabled && !reason && range < left + 0.05 && range < toEntry + 1.35) {
         reason = 'fuel';
         if (!(first && first.lap <= 2) && !must && wear < 0.6) compound = 'keep';
       }
@@ -3665,14 +3673,14 @@ const SIM = (function () {
         if (car.damage.lapLoss().rep * left > repairCost * (1.1 - .2 * p.strat)) reason = 'rear wing repair';
       }
       if (car.damage.anyPuncture() && left > 0.1) { reason = 'punctured tyre'; if (compound === 'keep') compound = suitable; }
-      const urgent = car.damage.anyPuncture() || wear > 0.84 || range < toEntry + 0.6 ||
+      const urgent = car.damage.anyPuncture() || wear > 0.84 || (race.fuelEnabled && range < toEntry + 0.6) ||
         car.damage.fw > 0.6 || car.damage.c[P_RW] > 0.6 || reason === 'weather-compatible tyres';
-      const conserve = range < left + 0.15 && (range < 1.5 || left - range < 0.4);
+      const conserve = race.fuelEnabled && range < left + 0.15 && (range < 1.5 || left - range < 0.4);
       const risk = race.eliminationRisk(car), urgency = race.eliminationUrgency(car);
       const slots = Math.min(Math.max(0, race.eliminationSlots() - race.elimination.retirements), Math.max(0, race.activeOrder.length - 1));
       const cut = slots ? race.activeOrder[Math.max(0, race.activeOrder.length - slots)] : null;
       const pitDanger = race.eliminationMode && race.elimination.round < 12 && !!cut && exitDist < cut.totalDist && race.checkpointApproach() > .35;
-      if (pitDanger && !urgent && wear < .7 && range > toEntry + 1.5) { reason = ''; defer = true; push = 1; }
+      if (pitDanger && !urgent && wear < .7 && (!race.fuelEnabled || range > toEntry + 1.5)) { reason = ''; defer = true; push = 1; }
       if(race.eliminationMode && race.elimination.round>=12) {
         // Physical position/undercuts have no value now. Use the observed tyre
         // model and repair loss to compare remaining time recovery to stop cost.
@@ -3680,7 +3688,7 @@ const SIM = (function () {
         const gain=Math.max(0,stintCost(strategyWeather,car,car.tyre.c,wear,Math.ceil(left))-stintCost(strategyWeather,car,fresh,0,Math.ceil(left))) + car.damage.lapLoss().rep*left;
         const cost=strategyWeather.pitLoss+wait+car.damage.repairPlan().extra;
         const mandatoryStop=must && left<1.8;
-        const essential=car.damage.anyPuncture()||range<toEntry+.6||mandatoryStop;
+        const essential=car.damage.anyPuncture()||(race.fuelEnabled&&range<toEntry+.6)||mandatoryStop;
         if(!essential && gain<=cost){reason='';defer=true;}
         else if(!reason&&gain>cost){reason='final-phase time recovery';}
         push=1;tyreMode='push';
@@ -3688,9 +3696,10 @@ const SIM = (function () {
       if (urgency > .6 && wear < .7 && !conserve) { tyreMode = 'push'; push = 1; }
       return { pit: !!reason && (left > 0.35 || car.damage.anyPuncture()), compound, reason, urgent, flexible,
         window: margin, plan: planView, useful, tyreMode, push, conserve, defer,
-        traffic: traffic.length, inLane, occupied, wait, risk, urgency, pitDanger, fuel: reason ? this.refuelFor(compound) : 0 };
+        traffic: traffic.length, inLane, occupied, wait, risk, urgency, pitDanger, fuel: race.fuelEnabled && reason ? this.refuelFor(compound) : 0 };
     }
     refuelFor(tyre) {
+      if (!this.race.fuelEnabled) return 0;
       const car = this.car, race = this.race, wetHere = car.surfaceWet ?? race.wet;
       const left = race.lapsLeft(car), rate = race.fuelLapRate(car);
       let laps = left;
@@ -3711,7 +3720,7 @@ const SIM = (function () {
       if (race.time >= this.nextUpdate) this.nextUpdate = race.time + 1;
       this.active.clear();
       if (race.calib || car.finished || car.dnf || car.eliminated || race.over || !race.lightsOut) return;
-      const wet = car.surfaceWet ?? race.wet, wear = Math.max(...car.tyre.wear), range = race.fuelRange(car);
+      const wet = car.surfaceWet ?? race.wet, wear = Math.max(...car.tyre.wear), range = race.fuelEnabled ? race.fuelRange(car) : Infinity;
       const left = Math.max(0, race.lapsLeft(car)), damage = car.damage;
       const signature = [car.tyre.c, car.pitStops, car.laps, weatherCompound(wet), wear > .84,
         range < 1.35, damage.anyPuncture(), damage.fw > .3, damage.c[P_RW] > .35, race.vscActive,
@@ -3726,7 +3735,7 @@ const SIM = (function () {
       const add = (key, category, text, fingerprint = key, extra = {}) => this.active.set(key,
         { key, category, rank: category === 'critical' ? 3 : category === 'strategy' ? 2 : 1,
           text, fingerprint, at: race.time, ...extra });
-      if (range < Math.min(.8, left + .05) && !car.pit) add('fuel-critical', 'critical',
+      if (race.fuelEnabled && range < Math.min(.8, left + .05) && !car.pit) add('fuel-critical', 'critical',
         'Fuel critical: about ' + range.toFixed(1) + ' laps remaining. Lift and coast; box if needed.');
       if (damage.anyPuncture()) add('puncture', 'critical', 'Puncture detected. Reduce speed and return to the pits.');
       if (damage.fw > .3 || damage.c[P_RW] > .35) add('wing', 'critical',
@@ -3749,7 +3758,7 @@ const SIM = (function () {
           add('elimination-zone', 'critical', 'You are in the elimination zone. Move above the elimination cut before all drivers complete the checkpoint lap.', 'round-' + race.elimination.round);
         else if (race.eliminationRisk(car) > .3 && race.checkpointApproach() > .6)
           add('elimination-close', 'routine', 'Elimination checkpoint approaching. Protect your position and look for a safe pass.', 'round-' + race.elimination.round);
-        if (rec && rec.pitDanger) add('elimination-pit', 'strategy', 'A stop now could put you in the elimination zone. Stay out if tyres and fuel allow; urgent repairs and fuel still take priority.', 'round-' + race.elimination.round);
+        if (rec && rec.pitDanger) add('elimination-pit', 'strategy', 'A stop now could put you in the elimination zone. Stay out if tyre condition allows; urgent repairs and punctures still take priority.', 'round-' + race.elimination.round);
       }
       if (rec && !car.pit) {
         if (rec.pit) {
@@ -3758,13 +3767,13 @@ const SIM = (function () {
             'undercut into clear track':'we estimate a clear rejoin', 'lower pit loss under VSC':'pit loss should be lower under the VSC',
             'severe tyre degradation':'these tyres are badly worn', 'mandatory second compound':'you need a second dry compound' }[rec.reason];
           add('strategy', 'strategy', 'We recommend boxing for ' +
-            (rec.compound === 'keep' ? 'fuel, keeping these tyres' : COMPOUNDS[rec.compound].name.toLowerCase() + ' tyres') +
-            (context ? '; ' + context : '') + '. ' + (rec.fuel > .1 ? 'Add about ' + rec.fuel.toFixed(1) + ' kilograms of fuel.' : ''),
+            (rec.compound === 'keep' ? (race.fuelEnabled ? 'fuel, keeping these tyres' : 'repairs, keeping these tyres') : COMPOUNDS[rec.compound].name.toLowerCase() + ' tyres') +
+            (context ? '; ' + context : '') + '. ' + (race.fuelEnabled && rec.fuel > .1 ? 'Add about ' + rec.fuel.toFixed(1) + ' kilograms of fuel.' : ''),
             rec.reason + ':' + rec.compound);
         } else if (rec.defer) add('strategy', 'strategy', rec.inLane >= 3 || rec.wait > 3 ?
-          'Pit lane is busy' + (rec.wait > 0 ? '; estimated queue delay about ' + Math.round(rec.wait) + ' seconds' : '') + '. Consider staying out while tyres and fuel allow.' :
+          'Pit lane is busy' + (rec.wait > 0 ? '; estimated queue delay about ' + Math.round(rec.wait) + ' seconds' : '') + (race.fuelEnabled ? '. Consider staying out while tyres and fuel allow.' : '. Consider staying out while tyre condition allows.') :
           'We expect traffic on rejoining. Consider an overcut and stay out a lap.', 'defer-' + (rec.inLane >= 3 || rec.wait > 3 ? 'queue' : 'traffic'));
-        else if (rec.conserve) add('strategy', 'strategy', 'Fuel range is tight. Lift and coast before corners; we will keep monitoring consumption.', 'conserve');
+        else if (race.fuelEnabled && rec.conserve) add('strategy', 'strategy', 'Fuel range is tight. Lift and coast before corners; we will keep monitoring consumption.', 'conserve');
         else if (rec.useful < 1.5 && wear > .5) add('strategy', 'strategy', 'About ' + rec.useful.toFixed(1) + ' useful laps left on these tyres. Plan your next stop.', 'life');
       }
       const behind = (race.order || race.cars).find(o => o.position === car.position + 1 && !o.pit && !o.dnf && !o.finished);
@@ -3783,7 +3792,7 @@ const SIM = (function () {
         text = 'Car behind is ' + gap.toFixed(1) + ' seconds away and closing.'; fingerprint = 'closing-' + behind.id;
       } else if (!prior || prior.position !== car.position || prior.lap !== car.laps) {
         text = 'You are P' + car.position + (car.position > 1 && car.intervalAhead > 0 && car.intervalAhead < 20 ?
-          ', ' + car.intervalAhead.toFixed(1) + ' seconds to the car ahead' : '') + '. Fuel range about ' + range.toFixed(1) + ' laps.';
+          ', ' + car.intervalAhead.toFixed(1) + ' seconds to the car ahead' : '') + (race.fuelEnabled ? '. Fuel range about ' + range.toFixed(1) + ' laps.' : '.');
         fingerprint = 'position-' + car.position + '-lap-' + car.laps;
       } else if (wear - prior.wear > .12) {
         text = 'Tyre wear is ' + Math.round(wear * 100) + ' percent. About ' + rec.useful.toFixed(1) + ' useful laps remaining.';
@@ -3818,7 +3827,7 @@ const SIM = (function () {
           return !!behind && !behind.pit && !behind.dnf && behind.position === car.position + 1 && behind.intervalAhead < s.gap + .8;
         }
         if (key.startsWith('wear-')) return Math.abs(Math.max(...car.tyre.wear) - s.wear) < .08;
-        return car.position === s.position && car.laps === s.lap && Math.abs(this.race.fuelRange(car) - s.range) < .3;
+        return car.position === s.position && car.laps === s.lap && (!this.race.fuelEnabled || Math.abs(this.race.fuelRange(car) - s.range) < .3);
       }
       const current = this.active.get(message.key);
       return !!current && current.fingerprint === message.fingerprint;
@@ -3845,6 +3854,7 @@ const SIM = (function () {
       this.aiSkill = this.aiLevel != null ? (this.aiLevel - 1) / (CAREER_MAX_LEVEL - 1) : 0;
       this.gameMode = cfg.gameMode === 'elimination' ? 'elimination' : 'grandprix';
       this.eliminationMode = this.type === 'race' && this.gameMode === 'elimination';
+      this.fuelEnabled = !this.eliminationMode; // Session rule: independent of saved/menu fuel settings.
       if (this.eliminationMode && !track.stations) { track = Object.create(track); track.configureElimination(); this.track = track; }
       this.totalLaps = GAME_MODES[this.gameMode].laps;
       this.elimination = { round: 0, retirements: 0, history: [], out: [], approach: 0, phase: 1, finalists: [] };
@@ -4062,11 +4072,11 @@ const SIM = (function () {
           if (this.wet && !comp) comp = weatherCompound(this.wet);
           if (this.cfg.calibCompound) comp = this.cfg.calibCompound;
           this.fitTyres(car, comp, 78);
-          if (this.type === 'race') {
+          if (this.type === 'race' && this.fuelEnabled) {
             car.startFuelLaps = car.isPlayer && this.cfg.startFuelLaps != null ? clamp(+this.cfg.startFuelLaps, ...START_FUEL_LAPS) : chooseStartFuelLaps(this, car, comp);
             car.fuel = this.fuelForLaps(car.startFuelLaps);
-          } else car.fuel = 20;
-          car.fuelPerLapEst = this.fuelPerLap; car.lapFuel = car.fuel;
+          } else if (this.fuelEnabled) car.fuel = 20;
+          if (this.fuelEnabled) { car.fuelPerLapEst = this.fuelPerLap; car.lapFuel = car.fuel; }
           car.started = this.type !== 'race';
           if (this.type === 'calib') { car.started = true; car.crossings = 1; }
         });
@@ -4091,10 +4101,10 @@ const SIM = (function () {
       car.tyre.c = COMPOUNDS[comp] ? comp : 'M'; car.tyre.wear.fill(0); car.tyre.temp.fill(temp); car.tyre.age = 0; if(!this.eliminationMode)car.tyre.used.add(car.tyre.c); car.tyre.distance = 0; car.tyre.measuredWpl = 0; car.tyre.lastThrottle = car.throttle;
     }
     // Fuel load (kg) for a number of laps at the circuit's nominal consumption, within the tank.
-    fuelForLaps(laps) { return Math.min(this.fuelCapacity, Math.max(0, laps) * this.fuelPerLap + FUEL_RESERVE); }
+    fuelForLaps(laps) { if (!this.fuelEnabled) return ELIMINATION_FUEL_MASS; return Math.min(this.fuelCapacity, Math.max(0, laps) * this.fuelPerLap + FUEL_RESERVE); }
     // The car's own consumption per lap (measured over its recent green-flag laps) and the laps its fuel lasts.
-    fuelLapRate(car) { return car.fuelPerLapEst || this.fuelPerLap; }
-    fuelRange(car) { return Math.max(0, car.fuel) / this.fuelLapRate(car); }
+    fuelLapRate(car) { if (!this.fuelEnabled) return 0; return car.fuelPerLapEst || this.fuelPerLap; }
+    fuelRange(car) { if (!this.fuelEnabled) return Infinity; return Math.max(0, car.fuel) / this.fuelLapRate(car); }
     // Laps still to run to the flag from where the car is (fractional).
     lapsLeft(car) { const t = this.track; return this.eliminationMode ? Math.max(0, this.totalLaps - Math.max(0, car.totalDist / t.length)) : Math.max(0, this.totalLaps - car.laps - t.wrapS(car.totalDist) / t.length); }
     // Where a qualifying car waits while it is in the garage: one of the shared boxes (only for parking).
@@ -4410,8 +4420,10 @@ const SIM = (function () {
       if (!sel || !sel.tyre) return 'Choose tyres: one of the five compounds or keep the current set.';
       if (sel.tyre !== 'keep' && !COMPOUNDS[sel.tyre]) return 'Choose one of the five compounds or keep your current tyres.';
       if (sel.tyre === 'keep' && car.damage.anyPuncture()) return 'Punctured tyres must be replaced before release.';
-      const room = Math.max(0, this.fuelCapacity - car.fuel);
-      if (!(sel.fuel >= 0) || sel.fuel > room + 1e-6) return 'Fuel must be between 0 and ' + room.toFixed(1) + ' kg (tank ' + this.fuelCapacity.toFixed(1) + ' kg).';
+      if (this.fuelEnabled) {
+        const room = Math.max(0, this.fuelCapacity - car.fuel);
+        if (!(sel.fuel >= 0) || sel.fuel > room + 1e-6) return 'Fuel must be between 0 and ' + room.toFixed(1) + ' kg (tank ' + this.fuelCapacity.toFixed(1) + ' kg).';
+      }
       return '';
     }
     confirmPitService(car, sel) {
@@ -4428,7 +4440,7 @@ const SIM = (function () {
       // slicks on a wet surface (or wets on a dry one) are always changed
       if (tyre === 'keep' && tyreWeatherGrip(car.tyre.c, wetHere) < tyreWeatherGrip(weatherCompound(wetHere), wetHere) * 0.8) tyre = weatherCompound(wetHere);
       if (!COMPOUNDS[tyre] && tyre !== 'keep') tyre = car.tyre.c;
-      const fuel = car.engineer.refuelFor(tyre);
+      const fuel = this.fuelEnabled ? car.engineer.refuelFor(tyre) : 0;
       return { tyre, fuel };
     }
     // The crew works on every job at once; the car is stationary for the longest. Each job changes the car
@@ -4438,7 +4450,7 @@ const SIM = (function () {
       const P = car.pit, change = sel.tyre !== 'keep', plan = car.damage.repairPlan({ service: true });
       let tt = change ? 2 + Math.abs(gauss()) * .35 + rand(0, .3) : 0;
       if (change && rnd() < .05) tt += rand(1.5, 5); // a sticking wheel nut: same odds for every car
-      const fuelAdd = clamp(+sel.fuel || 0, 0, Math.max(0, this.fuelCapacity - car.fuel));
+      const fuelAdd = this.fuelEnabled ? clamp(+sel.fuel || 0, 0, Math.max(0, this.fuelCapacity - car.fuel)) : 0;
       const ft = fuelAdd > 0.01 ? REFUEL.connect + fuelAdd / REFUEL.rate : 0;
       const fwT = plan.fw ? rand(...REPAIR_TIME.fw) : 0, rwT = plan.rw ? rand(...REPAIR_TIME.rw) : 0;
       const total = Math.max(.8, tt, ft, fwT, rwT);
@@ -4454,7 +4466,7 @@ const SIM = (function () {
     pitJobProgress(P) {
       const el = P.phase === 'stopped' ? P.total - P.timer : P.phase === 'release' || P.phase === 'out' ? Infinity : 0;
       const f = (T) => T > 0 ? clamp(el / T, 0, 1) : 1;
-      return { tyres: P.changeTyres ? f(P.tyreT) : 1, fuel: P.fuelT > 0 ? f(P.fuelT) : 1, fw: P.fwT > 0 ? f(P.fwT) : 1, rw: P.rwT > 0 ? f(P.rwT) : 1, el };
+      return { tyres: P.changeTyres ? f(P.tyreT) : 1, ...(this.fuelEnabled ? { fuel: P.fuelT > 0 ? f(P.fuelT) : 1 } : {}), fw: P.fwT > 0 ? f(P.fwT) : 1, rw: P.rwT > 0 ? f(P.rwT) : 1, el };
     }
     holdPitCar(car) {
       const P = car.pit;
@@ -4560,8 +4572,8 @@ const SIM = (function () {
           // a bot that judged its damage hopeless retires in the box (and leaves it to the next car)
           if (car.ai && car.ai.retireInPits && this.type === 'race') { car.dnfReason = 'Damage'; this.retire(car); return; }
           if(car.isPlayer && this.type==='race' && !car.finished) {
-            P.phase='awaiting';P.selection={ tyre: car.damage.anyPuncture() ? null : 'keep', fuel: 0 };P.awaitedAt=this.time;P.stage='SELECT SERVICE';
-            this.events.push({type:'pitselection',car});this.msg('In box '+(P.box+1)+' — choose tyres and fuel, then confirm','pit',car,3);
+            P.phase='awaiting';P.selection={ tyre: car.damage.anyPuncture() ? null : 'keep', ...(this.fuelEnabled ? { fuel: 0 } : {}) };P.awaitedAt=this.time;P.stage='SELECT SERVICE';
+            this.events.push({type:'pitselection',car});this.msg('In box '+(P.box+1)+(this.fuelEnabled ? ' — choose tyres and fuel, then confirm' : ' — choose tyres, then confirm'),'pit',car,3);
           } else this.beginPitService(car, car.ai && this.type === 'race' ? this.aiServiceChoice(car) : { tyre: car.tyre.c, fuel: 0 });
         }
       } else if(P.phase==='awaiting') {
@@ -4571,7 +4583,7 @@ const SIM = (function () {
         P.timer -= dt;
         const el = P.total - P.timer;
         // fuel flows between the rig connecting and disconnecting
-        if (P.fuelT > 0) {
+        if (this.fuelEnabled && P.fuelT > 0) {
           const pumped = clamp((el - REFUEL.connect / 2) * REFUEL.rate, 0, P.fuelAdd);
           if (pumped > P.fuelAdded) { car.fuel = Math.min(this.fuelCapacity, car.fuel + pumped - P.fuelAdded); P.fuelAdded = pumped; }
         }
@@ -4582,7 +4594,7 @@ const SIM = (function () {
         car.vx = car.vz = car.r = 0; car.speed = 0; car.input.throttle = 0;
         if (P.timer <= 0) {
           if (!P.changed) { this.fitTyres(car, P.newComp, COMPOUNDS[P.newComp].topt - 25); P.changed = true; }
-          if (P.fuelAdded < P.fuelAdd) { car.fuel = Math.min(this.fuelCapacity, car.fuel + P.fuelAdd - P.fuelAdded); P.fuelAdded = P.fuelAdd; }
+          if (this.fuelEnabled && P.fuelAdded < P.fuelAdd) { car.fuel = Math.min(this.fuelCapacity, car.fuel + P.fuelAdd - P.fuelAdded); P.fuelAdded = P.fuelAdd; }
           if (!P.fwDone) { car.damage.replaceFrontWing(); P.fwDone = true; }
           if (!P.rwDone) { car.damage.replaceRearWing(); P.rwDone = true; }
           if (P.repair) this.log(car, 'repaired ' + P.repair);
@@ -4673,7 +4685,7 @@ const SIM = (function () {
       if (car.eliminated) return;
       const t = this.track;
       car.crossings++;
-      if (car.crossings === 1 && this.type === 'race') { car.sectorIdx = 0; car.sectorStart = this.lightsOutTime; car.curSectors = [0, 0, 0]; car.started = true; car.lapFuel = car.fuel; car.lapHadPit = !!car.pit; return; }
+      if (car.crossings === 1 && this.type === 'race') { car.sectorIdx = 0; car.sectorStart = this.lightsOutTime; car.curSectors = [0, 0, 0]; car.started = true; if (this.fuelEnabled) car.lapFuel = car.fuel; car.lapHadPit = !!car.pit; return; }
       if (this.type === 'race' && car.finished) return;
       const lapTime = at - car.lapStart;
       // final sector
@@ -4686,9 +4698,11 @@ const SIM = (function () {
       if (this.type === 'race' || this.type === 'calib') car.laps = this.eliminationMode ? Math.max(0, Math.floor(car.totalDist / t.length)) : car.laps + 1;
       car.lastLap = lapTime; car.lapTimes.push({ t: lapTime, valid: car.lapValid && fullLap, c: car.tyre.c });
       // the car's own fuel consumption, from complete laps without a pit stop (the range estimate uses it)
-      const burnt = (car.lapFuel ?? car.fuel) - car.fuel;
-      if (fullLap && !car.lapHadPit && !car.lapHadVsc && burnt > 0.3 * this.fuelPerLap) car.fuelPerLapEst = lerp(car.fuelPerLapEst || this.fuelPerLap, burnt, 0.5);
-      car.lapFuel = car.fuel; car.lapHadPit = !!car.pit; car.lapHadVsc = this.vscActive;
+      if (this.fuelEnabled) {
+        const burnt = (car.lapFuel ?? car.fuel) - car.fuel;
+        if (fullLap && !car.lapHadPit && !car.lapHadVsc && burnt > 0.3 * this.fuelPerLap) car.fuelPerLapEst = lerp(car.fuelPerLapEst || this.fuelPerLap, burnt, 0.5);
+        car.lapFuel = car.fuel; car.lapHadPit = !!car.pit; car.lapHadVsc = this.vscActive;
+      }
       // Tyre age is continuous distance, not line crossings (including partial stints).
       if (car.lapValid && fullLap) {
         if (!car.bestLap || lapTime < car.bestLap) { car.bestLap = lapTime; car.bestTrace = car.lapTrace; }
@@ -5279,7 +5293,7 @@ const SIM = (function () {
       }
       if(this.type==='race' && !this.over && this.cars.every(c=>c.dnf || c.finished || c.eliminated))this.finishRace();
       // DNF: out of fuel
-      for (const c of this.cars) if (this.type === 'race' && c.fuel <= 0 && !c.dnf && !c.finished && !c.eliminated && c.speed < 2) { c.dnfReason = 'Out of fuel'; this.retire(c); }
+      for (const c of this.cars) if (this.type === 'race' && this.fuelEnabled && c.fuel <= 0 && !c.dnf && !c.finished && !c.eliminated && c.speed < 2) { c.dnfReason = 'Out of fuel'; this.retire(c); }
       if (this.eliminationMode && !this.over && this.elimination.round < 12 && this.checkpointApproach() > .6 && this.elimination.approach !== this.elimination.round + 1) {
         this.elimination.approach = this.elimination.round + 1;
         const slots = Math.min(Math.max(0, this.eliminationSlots() - this.elimination.retirements), Math.max(0, this.activeOrder.length - 1));
@@ -5543,7 +5557,7 @@ const SIM = (function () {
     return (neg ? '-' : plus ? '+' : '') + str;
   }
 
-  return { G, RHO, PHYS_DT, DS, VSC, GAME_MODES, CAREER, TEAMS, DRIVERS, TRACK_DEF, CIRCUITS, circuitById, circuitCentreLine, elevationAt, COMPOUNDS, SPEC, Track, Car, Session, AIDriver, RaceEngineer, planStrategy, wearPerLap, needsCompound, fmtTime, clamp, lerp, makeRng, stepCarPhysics, SLIPSTREAM, slipstreamStrength, OFF_TRACK, GREEN_RUNOFF, PlayerHandling, KeyboardDriveInput, HANDLING, USEFUL_WEAR, TYRE_STYLES, drivingStyle, tyreWearGrip, tyreWeatherGrip, tyreMismatch, updateTyres, wetnessFor, weatherCompound, DynamicWeather, CarDamage, DAMAGE_LEVELS, PART_KEYS, PART_NAMES, WHEEL_NAMES, REPAIR_TIME, REFUEL, FUEL_TANK_LAPS, FUEL_RESERVE, START_FUEL_LAPS, estimatePitLoss, chooseStartFuelLaps, normalizeDamageLevel, partExposure, torqueAt, defaultCompoundModel, setSeed: (s) => { rnd = makeRng(s); } };
+  return { G, RHO, PHYS_DT, DS, VSC, GAME_MODES, CAREER, TEAMS, DRIVERS, TRACK_DEF, CIRCUITS, circuitById, circuitCentreLine, elevationAt, COMPOUNDS, SPEC, Track, Car, Session, AIDriver, RaceEngineer, planStrategy, wearPerLap, needsCompound, fmtTime, clamp, lerp, makeRng, stepCarPhysics, SLIPSTREAM, slipstreamStrength, OFF_TRACK, GREEN_RUNOFF, PlayerHandling, KeyboardDriveInput, HANDLING, USEFUL_WEAR, TYRE_STYLES, drivingStyle, tyreWearGrip, tyreWeatherGrip, tyreMismatch, updateTyres, wetnessFor, weatherCompound, DynamicWeather, CarDamage, DAMAGE_LEVELS, PART_KEYS, PART_NAMES, WHEEL_NAMES, REPAIR_TIME, REFUEL, FUEL_TANK_LAPS, FUEL_RESERVE, START_FUEL_LAPS, ELIMINATION_FUEL_MASS, estimatePitLoss, chooseStartFuelLaps, normalizeDamageLevel, partExposure, torqueAt, defaultCompoundModel, setSeed: (s) => { rnd = makeRng(s); } };
 })();
 // ==SIM-END==
 if (typeof module !== 'undefined') module.exports = SIM;
@@ -8081,9 +8095,11 @@ function careerSessionConfig(type) {
   return { gameMode: 'grandprix', laps: SIM.GAME_MODES.grandprix.laps, difficulty: 1, aiLevel: tier.level, career: type === 'race' ? { ...G.career, id: Date.now().toString(36) + Math.random().toString(36).slice(2, 8) } : null };
 }
 function sessionConfig(type, extra = {}) {
-  return Object.assign({ type, gameMode:S.gameMode, laps:SIM.GAME_MODES[S.gameMode].laps, difficulty:S.difficulty/100, weather:'dynamic',
+  const cfg = Object.assign({ type, gameMode:S.gameMode, laps:SIM.GAME_MODES[S.gameMode].laps, difficulty:S.difficulty/100, weather:'dynamic',
     tyreWear:'normal', mandatory:true, damage:'realistic', startCompound:S.startTyre, startFuelLaps:S.startFuel,
     seed:(Math.random()*1e9)|0 }, extra, careerSessionConfig(type));
+  if (cfg.type === 'race' && cfg.gameMode === 'elimination') delete cfg.startFuelLaps;
+  return cfg;
 }
 function quickGridOrder(entries) {
   const order = entries.map((e,i)=>i);
@@ -8210,6 +8226,7 @@ function startSession(cfg) {
   if(!!G.track.stations!==distributed){G.track=new SIM.Track(G.track.def);if(distributed)G.track.configureElimination();G.broadcastTowers=broadcastTowerPositions(G.track);setElevationField(G.track);setScenery(G.track);}
   ensureWorld();
   G.nextRoadWeather=0; G.events = []; G.session = new SIM.Session(G.track, cfg); G.lastSessionCfg = cfg;
+  $('controlsPitChoice').textContent = G.session.fuelEnabled ? 'choose tyres and fuel' : 'choose tyres';
   // Scheduled removals are recovered only once safely parked and outside the
   // watched camera's view, never visibly teleported out of a battle.
   const recoveryProbe = new THREE.Vector3();
@@ -8294,12 +8311,18 @@ function startRace(gridOrder, entries) {
   const lapsTotal = SIM.GAME_MODES[gameMode].laps;
   G.pendingRace = { gridOrder, entries, gameMode, weatherState: raceWeatherState() };
   const startWeather = new SIM.DynamicWeather(1, G.pendingRace.weatherState);
-  const pitLoss = circuitPitLoss(G.track), fpl = circuitFuelPerLap(G.track), tank = circuitTank(G.track);
-  G.briefCompound = S.startTyre; G.briefFuel = S.startFuel;
+  const fuelEnabled = gameMode !== 'elimination';
+  const pitLoss = circuitPitLoss(G.track), fpl = fuelEnabled ? circuitFuelPerLap(G.track) : 0, tank = fuelEnabled ? circuitTank(G.track) : 0;
+  G.briefCompound = S.startTyre; if (fuelEnabled) G.briefFuel = S.startFuel;
   $('briefCircuit').textContent = G.track.name; drawBriefCircuit(G.track.def);
-  $('briefTitle').innerHTML = (gameMode === 'elimination' ? 'Elimination' : 'Race') + ' <span>Start</span>: tyres &amp; fuel';
+  $('briefTitle').innerHTML = (gameMode === 'elimination' ? 'Elimination' : 'Race') + ' <span>Start</span>: ' + (fuelEnabled ? 'tyres &amp; fuel' : 'tyres');
+  $('raceBrief').classList.toggle('no-fuel', !fuelEnabled);
+  $('briefFuelSection').classList.toggle('hidden', !fuelEnabled);
+  $('briefRefuelRule').classList.toggle('hidden', !fuelEnabled);
+  $('briefFuel').disabled = !fuelEnabled;
+  $('briefFuel').oninput = null;
   $('briefModeNote').classList.toggle('hidden', gameMode !== 'elimination');
-  $('briefModeNote').textContent = '20 starters · Laps 1–8: last driver out · Laps 9–12: last two out · Laps 13–15: lowest three-lap average wins. Four distributed service stations. Two dry compounds required, with wet-weather exceptions. Fuel mechanics unchanged.';
+  $('briefModeNote').textContent = '20 starters · Laps 1–8: last driver out · Laps 9–12: last two out · Laps 13–15: lowest three-lap average wins. Four distributed service stations. Two dry compounds required, with wet-weather exceptions. No fuel management: every car runs a fixed load.';
   $('briefDistance').textContent = lapsTotal + ' laps'; $('briefKm').textContent = '(' + (lapsTotal * G.track.length / 1000).toFixed(0) + ' km)';
   $('briefTeams').textContent = (entries || SIM.DRIVERS).length;
   $('briefWeather').textContent = 'Now: ' + startWeather.label;
@@ -8307,20 +8330,23 @@ function startRace(gridOrder, entries) {
   $('briefTemp').textContent = Math.round(startWeather.ambient) + '°C';
   $('briefCondition').textContent = startWeather.water >= .7 ? 'Wet' : startWeather.water > .18 ? 'Damp' : startWeather.water > .01 ? 'Drying' : 'Dry';
   $('briefWet').textContent = Math.round(startWeather.water * 100) + '% wet';
-  $('briefFuelEstimate').textContent = 'Estimated fuel use: ' + fpl.toFixed(1) + ' kg per lap.';
-  const [minFuel, maxFuel] = SIM.START_FUEL_LAPS, slider = $('briefFuel');
-  slider.min = minFuel; slider.max = maxFuel;
-  $('briefFuelScale').innerHTML = Array.from({ length: maxFuel - minFuel + 1 }, (_, i) => '<span>' + (minFuel + i) + (minFuel + i === maxFuel ? ' Laps' : '') + '</span>').join('');
-  const fuelInfo = () => {
-    const laps = G.briefFuel, kg = Math.min(tank, laps * fpl + SIM.FUEL_RESERVE);
-    $('briefFuelVal').innerHTML = '<span><b>' + laps.toFixed(1) + '</b> Laps</span><span class="brief-kg"><b>' + kg.toFixed(1) + ' kg</b></span>';
-    $('briefFuelInfo').textContent = 'Car ' + (SIM.SPEC.mass + kg).toFixed(1) + ' kg at the start (including fuel). '
-      + (laps < lapsTotal ? 'Refuel before the finish. ' : '') + fpl.toFixed(1) + ' kg per lap at this track (estimate).';
-    slider.value = String(laps);
-    slider.style.setProperty('--fuel-fill', ((laps - minFuel) / (maxFuel - minFuel) * 100) + '%');
-    slider.setAttribute('aria-valuetext', laps.toFixed(1) + ' laps, ' + kg.toFixed(1) + ' kilograms');
-  };
-  slider.oninput = () => { G.briefFuel = clamp(+slider.value, minFuel, maxFuel); fuelInfo(); };
+  if (fuelEnabled) {
+    $('briefFuelEstimate').textContent = 'Estimated fuel use: ' + fpl.toFixed(1) + ' kg per lap.';
+    const [minFuel, maxFuel] = SIM.START_FUEL_LAPS, slider = $('briefFuel');
+    slider.min = minFuel; slider.max = maxFuel;
+    $('briefFuelScale').innerHTML = Array.from({ length: maxFuel - minFuel + 1 }, (_, i) => '<span>' + (minFuel + i) + (minFuel + i === maxFuel ? ' Laps' : '') + '</span>').join('');
+    const fuelInfo = () => {
+      const laps = G.briefFuel, kg = Math.min(tank, laps * fpl + SIM.FUEL_RESERVE);
+      $('briefFuelVal').innerHTML = '<span><b>' + laps.toFixed(1) + '</b> Laps</span><span class="brief-kg"><b>' + kg.toFixed(1) + ' kg</b></span>';
+      $('briefFuelInfo').textContent = 'Car ' + (SIM.SPEC.mass + kg).toFixed(1) + ' kg at the start (including fuel). '
+        + (laps < lapsTotal ? 'Refuel before the finish. ' : '') + fpl.toFixed(1) + ' kg per lap at this track (estimate).';
+      slider.value = String(laps);
+      slider.style.setProperty('--fuel-fill', ((laps - minFuel) / (maxFuel - minFuel) * 100) + '%');
+      slider.setAttribute('aria-valuetext', laps.toFixed(1) + ' laps, ' + kg.toFixed(1) + ' kilograms');
+    };
+    slider.oninput = () => { G.briefFuel = clamp(+slider.value, minFuel, maxFuel); fuelInfo(); };
+    fuelInfo();
+  }
   const descriptions = {
     S: ['Highest grip for shorter stints.', 'Maximum pace (qualifying / short stints)'],
     M: ['Balanced performance and durability.', 'Versatile option for most races'],
@@ -8343,14 +8369,14 @@ function startRace(gridOrder, entries) {
     };
     $('briefChoices').appendChild(b);
   }
-  $('briefRefuel').textContent = 'Tank ' + tank.toFixed(1) + ' kg · ' + SIM.REFUEL.rate.toFixed(1) + ' kg/s.';
-  $('briefPitLoss').textContent = '~ ' + Math.round(pitLoss) + ' s for tyres; fuel, repairs and queues add time.';
-  fuelInfo(); clearKeys(); G.paused = true; $('raceBrief').classList.remove('hidden');
+  if (fuelEnabled) $('briefRefuel').textContent = 'Tank ' + tank.toFixed(1) + ' kg · ' + SIM.REFUEL.rate.toFixed(1) + ' kg/s.';
+  $('briefPitLoss').textContent = '~ ' + Math.round(pitLoss) + (fuelEnabled ? ' s for tyres; fuel, repairs and queues add time.' : ' s for tyres; repairs and queues add time.');
+  clearKeys(); G.paused = true; $('raceBrief').classList.remove('hidden');
   $('briefChoices').querySelector('[aria-pressed="true"]').focus({ preventScroll: true });
 }
 $('briefStart').onclick = () => {
   const pending = G.pendingRace; if (!pending) return;
-  S.startTyre = G.briefCompound; S.startFuel = G.briefFuel; saveSettings(); G.pendingRace = null; $('raceBrief').classList.add('hidden'); G.paused = false;
+  S.startTyre = G.briefCompound; if (pending.gameMode !== 'elimination') S.startFuel = G.briefFuel; saveSettings(); G.pendingRace = null; $('raceBrief').classList.add('hidden'); G.paused = false;
   launchRace(pending.gridOrder, pending.entries, pending.weatherState, pending.gameMode);
 };
 $('briefCancel').onclick = () => {
@@ -8413,15 +8439,21 @@ function psSelection(p, sess, P) {
     b.disabled = c === 'keep' && punct;
     b.setAttribute('aria-pressed', String(sel.tyre === c));
   }
-  const room = Math.max(0, Math.floor((sess.fuelCapacity - p.fuel) * 2) / 2), f = $('psFuel');
-  if (+f.max !== room) f.max = String(room);
-  if (sel.fuel > room) sel.fuel = room;
-  if (document.activeElement !== f && +f.value !== sel.fuel) f.value = String(sel.fuel);
-  const rate = sess.fuelLapRate(p), after = p.fuel + sel.fuel, fuelT = sel.fuel > 0.01 ? SIM.REFUEL.connect + sel.fuel / SIM.REFUEL.rate : 0;
-  $('psFuelNow').textContent = 'Tank ' + sess.fuelCapacity.toFixed(1) + ' kg · ' + sess.lapsLeft(p).toFixed(1) + ' laps to go';
-  $('psFuelInfo').innerHTML = '<div>NOW<b class="num">' + p.fuel.toFixed(1) + ' kg</b>≈ ' + (p.fuel / rate).toFixed(1) + ' laps</div>'
-    + '<div>ADD<b class="num">+' + sel.fuel.toFixed(1) + ' kg</b>' + (fuelT ? fuelT.toFixed(1) + ' s to pump' : 'no refuelling') + '</div>'
-    + '<div>AFTER<b class="num">' + after.toFixed(1) + ' kg</b>≈ ' + (after / rate).toFixed(1) + ' laps range</div>';
+  let fuelT = 0;
+  $('psFuelSection').classList.toggle('hidden', !sess.fuelEnabled);
+  $('psFuel').disabled = !sess.fuelEnabled;
+  if (sess.fuelEnabled) {
+    const room = Math.max(0, Math.floor((sess.fuelCapacity - p.fuel) * 2) / 2), f = $('psFuel');
+    if (+f.max !== room) f.max = String(room);
+    if (sel.fuel > room) sel.fuel = room;
+    if (document.activeElement !== f && +f.value !== sel.fuel) f.value = String(sel.fuel);
+    const rate = sess.fuelLapRate(p), after = p.fuel + sel.fuel;
+    fuelT = sel.fuel > 0.01 ? SIM.REFUEL.connect + sel.fuel / SIM.REFUEL.rate : 0;
+    $('psFuelNow').textContent = 'Tank ' + sess.fuelCapacity.toFixed(1) + ' kg · ' + sess.lapsLeft(p).toFixed(1) + ' laps to go';
+    $('psFuelInfo').innerHTML = '<div>NOW<b class="num">' + p.fuel.toFixed(1) + ' kg</b>≈ ' + (p.fuel / rate).toFixed(1) + ' laps</div>'
+      + '<div>ADD<b class="num">+' + sel.fuel.toFixed(1) + ' kg</b>' + (fuelT ? fuelT.toFixed(1) + ' s to pump' : 'no refuelling') + '</div>'
+      + '<div>AFTER<b class="num">' + after.toFixed(1) + ' kg</b>≈ ' + (after / rate).toFixed(1) + ' laps range</div>';
+  }
   const err = P.selectionError || sess.pitSelectionError(p, sel);
   $('psErr').textContent = err;
   const plan = p.damage.repairPlan({ service: true }), change = sel.tyre && sel.tyre !== 'keep';
@@ -8478,7 +8510,7 @@ function updatePitService(p, sess, force = false) {
     // while choosing, tyres and fuel are shown by the controls above; the cards list what else will be done
     if (!choosing) {
       cards.push(psCard('tyres', 'Tyres', tyre, 'planned', 'AT THE BOX', 0));
-      cards.push(psCard('fuel', 'Fuel', 'Choose at the box', 'planned', 'AT THE BOX', 0));
+      if (sess.fuelEnabled) cards.push(psCard('fuel', 'Fuel', 'Choose at the box', 'planned', 'AT THE BOX', 0));
     }
     if (plan.fw) cards.push(psCard('fw', 'Front wing', 'Damaged · replaced automatically', 'planned', 'AUTO', 0));
     if (plan.rw) cards.push(psCard('rw', 'Rear wing', 'Damaged · replaced automatically', 'planned', 'AUTO', 0));
@@ -8488,17 +8520,19 @@ function updatePitService(p, sess, force = false) {
       const done = Q.changed && prog.tyres >= 1;
       cards.push(psCard('tyres', 'Tyres', comp(Q.oldComp) + ' → ' + comp(Q.newComp), done ? 'done' : 'active', done ? 'FITTED' : prog.tyres < 0.45 ? 'WHEELS OFF' : prog.tyres < 0.8 ? 'FITTING' : 'SECURING', done ? 1 : prog.tyres));
     } else cards.push(psCard('tyres', 'Tyres', 'Current set retained', 'none', 'KEPT', 0));
-    if (Q.fuelAdd > 0.01) {
-      const done = Q.fuelAdded >= Q.fuelAdd - 1e-6 && prog.fuel >= 1;
-      cards.push(psCard('fuel', 'Fuel', '+' + Q.fuelAdded.toFixed(1) + ' / ' + Q.fuelAdd.toFixed(1) + ' kg · tank ' + car.fuel.toFixed(1) + ' kg', done ? 'done' : 'active', done ? 'COMPLETE' : Q.fuelAdded > 0 ? 'FUELLING' : 'CONNECTING', Q.fuelAdded / Q.fuelAdd));
-    } else cards.push(psCard('fuel', 'Fuel', 'No fuel added · tank ' + car.fuel.toFixed(1) + ' kg', 'none', 'NONE', 0));
+    if (sess.fuelEnabled) {
+      if (Q.fuelAdd > 0.01) {
+        const done = Q.fuelAdded >= Q.fuelAdd - 1e-6 && prog.fuel >= 1;
+        cards.push(psCard('fuel', 'Fuel', '+' + Q.fuelAdded.toFixed(1) + ' / ' + Q.fuelAdd.toFixed(1) + ' kg · tank ' + car.fuel.toFixed(1) + ' kg', done ? 'done' : 'active', done ? 'COMPLETE' : Q.fuelAdded > 0 ? 'FUELLING' : 'CONNECTING', Q.fuelAdded / Q.fuelAdd));
+      } else cards.push(psCard('fuel', 'Fuel', 'No fuel added · tank ' + car.fuel.toFixed(1) + ' kg', 'none', 'NONE', 0));
+    }
     if (Q.fwT > 0) cards.push(psCard('fw', 'Front wing', Q.fwDone ? 'New wing fitted' : 'Replacing damaged wing', Q.fwDone ? 'done' : 'active', Q.fwDone ? 'REPLACED' : 'REPLACING', Q.fwDone ? 1 : Math.min(0.99, prog.fw)));
     if (Q.rwT > 0) cards.push(psCard('rw', 'Rear wing', Q.rwDone ? 'New wing fitted' : 'Replacing damaged wing', Q.rwDone ? 'done' : 'active', Q.rwDone ? 'REPLACED' : 'REPLACING', Q.rwDone ? 1 : Math.min(0.99, prog.rw)));
   }
   const host = $('psCards');
   if (host.children.length !== cards.length || cards.some((c, i) => host.children[i] !== c)) host.replaceChildren(...cards);
 }
-$('psFuel').oninput = () => { const P = G.player && G.player.pit; if (P && P.phase === 'awaiting') { P.selection.fuel = Math.max(0, +$('psFuel').value); P.selectionError = ''; updatePitService(G.player, G.session, true); } };
+$('psFuel').oninput = () => { const P = G.player && G.player.pit; if (G.session?.fuelEnabled && P && P.phase === 'awaiting') { P.selection.fuel = Math.max(0, +$('psFuel').value); P.selectionError = ''; updatePitService(G.player, G.session, true); } };
 $('psConfirm').onclick = () => {
   const p = G.player, sess = G.session; if (!p || !sess || !p.pit || p.pit.phase !== 'awaiting') return;
   sess.confirmPitService(p, { ...p.pit.selection }); updatePitService(p, sess, true); G.strategyRefresh = 0;
@@ -8511,13 +8545,15 @@ function updateStrategyUI(p, sess) {
   const wear=Math.max(...p.tyre.wear), rate=SIM.wearPerLap(sess,p,p.tyre.c);
   const life=rate>0?Math.max(0,(SIM.USEFUL_WEAR-wear)/rate):Infinity;
   const lifeText=isFinite(life)?life.toFixed(1)+' laps':'—';
-  $('tyreLife').innerHTML='USEFUL LIFE <b>~'+lifeText+'</b>'; $('tyreNext').innerHTML='FUEL <b>≈'+sess.fuelRange(p).toFixed(1)+' L</b>';
+  $('tyreLife').innerHTML='USEFUL LIFE <b>~'+lifeText+'</b>'; $('tyreNext').innerHTML=sess.fuelEnabled?'FUEL <b>≈'+sess.fuelRange(p).toFixed(1)+' L</b>':'STYLE <b>'+p.tyre.style.name+'</b>';
+  $('strategyTitle').textContent = sess.fuelEnabled ? 'TYRES, FUEL & PIT STOP' : 'TYRES & PIT STOP';
+  $('strategyFuel').classList.toggle('hidden', !sess.fuelEnabled);
   if($('strategyPanel').classList.contains('hidden')) return;
   $('strategyCurrent').textContent=SIM.COMPOUNDS[p.tyre.c].name+' · '+Math.round(wear*100)+'% worst wear · age '+p.tyre.age.toFixed(1)+' laps · '+Math.round([...p.tyre.temp].reduce((a,b)=>a+b,0)/4)+'°C · ~'+lifeText+' to significant degradation';
-  $('strategyFuel').textContent='Fuel '+p.fuel.toFixed(1)+' kg of '+sess.fuelCapacity.toFixed(1)+' · ≈ '+sess.fuelRange(p).toFixed(1)+' laps of range at '+sess.fuelLapRate(p).toFixed(2)+' kg/lap · '+sess.lapsLeft(p).toFixed(1)+' laps to go';
+  if (sess.fuelEnabled) $('strategyFuel').textContent='Fuel '+p.fuel.toFixed(1)+' kg of '+sess.fuelCapacity.toFixed(1)+' · ≈ '+sess.fuelRange(p).toFixed(1)+' laps of range at '+sess.fuelLapRate(p).toFixed(2)+' kg/lap · '+sess.lapsLeft(p).toFixed(1)+' laps to go';
   const repair=p.damage.repairPlan({service:true});
-  $('pitFacts').textContent=p.pit?'Pit stop in progress — see the pit service panel.':'A clean tyre-only stop costs ≈ '+sess.pitLoss.toFixed(0)+' s here. '+(sess.eliminationMode?'Four distributed stations, one box each; arrive to queue: ':'Four shared boxes, first come first served at the pit entry: ')+''+sess.pitBoxesInUse()+' in use'+(sess.pitQueue.length?', '+sess.pitQueue.length+' queueing':'')+'. Refuelling '+SIM.REFUEL.rate.toFixed(1)+' kg/s. '+(repair.items.length?'Damaged '+repair.items.join(' and ').toLowerCase()+' replaced automatically; ':'Damaged wings are replaced automatically; ')+'structural, suspension and power-unit damage remains.';
-  $('strategyRule').textContent=(SIM.needsCompound(sess,p)?'Second dry compound still required. ':'Compound rule satisfied or exempt. ')+'Steer into the pit entry at the '+(G.track.pitForCar(p).side>0?'right':'left')+' track edge. Cross the gold entry gate to engage automatic braking and pit driving. Tyres and fuel are chosen when you stop in your box; the race keeps running while you decide. Control returns at pit exit.';
+  $('pitFacts').textContent=p.pit?'Pit stop in progress — see the pit service panel.':'A clean tyre-only stop costs ≈ '+sess.pitLoss.toFixed(0)+' s here. '+(sess.eliminationMode?'Four distributed stations, one box each; arrive to queue: ':'Four shared boxes, first come first served at the pit entry: ')+''+sess.pitBoxesInUse()+' in use'+(sess.pitQueue.length?', '+sess.pitQueue.length+' queueing':'')+(sess.fuelEnabled?'. Refuelling '+SIM.REFUEL.rate.toFixed(1)+' kg/s. ':'. ')+(repair.items.length?'Damaged '+repair.items.join(' and ').toLowerCase()+' replaced automatically; ':'Damaged wings are replaced automatically; ')+'structural, suspension and power-unit damage remains.';
+  $('strategyRule').textContent=(SIM.needsCompound(sess,p)?'Second dry compound still required. ':'Compound rule satisfied or exempt. ')+'Steer into the pit entry at the '+(G.track.pitForCar(p).side>0?'right':'left')+' track edge. Cross the gold entry gate to engage automatic braking and pit driving. '+(sess.fuelEnabled?'Tyres and fuel':'Tyres')+' are chosen when you stop in your box; the race keeps running while you decide. Control returns at pit exit.';
 }
 function exitToMenu() {
   const career = !!G.career; G.career = null;
@@ -9008,7 +9044,7 @@ function updateVehicleStatus(p, sess) {
   const drivable = p.retiring ? (p.dnf ? 'Out of the race' : 'Stop the car safely') : 'Drivable';
   const status = kv('Car status', drivable, p.retiring ? '#ff6b6b' : '#3ee07a');
   if (p.retiring) { pit.innerHTML = status; return; }
-  if (p.pit) { const P = p.pit; pit.innerHTML = kv('Pit lane', P.phase === 'awaiting' ? 'Choose tyres and fuel' : P.phase === 'release' ? 'Waiting for a safe release' : P.phase === 'stopped' ? 'Crew working' : P.phase === 'out' ? 'Automatic pit exit' : P.phase === 'queue' ? 'Queueing for a box' : 'Automatic pit entry', '#f5c518') + status; return; }
+  if (p.pit) { const P = p.pit; pit.innerHTML = kv('Pit lane', P.phase === 'awaiting' ? (sess.fuelEnabled ? 'Choose tyres and fuel' : 'Choose tyres') : P.phase === 'release' ? 'Waiting for a safe release' : P.phase === 'stopped' ? 'Crew working' : P.phase === 'out' ? 'Automatic pit exit' : P.phase === 'queue' ? 'Queueing for a box' : 'Automatic pit entry', '#f5c518') + status; return; }
   const plan = D.repairPlan({ service: true }); const loss = D.lapLoss();
   const punct = D.anyPuncture();
   const items = (punct ? ['Tyres'] : []).concat(plan.items);
@@ -9075,9 +9111,15 @@ function updateHud(dt) {
   const dr = $('chipDrift'); const sa = Math.abs(p.slideAngle || 0);
   if (sa > 0.08 && p.speed > 6) { dr.style.display = ''; dr.textContent = 'SLIDE ' + Math.round(sa * 57.3) + '°'; } else dr.style.display = 'none';
   // fuel: estimated laps of range from the car's own consumption (an estimate, not a guarantee)
-  const range = sess.fuelRange(p), toGo = sess.type === 'race' ? sess.lapsLeft(p) : Infinity;
-  $('fuelVal').textContent = '≈' + range.toFixed(1) + ' LAPS'; $('chipFuel').title = p.fuel.toFixed(1) + ' kg in the tank';
-  $('chipFuel').className = 'chip' + (sess.type === 'race' && range < toGo && range < 1.3 ? ' warn' : '');
+  const compact = !sess.fuelEnabled && $('chipLim').style.display === 'none' && $('chipDrift').style.display === 'none';
+  $('chipFuel').classList.toggle('hidden', !sess.fuelEnabled);
+  $('dashStatus').classList.toggle('hidden', compact);
+  $('hud-bc').classList.toggle('compact', compact);
+  if (sess.fuelEnabled) {
+    const range = sess.fuelRange(p), toGo = sess.type === 'race' ? sess.lapsLeft(p) : Infinity;
+    $('fuelVal').textContent = '≈' + range.toFixed(1) + ' LAPS'; $('chipFuel').title = p.fuel.toFixed(1) + ' kg in the tank';
+    $('chipFuel').className = 'chip' + (sess.type === 'race' && range < toGo && range < 1.3 ? ' warn' : '');
+  }
   // tyres
   const comp = SIM.COMPOUNDS[p.tyre.c];
   $('cmpIcon').textContent = p.tyre.c; $('cmpIcon').style.setProperty('--c', comp.color); $('cmpName').textContent = comp.name.toUpperCase();
