@@ -349,7 +349,8 @@ test('Elimination and qualifying still run with the new AI', () => {
   const e = new SIM.Session(t, { type: 'race', gameMode: 'elimination', seed: 9, difficulty: 0.8, weather: 'dynamic', weatherState: DRY(9), tyreWear: 'normal', mandatory: true, damage: 'realistic', entries: SIM.DRIVERS.map(driver => ({ driver })) });
   while (!e.over && e.elimination.round < 1 && e.time < 260) e.fixedStep(SIM.PHYS_DT);
   assert.equal(e.elimination.round, 1, 'first checkpoint reached');
-  assert.equal(e.elimination.out.length, 2, 'two eliminated');
+  // Laps 1–8 remove the last driver; a retirement spends that slot, and extra retirements go out too.
+  assert.ok(e.elimination.out.length >= e.eliminationSlots(1), 'last driver eliminated');
   const q = new SIM.Session(tracks.redridge, { type: 'quali', seed: 4, difficulty: 0.9, weather: 'dynamic', weatherState: DRY(4), entries: SIM.DRIVERS.slice(0, 3).map(driver => ({ driver })) });
   for (const c of q.cars) q.releaseFromGarage(c);
   while (q.time < 140) q.fixedStep(SIM.PHYS_DT);
