@@ -157,10 +157,24 @@ test('qualifying runs on every circuit', () => {
     const t = tracks.get(id);
     const s = new SIM.Session(t, { type: 'quali', entries: SIM.DRIVERS.slice(0, 4).map(driver => ({ driver })), seed: 4, spectate: true, weather: 'dynamic',
       weatherState: Object.assign(new SIM.DynamicWeather(1).snapshot(), { pattern: 'dry', regime: 'sunny', rain: 0, water: 0, lineWater: 0, patternEnds: 1e9, regimeEnds: 1e9 }) });
-    while (!s.over && s.time < 600) s.fixedStep(SIM.PHYS_DT);
+    // no out-lap: each car's timed lap starts where the pit exit rejoins the circuit, as it leaves the lane
+    const starts = new Map(), phases = new Set();
+    while (!s.over && s.time < 600) {
+      s.fixedStep(SIM.PHYS_DT);
+      for (const c of s.cars) { phases.add(c.q.phase); if (c.q.phase === 'flying' && !starts.has(c)) starts.set(c, { past: t.dS(t.pit.exit1, c.s), dist: c.q.distance, pit: !!c.pit }); }
+    }
     assert.ok(s.over, id + ' qualifying ended');
+    assert.deepEqual([...phases].sort(), ['complete', 'exit', 'flying', 'waiting'], id + ' phases');
+    for (const [c, st] of starts) {
+      assert.ok(!st.pit && st.past >= 0 && st.past < 2 && Math.abs(st.dist - st.past) < 1e-6, id + ' ' + c.driver.short + ' timed from the pit exit');
+    }
     const timed = s.cars.filter(c => c.q && c.q.result === 'valid');
     assert.ok(timed.length >= 3, id + ' timed laps ' + timed.length);
+    // one full circuit distance each, and the grid follows the times
+    for (const c of timed) assert.ok(c.q.distance >= t.length && c.q.distance < t.length + 2, id + ' distance ' + c.q.distance);
+    for (const c of timed) assert.ok(c.q.time > 70 && c.q.time < 130, id + ' lap time ' + c.q.time);
     assert.ok(s.gridOrder && s.gridOrder.length === 4, id + ' grid order');
+    const grid = s.gridOrder.map(e => s.cars[e]).filter(c => c.q.result === 'valid');
+    for (let k = 1; k < grid.length; k++) assert.ok(grid[k].q.time >= grid[k - 1].q.time, id + ' grid sorted by time');
   }
 });
