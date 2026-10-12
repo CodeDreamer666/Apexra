@@ -15,9 +15,10 @@ function session(track, mode = 'elimination', extra = {}, sim = SIM) {
     startCompound: 'M', startFuelLaps: 3, entries: sim.DRIVERS.map((driver, i) => ({ driver, isPlayer: i === 0 })), ...extra });
 }
 function box(S, car, tyre = 'H', fuel) {
-  const p = S.track.pit;
+  // Elimination services at its distributed stations (one box each); Grand Prix at the shared pit lane.
+  const p = S.track.stations ? S.track.stations[0] : S.track.pit;
   car.placeAt(S.track, p.boxes[0], p.side * p.boxD, 0);
-  car.pit = { phase: 'awaiting', box: 0, boxS: p.boxes[0], stopS: p.boxes[0], entryTime: S.time, arrivedAt: S.time };
+  car.pit = { phase: 'awaiting', station: p.id, box: 0, boxS: p.boxes[0], stopS: p.boxes[0], entryTime: S.time, arrivedAt: S.time };
   car.frozen = true;
   assert.equal(S.confirmPitService(car, { tyre, ...(fuel === undefined ? {} : { fuel }) }), true);
   return car.pit;
@@ -54,7 +55,7 @@ for (const track of tracks) {
       assert.equal(c.tyre.c, comp); assert.equal(c.damage.fw, 0); assert.equal(c.damage.c[2], 0);
       assert.equal(c.damage.c[3], .4); assert.equal(c.damage.c[5], .25);
       assert.equal(c.fuel, fuel); assert.equal(c.mass, mass); assert.equal(c.pitHistory[0].fuelAdded, 0);
-      assert.ok(c.tyre.used.has('M') && c.tyre.used.has(comp));
+      // Elimination counts a compound once it is driven on (tests/elimination.cjs), not when fitted.
     }
   });
   test(track.name + ': engine and identical physics ignore empty or stale tanks', () => {
@@ -125,22 +126,24 @@ for (const track of tracks) {
 }
 
 test('FIFO queues, physical stopping and safe release still operate in Elimination', () => {
-  const track = tracks[0], S = session(track); S.lightsOut = true;
-  for (let i = 0; i < 6; i++) {
-    const c = S.cars[i]; c.pit = { phase: 'queue', entryTime: i, queuePos: 0 };
+  const S = session(tracks[0]), track = S.track, st = track.stations[0]; S.lightsOut = true;
+  // Five arrivals at station 1 and one at station 2: each station's single box is first come, first served.
+  const p = S.player, order = [p, ...S.cars.filter(c => c !== p).slice(0, 5)];
+  order.forEach((c, i) => {
+    c.pit = { phase: 'queue', station: i < 5 ? 0 : 1, entryTime: i, queuePos: 0 };
     S.pitArrivals.push({ car: c, t: i, q: 1 });
-  }
+  });
   S.allocatePitBoxes();
-  assert.deepEqual([...S.pitBoxes].reverse().map(c => c.id), S.cars.slice(0, 4).map(c => c.id));
-  assert.deepEqual(S.pitQueue.map(c => c.id), S.cars.slice(4, 6).map(c => c.id));
-  const p = S.player, P = p.pit;
-  p.placeAt(track, P.stopS, track.pit.side * track.pit.boxD, 1); p.speed = 1;
+  assert.equal(S.pitBoxes[0], p); assert.equal(S.pitBoxes[1], order[5]);
+  assert.deepEqual(S.pitQueue.map(c => c.id), order.slice(1, 5).map(c => c.id));
+  const P = p.pit;
+  p.placeAt(track, P.stopS, st.side * st.boxD, 1); p.speed = 1;
   S.pitLogic(p, SIM.PHYS_DT); assert.equal(P.phase, 'in', 'service needs a complete stop');
-  p.placeAt(track, P.stopS, track.pit.side * track.pit.boxD, 0); p.speed = 0;
+  p.placeAt(track, P.stopS, st.side * st.boxD, 0); p.speed = 0;
   S.pitLogic(p, SIM.PHYS_DT); assert.equal(P.phase, 'awaiting');
   assert.ok(S.confirmPitService(p, { tyre: 'H' }), 'tyre-only confirmation needs no fuel field');
   while (P.phase === 'stopped' && S.time < 100) { S.time += SIM.PHYS_DT; S.pitLogic(p, SIM.PHYS_DT); }
-  const rival = S.cars[7]; rival.placeAt(track, p.s - 5, track.pit.side * track.pit.fastD, 15); rival.speed = 15;
+  const rival = S.cars.find(c => !order.includes(c)); rival.placeAt(track, p.s - 5, st.side * st.fastD, 15); rival.speed = 15;
   S.pitLogic(p, SIM.PHYS_DT); assert.equal(P.phase, 'release', 'release waits for traffic');
   rival.inGarage = true;
   for (const c of S.cars) if (c !== p) c.inGarage = true;
@@ -151,8 +154,11 @@ test('all five starting tyres and dry-compound / wet exceptions remain available
   for (const comp of ['S', 'M', 'H', 'I', 'W']) {
     const S = session(tracks[0], 'elimination', { startCompound: comp });
     assert.equal(S.player.tyre.c, comp);
+    // Elimination counts a compound once it is driven on (see tests/elimination.cjs): drive both sets.
+    S.player.tyre.used.add(comp);
     assert.equal(SIM.needsCompound(S, S.player), ['S', 'M', 'H'].includes(comp));
     S.fitTyres(S.player, comp === 'H' ? 'M' : 'H', 80);
+    S.player.tyre.used.add(S.player.tyre.c);
     assert.equal(SIM.needsCompound(S, S.player), false);
   }
 });
