@@ -84,8 +84,8 @@ for (const t of tracks) {
       who.boxRequest = false;
     }
     setup(); r.updateBlueFlags(.1); assert.equal(c.blueFlag.target, o);
-    c.blueFlag.blocking = 13; c.blueFlag.warned = true; r.vsc.phase = 'deployed';
-    r.updateBlueFlags(.1); assert.equal(c.blueFlag.target, null); assert.equal(c.penalty, 0);
+    r.vsc.phase = 'deployed';
+    r.updateBlueFlags(.1); assert.equal(c.blueFlag.target, null); assert.equal('penalty' in c, false);
     r.vsc.phase = 'idle'; r.updateBlueFlags(.1); assert.equal(c.blueFlag.target, o);
     r.vsc.phase = 'ending'; r.updateBlueFlags(.1); assert.equal(c.blueFlag.target, null);
     setup(); r.finishedFlag = true; r.updateBlueFlags(.1); assert.equal(c.blueFlag.target, null);
@@ -127,43 +127,19 @@ for (const t of tracks) {
   });
 }
 
-test('player penalties require repeated reactive obstruction, with warning first and a cooldown', () => {
+test('blue flags remain informational even during prolonged player obstruction', () => {
   const t = tracks[0], r = field(t), [c, o] = r.cars, L = t.length;
   place(r, c, L + 150); place(r, o, 2 * L + 135, 50);
   r.updateBlueFlags(.1);
-  for (let k = 0; k < 500; k++) { r.time += .1; r.updateBlueFlags(.1); }
-  assert.equal(c.penalty, 0); assert.equal(c.blueFlag.warned, false, 'stationary lane choice is not blocking');
-  // Three visible reactive moves following the lapper across a clear straight.
-  for (const direction of [1, -1, 1]) {
-    r.time += 1.5;
-    c.blueFlag.lastD = -.5 * direction; c.blueFlag.lastTargetD = 1 * direction;
-    c.d = 0; o.d = 1.2 * direction;
+  for (let k = 0; k < 800; k++) {
+    r.time += .1; c.d = o.d = Math.sin(k / 10);
     r.updateBlueFlags(.1);
   }
-  assert.ok(c.blueFlag.moves >= 2);
-  for (let k = 0; k < 65; k++) { r.time += .1; r.updateBlueFlags(.1); }
-  assert.equal(c.blueFlag.warned, true); assert.equal(c.penalty, 0);
-  for (let k = 0; k < 90; k++) { r.time += .1; r.updateBlueFlags(.1); }
-  assert.equal(c.penalty, 5);
-  for (let k = 0; k < 200; k++) { r.time += .1; r.updateBlueFlags(.1); }
-  assert.equal(c.penalty, 5, 'one penalty per encounter');
-  assert.equal(c.penaltyLog[0], 'Repeated blocking under blue flags');
-});
-
-test('unsafe corners, wet conditions, same-lap battles and VSC never accrue obstruction', () => {
-  const t = tracks[0], r = field(t), [c, o, rival] = r.cars, L = t.length;
-  place(r, c, L + 150); place(r, o, 2 * L + 135, 50); r.updateBlueFlags(.1);
-  for (const condition of ['corner', 'wet', 'battle', 'vsc']) {
-    c.blueFlag.moves = 3; c.blueFlag.blocking = 5.9; c.blueFlag.age = 20;
-    r.wet = 0; r.vsc.phase = 'idle'; rival.inGarage = true;
-    if (condition === 'corner') c.input.brake = .5; else c.input.brake = 0;
-    if (condition === 'wet') r.wet = .8;
-    if (condition === 'battle') place(r, rival, L + 165, 50);
-    if (condition === 'vsc') r.vsc.phase = 'deployed';
-    r.updateBlueFlags(.1);
-    assert.equal(c.penalty, 0); assert.equal(c.blueFlag.warned, false, condition);
-    assert.ok(c.blueFlag.blocking < 5.9);
-  }
+  assert.equal(c.blueFlag.target, o);
+  assert.equal('penalty' in c, false);
+  assert.equal('blocking' in c.blueFlag, false);
+  assert.equal('warned' in c.blueFlag, false);
+  assert.ok(!r.messages.some(m => /penalty|stop blocking/i.test(m.text)));
 });
 
 for (const t of tracks) test(t.name + ': 20-car lapping traffic keeps moving with real physics and classification', () => {

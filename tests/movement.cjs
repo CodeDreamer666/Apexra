@@ -185,7 +185,7 @@ test('bots drive through the same arcade handling as the player', () => {
     }
   }
   assert.ok(sess.over, 'every bot finished the lap');
-  for (const car of sess.cars) assert.ok(car.finished && !car.dnf && car.penaltyLog.length === 0);
+  for (const car of sess.cars) assert.ok(car.finished && !car.dnf && !('penaltyLog' in car));
 });
 
 test('a bot command reaches the car exactly as the same player input would', () => {
@@ -638,7 +638,7 @@ test('race start: all 20 cars sit at the same launch rpm, stay on their grid slo
   for (const r of rpms) assert.equal(r, SIM.SPEC.launchRpm);
   for (let k = 0; k < 60 * 6; k++) sess.update(1 / 60, 1, 1e9);
   for (const c of sess.cars) {
-    assert.equal(c.penaltyLog.length, 0, 'no false-start penalty');
+    assert.equal('penaltyLog' in c, false, 'no sporting penalty state');
     // the back of a 20-car grid can still be held up by the traffic ahead of it
     assert.ok(c.speed > 15, 'every car launched: ' + c.driver.short + ' at ' + c.speed.toFixed(1) + ' m/s, s=' + c.s.toFixed(0) + ', d=' + c.d.toFixed(1));
   }

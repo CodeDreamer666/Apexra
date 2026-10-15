@@ -34,17 +34,17 @@ test('own lap-12 crossings start clocks; fourth on road wins after ALL finish; s
  S.refreshEliminationOrder();S.finishRace();assert.equal(S.winner,cars[3]);assert.deepEqual([...cars[3].finalLaps],[75,75,75]);assert.equal(S.results[0].car,cars[3]);assert.equal(S.finalTiming(cars[3]).average,75);
  const S2=race();const c=S2.cars[0];S2.lightsOut=true;crossing(S2,c,12,100);c.pit={phase:'stopped',station:0};crossing(S2,c,13,230);assert.equal(c.finalLaps[0],130);crossing(S2,c,13,231);assert.equal(c.finalLaps.length,1,'no double counting a recrossing');
 });
-test('ties use sorted final laps, then grid slot; existing compound penalties affect total once',()=>{
+test('ties use sorted final laps, then grid slot; obsolete penalties are ignored',()=>{
  const S=race(),[a,b]=S.cars;for(const c of [a,b])c.finished=true;
  a.finalLaps=[80,100,90];b.finalLaps=[85,90,95];assert.ok(S.compareFinal(a,b)<0);
  a.finalLaps=[80,80,110];b.finalLaps=[80,90,100];assert.ok(S.compareFinal(a,b)<0);
  b.finalLaps=[110,80,80];assert.ok(S.compareFinal(a,b)<0);
- a.penalty=30;assert.ok(S.compareFinal(a,b)>0);
+ a.penalty=30;assert.ok(S.compareFinal(a,b)<0);
 });
-test('dry rule uses whole event and actual driving; wet exceptions and all five lifespans preserved',()=>{
- const S=race('summit',{mandatory:true}),c=S.cars[0];assert.equal(SIM.needsCompound(S,c),true);
- c.tyre.used.add('H');assert.equal(SIM.needsCompound(S,c),true);S.fitTyres(c,'S',80);assert.equal(SIM.needsCompound(S,c),true,'fitting alone does not credit use');c.tyre.used.add('S');assert.equal(SIM.needsCompound(S,c),false);
- c.tyre.used.clear();c.tyre.used.add('I');assert.equal(SIM.needsCompound(S,c),false);c.tyre.used.clear();S.wetRace=true;assert.equal(SIM.needsCompound(S,c),false);
+test('all five compounds retain their lifespans without compliance tracking',()=>{
+ const S=race('summit',{mandatory:true}),c=S.cars[0];
+ for(const comp of ['S','M','H','I','W']){S.fitTyres(c,comp,80);assert.equal(c.tyre.c,comp);assert.equal('used' in c.tyre,false);}
+ assert.equal('mandatory' in S,false);assert.equal(SIM.needsCompound,undefined);
  assert.deepEqual(Object.values(SIM.COMPOUNDS).map(c=>c.life),[2,3,5,3,5]);
 });
 test('distributed geometry is connected, separated, bounded and never changes GP / Career pits',()=>{
