@@ -1,87 +1,120 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
-const html=fs.readFileSync(path.join(__dirname,'..','index.html'),'utf8');
-function sim(){const m={exports:{}};new Function('module',html.match(/<script>([\s\S]*?)<\/script>/)[1])(m);return m.exports;}
-const SIM=sim();
-const tracks=new Map(SIM.CIRCUITS.map(d=>[d.id,new SIM.Track(d)]));
-function race(id='summit',extra={}){return new SIM.Session(tracks.get(id),{type:'race',gameMode:'elimination',seed:11,weather:'dry',mistakes:0,mandatory:false,entries:SIM.DRIVERS.map(driver=>({driver})),...extra});}
-function crossing(S,c,lap,at){if(lap===12&&c.finalStart==null)c.timedRaceBoundary=11;S.time=at;c.stepDistance=lap*S.track.length-.1;c.totalDist=lap*S.track.length+.1;c.stepS=S.track.wrapS(-.1);c.lastLapBase=lap-1;c.lastWithin=S.track.length-.1;c.crossings=Math.max(1,c.crossings);c.sectorIdx=2;S.timing(c,c.stepS,.01,at);}
-function checkpoint(S,lap){S.time=lap*100;for(const c of S.activeOrder){c.stepDistance=c.totalDist=lap*S.track.length+(20-c.gridSlot)*5;c.timedRaceBoundary=lap;c.laps=lap;}S.eliminationRound(lap,1,.01);}
-for(const def of SIM.CIRCUITS)test(def.id+': 20 starters, 19→12→4, no state reset across phases',()=>{
- const S=race(def.id);assert.equal(S.cars.length,20);assert.equal(S.totalLaps,15);S.lightsOut=true;
- const c=S.cars[0];c.tyre.wear.fill(.4);c.damage.c[0]=.3;const tyre=c.tyre,damage=c.damage,weather=S.weather,fuel=c.fuel;
- for(let lap=1;lap<=12;lap++){checkpoint(S,lap);assert.equal(S.activeOrder.length,lap<=8?20-lap:12-(lap-8)*2);assert.equal(S.elimination.history.at(-1).removed.length,lap<=8?1:2);const n=S.elimination.history.length;S.eliminationRound(lap,1,.01);assert.equal(S.elimination.history.length,n);}
- assert.equal(S.elimination.phase,3);assert.equal(S.elimination.finalists.length,4);assert.equal(c.tyre,tyre);assert.equal(c.damage,damage);assert.equal(c.weather,undefined);assert.equal(S.weather,weather);assert.equal(c.fuel,fuel);assert.equal(c.tyre.wear[0],.4);assert.equal(c.damage.c[0],.3);assert.equal(S.track.def,tracks.get(def.id).def);assert.equal(tracks.get(def.id).stations,undefined);
+const html=fs.readFileSync(path.join(__dirname,'..','index.html'),'utf8'),m={exports:{}};
+new Function('module',html.match(/<script>([\s\S]*?)<\/script>/)[1])(m);const SIM=m.exports;
+const tracks=new Map(SIM.CIRCUITS.map(d=>{const t=new SIM.Track(d);t.configureElimination();return[d.id,t];}));
+function race(id='summit',variant='classic',extra={}){const S=new SIM.Session(tracks.get(id),{type:'race',gameMode:'elimination',eliminationVariant:variant,seed:11,weather:'dynamic',mistakes:0,entries:SIM.DRIVERS.map((driver,i)=>({driver,isPlayer:i===0})),...extra});S.lightsOut=true;return S;}
+function frame(S,moves,dt=.1){for(const c of S.cars){c.stepDistance=c.totalDist;c.stepS=c.s;c.lastProgressAt=S.time;}for(const [c,a,b]of moves){c.stepDistance=a;c.totalDist=b;c.lastLapBase=Math.floor(a/S.track.length);c.lastWithin=S.track.wrapS(a);c.crossings=Math.max(1,c.crossings);c.sectorIdx=2;c.stepS=S.track.wrapS(a);}S.time+=dt;S.eliminationTiming(dt);}
+function round(S,lap){const e=S.elimination.events[lap-1],cars=S.activeOrder.slice();for(const c of cars)frame(S,[[c,e.distance-1,e.distance+1]]);}
+function finish(S,c,at=S.time+1){S.time=at-.1;frame(S,[[c,S.totalLaps*S.track.length-1,S.totalLaps*S.track.length+1]]);}
+for(const id of tracks.keys())for(const variant of Object.keys(SIM.ELIMINATION_RULES))test(id+' / '+variant+': all checkpoints and continuous finale',()=>{
+ const S=race(id,variant),c=S.player,tyre=c.tyre,damage=c.damage,weather=S.weather;c.tyre.wear.fill(.4);c.damage.c[0]=.3;
+ const snap={fuel:c.fuel,weather:weather.snapshot()};let expected=20;
+ assert.equal(S.totalLaps,variant==='ruthless'?7:8);
+ for(let lap=1;lap<=6;lap++){const before=S.elimination.history.length;round(S,lap);expected-=S.elimination.events[lap-1].count;assert.equal(S.activeOrder.length,expected);assert.equal(S.elimination.history.length,before+1);S.eliminationRound(lap);assert.equal(S.elimination.history.length,before+1);}
+ assert.equal(expected,2);assert.equal(S.elimination.history[4].remaining,3);assert.equal(S.elimination.finalists.length,2);
+ assert.equal(c.tyre,tyre);assert.equal(c.damage,damage);assert.equal(S.weather,weather);assert.deepEqual(weather.snapshot(),snap.weather);assert.equal(c.fuel,snap.fuel);assert.equal(c.tyre.wear[0],.4);assert.equal(c.damage.c[0],.3);
+ const [a,b]=S.activeOrder;const e=S.totalLaps*S.track.length;
+ frame(S,[[a,e-S.track.length-1,e-S.track.length+1]]);assert.equal(S.over,false,'penultimate lap cannot finish race');
+ finish(S,b);assert.equal(S.over,true);assert.equal(S.winner,b,'first legitimate final crossing wins, irrespective of prior position/lap times');assert.equal(S.results[0].car,b);assert.equal(S.results.length,20);
+ assert.equal(S.elimination.history.length,6);assert.equal(S.elimination.out.length,18);assert.equal(S.fuelEnabled,false);assert.equal(S.track.stations.length,2);assert.equal(c.mass,820);
 });
-test('leader crossing does not eliminate; pit users and delayed tail must physically finish checkpoint',()=>{
- const S=race();S.lightsOut=true;const tail=S.cars.at(-1);for(const c of S.cars){c.stepDistance=c.totalDist=S.track.length+100-c.gridSlot;c.timedRaceBoundary=1;}
- tail.timedRaceBoundary=0;tail.stepDistance=tail.totalDist=S.track.length-2;S.eliminationRound(1,1,.01);assert.equal(S.elimination.round,0);assert.equal(S.elimination.out.length,0);
- tail.pit={phase:'stopped',station:0,box:0};tail.timedRaceBoundary=1;tail.stepDistance=tail.totalDist=S.track.length;S.eliminationRound(1,1,.01);assert.equal(S.elimination.round,1);assert.ok(tail.eliminated);assert.equal(tail.pit.phase,'release');
+test('classic exact progression and GP/Career rules stay separate',()=>{
+ const S=race();for(let lap=1;lap<=6;lap++)round(S,lap);assert.deepEqual(S.elimination.history.map(e=>e.remaining),[19,17,14,9,3,2]);
+ for(const career of [undefined,{tier:1,race:0}]){const gp=new SIM.Session(new SIM.Track(SIM.CIRCUITS[0]),{type:'race',seed:1,career,eliminationVariant:'ruthless',entries:SIM.DRIVERS.map(driver=>({driver}))});assert.equal(gp.totalLaps,8);assert.equal(gp.fuelEnabled,true);assert.equal(gp.track.stations,undefined);assert.equal(gp.ruthlessAggression(gp.cars[0]),0);}
 });
-test('retirements spend checkpoint slots, never resurrect cars; stalled final competitors retire deterministically',()=>{
- const S=race();S.lightsOut=true;S.startRetirement(S.cars.at(-1),'Damage');checkpoint(S,1);assert.equal(S.activeOrder.length,19);assert.equal(S.elimination.history[0].removed.length,0);
- for(let lap=2;lap<=12;lap++)checkpoint(S,lap);assert.equal(S.activeOrder.length,4);assert.ok(S.cars.at(-1).eliminated);
- const c=S.activeOrder[0];c.progressAnchor=c.totalDist;c.lastProgressAt=0;for(const o of S.activeOrder){o.stepDistance=o.totalDist;o.stepS=o.s;o.lastProgressAt=S.time;}c.lastProgressAt=0;S.eliminationTiming(.01);assert.ok(c.eliminated);assert.equal(c.eliminated.reason,'Unable to make progress');
+test('random schedules cover every valid composition and are reproducible',()=>{
+ const valid=new Set();function enumerate(a=[],sum=0){if(a.length===5){if(sum===17)valid.add(a.join());return;}for(let k=1;k<=6;k++)enumerate([...a,k],sum+k);}enumerate();
+ const seen=new Set(),rng=SIM.makeRng(123);
+ for(let i=0;i<60000;i++){const counts=SIM.eliminationSchedule(rng);assert.equal(counts.length,5);assert.equal(counts.reduce((a,b)=>a+b,0),17);assert.ok(counts.every(n=>n>=1&&n<=6));seen.add(counts.join());}
+ assert.deepEqual(seen,valid);console.log('Verified '+seen.size+' distinct valid schedules across 60,000 draws');
+ for(const variant of ['chaos','ruthless']){const a=race('summit',variant,{seed:0}),b=race('summit',variant,{seed:0});assert.deepEqual(a.elimination.events,b.elimination.events);assert.ok(Object.isFrozen(a.elimination.events));assert.ok(a.elimination.events.every(Object.isFrozen));}
 });
-test('own lap-12 crossings start clocks; fourth on road wins after ALL finish; stopped pit time included',()=>{
- const S=race();S.lightsOut=true;for(let lap=1;lap<=12;lap++)checkpoint(S,lap);
- const cars=S.activeOrder.slice();
- for(let i=0;i<4;i++)crossing(S,cars[i],12,1200+i*30);
- for(let lap=13;lap<=15;lap++)for(let i=0;i<4;i++){
-  if(i===3&&lap===13)cars[i].pit={phase:'stopped',station:0};
-  crossing(S,cars[i],lap,1200+i*30+(lap-12)*(90-i*5));
-  if(lap===15&&i<3)assert.equal(S.over,false);
- }
- S.refreshEliminationOrder();S.finishRace();assert.equal(S.winner,cars[3]);assert.deepEqual([...cars[3].finalLaps],[75,75,75]);assert.equal(S.results[0].car,cars[3]);assert.equal(S.finalTiming(cars[3]).average,75);
- const S2=race();const c=S2.cars[0];S2.lightsOut=true;crossing(S2,c,12,100);c.pit={phase:'stopped',station:0};crossing(S2,c,13,230);assert.equal(c.finalLaps[0],130);crossing(S2,c,13,231);assert.equal(c.finalLaps.length,1,'no double counting a recrossing');
-});
-test('ties use sorted final laps, then grid slot; obsolete penalties are ignored',()=>{
- const S=race(),[a,b]=S.cars;for(const c of [a,b])c.finished=true;
- a.finalLaps=[80,100,90];b.finalLaps=[85,90,95];assert.ok(S.compareFinal(a,b)<0);
- a.finalLaps=[80,80,110];b.finalLaps=[80,90,100];assert.ok(S.compareFinal(a,b)<0);
- b.finalLaps=[110,80,80];assert.ok(S.compareFinal(a,b)<0);
- a.penalty=30;assert.ok(S.compareFinal(a,b)<0);
-});
-test('all five compounds retain their lifespans without compliance tracking',()=>{
- const S=race('summit',{mandatory:true}),c=S.cars[0];
- for(const comp of ['S','M','H','I','W']){S.fitTyres(c,comp,80);assert.equal(c.tyre.c,comp);assert.equal('used' in c.tyre,false);}
- assert.equal('mandatory' in S,false);assert.equal(SIM.needsCompound,undefined);
- assert.deepEqual(Object.values(SIM.COMPOUNDS).map(c=>c.life),[2,3,5,3,5]);
-});
-test('distributed geometry is connected, separated, bounded and never changes GP / Career pits',()=>{
- for(const def of SIM.CIRCUITS){const S=race(def.id),t=S.track;assert.equal(t.stations.length,4);const fake={pit:{station:0},offN:4,s:t.stations[0].entry0,d:-t.stations[0].side*20,idx:0};assert.equal(S.legalProgress(fake,5,0,0),0,'off-route pit state grants no shortcut credit');
-  for(const p of t.stations){assert.equal(p.boxes.length,1);assert.ok(p.len<tracks.get(def.id).pit.len);for(let q=0;q<p.len;q+=5){const s=t.wrapS(p.entry0+q),d=t.pitTargetD(s,p.boxes[0]),i=t.wrapI(Math.round(s/SIM.DS));assert.equal(t.pitAt(s).id,p.id);assert.equal(t.surfaceAt(i,d,true),0,def.id+' station '+p.id+' q '+q);const w=t.walls(i,s,true,{innerPit:0});assert.ok(Math.abs(d)<(p.side>0?w.r:w.l));if(w.innerPit)assert.ok(Math.abs(d)>w.innerPit);assert.ok(S.legalProgress({pit:{station:p.id},offN:4,s,d},5,0,0)===5);}
-  }
-  const gp=new SIM.Session(tracks.get(def.id),{type:'race',gameMode:'grandprix',entries:SIM.DRIVERS.map(driver=>({driver})),seed:3});assert.equal(gp.totalLaps,8);assert.equal(gp.track.stations,undefined);assert.equal(gp.track.pit.boxes.length,4);
+test('Ruthless locations avoid service routes, stay ordered and provide fair warnings on every circuit',()=>{
+ for(const t of tracks.values())for(let seed=0;seed<400;seed++){
+  const events=SIM.eliminationEvents(t,'ruthless',seed);assert.equal(events.length,6);assert.equal(events.slice(0,5).reduce((a,e)=>a+e.count,0),17);
+  events.forEach((e,i)=>{assert.ok(e.s>=(i===5?2000:1500)&&e.s<=(i===5?5000:5500));assert.equal(e.lap,i+1);assert.equal(e.distance,i*t.length+e.s);assert.ok(e.warning>=500&&e.warning<=1000);assert.equal(e.distance-e.reveal,e.warning);assert.ok(!t.stations.some(p=>t.wrapS(e.s-p.entry0)<p.len+60));assert.ok(Number.isFinite(t.pointAt(e.s,0)[0]));if(i)assert.ok(e.distance>events[i-1].distance);});
  }
 });
-test('each station independently assigns in physical arrival order and never transfers queues',()=>{
- const S=race(),c=S.cars;
- function arrive(c,k,at,q=1){c.pit={station:k,phase:'queue',box:null,entryTime:at};S.pitArrivals.push({car:c,t:at,q});}
- arrive(c[5],0,10);arrive(c[2],0,11);arrive(c[1],1,10);arrive(c[0],0,11,2);S.allocatePitBoxes();assert.equal(S.pitBoxes[0],c[5]);assert.equal(S.pitBoxes[1],c[1]);assert.deepEqual([...S.pitQueue],[c[0],c[2]]);assert.equal(S.pitBoxes[2],null);
- c[5].pit.phase='out';c[5].s=S.track.wrapS(S.track.stations[0].boxes[0]+20);S.allocatePitBoxes();assert.equal(S.pitBoxes[0],c[0]);assert.deepEqual([...S.pitQueue],[c[2]]);
+test('unknown public view, engineer and AI never use hidden count or location',()=>{
+ for(const variant of ['chaos','ruthless']){
+  const A=race('summit',variant,{seed:12}),B=race('summit',variant,{seed:13});
+  assert.notDeepEqual(A.elimination.events,B.elimination.events);
+  for(const S of [A,B]){const c=S.player;assert.equal(S.eliminationInfo(c).count,null);assert.equal(S.eliminationInfo(c).cutoff,null);assert.equal(S.eliminationInfo(c).distance,null);if(variant==='ruthless')assert.equal(S.eliminationInfo(c).revealDistance,null);}
+  assert.deepEqual(A.eliminationInfo(A.player),B.eliminationInfo(B.player));assert.equal(A.eliminationRisk(A.player),B.eliminationRisk(B.player));assert.equal(A.eliminationUrgency(A.player),B.eliminationUrgency(B.player));assert.equal(A.checkpointApproach(),0);
+  A.messages.length=0;const e=A.elimination.events[0];A.cars[0].totalDist=e.reveal-1;A.refreshEliminationOrder();assert.equal(A.eliminationInfo().known,false);A.revealEliminations();assert.equal(A.messages.length,0);
+  A.cars[0].totalDist=e.reveal;A.refreshEliminationOrder();A.revealEliminations();const info=A.eliminationInfo();assert.equal(info.count,e.count);assert.equal(info.cutoff,20-e.count);assert.equal(A.messages.length,1);assert.match(A.messages[0].text,new RegExp(e.count+' eliminated'));assert.equal(A.elimination.revealed.has(2),false);
+  const original=JSON.stringify(A.elimination.events);A.player.position=20;A.player.damage.c[0]=.9;assert.equal(JSON.stringify(A.elimination.events),original);
+ }
 });
-test('a moving unfinished finalist is never globally timed out',()=>{
- const S=race();S.lightsOut=true;for(let lap=1;lap<=12;lap++)checkpoint(S,lap);const last=S.activeOrder.at(-1);for(const c of S.activeOrder)c.finished=c!==last;S.finishedFlag=true;S.finishLeaderTime=0;S.time=2000;last.lastProgressAt=2000;S.slowUpdate();assert.equal(S.over,false);
+test('immutable crossing order beats post-checkpoint overtakes and live distance',()=>{
+ const S=race(),e=S.elimination.events[0],cars=S.cars.slice();
+ // Car 19 crosses first, then drops far back; car 0 crosses last, then jumps ahead.
+ for(const c of cars.slice().reverse())frame(S,[[c,e.distance-1,e.distance+1]]);
+ assert.equal(S.elimination.out[0].car,cars[0]);assert.equal(cars[19].eliminated,null);
+ const T=race(),ev=T.elimination.events[0];for(const c of T.cars)T.elimination.crossings[0].set(c,10);T.eliminationRound(1);assert.equal(T.elimination.out[0].car,T.cars.at(-1),'exact ties use grid slot');
 });
-test('dynamic weather state persists across both phase transitions; player and AI receive identical crew durations',()=>{
- const S=race('summit',{weather:'dynamic'}),weather=S.weather;
- weather.update(30);const before=weather.snapshot();for(let lap=1;lap<=12;lap++)checkpoint(S,lap);
- assert.equal(S.weather,weather);assert.deepEqual(S.weather.snapshot(),before);weather.update(30);assert.ok(weather.time>before.time);
- const [a,b]=S.activeOrder;a.isPlayer=true;for(const c of [a,b]){c.damage.c[0]=.5;c.pit={phase:'awaiting',station:0};}
- SIM.setSeed(123);S.beginPitService(a,{tyre:'S',fuel:2});SIM.setSeed(123);S.beginPitService(b,{tyre:'S',fuel:2});
- assert.deepEqual([a.pit.total,a.pit.tyreT,a.pit.fuelT,a.pit.fwT],[b.pit.total,b.pit.tyreT,b.pit.fuelT,b.pit.fwT]);
- const gp=new SIM.Session(tracks.get('summit'),{type:'race',entries:SIM.DRIVERS.map(driver=>({driver})),seed:1});assert.equal(S.fuelCapacity,gp.fuelCapacity);assert.equal(S.fuelRate,gp.fuelRate);assert.equal(S.fuelPerLap,gp.fuelPerLap);
+test('a leader cannot remove a lapped car; service routes use the same boundary',()=>{
+ const S=race('summit','ruthless'),e=S.elimination.events[0],tail=S.cars.at(-1);
+ for(const c of S.cars.slice(0,-1))frame(S,[[c,e.distance-1,e.distance+1]]);
+ assert.equal(S.elimination.round,0);assert.equal(S.elimination.out.length,0);
+ for(const c of S.cars.slice(0,-1))c.totalDist+=S.track.length*2;
+ assert.equal(S.elimination.round,0);
+ tail.pit={phase:'out',station:0};frame(S,[[tail,e.distance-1,e.distance+1]]);
+ assert.equal(S.elimination.round,1);assert.equal(tail.eliminated.kind,'checkpoint');assert.equal(tail.pit.phase,'out');
 });
-test('active crew work and its queue do not consume the inactivity deadline',()=>{
- const S=race();S.lightsOut=true;for(let lap=1;lap<=12;lap++)checkpoint(S,lap);
- const [waiting,crew]=S.activeOrder;for(const c of S.activeOrder){c.stepDistance=c.totalDist;c.stepS=c.s;c.lastProgressAt=500;c.progressAnchor=c.totalDist;}
- S.time=500;waiting.lastProgressAt=0;waiting.pit={station:0,phase:'queue'};crew.pit={station:0,phase:'stopped',timer:1};S.pitBoxes[0]=crew;
- S.eliminationTiming(.01);assert.equal(waiting.eliminated,null);assert.equal(waiting.lastProgressAt,500);
- crew.pit.phase='out';waiting.lastProgressAt=0;S.eliminationTiming(.01);assert.equal(waiting.eliminated?.reason,'Unable to make progress');
+test('multiple retirements, off-track/stalled drivers and a depleted field never remove the last survivor',()=>{
+ for(const variant of ['classic','chaos','ruthless']){
+  const S=race('summit',variant);for(const c of S.cars.slice(1))S.startRetirement(c,'Damage');
+  for(let lap=1;lap<=6;lap++)round(S,lap);assert.equal(S.activeOrder.length,1);assert.equal(S.player.eliminated,null);finish(S,S.player);assert.equal(S.winner,S.player);
+  const T=race('summit',variant);T.startRetirement(T.player,'Damage');assert.ok(T.events.some(e=>e.type==='playereliminated'));for(const c of T.cars)T.lastProgressAt=0;
+  T.time=200;for(const c of T.cars){c.lastProgressAt=0;c.progressAnchor=c.totalDist;c.stepDistance=c.totalDist;c.stepS=c.s;}T.eliminationTiming(.01);assert.equal(T.over,true);assert.equal(T.winner,null);
+ }
 });
-test('a candidate finishing early cannot bypass unresolved position checkpoints',()=>{
- const S=race();S.lightsOut=true;for(let lap=1;lap<=11;lap++)checkpoint(S,lap);
- const c=S.activeOrder.at(-1);for(const o of S.activeOrder){o.timedRaceBoundary=16;o.stepDistance=o.totalDist=16*S.track.length+(20-o.gridSlot)*5;}
- c.finished=true;c.finalLaps=[90,90,90];c.stepDistance=c.totalDist=15*S.track.length+10;S.eliminationRound(12,1,.01);
- assert.equal(c.eliminated?.kind,'checkpoint');assert.equal(c.finished,false);assert.equal(S.elimination.finalists.some(o=>o===c),false);assert.equal(S.activeOrder.length,4);
+test('retirement can resolve a waiting checkpoint without changing recorded order',()=>{
+ const S=race(),e=S.elimination.events[0],tail=S.cars.at(-1);for(const c of S.cars.slice(0,-1))frame(S,[[c,e.distance-1,e.distance+1]]);
+ S.startRetirement(tail,'Damage');frame(S,[]);assert.equal(S.elimination.round,1);assert.equal(S.elimination.history[0].removed.length,0);assert.equal(S.activeOrder.length,19);
+});
+test('reverse and repeated crossings do not produce repeated events or finishes',()=>{
+ const S=race(),c=S.player,e=S.elimination.events[0];frame(S,[[c,e.distance-1,e.distance+1]]);const at=S.elimination.crossings[0].get(c);frame(S,[[c,e.distance+1,e.distance-1]]);frame(S,[[c,e.distance-1,e.distance+1]]);assert.equal(S.elimination.crossings[0].get(c),at);assert.equal(S.elimination.round,0);
+ const off=S.legalProgress(Object.assign(c,{offN:4,idx:100,d:100}),35,100,100);assert.equal(off,0,'projection jumps cannot earn progress');
+});
+test('Ruthless tactical changes retain personalities and the identical physical envelope',()=>{
+ const results={};
+ for(const variant of ['classic','chaos','ruthless']){
+  const S=race('summit',variant),c=S.cars[1],ai=c.ai;c.tyre.wear.fill(.2);c.speed=c.u=40;
+  ai.ruthless=S.ruthlessAggression(c);ai.strategic(.1,S.eliminationUrgency(c));results[variant]={risk:ai.riskBudget,bias:ai.attackBias,aggression:ai.ruthless,commit:ai.commit,brake:ai.brakeCommit,mass:c.mass,grip:c.gripEstimate(S.wet)};
+  ai.target=S.cars[2];ai.passEval={car:ai.target,feasible:true,gain:.2,success:.9,value:.8,risk:.02,maneuver:'inside',side:1};for(let i=0;i<5;i++)ai.updateState(.1,ai.target,null,false,false);results[variant].conviction=ai.conviction;
+  const healthy=S.ruthlessAggression(c);c.damage.c.fill(.7);c.tyre.wear.fill(.95);assert.ok(S.ruthlessAggression(c)<=healthy);
+  assert.ok(new Set(S.cars.slice(1).map(c=>c.ai.mind.aggr)).size>1);
+ }
+ assert.equal(results.classic.aggression,0);assert.equal(results.chaos.aggression,0);assert.ok(results.ruthless.risk>results.chaos.risk);assert.ok(results.ruthless.bias>results.chaos.bias);assert.ok(results.ruthless.conviction>=results.chaos.conviction);
+ for(const k of ['commit','brake','mass','grip'])assert.equal(results.classic[k],results.ruthless[k],k+' unchanged');
+});
+test('a finish ahead of an unresolved lapped competitor waits for eligibility, then retains its timestamp',()=>{
+ const S=race();for(let lap=1;lap<=5;lap++)round(S,lap);const [a,b,c]=S.activeOrder,e=S.elimination.events[5];
+ frame(S,[[a,e.distance-1,e.distance+1]]);frame(S,[[b,e.distance-1,e.distance+1]]);finish(S,a,100);assert.equal(S.over,false);
+ frame(S,[[c,e.distance-1,e.distance+1]]);assert.equal(S.elimination.round,6);assert.equal(S.over,true);assert.equal(S.winner,a);assert.equal(a.finishTime,99.95);
+});
+test('substep finish crossing beats a later retirement regardless of physics iteration order',()=>{
+ for(const reverse of [false,true]){const S=race();for(let lap=1;lap<=6;lap++)round(S,lap);const c=S.activeOrder[0],end=S.totalLaps*S.track.length;
+  if(reverse)S.cars.reverse();for(const o of S.cars){o.stepDistance=o.totalDist;o.stepS=o.s;}
+  c.stepDistance=end-1;c.totalDist=end+3;c.stepS=S.track.wrapS(end-1);c.lastLapBase=S.totalLaps-1;c.lastWithin=S.track.length-1;c.crossings=5;c.sectorIdx=2;
+  S.time+=.1;S.processingEliminationPhysics=true;S.startRetirement(c,'Damage');S.processingEliminationPhysics=false;S.eliminationTiming(.1);
+  assert.equal(S.winner,c);assert.equal(c.eliminated,null);assert.equal(c.dnf,false);
+ }
+});
+test('engineer reveals only public values and global critical warnings render without a car',()=>{
+ const S=race('summit','ruthless'),p=S.player;S.time=30;p.engineer.update(true);
+ assert.ok(![...p.engineer.active.keys()].some(k=>k.startsWith('knockout-')));
+ const e=S.elimination.events[0];S.activeOrder[0].totalDist=e.reveal;S.refreshEliminationOrder();p.engineer.update(true);
+ const msg=p.engineer.active.get('knockout-1');assert.ok(msg);assert.match(msg.text,new RegExp(e.count+' eliminated'));assert.ok(!p.engineer.active.has('knockout-2'));
+ const start=html.indexOf('function hudMessages()'),end=html.indexOf('const LED_N',start),shown=[];
+ const call=new Function('G','performance','msgQueue','pushMsg',html.slice(start,end)+';hudMessages();');
+ S.messages=[{text:'Public knockout warning',kind:'critical',car:null,dur:4}];
+ call({session:S,msgSeen:0,focus:p,attract:false},{now:()=>0},[],(...args)=>shown.push(args));assert.equal(shown.length,1);
+});
+test('Elimination tyre plans never recommend an unavailable Medium compound',()=>{
+ const S=race(),c=S.player;for(const wet of [0,.3,.8])for(const wear of [.2,.8]){
+  const plan=SIM.planStrategy({...S,wet},c,8,'H',wear);assert.ok(plan.stops.every(s=>['S','H','I','W'].includes(s.c)));
+ }
 });
