@@ -55,7 +55,6 @@ for (const track of tracks) {
       assert.equal(c.tyre.c, comp); assert.equal(c.damage.fw, 0); assert.equal(c.damage.c[2], 0);
       assert.equal(c.damage.c[3], .4); assert.equal(c.damage.c[5], .25);
       assert.equal(c.fuel, fuel); assert.equal(c.mass, mass); assert.equal(c.pitHistory[0].fuelAdded, 0);
-      // Elimination counts a compound once it is driven on (tests/elimination.cjs), not when fitted.
     }
   });
   test(track.name + ': engine and identical physics ignore empty or stale tanks', () => {
@@ -150,15 +149,12 @@ test('FIFO queues, physical stopping and safe release still operate in Eliminati
   S.pitLogic(p, SIM.PHYS_DT); assert.equal(P.phase, 'out'); assert.equal(p.frozen, false);
 });
 
-test('all five starting tyres and dry-compound / wet exceptions remain available', () => {
+test('all five starting tyres remain available without compliance tracking', () => {
   for (const comp of ['S', 'M', 'H', 'I', 'W']) {
     const S = session(tracks[0], 'elimination', { startCompound: comp });
     assert.equal(S.player.tyre.c, comp);
-    // Elimination counts a compound once it is driven on (see tests/elimination.cjs): drive both sets.
-    S.player.tyre.used.add(comp);
-    assert.equal(SIM.needsCompound(S, S.player), ['S', 'M', 'H'].includes(comp));
-    S.fitTyres(S.player, comp === 'H' ? 'M' : 'H', 80);
-    S.player.tyre.used.add(S.player.tyre.c);
-    assert.equal(SIM.needsCompound(S, S.player), false);
+    assert.equal('used' in S.player.tyre, false);
+    S.fitTyres(S.player, comp, 80);
+    assert.equal(S.player.tyre.c, comp);
   }
 });
