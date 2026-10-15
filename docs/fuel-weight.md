@@ -66,6 +66,8 @@ At each stop the AI adds fuel (`refuelFor`) for the next stop it will really mak
 
 The safety margin is 0.45–0.8 laps, depending on risk tolerance. That matches the in-race fuel call, which boxes a car when its range at a pit entry is below 1.35 laps.
 
+When it weighs an overtake, the AI assumes a rival's car carries fuel like its own, because rivals' loads are not visible. Its own fuel load and the rival's are judged the same way, so the fuel effect alone doesn't make it think it is the slower car.
+
 Every car runs the same physics, consumption and refuelling rig. There is no AI-only factor.
 
 ## Strategy balance
@@ -74,8 +76,8 @@ Measured with `tools/fuel-strategy-balance.cjs`: one car over 8 laps, with the A
 
 | Scenario | Light (3 laps) | Medium (5) | Heavy (8) |
 |---|---|---|---|
-| No reason to stop (soft tyres, wear off, no compound rule) | +19–21 s | +12–16 s | **best** |
-| Normal: two-compound rule, normal wear | 0 to +9 s | 0 to +3 s | +10 to +15 s |
+| No reason to stop (soft tyres, wear off) | +19–21 s | +12–16 s | **best** |
+| Normal tyre wear | 0 to +9 s | 0 to +3 s | +10 to +15 s |
 | High tyre wear | 0 to +6 s | 0 to +5 s | +6 to +18 s |
 | Rain arriving mid-race | best on 2 of 3 circuits | best on Summit | +60 to +118 s |
 

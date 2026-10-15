@@ -71,7 +71,7 @@
   .row.me .g, .row.me .n, .row.me .p { color: #fff; font-weight: 700; }
   .row .tag { font-size: 11px; padding: 0 5px; border-radius: 3px; background: #333; margin-left: 6px; color: #fff; }
   .row .tag.pit { background: #c9a24a; color: #111; }
-  .row .tag.pen { background: #b71c1c; }
+  .row .tag.dmg { background: #b71c1c; }
   .row .tag.out { background: #555; }
   .lstack { margin-top: auto; flex-shrink: 0; display: flex; flex-direction: column; gap: 12px; }
   #hud #engineerRadio { padding: 12px 16px; min-height: 104px; opacity: 0; transform: translateY(5px); visibility: hidden;
@@ -180,11 +180,11 @@
   .msg::before { content: ''; width: 26px; height: 26px; flex-shrink: 0; background: var(--icc); -webkit-mask: var(--ic) center / contain no-repeat; mask: var(--ic) center / contain no-repeat; display: none; }
   .msg.big { font-size: 26px; font-weight: 700; padding: 10px 30px; border-left-color: var(--accent); }
   .msg.warn { border-left-color: #f5c518; --icc: #f5c518; --ic: var(--ic-warn); }
-  .msg.pen { border-left-color: #e53935; background: rgba(70, 10, 12, .9); --icc: #ff3b3b; --ic: var(--ic-warn); }
+  .msg.critical { border-left-color: #e53935; background: rgba(70, 10, 12, .9); --icc: #ff3b3b; --ic: var(--ic-warn); }
   .msg.dmg { border-left-color: #f59e0b; --icc: #f59e0b; --ic: var(--ic-wrench); }
   .msg.pit { border-left-color: var(--gold); --icc: var(--gold); --ic: var(--ic-wrench); }
   .msg.rc { border-left-color: #f5c518; background: rgba(36, 31, 6, .92); --icc: #f5c518; --ic: var(--ic-flag); }
-  .msg.warn::before, .msg.pen::before, .msg.dmg::before, .msg.pit::before, .msg.rc::before { display: block; }
+  .msg.warn::before, .msg.critical::before, .msg.dmg::before, .msg.pit::before, .msg.rc::before { display: block; }
   .msg.yellow { background: rgba(245, 197, 24, .95); color: #111; border-left-color: #111; }
   .msg.purple { border-left-color: var(--purple); }
   @keyframes msgin { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
@@ -458,8 +458,8 @@
   .brief-rules { border:2px solid #ff0808; border-radius:10px; padding:10px 18px 14px; background:linear-gradient(165deg,#570909,#220a12 65%,#170c15); }
   .brief-rules h3 { display:flex; align-items:center; gap:22px; margin:0 0 12px; font-size:27px; text-transform:uppercase; }
   .brief-rules h3 .brief-icon { width:52px; height:44px; color:#ff2934; fill:#ff2934; stroke:#230207; }
-  .brief-rule-grid { display:grid; grid-template-columns:1.2fr 1.05fr 1.15fr .9fr; }
-  #raceBrief.no-fuel .brief-rule-grid { grid-template-columns:1.2fr 1.15fr .9fr; }
+  .brief-rule-grid { display:grid; grid-template-columns:1.05fr 1.15fr .9fr; }
+  #raceBrief.no-fuel .brief-rule-grid { grid-template-columns:1.15fr .9fr; }
   .brief-rule-grid > div { display:flex; align-items:flex-start; gap:18px; padding:0 22px; border-left:1px solid #937480; }
   .brief-rule-grid > div:first-child { border:0; padding-left:8px; }
   .brief-rule-grid > div:last-child { padding-right:0; }
@@ -843,7 +843,6 @@
     <div class="brief-rules">
       <h3><svg class="brief-icon" aria-hidden="true"><use href="#bi-warning"/></svg>Important rules</h3>
       <div class="brief-rule-grid">
-        <div><svg class="brief-icon" aria-hidden="true"><use href="#bi-wheel"/></svg><p><b>Use two different dry compounds</b>Use 2 dry compounds unless switching to Inter or Full Wet.</p></div>
         <div id="briefRefuelRule"><svg class="brief-icon" aria-hidden="true"><use href="#bi-fuel"/></svg><p><b>Refuelling is allowed</b><span id="briefRefuel"></span></p></div>
         <div><svg class="brief-icon" aria-hidden="true"><use href="#bi-garage"/></svg><p><b>Four shared pit boxes</b><span id="briefPitLoss"></span></p></div>
         <div><svg class="brief-icon" aria-hidden="true"><use href="#bi-flag"/></svg><p><b>Grid launch</b>Hold W. Launch control releases the car at lights out.</p></div>
@@ -1874,7 +1873,7 @@ const SIM = (function () {
       // Launch control (race starts): the automatic clutch stays open on the grid and engages after lights out.
       this.launch={active:race.type==='race',engagement:race.type==='race'?0:1,releasedAt:null}; this.surfaceWet=null;
       this.engineResponse = 0; this.driveForce = 0; this.pitHistory = [];
-      this.tyre = { distance: 0, measuredWpl: 0, stress: 0.50, style: drivingStyle(0.50), lastThrottle: 0, c: 'M', wear: new Float64Array(4), temp: new Float64Array([80, 80, 80, 80]), age: 0, used: new Set() };
+      this.tyre = { distance: 0, measuredWpl: 0, stress: 0.50, style: drivingStyle(0.50), lastThrottle: 0, c: 'M', wear: new Float64Array(4), temp: new Float64Array([80, 80, 80, 80]), age: 0 };
       this.fuel = race.fuelEnabled === false ? ELIMINATION_FUEL_MASS : 50;
       this.slipstream = 0; this.slipGoal = 0; // slipstream: smoothed wake strength 0..1 and its target
       this.damage = new CarDamage(); this.lastHit = 0; this.retiring = null;
@@ -1885,8 +1884,8 @@ const SIM = (function () {
       this.tp = []; this.lapTimes = []; this.position = 0; this.gapLeader = 0; this.gapAhead = 0; this.intervalAhead = 0;
       this.finished = false; this.finishTime = 0; this.dnf = false; this.dnfReason = '';
       this.eliminated = null; // immutable competitive result; the physical car can still pull off safely
-      this.penalty = 0; this.warnings = 0; this.offTrackFlag = false; this.penaltyLog = [];
-      this.blueFlag = { target: null, gap: 0, age: 0, receding: 0, safe: false, side: 0, ease: 0, blocking: 0, moves: 0, lastMove: -99, warned: false, penalized: false, lastD: 0, lastTargetD: 0 };
+      this.offTrackFlag = false;
+      this.blueFlag = { target: null, gap: 0, age: 0, receding: 0, safe: false, side: 0, ease: 0 };
       this.pitStops = 0; this.pit = null; // pit state object when in pit lane
       this.boxCompound = null; this.inGarage = false;
       this.started = false; this.frozen = false; this.ghost = false;
@@ -2720,9 +2719,6 @@ const SIM = (function () {
     // Observe the actual stint, including the player's inputs. No rating bonus.
     return lerp(base, currentBase > 0 && car.tyre.measuredWpl > 0 ? car.tyre.measuredWpl * base / currentBase : base, confidence);
   }
-  function needsCompound(race, car) {
-    return race.mandatory && !race.wetRace && !car.tyre.used.has('I') && !car.tyre.used.has('W') && ['S','M','H'].filter(k=>car.tyre.used.has(k)).length<2;
-  }
   function stintCost(race, car, c, wear, n) {
     const cm = race.compoundModel[c], rate = wearPerLap(race, car, c);
     const bestGrip = Math.max(...Object.keys(COMPOUNDS).map(k => tyreWeatherGrip(k, race.wet)));
@@ -2777,7 +2773,7 @@ const SIM = (function () {
     }
     return { cost, first };
   }
-  function planStrategy(race, car, lapsLeft, current, wearNow, mustUseSecond, skill = 1, riskPref = 0.5, fuel = null) {
+  function planStrategy(race, car, lapsLeft, current, wearNow, fuel = null) {
     const N = Math.max(0, Math.ceil(lapsLeft)), comps = race.wet >= 0.7 ? ['W', 'I'] : race.wet > 0.18 ? ['I', 'W', 'M'] : ['S', 'M', 'H'];
     // Grand Prix / Career races weigh the fuel load too (Elimination carries a fixed load and never refuels)
     const fuelOn = race.fuelEnabled === true && race.type === 'race' && race.fuelLapCost > 0;
@@ -2790,24 +2786,19 @@ const SIM = (function () {
     }
     const cur = [0]; for (let n = 1; n <= N; n++) cur[n] = stintCost(race, car, current, wearNow, n);
     const f0 = fc([]);
-    let best = { cost: cur[N] + (mustUseSecond ? 1e8 : 0) + f0.cost, stops: [], fuel: f0.cost, firstFuel: f0.first };
-    const legal = seq => !mustUseSecond || new Set([...car.tyre.used, ...seq].filter(c => ['S','M','H'].includes(c))).size > 1;
+    let best = { cost: cur[N] + f0.cost, stops: [], fuel: f0.cost, firstFuel: f0.first };
     // Evaluate an immediate stop as well as delayed one- and two-stop plans.
     // Prefix costs keep this bounded even for the full 20-car field.
     for (const c2 of comps) for (let p = 0; p < N; p++) {
-      if (!legal([current, c2])) continue;
       const f = fc([p]), cost = cur[p] + race.pitLoss + costs[c2][N - p] + (p === 0 ? 0.8 : 0) + f.cost;
       if (cost < best.cost) best = { cost, stops: [{ lap: p, c: c2 }], fuel: f.cost, firstFuel: f.first };
     }
     if (N >= 4) for (const c2 of comps) for (const c3 of comps) {
-      if (!legal([current, c2, c3])) continue;
       for (let p1 = 0; p1 < N - 1; p1++) for (let p2 = p1 + 1; p2 < N; p2++) {
         const f = fc([p1, p2]), cost = cur[p1] + race.pitLoss * 2 + costs[c2][p2 - p1] + costs[c3][N - p2] + f.cost;
         if (cost < best.cost) best = { cost, stops: [{ lap: p1, c: c2 }, { lap: p2, c: c3 }], fuel: f.cost, firstFuel: f.first };
       }
     }
-    // Strategy skill affects the driver's calls and risk tolerance, rather than
-    // repeatedly moving an optimum by random laps every few seconds.
     return best;
   }
   function chooseStartCompound(race, car) {
@@ -2816,7 +2807,7 @@ const SIM = (function () {
     // the starting fuel is still to be chosen, so each compound is judged with its best fuel load
     const fuel = race.fuelEnabled ? { min: race.fuelForLaps(START_FUEL_LAPS[0]) } : null;
     for (const c of ['S', 'M', 'H']) {
-      const p = planStrategy(race, car, L, c, 0, race.mandatory, 1, 0.5, fuel);
+      const p = planStrategy(race, car, L, c, 0, fuel);
       const d = ratings(car);
       let cost = p.cost + (gauss() * 0.4 + (d.risk - 0.5) * (c === 'S' ? -3 : c === 'H' ? 2 : 0)) * (1 - d.strat * 0.6) * 6;
       if (!best || cost < best.cost) best = { c, cost };
@@ -2840,7 +2831,7 @@ const SIM = (function () {
     const tilt = ((d.risk - 0.5) * 1.2 + gauss() * 0.6 * (1 - d.strat)) * (1 - 0.5 * skill);
     let best = null;
     for (let laps = START_FUEL_LAPS[0]; laps <= hi + 1e-9; laps += 0.5) {
-      const plan = planStrategy(race, car, L, comp, 0, race.mandatory, 1, 0.5, { fixed: race.fuelForLaps(laps) });
+      const plan = planStrategy(race, car, L, comp, 0, { fixed: race.fuelForLaps(laps) });
       const cost = plan.cost + tilt * laps;
       if (!best || cost < best.cost) best = { laps, cost };
     }
@@ -3124,7 +3115,7 @@ const SIM = (function () {
       const lapsLeft = race.type === 'race' ? race.totalLaps - car.laps : 2;
       const cooking = D.leak > 0.6 || (D.engT > 140 && D.c[P_ENG] > 0.4);
       if (race.type === 'race' && (fixed > 8 || cooking) && lapsLeft > 1 && !this.retireInPits) {
-        this.retireInPits = true; this.boxThisLap = true; race.log(car, 'retire in pits'); race.msg('Car Cannot Continue — Retire in the Pits', 'pen', car, 4);
+        this.retireInPits = true; this.boxThisLap = true; race.log(car, 'retire in pits'); race.msg('Car Cannot Continue — Retire in the Pits', 'critical', car, 4);
       }
       if (this.retireInPits) { this.boxThisLap = true; return; }
       if (rep < 0.05 || lapsLeft < 1) { this.damageStop = false; return; }
@@ -3139,8 +3130,7 @@ const SIM = (function () {
         if (!this.damageStop) race.log(car, 'box for damage ' + rep.toFixed(1) + 's/lap');
         this.damageStop = true; this.boxThisLap = true;
         if (!car.boxCompound) {
-          const must = race.mandatory && !race.wet && car.tyre.used.size < 2;
-          car.boxCompound = stopSoon ? st.c : race.wet ? weatherCompound(race.wet) : must ? (car.tyre.c === 'H' ? 'M' : 'H') : lapsLeft > 4 ? 'H' : lapsLeft > 2.5 ? 'M' : 'S';
+          car.boxCompound = stopSoon ? st.c : race.wet ? weatherCompound(race.wet) : lapsLeft > 4 ? 'H' : lapsLeft > 2.5 ? 'M' : 'S';
         }
       }
     }
@@ -3649,8 +3639,10 @@ const SIM = (function () {
     // seen of it). Racecraft sets how much of the expectation is used. Nothing is read from the rival's own plan.
     observe(nb) {
       const car = this.car, t = this.track, L = t.aiLines, N = t.N, M = this.mind, rl = L.off[0], race = this.race;
-      // a rival is expected to drive like this driver would (same read of the grip, same commitment), until seen otherwise
-      const scale = clamp(car.gripEstimate(race.wet) * this.gripBelief / 1.6, 0.45, 1.05) * (this.cornerUse || 0.97) / 0.97;
+      // a rival is expected to drive like this driver would (same read of the grip, same commitment, and a car
+      // carrying fuel like its own: rivals' loads are not known), until seen otherwise
+      const scale = clamp(car.gripEstimate(race.wet) * this.gripBelief / 1.6, 0.45, 1.05) * (this.cornerUse || 0.97) / 0.97 * car.fuelTurnMul();
+      const rivalAccel = car.fuelInertiaMul();
       this.nOpp = 0;
       // the closest (by gap along the lap) eight cars that can matter within the planning horizon
       const pick = this.oppPick || (this.oppPick = []); pick.length = 0;
@@ -3673,7 +3665,7 @@ const SIM = (function () {
           R.so[q] = n.ds + s; R.dd[q] = d; R.vv[q] = vv * slow;
           // speed: kinematic extrapolation blended with the speed the corner ahead allows
           const iA = t.wrapI(iO + Math.round(vv * AI_PRED_DT / DS));
-          const vInt = Math.min(vv + aiAccel(vv) * AI_PRED_DT, L.vRef[iA] * scale * mem.pace);
+          const vInt = Math.min(vv + aiAccel(vv) * rivalAccel * AI_PRED_DT, L.vRef[iA] * scale * mem.pace);
           const vKin = clamp(R.v + R.a * (tau + AI_PRED_DT), 0, 95);
           const vn = Math.max(0, lerp(vKin, vInt, kq * AI_PW.kv[q]));
           s += 0.5 * (vv + vn) * AI_PRED_DT / Math.max(0.6, 1 - t.kappa[iO] * d); vv = vn;
@@ -4555,9 +4547,9 @@ const SIM = (function () {
       // career skill (AI engineers only; the player's engineer is never changed by the tier)
       const x = car.ai ? car.ai.skill : 0;
       const left = race.eliminationMode ? race.lapsLeft(car) : race.totalLaps - car.laps - t.wrapS(car.totalDist) / t.length;
-      const wear = Math.max(...car.tyre.wear), must = needsCompound(race, car);
+      const wear = Math.max(...car.tyre.wear);
       const strategyWeather={...race,wet:car.surfaceWet ?? race.wet, pitLoss:(race.eliminationMode?t.pitForCar(car).loss:race.pitLoss)*(race.vscActive?0.65:1)};
-      const plan=planStrategy(strategyWeather,car,left,car.tyre.c,wear,must,p.strat,p.risk);
+      const plan=planStrategy(strategyWeather,car,left,car.tyre.c,wear);
       const planView = { ...plan, stint: car.pitStops, stops: plan.stops.map(st => ({ ...st, abs: car.laps + st.lap })) };
       const first = plan.stops[0];
       const rate=wearPerLap(strategyWeather,car,car.tyre.c), useful = rate > 0 ? Math.max(0, (USEFUL_WEAR - wear) / rate) : Infinity;
@@ -4565,7 +4557,7 @@ const SIM = (function () {
       const preserve = useful < nextWindow && wear > 0.40 && p.tyre > 0.65 && p.risk < 0.78;
       let tyreMode = preserve ? 'preserve' : (left < 1.5 || attacking && wear < 0.65 && p.aggr > 0.6) ? 'push' : 'normal';
       let push = 0, defer = false;
-      let compound = first ? first.c : (race.wet ? weatherCompound(race.wet) : must ? (car.tyre.c === 'H' ? 'M' : 'H') : left > 4 ? 'H' : left > 2.5 ? 'M' : 'S');
+      let compound = first ? first.c : (race.wet ? weatherCompound(race.wet) : left > 4 ? 'H' : left > 2.5 ? 'M' : 'S');
       let reason = first && first.lap <= 1 && wear > STINT_STOP_WEAR ? 'optimal stint window' : '';
       const recentRival = race.cars.find(o => o !== car && Math.abs(o.position - car.position) === 1 &&
         o.pitHistory.length && race.time - o.pitHistory[o.pitHistory.length - 1].entry < 32);
@@ -4579,7 +4571,7 @@ const SIM = (function () {
         else if (following > 20 - 8 * x && traffic.length < 2 && (p.aggr > 0.6 || x * p.strat > 0.5)) reason = 'undercut into clear track';
       }
       // A durable tyre and clear track can buy an extra lap before rejoining traffic.
-      if (reason && traffic.length > 1 && wear < 0.65 && left > 3 && !must && p.tyre > 0.85) {
+      if (reason && traffic.length > 1 && wear < 0.65 && left > 3 && p.tyre > 0.85) {
         reason = ''; push = 1; defer = true;
       } else if (!reason) push = following > 20 && p.aggr > 0.65 ? 1 : 0;
       if(strategyWeather.wet>0.18 && tyreWeatherGrip(car.tyre.c,strategyWeather.wet)<tyreWeatherGrip(weatherCompound(strategyWeather.wet),strategyWeather.wet)*(0.80+0.08*x) && left>0.5){reason='weather-compatible tyres';compound=weatherCompound(strategyWeather.wet);}
@@ -4597,17 +4589,16 @@ const SIM = (function () {
       if(reason && (localWet>0.18 || car.tyre.c==='I'||car.tyre.c==='W') && reason!=='drying surface')compound=suitable;
       if(car.damage.fw>0.30 && left>2)reason='front wing repair';
       if (wear > 0.84 && left > 0.8) reason = 'severe tyre degradation';
-      if (must && left < 1.8 && left > 0.35) { reason = 'mandatory second compound'; if (compound === car.tyre.c) compound = car.tyre.c === 'H' ? 'M' : 'H'; }
       // Fuel: box at the coming entry when what is in the tank reaches neither the flag nor the entry after it.
-      // The stop is then used for tyres too if their own stop is near or the compound rule still needs it.
+      // The stop is then used for tyres too if their own stop is near.
       const range = race.fuelEnabled ? race.fuelRange(car) : Infinity, toEntry = race.fuelEnabled ? t.wrapS(t.pitForCar(car).entry0 - car.s) / t.length : 0;
       if (race.fuelEnabled && !reason && range < left + 0.05 && range < toEntry + 1.35) {
         reason = 'fuel';
-        if (!(first && first.lap <= 2) && !must && wear < 0.6) compound = 'keep';
+        if (!(first && first.lap <= 2) && wear < 0.6) compound = 'keep';
       }
       // The pit lane is in plain view of the pit wall: with several cars already in it, a stop that can wait
       // a lap (a planned window, an undercut or cover) waits. Fuel, damage and weather stops never do.
-      const flexible = ['optimal stint window', 'cover rival undercut', 'undercut into clear track'].includes(reason) || (reason === 'mandatory second compound' && left > 1.2);
+      const flexible = ['optimal stint window', 'cover rival undercut', 'undercut into clear track'].includes(reason);
       const inLane = race.cars.filter(o => o.pit && !o.inGarage && !o.ghost && o.pit.phase !== 'out').length;
       const occupied = race.pitBoxesInUse(), queued = race.pitQueue.length;
       // Estimate delays from observed stationary times, never rival fuel loads,
@@ -4642,8 +4633,7 @@ const SIM = (function () {
         const fresh=compound==='keep'?car.tyre.c:compound;
         const gain=Math.max(0,stintCost(strategyWeather,car,car.tyre.c,wear,Math.ceil(left))-stintCost(strategyWeather,car,fresh,0,Math.ceil(left))) + car.damage.lapLoss().rep*left;
         const cost=strategyWeather.pitLoss+wait+car.damage.repairPlan().extra;
-        const mandatoryStop=must && left<1.8;
-        const essential=car.damage.anyPuncture()||(race.fuelEnabled&&range<toEntry+.6)||mandatoryStop;
+        const essential=car.damage.anyPuncture()||(race.fuelEnabled&&range<toEntry+.6);
         if(!essential && gain<=cost){reason='';defer=true;}
         else if(!reason&&gain>cost){reason='final-phase time recovery';}
         push=1;tyreMode='push';
@@ -4663,15 +4653,13 @@ const SIM = (function () {
         // planned stop with this driver's margin, or to the flag when another stop would cost more than
         // carrying the extra weight.
         const comp = tyre === 'keep' ? car.tyre.c : tyre, wear = tyre === 'keep' ? Math.max(...car.tyre.wear) : 0;
-        const used = new Set([...car.tyre.used, comp]);
-        const must = race.mandatory && !race.wetRace && !used.has('I') && !used.has('W') && ['S', 'M', 'H'].filter(k => used.has(k)).length < 2;
-        const plan = planStrategy({ ...race, wet: wetHere }, car, left, comp, wear, must, ratings(car).strat, ratings(car).risk, { min: car.fuel });
+        const plan = planStrategy({ ...race, wet: wetHere }, car, left, comp, wear, { min: car.fuel });
         // Count on the next planned stop only if it will really be made: the strategy boxes for tyres once
-        // they pass STINT_STOP_WEAR (see analyse) or for the compound rule near the end. Otherwise the fuel
-        // must reach the point where the tyres will be worn enough, or the flag.
+        // they pass STINT_STOP_WEAR (see analyse). Otherwise the fuel must reach the point where the tyres
+        // will be worn enough, or the flag.
         const first = plan.stops[0], wpl = wearPerLap({ ...race, wet: wetHere }, car, comp);
         let stint = first ? first.lap : left;
-        if (first && !(must && first.lap >= left - 2)) {
+        if (first) {
           const worn = wpl > 0 ? Math.max(0, (STINT_STOP_WEAR - wear) / wpl) : Infinity;
           stint = Math.max(stint, Math.ceil(worn));
         }
@@ -4733,7 +4721,7 @@ const SIM = (function () {
           const context = { 'weather-compatible tyres':'current grip is falling', 'front wing repair':'the crew can repair your front wing',
             'rear wing repair':'the crew can repair your rear wing', 'cover rival undercut':'our nearby rival has stopped',
             'undercut into clear track':'we estimate a clear rejoin', 'lower pit loss under VSC':'pit loss should be lower under the VSC',
-            'severe tyre degradation':'these tyres are badly worn', 'mandatory second compound':'you need a second dry compound' }[rec.reason];
+            'severe tyre degradation':'these tyres are badly worn' }[rec.reason];
           add('strategy', 'strategy', 'We recommend boxing for ' +
             (rec.compound === 'keep' ? (race.fuelEnabled ? 'fuel, keeping these tyres' : 'repairs, keeping these tyres') : COMPOUNDS[rec.compound].name.toLowerCase() + ' tyres') +
             (context ? '; ' + context : '') + '. ' + (race.fuelEnabled && rec.fuel > .1 ? 'Add about ' + rec.fuel.toFixed(1) + ' kilograms of fuel.' : ''),
@@ -4841,8 +4829,6 @@ const SIM = (function () {
       this.tyreWearOn = cfg.tyreWear !== 'off';
       const wm = cfg.tyreWear === 'high' ? 1.6 : cfg.tyreWear === 'off' ? 0 : 1;
       this.wearScale = wm;
-      this.mandatory = cfg.mandatory != null ? cfg.mandatory : true;
-      this.wetRace = this.wet > 0.18;
       this.damageOn = true; this.setDamageLevel(cfg.damage);
       this.contacts = new Map(); this.debris = [];
       this.fuelRate = 0.04; // calibrated so ~1.75kg per lap
@@ -4874,7 +4860,6 @@ const SIM = (function () {
       });
       this.player = this.cars.find(c => c.isPlayer) || null;
       if (this.player) this.player.autopilot = new AIDriver(this.player, this, { pitOnly: true });
-      if(this.eliminationMode)for(const c of this.cars)c.tyre.used.clear();
       this.setup();
       if (this.eliminationMode) this.refreshEliminationOrder();
       for (const car of this.cars) car.engineer = new RaceEngineer(car, this);
@@ -4904,8 +4889,7 @@ const SIM = (function () {
       const x=this.finalTiming(a), y=this.finalTiming(b);
       if (x.complete !== y.complete) return x.complete ? -1 : 1;
       if (x.complete && y.complete) {
-        // Existing sporting penalties count once, across the three-lap total.
-        const delta = x.total+a.penalty-y.total-b.penalty;
+        const delta = x.total-y.total;
         if (Math.abs(delta)>1e-7) return delta;
         const ax=x.laps.slice().sort((a,b)=>a-b), bx=y.laps.slice().sort((a,b)=>a-b);
         for(let i=0;i<3;i++) if(Math.abs(ax[i]-bx[i])>1e-7) return ax[i]-bx[i];
@@ -5068,7 +5052,7 @@ const SIM = (function () {
     }
     fitTyres(car, comp, temp) {
       car.damage.newTyres();
-      car.tyre.c = COMPOUNDS[comp] ? comp : 'M'; car.tyre.wear.fill(0); car.tyre.temp.fill(temp); car.tyre.age = 0; if(!this.eliminationMode)car.tyre.used.add(car.tyre.c); car.tyre.distance = 0; car.tyre.measuredWpl = 0; car.tyre.lastThrottle = car.throttle;
+      car.tyre.c = COMPOUNDS[comp] ? comp : 'M'; car.tyre.wear.fill(0); car.tyre.temp.fill(temp); car.tyre.age = 0; car.tyre.distance = 0; car.tyre.measuredWpl = 0; car.tyre.lastThrottle = car.throttle;
     }
     // Fuel load (kg) for a number of laps at the circuit's nominal consumption, within the tank.
     fuelForLaps(laps) { if (!this.fuelEnabled) return ELIMINATION_FUEL_MASS; return Math.min(this.fuelCapacity, Math.max(0, laps) * this.fuelPerLap + FUEL_RESERVE); }
@@ -5140,8 +5124,7 @@ const SIM = (function () {
     }
     clearBlueFlag(car) {
       const b = car.blueFlag;
-      b.target = null; b.safe = false; b.side = 0; b.receding = b.ease = b.age = b.blocking = b.moves = 0;
-      b.warned = b.penalized = false; b.lastMove = -99;
+      b.target = null; b.safe = false; b.side = 0; b.receding = b.ease = b.age = 0;
       if (car.ai && this.type === 'race') { car.ai.blue = false; car.ai.blueYield = false; }
     }
     updateBlueFlags(dt) {
@@ -5170,36 +5153,12 @@ const SIM = (function () {
             if (closing < .5 && !(ds < 25 && closing >= -.5)) continue;
             target = other; gap = ds; nearest = ds;
           }
-          if (target) { b.target = target; b.lastD = car.d; b.lastTargetD = target.d; }
+          if (target) b.target = target;
         }
         if (!target) continue;
         b.gap = gap; b.age = (b.age || 0) + dt;
         b.safe = this.bluePassSafe(car) && this.bluePassSafe(target);
         if (b.safe && gap < 80) b.ease += dt;
-        // Sanctions need evidence of repeated reactive blocking, not merely a
-        // long encounter or an AI that cannot complete its overtaking attempt.
-        if (car.isPlayer && !car.ai && !car.autoDrive) this.blueObstruction(car, dt);
-        b.lastD = car.d; b.lastTargetD = target.d;
-      }
-    }
-    blueObstruction(car, dt) {
-      const b = car.blueFlag, o = b.target, t = this.track;
-      const battling = this.cars.some(n => n !== car && n !== o && this.blueEligible(n) &&
-        Math.abs(n.totalDist - car.totalDist) < 35 && Math.abs(t.dS(car.s, n.s)) < 35);
-      const opportunity = b.safe && this.wet < .45 && b.age > 4 && b.gap > 4 && b.gap < 25 &&
-        car.speed > 30 && o.input.throttle > .5 && !battling;
-      const lateral = Math.abs(o.d - car.d), oldLateral = Math.abs(b.lastTargetD - b.lastD);
-      const playerMove = car.d - b.lastD, otherMove = o.d - b.lastTargetD;
-      if (opportunity && lateral < 2.5 && lateral < oldLateral - .07 && Math.abs(otherMove) > .08 &&
-          playerMove * otherMove > 0 && this.time - b.lastMove > 1.2) { b.moves++; b.lastMove = this.time; }
-      if (opportunity && b.moves >= 2 && lateral < 2.5) b.blocking += dt;
-      else b.blocking = Math.max(0, b.blocking - dt * 2);
-      if (b.blocking >= 6 && !b.warned) {
-        b.warned = true; this.msg('BLUE FLAG — warning: stop blocking the lapping car', 'info', car, 4);
-      }
-      if (b.warned && !b.penalized && b.blocking >= 14 && this.time >= (car.bluePenaltyUntil || 0)) {
-        b.penalized = true; car.bluePenaltyUntil = this.time + 60;
-        this.addPenalty(car, 5, 'Repeated blocking under blue flags');
       }
     }
     // ---------- main update ----------
@@ -5218,7 +5177,6 @@ const SIM = (function () {
       this.time += dt; this.step++;
       if(this.weather) {
         this.weather.update(dt);this.wet=this.weather.water;this.trackTemp=this.weather.trackTemp;
-        if(this.wet>0.18)this.wetRace=true;
         for(const car of this.cars) car.surfaceWet=this.weather.wetAt(car,this.track);
       }
       const t = this.track;
@@ -5263,7 +5221,7 @@ const SIM = (function () {
         const prevS = car.s;
         t.project(car.x, car.z, car.idx, car.proj); car.idx = car.proj.i; car.s = car.proj.s; car.d = car.proj.d;
         car.progress = this.legalProgress(car, t.dS(prevS, car.s), car.x - px, car.z - pz);
-        if (!car.eliminated) {car.totalDist += car.progress;if(this.eliminationMode&&car.progress>0.01)car.tyre.used.add(car.tyre.c);}
+        if (!car.eliminated) car.totalDist += car.progress;
         if(this.weather)this.weather.displace(car,dt);
         collideWalls(car, t, this);
         this.pitLogic(car, dt);
@@ -5525,10 +5483,6 @@ const SIM = (function () {
         }
         return;
       }
-      if (t.inLimiter(car.s) && car.speed > p.limit + 1.2 && ['approach','queue','in','out'].includes(P.phase)) {
-        P.speeding = (P.speeding || 0) + dt;
-        if (P.speeding > 0.4 && !P.speedPenalty && this.type === 'race') { P.speedPenalty = true; this.addPenalty(car, 5, 'Pit lane speeding'); }
-      }
       if (P.phase === 'in') {
         const dd = t.dS(car.s, P.stopS);
         // a car that has come to rest off its marks but in its box (a late turn-in behind a parked neighbour)
@@ -5703,11 +5657,6 @@ const SIM = (function () {
         } else if (car.isPlayer && car.laps === this.totalLaps - 1 && !this.eliminationMode) this.msg('FINAL LAP', 'big', car, 3);
       }
     }
-    addPenalty(car, sec, reason) {
-      car.penalty += sec; car.penaltyLog.push(reason);
-      this.msg(car.driver.short + ' +' + sec + 's PENALTY — ' + reason, 'pen', car, 3.5);
-      this.log(car, 'penalty ' + reason);
-    }
     onCollision(A, B, j, x, z, nx, nz, vn, vt, jt, mEff) {
       if (j >= 300) {
         this.events.push({ type: 'collision', a: A, b: B, j, x, z, nx, nz, vt });
@@ -5715,15 +5664,6 @@ const SIM = (function () {
         A.lastHitT = B.lastHitT = this.time;
       }
       this.recordContact(A.id < B.id ? A.id * 4096 + B.id : B.id * 4096 + A.id, A, B, x, z, nx, nz, vn, vt, jt, mEff);
-      // penalty: car behind ramming the car ahead
-      if (this.type === 'race' && j > 3500 && this.lightsOut) {
-        const t = this.track; const ds = t.dS(A.s, B.s);
-        const [rear, frontCar] = ds > 0 ? [A, B] : [B, A];
-        const closing = rear.speed - frontCar.speed;
-        if (closing > 9 && j > 5000 && Math.abs(t.dS(A.s, B.s)) > 3 && !rear.pit) {
-          if (!rear.lastColPen || this.time - rear.lastColPen > 10) { rear.lastColPen = this.time; frontCar.victimAt = this.time; rear.pendingColPen = { victim: frontCar, t: this.time, v0: frontCar.speed }; }
-        }
-      }
     }
     onWallHit(car, j, x, z, nx, nz, vn, vt, jt, mEff) {
       if (j > 800) this.events.push({ type: 'wall', car, j, x, z, nx, nz, vt });
@@ -5824,7 +5764,7 @@ const SIM = (function () {
       const D = car.damage, c = D.c;
       const say = (k, tier, text, kind = 'dmg') => { if (D.tier[k] < tier) { D.tier[k] = tier; this.msg(text, kind, car, 3.5); } };
       const fw = D.fw;
-      if (D.detached[0] || D.detached[1]) say(P_FWL, 3, 'Front Wing Lost — Heavy Understeer, Pit Now', 'pen');
+      if (D.detached[0] || D.detached[1]) say(P_FWL, 3, 'Front Wing Lost — Heavy Understeer, Pit Now', 'critical');
       else if (fw > 0.5) say(P_FWL, 2, 'Front Wing Badly Damaged — Pit Recommended');
       else if (fw > 0.1) say(P_FWL, 1, 'Front Wing Damaged — Reduced Front Grip');
       if (c[P_RW] > 0.6) say(P_RW, 2, 'Rear Wing Badly Damaged — Pit Recommended');
@@ -5844,11 +5784,11 @@ const SIM = (function () {
       this.stats.punctures = (this.stats.punctures || 0) + 1;
       this.log(car, 'puncture ' + WHEEL_NAMES[i] + (cause ? ' (' + cause + ')' : ''));
       this.events.push({ type: 'puncture', car, wheel: i });
-      this.msg(WHEEL_NAMES[i] + ' Tyre Puncture — Pit Recommended', 'pen', car, 4);
+      this.msg(WHEEL_NAMES[i] + ' Tyre Puncture — Pit Recommended', 'critical', car, 4);
       car.damage.computePerf();
     }
     onTyreShred(car, i) {
-      this.msg(WHEEL_NAMES[i] + ' Tyre Destroyed — Box Now', 'pen', car, 4);
+      this.msg(WHEEL_NAMES[i] + ' Tyre Destroyed — Box Now', 'critical', car, 4);
       const c = Math.cos(car.psi), s = Math.sin(car.psi);
       this.addDebris(car.x - c * 1.5, car.z - s * 1.5, 'tyre', 1, car);
     }
@@ -5906,7 +5846,7 @@ const SIM = (function () {
       if (kind === 'engine' || kind === 'fire') { D.c[P_ENG] = 1; this.events.push({ type: 'failure', car, fire: kind === 'fire' }); }
       D.computePerf();
       this.log(car, 'failure ' + kind);
-      this.msg(text, 'pen', car, 5);
+      this.msg(text, 'critical', car, 5);
       if (kind === 'fire') this.msg('RACE CONTROL: Car fire — ' + car.driver.name + ' stopping', 'rc', null, 4);
       this.startRetirement(car, reason);
     }
@@ -5944,10 +5884,10 @@ const SIM = (function () {
       if (!car.pit) this.msg('RACE CONTROL: ' + car.driver.name + ' stopped — yellow flag, sector ' + sector, 'rc', null, 3.5);
       if (this.type === 'race') {
         car.dnf = true; car.dnfReason = R.reason;
-        if (!car.eliminated || car.eliminated.kind !== 'checkpoint') { this.msg(car.driver.short + ' RETIRES — ' + R.reason, 'pen', car, 4); this.log(car, 'DNF ' + R.reason); }
+        if (!car.eliminated || car.eliminated.kind !== 'checkpoint') { this.msg(car.driver.short + ' RETIRES — ' + R.reason, 'critical', car, 4); this.log(car, 'DNF ' + R.reason); }
       } else {
         if (this.type === 'quali') this.completeQuali(car, 'dnf', R.reason);
-        this.msg(car.driver.short + ' OUT OF THE SESSION — ' + R.reason, 'pen', car, 4); this.log(car, 'out ' + R.reason);
+        this.msg(car.driver.short + ' OUT OF THE SESSION — ' + R.reason, 'critical', car, 4); this.log(car, 'out ' + R.reason);
       }
     }
     recoverCar(car) {
@@ -5981,7 +5921,7 @@ const SIM = (function () {
       if (this.eliminationMode && !car.eliminated) this.recordElimination(car, 'retired', Math.min(15, Math.max(this.elimination.round + 1,car.laps+1)), this.time, car.totalDist, car.dnfReason);
       const was = car.dnf;
       car.dnf = true; car.inGarage = true; car.frozen = true; car.ghost = true;
-      if (!was) { this.msg(car.driver.short + ' RETIRES — ' + car.dnfReason, 'pen', car, 4); this.log(car, 'DNF'); }
+      if (!was) { this.msg(car.driver.short + ' RETIRES — ' + car.dnfReason, 'critical', car, 4); this.log(car, 'DNF'); }
     }
     marshalReset(car) {
       if (this.type === 'quali' && car.q && car.q.phase === 'flying') this.invalidateQuali(car, 'Car reset');
@@ -6202,7 +6142,7 @@ const SIM = (function () {
           c.intervalAhead = iv;
           if (c.finished && a.finished) c.intervalAhead = c.finishTime - a.finishTime;
         }
-        // overtakes count & yellow flag overtakes
+        // overtakes count
         if (this.lightsOut && this.time - this.lightsOutTime > 6) {
           for (const c of order) {
             const pp = prevPos.get(c);
@@ -6211,20 +6151,9 @@ const SIM = (function () {
               if (passed && !passed.pit && !passed.dnf && !passed.eliminated && !passed.spun && passed.speed > 25 && !passed.finished) {
                 this.stats.overtakes++;
                 this.log(c, 'overtake ' + passed.driver.short);
-                const healthy = passed.speed > Math.max(22, c.speed * 0.8) && Math.abs(passed.d) < t.halfW && !(passed.ai && passed.ai.mode === 'recover') && !passed.offTrackFlag;
-                const fair = healthy && passed.speed > c.speed * 0.85 && Math.abs(c.d) < t.halfW + 1 && this.time - this.lightsOutTime > 25 && this.time - (c.lastYellowPen || -99) > 15;
-                if (this.yellowAt(c.idx) && this.yellowAt(passed.idx) && fair && Math.abs(t.dS(c.s, passed.s)) < 30) { c.lastYellowPen = this.time; this.addPenalty(c, 5, 'Overtaking under yellow'); }
                 this.events.push({ type: 'overtake', car: c, passed });
               }
             }
-          }
-        }
-        // pending collision penalties: victim lost a lot of speed or spun
-        for (const c of this.cars) {
-          const pc = c.pendingColPen; if (!pc) continue;
-          if (this.time - pc.t > 3) {
-            const v = pc.victim; if ((v.ai && v.ai.mode === 'recover') || v.spun || v.damage.severity() > 0.35 || v.retiring || v.dnf) this.addPenalty(c, 5, 'Causing a collision');
-            c.pendingColPen = null;
           }
         }
         // end of race: all cars finished or timeout after leader
@@ -6273,8 +6202,7 @@ const SIM = (function () {
     finishRace() {
       if (this.over) return;
       this.over = true;
-      for (const c of this.cars) if (!c.dnf && !c.eliminated && (!this.eliminationMode || c.finished) && needsCompound(this,c) && !c.compoundPenalty) { c.compoundPenalty = true; this.addPenalty(c, 30, 'Two dry compounds not used'); }
-      const res = this.cars.map(c => ({ car: c, laps: c.eliminated ? c.eliminated.laps : c.laps, time: c.finished ? c.finishTime + c.penalty : null, dnf: c.dnf, best: c.bestLap, pits: c.pitStops, pen: c.penalty, dist: c.totalDist, elimination: c.eliminated }));
+      const res = this.cars.map(c => ({ car: c, laps: c.eliminated ? c.eliminated.laps : c.laps, time: c.finished ? c.finishTime : null, dnf: c.dnf, best: c.bestLap, pits: c.pitStops, dist: c.totalDist, elimination: c.eliminated }));
       res.sort((a, b) => {
         if (this.eliminationMode) {
           if (!!a.elimination !== !!b.elimination) return a.elimination ? 1 : -1;
@@ -6494,6 +6422,8 @@ const SIM = (function () {
     if (a.races.some(r => r.id === info.id)) return { ok: false, reason: 'duplicate' };
     const race = { circuit: CAREER_CIRCUITS[info.race], id: String(info.id), results: Array.isArray(results) && results[0] && results[0].car ? careerRaceRecord(results) : results };
     if (!careerValidRace(race, info.race)) return { ok: false, reason: 'invalid' };
+    // Keep only classification fields, including when recording an older result payload.
+    race.results = race.results.map(r => ({ d: r.d, pos: r.pos, dnf: r.dnf }));
     a.races.push(race);
     const status = careerStatus(st);
     a.points = new Array(CAREER_FIELD).fill(0); for (const row of status.table) a.points[row.d] = row.points;
@@ -6527,7 +6457,7 @@ const SIM = (function () {
     return (neg ? '-' : plus ? '+' : '') + str;
   }
 
-  return { G, RHO, PHYS_DT, DS, VSC, GAME_MODES, CAREER, TEAMS, DRIVERS, TRACK_DEF, CIRCUITS, circuitById, circuitCentreLine, elevationAt, COMPOUNDS, SPEC, Track, Car, Session, AIDriver, RaceEngineer, planStrategy, wearPerLap, needsCompound, fmtTime, clamp, lerp, makeRng, stepCarPhysics, SLIPSTREAM, slipstreamStrength, OFF_TRACK, GREEN_RUNOFF, PlayerHandling, KeyboardDriveInput, HANDLING, USEFUL_WEAR, TYRE_STYLES, drivingStyle, tyreWearGrip, tyreWeatherGrip, tyreMismatch, updateTyres, wetnessFor, weatherCompound, DynamicWeather, CarDamage, DAMAGE_LEVELS, PART_KEYS, PART_NAMES, WHEEL_NAMES, REPAIR_TIME, REFUEL, FUEL_TANK_LAPS, FUEL_RESERVE, START_FUEL_LAPS, ELIMINATION_FUEL_MASS, FUEL_PERF, FUEL_LAP_COST, estimatePitLoss, chooseStartFuelLaps, normalizeDamageLevel, partExposure, torqueAt, defaultCompoundModel, setSeed: (s) => { rnd = makeRng(s); } };
+  return { G, RHO, PHYS_DT, DS, VSC, GAME_MODES, CAREER, TEAMS, DRIVERS, TRACK_DEF, CIRCUITS, circuitById, circuitCentreLine, elevationAt, COMPOUNDS, SPEC, Track, Car, Session, AIDriver, RaceEngineer, planStrategy, wearPerLap, fmtTime, clamp, lerp, makeRng, stepCarPhysics, SLIPSTREAM, slipstreamStrength, OFF_TRACK, GREEN_RUNOFF, PlayerHandling, KeyboardDriveInput, HANDLING, USEFUL_WEAR, TYRE_STYLES, drivingStyle, tyreWearGrip, tyreWeatherGrip, tyreMismatch, updateTyres, wetnessFor, weatherCompound, DynamicWeather, CarDamage, DAMAGE_LEVELS, PART_KEYS, PART_NAMES, WHEEL_NAMES, REPAIR_TIME, REFUEL, FUEL_TANK_LAPS, FUEL_RESERVE, START_FUEL_LAPS, ELIMINATION_FUEL_MASS, FUEL_PERF, FUEL_LAP_COST, estimatePitLoss, chooseStartFuelLaps, normalizeDamageLevel, partExposure, torqueAt, defaultCompoundModel, setSeed: (s) => { rnd = makeRng(s); } };
 })();
 // ==SIM-END==
 if (typeof module !== 'undefined') module.exports = SIM;
@@ -9066,7 +8996,7 @@ function careerSessionConfig(type) {
 }
 function sessionConfig(type, extra = {}) {
   const cfg = Object.assign({ type, gameMode:S.gameMode, laps:SIM.GAME_MODES[S.gameMode].laps, difficulty:S.difficulty/100, weather:'dynamic',
-    tyreWear:'normal', mandatory:true, damage:'realistic', startCompound:S.startTyre, startFuelLaps:S.startFuel,
+    tyreWear:'normal', damage:'realistic', startCompound:S.startTyre, startFuelLaps:S.startFuel,
     seed:(Math.random()*1e9)|0 }, extra, careerSessionConfig(type));
   if (cfg.type === 'race' && cfg.gameMode === 'elimination') delete cfg.startFuelLaps;
   return cfg;
@@ -9201,7 +9131,7 @@ function startSession(cfg) {
   // watched camera's view, never visibly teleported out of a battle.
   const recoveryProbe = new THREE.Vector3();
   G.session.canRecover = car => {
-    recoveryProbe.set(car.x, SIM.elevationAt(G.track.def,car.x,car.z) + .8, car.z).project(camera);
+    recoveryProbe.set(car.x, G.track.elevAt(car.x,car.z) + .8, car.z).project(camera);
     return recoveryProbe.z < -1 || recoveryProbe.z > 1 || Math.abs(recoveryProbe.x) > 1.2 || Math.abs(recoveryProbe.y) > 1.2;
   };
   G.mode = G.attract ? 'menu' : cfg.type;
@@ -9292,7 +9222,7 @@ function startRace(gridOrder, entries) {
   $('briefFuel').disabled = !fuelEnabled;
   $('briefFuel').oninput = null;
   $('briefModeNote').classList.toggle('hidden', gameMode !== 'elimination');
-  $('briefModeNote').textContent = '20 starters · Laps 1–8: last driver out · Laps 9–12: last two out · Laps 13–15: lowest three-lap average wins. Four distributed service stations. Two dry compounds required, with wet-weather exceptions. No fuel management: every car runs a fixed load.';
+  $('briefModeNote').textContent = '20 starters · Laps 1–8: last driver out · Laps 9–12: last two out · Laps 13–15: lowest three-lap average wins. Four distributed service stations. No fuel management: every car runs a fixed load.';
   $('briefDistance').textContent = lapsTotal + ' laps'; $('briefKm').textContent = '(' + (lapsTotal * G.track.length / 1000).toFixed(0) + ' km)';
   $('briefTeams').textContent = (entries || SIM.DRIVERS).length;
   $('briefWeather').textContent = 'Now: ' + startWeather.label;
@@ -9525,7 +9455,7 @@ function updateStrategyUI(p, sess) {
   if (sess.fuelEnabled) $('strategyFuel').textContent='Fuel '+p.fuel.toFixed(1)+' kg of '+sess.fuelCapacity.toFixed(1)+' · ≈ '+sess.fuelRange(p).toFixed(1)+' laps of range at '+sess.fuelLapRate(p).toFixed(2)+' kg/lap · '+sess.lapsLeft(p).toFixed(1)+' laps to go';
   const repair=p.damage.repairPlan({service:true});
   $('pitFacts').textContent=p.pit?'Pit stop in progress — see the pit service panel.':'A clean tyre-only stop costs ≈ '+sess.pitLoss.toFixed(0)+' s here. '+(sess.eliminationMode?'Four distributed stations, one box each; arrive to queue: ':'Four shared boxes, first come first served at the pit entry: ')+''+sess.pitBoxesInUse()+' in use'+(sess.pitQueue.length?', '+sess.pitQueue.length+' queueing':'')+(sess.fuelEnabled?'. Refuelling '+SIM.REFUEL.rate.toFixed(1)+' kg/s. ':'. ')+(repair.items.length?'Damaged '+repair.items.join(' and ').toLowerCase()+' replaced automatically; ':'Damaged wings are replaced automatically; ')+'structural, suspension and power-unit damage remains.';
-  $('strategyRule').textContent=(SIM.needsCompound(sess,p)?'Second dry compound still required. ':'Compound rule satisfied or exempt. ')+'Steer into the pit entry at the '+(G.track.pitForCar(p).side>0?'right':'left')+' track edge. Cross the gold entry gate to engage automatic braking and pit driving. '+(sess.fuelEnabled?'Tyres and fuel':'Tyres')+' are chosen when you stop in your box; the race keeps running while you decide. Control returns at pit exit.';
+  $('strategyRule').textContent='Steer into the pit entry at the '+(G.track.pitForCar(p).side>0?'right':'left')+' track edge. Cross the gold entry gate to engage automatic braking and pit driving. '+(sess.fuelEnabled?'Tyres and fuel':'Tyres')+' are chosen when you stop in your box; the race keeps running while you decide. Control returns at pit exit.';
 }
 function exitToMenu() {
   const career = !!G.career; G.career = null;
@@ -9546,11 +9476,11 @@ function hudMessages() {
   for (let k = msgQueue.length - 1; k >= 0; k--) if (msgQueue[k].until < now) { msgQueue[k].el.remove(); msgQueue.splice(k, 1); }
   while (G.msgSeen < sess.messages.length) {
     const m = sess.messages[G.msgSeen++];
-    const relevant = !m.car || m.car === G.focus || m.kind === 'purple' || m.kind === 'pen' || m.kind === 'big' || (m.kind === 'pit' && m.car === G.focus);
+    const relevant = !m.car || m.car === G.focus || m.kind === 'purple' || m.kind === 'critical' || m.kind === 'big' || (m.kind === 'pit' && m.car === G.focus);
     if (G.attract) continue;
     if (m.kind === 'vsc' || m.kind === 'green') continue; // shown by the race-control panel
     if (m.kind === 'pit' && m.car !== G.focus) continue;
-    if (m.kind === 'pen' && m.car !== G.focus && sess.cars.length > 12 && !m.car.isPlayer) continue;
+    if (m.kind === 'critical' && m.car !== G.focus && sess.cars.length > 12 && !m.car.isPlayer) continue;
     if (relevant) pushMsg(m.text, m.kind, m.dur);
   }
 }
@@ -9947,8 +9877,7 @@ function boardRows() {
     if(sess.eliminationMode&&sess.elimination.round>=12){const f=sess.finalTiming(c);gap=c.eliminated?'RETIRED':f.average!=null?(f.complete?'AVG ':'PART '+f.laps.length+'/3 ')+fmt(f.average):'0/3 TIMED';}
     let tag = '';
     if (c.pit && !c.inGarage) tag = '<span class="tag pit">PIT</span>'; else if (c.finished) tag = '<span class="tag out">🏁</span>';
-    else if (c.retiring && !c.dnf) tag = '<span class="tag pen">STOP</span>'; else if (!c.dnf && c.damage.anyPuncture()) tag = '<span class="tag pen">PNC</span>';
-    if (c.penalty > 0 && sess.type === 'race') tag += `<span class="tag pen">+${c.penalty}s</span>`;
+    else if (c.retiring && !c.dnf) tag = '<span class="tag dmg">STOP</span>'; else if (!c.dnf && c.damage.anyPuncture()) tag = '<span class="tag dmg">PNC</span>';
     const col = c.team.c1 === '#141414' ? '#c9a24a' : c.team.c1;
     const risk = sess.eliminationMode && sess.eliminationRisk(c) >= 1;
     html += `<div class="row${c === focus ? ' me' : ''}${risk ? ' risk' : ''}"><span class="p num">${k + 1}</span><span class="bar" style="background:${col}"></span><span class="n">${c.driver.name}${tag}</span><span class="g num">${gap}</span></div>`;
@@ -10118,7 +10047,7 @@ function updateHud(dt) {
   const blueIndicator = $('blueFlag');
   blueIndicator.classList.toggle('active', blue);
   blueIndicator.setAttribute('aria-hidden', String(!blue));
-  $('blueFlagHint').textContent = p.blueFlag.warned ? 'Warning — stop blocking the lapping car' : 'Allow the lapping car to pass safely';
+  $('blueFlagHint').textContent = 'Allow the lapping car to pass safely';
   // qualifying status bar: only what the player needs right now (no session progress counter)
   const qt = $('qtimer');
   const q = sess.type === 'quali' && !G.attract ? p.q : null;
@@ -10912,22 +10841,22 @@ function showResults() {
       h += `<tr class="${c.isPlayer ? 'me' : ''}"><td>P${r.pos}</td><td><span class="tb" style="background:${c.team.c1 === '#141414' ? '#c9a24a' : c.team.c1}"></span>${c.team.name}</td><td class="num">${r.best ? fmt(r.best) : '—'}</td><td class="num">${r.best && poleTime ? r.pos === 1 ? '—' : '+' + (r.best - poleTime).toFixed(3) : '—'}</td><td>${result}${r.reason ? '<small style="display:block;color:var(--dim)">' + r.reason + '</small>' : ''}</td></tr>`;
     }
   } else if (sess.eliminationMode) {
-    h = '<tr><th>Rank</th><th>Team / Driver</th><th>Laps</th><th>Result</th><th>Lap 13</th><th>Lap 14</th><th>Lap 15</th><th>Average</th><th>Stops</th><th>Pen.</th></tr>';
+    h = '<tr><th>Rank</th><th>Team / Driver</th><th>Laps</th><th>Result</th><th>Lap 13</th><th>Lap 14</th><th>Lap 15</th><th>Average</th><th>Stops</th></tr>';
     for (const r of sess.results) {
       const c = r.car, out = r.elimination;
       const status = out ? (out.kind === 'checkpoint' ? 'Eliminated · Lap ' + out.lap : 'Retired · Lap ' + out.lap + ' · ' + out.reason) :
         c === sess.winner ? 'WINNER' : c.finished ? 'Finalist' : 'Did not finish';
-      h += `<tr class="${c.isPlayer ? 'me' : ''}"><td>P${r.pos}</td><td><span class="tb" style="background:${c.team.c1}"></span>${c.team.name}<small style="display:block;color:var(--dim)">${c.driver.name}${c.isPlayer ? ' · YOU' : ''}</small></td><td>${r.laps}</td><td>${status}</td>${[0,1,2].map(i=>`<td class="num">${c.finalLaps?.[i]!=null?fmt(c.finalLaps[i]):'—'}</td>`).join('')}<td class="num">${sess.finalTiming(c).complete?fmt(sess.finalTiming(c).average):'—'}</td><td>${r.pits} <span style="color:var(--dim)">${[...c.tyre.used].join('')}</span></td><td>${r.pen ? r.pen + 's' : '—'}</td></tr>`;
+      h += `<tr class="${c.isPlayer ? 'me' : ''}"><td>P${r.pos}</td><td><span class="tb" style="background:${c.team.c1}"></span>${c.team.name}<small style="display:block;color:var(--dim)">${c.driver.name}${c.isPlayer ? ' · YOU' : ''}</small></td><td>${r.laps}</td><td>${status}</td>${[0,1,2].map(i=>`<td class="num">${c.finalLaps?.[i]!=null?fmt(c.finalLaps[i]):'—'}</td>`).join('')}<td class="num">${sess.finalTiming(c).complete?fmt(sess.finalTiming(c).average):'—'}</td><td>${r.pits}</td></tr>`;
     }
   } else {
-    h = '<tr><th>Pos</th><th>Team</th><th>Laps</th><th>Time / Gap</th><th>Best lap</th><th>Stops</th><th>Pen.</th><th>Pts</th>' + (counted ? '<th>Total</th>' : '') + '</tr>';
+    h = '<tr><th>Pos</th><th>Team</th><th>Laps</th><th>Time / Gap</th><th>Best lap</th><th>Stops</th><th>Pts</th>' + (counted ? '<th>Total</th>' : '') + '</tr>';
     const totals = counted ? new Map(career.status.table.map(row => [row.d, row])) : null;
     const win = sess.results[0];
     const fastest = sess.bestLap.car;
     for (const r of sess.results) {
       const c = r.car; let tm;
       if (r.dnf) tm = 'DNF (' + c.dnfReason + ')'; else if (r.pos === 1) tm = fmt(r.time); else if (r.time != null && r.laps === win.laps) tm = '+' + (r.time - win.time).toFixed(3); else if (r.laps < win.laps) tm = '+' + (win.laps - r.laps) + ' lap' + (win.laps - r.laps > 1 ? 's' : ''); else tm = '—';
-      h += `<tr class="${c.isPlayer ? 'me' : ''}"><td>${r.pos}</td><td><span class="tb" style="background:${c.team.c1 === '#141414' ? '#c9a24a' : c.team.c1}"></span>${c.team.name}${c === fastest ? ' <span class="pill" style="background:#7b1fa2">FL</span>' : ''}</td><td>${r.laps}</td><td class="num">${tm}</td><td class="num">${r.best ? fmt(r.best) : '-'}</td><td>${r.pits} <span style="color:var(--dim)">${[...c.tyre.used].join('')}</span></td><td>${r.pen ? r.pen + 's' : ''}</td>${counted ? `<td class="cpts">${SIM.CAREER.points(r.pos, r.dnf) || ''}</td><td class="cpts">${totals.get(SIM.DRIVERS.indexOf(c.driver)).points} <span style="color:var(--dim)">P${totals.get(SIM.DRIVERS.indexOf(c.driver)).rank}</span></td>` : `<td>${r.points || ''}</td>`}</tr>`;
+      h += `<tr class="${c.isPlayer ? 'me' : ''}"><td>${r.pos}</td><td><span class="tb" style="background:${c.team.c1 === '#141414' ? '#c9a24a' : c.team.c1}"></span>${c.team.name}${c === fastest ? ' <span class="pill" style="background:#7b1fa2">FL</span>' : ''}</td><td>${r.laps}</td><td class="num">${tm}</td><td class="num">${r.best ? fmt(r.best) : '-'}</td><td>${r.pits}</td>${counted ? `<td class="cpts">${SIM.CAREER.points(r.pos, r.dnf) || ''}</td><td class="cpts">${totals.get(SIM.DRIVERS.indexOf(c.driver)).points} <span style="color:var(--dim)">P${totals.get(SIM.DRIVERS.indexOf(c.driver)).rank}</span></td>` : `<td>${r.points || ''}</td>`}</tr>`;
     }
   }
   tbl.innerHTML = h;

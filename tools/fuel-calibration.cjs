@@ -30,8 +30,8 @@ const CIRCUITS = opt('circuits', 'summit,rivermere,redridge').split(',');
 // One car alone; laps 2..laps are flying laps. `hold` keeps the fuel load fixed.
 function drive(id, fuel, seed, { laps = 3, hold = true, gameMode = 'grandprix' } = {}) {
   const t = tracks.get(id);
-  const S = new SIM.Session(t, { type: 'race', laps, gameMode, entries: [{ driver: SIM.DRIVERS[0] }], seed, spectate: true, weather: 'dynamic', tyreWear: 'off', mistakes: 0, mandatory: false, weatherState: DRY(seed) });
-  S.totalLaps = laps; S.mandatory = false;
+  const S = new SIM.Session(t, { type: 'race', laps, gameMode, entries: [{ driver: SIM.DRIVERS[0] }], seed, spectate: true, weather: 'dynamic', tyreWear: 'off', mistakes: 0, weatherState: DRY(seed) });
+  S.totalLaps = laps;
   const car = S.cars[0];
   if (S.fuelEnabled) car.fuel = fuel;
   let vmax = 0;

@@ -15,9 +15,9 @@ vm.runInNewContext(html.match(/<script>([\s\S]*?)<\/script>/)[1], context);
 const SIM = context.module.exports;
 const DRY = (seed) => Object.assign(new SIM.DynamicWeather(seed).snapshot(), { pattern: 'dry', regime: 'sunny', rain: 0, water: 0, lineWater: 0, cloud: 0.2, targetCloud: 0.2, targetRain: 0, patternEnds: 1e9, regimeEnds: 1e9 });
 const SCEN = {
-  normal: { label: 'two-compound rule, normal tyre wear, dry', cfg: {} },
-  nostop: { label: 'no compound rule, tyre wear off, dry, soft tyres', cfg: { mandatory: false, tyreWear: 'off' }, comp: 'S' },
-  high: { label: 'two-compound rule, high tyre wear, dry', cfg: { tyreWear: 'high' } },
+  normal: { label: 'normal tyre wear, dry', cfg: {} },
+  nostop: { label: 'tyre wear off, dry, soft tyres', cfg: { tyreWear: 'off' }, comp: 'S' },
+  high: { label: 'high tyre wear, dry', cfg: { tyreWear: 'high' } },
   rain: { label: 'rain arriving mid-race (forced tyre stop)', cfg: {}, rainAt: 260 },
 };
 const sc = SCEN[opt('scenario', 'normal')];

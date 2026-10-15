@@ -112,8 +112,8 @@ test('without fuel management (Elimination, bare rigs) the fuel load has no perf
 // One AI car alone, the fuel load held fixed through the laps: identical car, tyres, weather and driver.
 function lapTimes(id, fuel, seed) {
   const t = tracks.get(id);
-  const S = new SIM.Session(t, { type: 'race', laps: 4, entries: [{ driver: SIM.DRIVERS[0] }], seed, spectate: true, weather: 'dynamic', tyreWear: 'off', mistakes: 0, mandatory: false, weatherState: DRY(seed) });
-  S.totalLaps = 4; S.mandatory = false; const car = S.cars[0]; car.fuel = fuel;
+  const S = new SIM.Session(t, { type: 'race', laps: 4, entries: [{ driver: SIM.DRIVERS[0] }], seed, spectate: true, weather: 'dynamic', tyreWear: 'off', mistakes: 0, weatherState: DRY(seed) });
+  S.totalLaps = 4; const car = S.cars[0]; car.fuel = fuel;
   while (!S.over && S.time < 1000) { S.fixedStep(dt); car.fuel = fuel; assert.ok(!car.pit, 'no pit stop'); }
   return car.lapTimes.slice(1).map(l => l.t);
 }
@@ -140,18 +140,18 @@ function grid(id, extra = {}) {
 }
 
 test('the strategy model prices fuel weight, refuelling time and extra stops', () => {
-  const S = grid('summit', { mandatory: false, tyreWear: 'off' });
+  const S = grid('summit', { tyreWear: 'off' });
   const c = S.cars[0], L = 8;
   // on the quickest dry tyre with no wear there is no reason to stop: carrying the whole race's fuel
   // beats a stop for fuel
-  const full = SIM.planStrategy(S, c, L, 'S', 0, false, 1, 0.5, { fixed: S.fuelForLaps(8) });
-  const light = SIM.planStrategy(S, c, L, 'S', 0, false, 1, 0.5, { fixed: S.fuelForLaps(4) });
+  const full = SIM.planStrategy(S, c, L, 'S', 0, { fixed: S.fuelForLaps(8) });
+  const light = SIM.planStrategy(S, c, L, 'S', 0, { fixed: S.fuelForLaps(4) });
   assert.equal(full.stops.length, 0); assert.equal(light.stops.length, 1, 'a 4-lap load has to stop for fuel');
   assert.ok(light.stops[0].lap <= 4);
   assert.ok(full.cost < light.cost, 'with no tyre stop, the extra stop costs more than the weight saves');
   // the fuel weight itself is priced: a lighter load for the same plan is quicker
-  const a = SIM.planStrategy(S, c, 3, 'S', 0, false, 1, 0.5, { fixed: S.fuelForLaps(4) });
-  const b = SIM.planStrategy(S, c, 3, 'S', 0, false, 1, 0.5, { fixed: S.fuelForLaps(8) });
+  const a = SIM.planStrategy(S, c, 3, 'S', 0, { fixed: S.fuelForLaps(4) });
+  const b = SIM.planStrategy(S, c, 3, 'S', 0, { fixed: S.fuelForLaps(8) });
   assert.equal(a.stops.length, 0); assert.equal(b.stops.length, 0);
   assert.ok(b.cost - a.cost > 0.5 * 2.78 * 4 * 3 * S.fuelLapCost, 'four extra laps of fuel carried for three laps');
 });
@@ -159,10 +159,10 @@ test('the strategy model prices fuel weight, refuelling time and extra stops', (
 test('AI starting fuel is chosen on predicted race time, not simply the minimum', () => {
   for (const id of ['summit', 'rivermere', 'redridge']) {
     // soft tyres that last the race and no second compound required: nothing gains from stopping
-    const none = grid(id, { mandatory: false, tyreWear: 'off' });
+    const none = grid(id, { tyreWear: 'off' });
     const heavy = none.cars.filter(c => SIM.chooseStartFuelLaps(none, c, 'S') >= 7.5).length;
     assert.ok(heavy >= 16, id + ': ' + heavy + '/20 run to the flag without a fuel stop');
-    // a tyre stop is coming anyway: most run lighter and refuel then
+    // with normal tyre wear a tyre stop is usually coming anyway: most run lighter and refuel then
     const stop = grid(id);
     const laps = stop.cars.map(c => c.startFuelLaps);
     assert.ok(laps.filter(x => x < 7.5).length >= 12, id + ' starting fuel ' + laps.join(','));
@@ -180,7 +180,7 @@ test('AI starting fuel is chosen on predicted race time, not simply the minimum'
 });
 
 test('AI refuelling: to the next real stop when one is coming, to the flag when not', () => {
-  const S = grid('summit', { mandatory: false, tyreWear: 'off' });
+  const S = grid('summit', { tyreWear: 'off' });
   S.lightsOut = true; const c = S.cars[3];
   c.laps = 3; c.totalDist = S.track.length * 3; c.fuel = 2;
   const toFlag = c.engineer.refuelFor('keep'), left = S.lapsLeft(c);

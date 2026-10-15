@@ -250,7 +250,7 @@ test('cutting a corner across the inside is slower than driving it, without any 
   assert.ok(cut.car.finishTime > legit.car.finishTime, 'and over the race');
   assert.ok(cut.deficit > 15, 'the skipped distance is owed: ' + cut.deficit.toFixed(1) + ' m');
   assert.equal(Math.abs(legit.deficit) < 0.5, true);
-  assert.equal(cut.car.penaltyLog.length, 0); assert.equal(cut.car.warnings, 0);
+  assert.equal('penaltyLog' in cut.car, false); assert.equal('warnings' in cut.car, false);
   assert.ok(cut.car.lapTimes.every(l => l.valid), 'no lap deleted');
   assert.ok(!cut.S.messages.some(m => /TRACK LIMITS|DELETED|INVALID/i.test(m.text)), 'no notification');
   assert.equal(cut.car.laps, 3); assert.ok(cut.car.finished && !cut.car.dnf);
@@ -305,6 +305,6 @@ test('AI drivers shoved off the track at speed recover on their own, with no res
     assert.equal(resets, 0, id + ' nobody needed a marshal reset');
     // every car took the flag or retired from racing damage later on (contact between cars); none stuck or out of fuel
     assert.ok(S.cars.every(c => c.finished || (c.dnf && c.dnfReason !== 'Out of fuel')), id + ' every car finished or retired: ' + S.cars.filter(c => !c.finished).map(c => c.driver.short + ' ' + c.dnfReason));
-    assert.ok(!S.cars.some(c => c.penaltyLog.some(r => /track limits/i.test(r)) || c.warnings));
+    assert.ok(S.cars.every(c => !('penaltyLog' in c) && !('warnings' in c)));
   }
 });
