@@ -26,6 +26,10 @@ function prohibitPenaltyReads(car) {
 }
 function box(S, c, tyre) {
   const p = S.track.stations?.[0] || S.track.pit;
+  if(S.eliminationMode){
+    c.placeAt(S.track,S.track.wrapS(p.entry0+346),S.track.pitTargetD(S.track.wrapS(p.entry0+346),null,p),30);c.speed=c.u=30;c.boxCompound=tyre;
+    c.pit={phase:'out',station:p.id,previousQ:344,entryTime:S.time};S.pitLogic(c,SIM.PHYS_DT);assert.equal(c.pit.serviced,true);return c.pit;
+  }
   c.placeAt(S.track, p.boxes[0], p.side * p.boxD, 0);
   c.pit = { phase: 'awaiting', station: p.id, box: 0, boxS: p.boxes[0], stopS: p.boxes[0], entryTime: S.time };
   assert.ok(S.confirmPitService(c, { tyre, fuel: 0 }));
@@ -40,10 +44,10 @@ for (const track of tracks) for (const mode of modes) {
       prohibitPenaltyReads(c);
       c.finished = true; c.laps = S.totalLaps; c.finishOrder = i + 1;
       c.finishTime = 1000 + i; c.totalDist = S.totalLaps * S.track.length;
-      if (S.eliminationMode) c.finalLaps = [90 + i, 90 + i, 90 + i];
+
     }
-    // The three-lap winner can be later across the finish line than another finalist.
-    if (S.eliminationMode) { a.finalLaps = [80, 80, 80]; a.finishTime = 1100; }
+    // Elimination uses crossing order, even when obsolete average fields favour another car.
+    if(S.eliminationMode)b.finalLaps=[1,1,1];
     incomplete.finished = false; incomplete.laps--; incomplete.totalDist -= S.track.length;
     if (S.eliminationMode) incomplete.finalLaps = [70, 70];
     retired.dnf = true; retired.finished = false; retired.laps = 2; retired.totalDist = 2 * S.track.length;
@@ -54,7 +58,7 @@ for (const track of tracks) for (const mode of modes) {
     assert.equal(S.results.find(r => r.car === retired).points, 0);
     assert.ok(S.results.every(r => !('pen' in r)));
     if (S.eliminationMode) {
-      assert.equal(S.winner, a); assert.equal(S.finalTiming(a).average, 80);
+      assert.equal(S.winner,a);assert.equal(S.results[0].car.finishOrder,1);
     } else {
       assert.equal(S.results[0].points, 25); assert.equal(S.results[1].points, 18);
     }
@@ -94,11 +98,10 @@ for (const track of tracks) for (const mode of modes) {
   test(label + ': repeated same-compound stops retain tyre and repair durations without compulsory changes', () => {
     const S = session(track, mode), c = S.player;
     prohibitPenaltyReads(c); S.lightsOut = true;
-    for (const comp of ['S', 'S', 'M', 'M', 'H', 'I', 'W']) {
+    for (const comp of (S.eliminationMode?['S','S','H','H','I','W']:['S','S','M','M','H','I','W'])) {
       c.tyre.wear.fill(.7); c.damage.c[0] = c.damage.c[1] = .6; c.damage.computePerf();
       const P = box(S, c, comp), before = S.time;
-      assert.ok(P.tyreT >= 2); assert.ok(P.fwT >= SIM.REPAIR_TIME.fw[0]);
-      assert.equal(P.total, Math.max(.8, P.tyreT, P.fwT, P.rwT));
+      if(S.eliminationMode){assert.equal(P.total,0);assert.equal(c.speed,30);}else{assert.ok(P.tyreT>=2);assert.ok(P.fwT>=SIM.REPAIR_TIME.fw[0]);assert.equal(P.total,Math.max(.8,P.tyreT,P.fwT,P.rwT));}
       while (P.phase === 'stopped') { S.time += SIM.PHYS_DT; S.pitLogic(c, SIM.PHYS_DT); }
       assert.ok(S.time - before >= P.total);
       assert.equal(c.tyre.c, comp); assert.equal(c.damage.fw, 0);

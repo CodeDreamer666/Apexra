@@ -31,6 +31,7 @@ for (const def of SIM.CIRCUITS) for (const playerLast of [false, true]) {
     for (const c of S.cars) {
       c.stepDistance = c.totalDist = S.track.length + (20 - c.gridSlot) * 5;
       c.timedRaceBoundary = c.laps = 1;
+      S.elimination.crossings[0].set(c,100+c.gridSlot);
     }
     S.eliminationRound(1, 1, SIM.PHYS_DT);
     assert.equal(S.activeOrder.length, 19);

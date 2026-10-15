@@ -37,24 +37,19 @@ for (const track of tracks) {
       }
     }
   });
-  test(track.name + ': tyre and wing servicing ignores fuel input and never shortens jobs', () => {
-    for (const comp of ['S', 'M', 'H', 'I', 'W']) {
-      const S = session(track), c = S.player;
-      c.damage.c[0] = c.damage.c[1] = .6; c.damage.c[2] = .5;
-      c.damage.c[3] = .4; c.damage.c[5] = .25; c.damage.computePerf();
-      S.lightsOut = true;
-      const fuel = c.fuel, mass = c.mass;
-      const P = box(S, c, comp, 999);
-      assert.equal(P.fuelAdd, 0); assert.equal(P.fuelT, 0);
-      assert.ok(P.tyreT >= 2);
-      assert.ok(P.fwT >= SIM.REPAIR_TIME.fw[0] && P.fwT <= SIM.REPAIR_TIME.fw[1]);
-      assert.ok(P.rwT >= SIM.REPAIR_TIME.rw[0] && P.rwT <= SIM.REPAIR_TIME.rw[1]);
-      assert.equal(P.total, Math.max(.8, P.tyreT, P.fwT, P.rwT));
-      assert.equal('fuel' in S.pitJobProgress(P), false);
-      while (P.phase === 'stopped' && S.time < 100) { S.time += SIM.PHYS_DT; S.pitLogic(c, SIM.PHYS_DT); }
-      assert.equal(c.tyre.c, comp); assert.equal(c.damage.fw, 0); assert.equal(c.damage.c[2], 0);
-      assert.equal(c.damage.c[3], .4); assert.equal(c.damage.c[5], .25);
-      assert.equal(c.fuel, fuel); assert.equal(c.mass, mass); assert.equal(c.pitHistory[0].fuelAdded, 0);
+  test(track.name + ': all variants service moving cars instantly, preserve fuel and nonrepairable damage', () => {
+    for (const eliminationVariant of ['classic','chaos','ruthless']) for(const comp of ['S','H','I','W']) {
+      const S=session(track,'elimination',{eliminationVariant}),c=S.player,p=S.track.stations[0];S.lightsOut=true;
+      c.damage.c[0]=c.damage.c[1]=.6;c.damage.c[2]=.5;c.damage.c[3]=.4;c.damage.c[5]=.25;c.damage.computePerf();
+      const fuel=c.fuel,mass=c.mass;c.boxCompound=comp;c.launch.active=false;
+      c.placeAt(S.track,S.track.wrapS(p.entry0+346),S.track.pitTargetD(S.track.wrapS(p.entry0+346),null,p),30);
+      c.speed=c.u=30;c.pit={station:0,phase:'out',entryTime:0,previousQ:344};S.pitLogic(c,SIM.PHYS_DT);
+      assert.equal(c.pit.serviced,true);assert.equal(c.speed,30);assert.equal(c.frozen,false);assert.equal(c.pit.phase,'out');
+      assert.equal(c.pit.total,0);assert.equal(c.tyre.c,comp);assert.equal(c.damage.fw,0);assert.equal(c.damage.c[2],0);
+      assert.equal(c.damage.c[3],.4);assert.equal(c.damage.c[5],.25);assert.equal(c.fuel,fuel);assert.equal(c.mass,mass);
+      assert.equal(c.pitHistory[0].fuelAdded,0);assert.equal(c.pitHistory[0].service,0);
+      S.pitLogic(c,SIM.PHYS_DT);assert.equal(c.pitStops,1,'one service per visit');
+      assert.equal(S.confirmPitService(c,{tyre:'H',fuel:999}),false,'no stationary service bypass');
     }
   });
   test(track.name + ': engine and identical physics ignore empty or stale tanks', () => {
@@ -124,37 +119,19 @@ for (const track of tracks) {
   });
 }
 
-test('FIFO queues, physical stopping and safe release still operate in Elimination', () => {
-  const S = session(tracks[0]), track = S.track, st = track.stations[0]; S.lightsOut = true;
-  // Five arrivals at station 1 and one at station 2: each station's single box is first come, first served.
-  const p = S.player, order = [p, ...S.cars.filter(c => c !== p).slice(0, 5)];
-  order.forEach((c, i) => {
-    c.pit = { phase: 'queue', station: i < 5 ? 0 : 1, entryTime: i, queuePos: 0 };
-    S.pitArrivals.push({ car: c, t: i, q: 1 });
-  });
-  S.allocatePitBoxes();
-  assert.equal(S.pitBoxes[0], p); assert.equal(S.pitBoxes[1], order[5]);
-  assert.deepEqual(S.pitQueue.map(c => c.id), order.slice(1, 5).map(c => c.id));
-  const P = p.pit;
-  p.placeAt(track, P.stopS, st.side * st.boxD, 1); p.speed = 1;
-  S.pitLogic(p, SIM.PHYS_DT); assert.equal(P.phase, 'in', 'service needs a complete stop');
-  p.placeAt(track, P.stopS, st.side * st.boxD, 0); p.speed = 0;
-  S.pitLogic(p, SIM.PHYS_DT); assert.equal(P.phase, 'awaiting');
-  assert.ok(S.confirmPitService(p, { tyre: 'H' }), 'tyre-only confirmation needs no fuel field');
-  while (P.phase === 'stopped' && S.time < 100) { S.time += SIM.PHYS_DT; S.pitLogic(p, SIM.PHYS_DT); }
-  const rival = S.cars.find(c => !order.includes(c)); rival.placeAt(track, p.s - 5, st.side * st.fastD, 15); rival.speed = 15;
-  S.pitLogic(p, SIM.PHYS_DT); assert.equal(P.phase, 'release', 'release waits for traffic');
-  rival.inGarage = true;
-  for (const c of S.cars) if (c !== p) c.inGarage = true;
-  S.pitLogic(p, SIM.PHYS_DT); assert.equal(P.phase, 'out'); assert.equal(p.frozen, false);
+test('only four compounds are used in Elimination; Grand Prix keeps Medium',()=>{
+ for(const comp of ['S','M','H','I','W']){
+  const S=session(tracks[0],'elimination',{startCompound:comp});assert.equal(S.player.tyre.c,comp==='M'?'H':comp);assert.equal('used' in S.player.tyre,false);
+  const gp=session(tracks[0],'grandprix',{startCompound:comp});assert.equal(gp.player.tyre.c,comp);
+ }
 });
-
-test('all five starting tyres remain available without compliance tracking', () => {
-  for (const comp of ['S', 'M', 'H', 'I', 'W']) {
-    const S = session(tracks[0], 'elimination', { startCompound: comp });
-    assert.equal(S.player.tyre.c, comp);
-    assert.equal('used' in S.player.tyre, false);
-    S.fitTyres(S.player, comp, 80);
-    assert.equal(S.player.tyre.c, comp);
-  }
+test('invalid service gate triggers cannot change tyres or repair damage',()=>{
+ for(const kind of ['main-track','stopped','wrong-heading','teleport','missed-gate']){
+  const S=session(tracks[0]),c=S.player,p=S.track.stations[0];c.tyre.wear.fill(.5);c.damage.c[0]=.4;c.boxCompound='S';
+  c.placeAt(S.track,S.track.wrapS(p.entry0+346),kind==='main-track'?0:S.track.pitTargetD(S.track.wrapS(p.entry0+346),null,p),kind==='stopped'?0:30);
+  c.speed=c.u=kind==='stopped'?0:30;
+  if(kind==='wrong-heading')c.psi+=Math.PI;
+  c.pit={station:0,phase:'out',entryTime:0,previousQ:kind==='teleport'?200:kind==='missed-gate'?346:344};
+  S.pitLogic(c,SIM.PHYS_DT);assert.equal(c.pitStops,0,kind);assert.equal(c.tyre.wear[0],.5);assert.equal(c.damage.c[0],.4);
+ }
 });

@@ -1,9 +1,11 @@
-// Fully stopped queues, with the occupied box held for twenty seconds, at 240 Hz.
+// Multiple physical arrivals share a drive-through lane; nobody waits for a crew/box.
 const fs=require('fs'),assert=require('node:assert/strict'),path=require('node:path');const m={exports:{}};new Function('module',fs.readFileSync(path.join(__dirname,'..','index.html'),'utf8').match(/<script>([\s\S]*?)<\/script>/)[1])(m);const SIM=m.exports;
-for(const def of SIM.CIRCUITS)for(let station=0;station<4;station++){const S=new SIM.Session(new SIM.Track(def),{type:'race',gameMode:'elimination',entries:SIM.DRIVERS.map(driver=>({driver})),seed:11,weather:'dry',mistakes:0,tyreWear:'off',mandatory:false});S.lightsOut=true;const [a,b,c]=S.cars;for(const o of S.cars.slice(3)){o.inGarage=true;o.ghost=true;}
- const p=S.track.stations[station];a.placeAt(S.track,p.boxes[0],p.side*p.boxD,0);a.frozen=true;a.pit={phase:'awaiting',station:p.id,box:p.id,boxS:p.boxes[0],stopS:p.boxes[0],stopPose:{x:a.x,z:a.z,psi:a.psi},timer:0,entryTime:0};S.pitBoxes[p.id]=a;
- for(const [i,o] of [b,c].entries()){o.placeAt(S.track,S.track.wrapS(p.entry0+40-i*25),S.track.pitTargetD(S.track.wrapS(p.entry0+40-i*25),null),20);o.ai.boxThisLap=true;o.stationChoice=p.id;o.boxCompound='S';o.launch.active=false;}
- S.aiServiceChoice=()=>({tyre:'S',fuel:0});let released=false,order=[];while(S.time<90){S.fixedStep(SIM.PHYS_DT);if(!released&&S.time>20&&S.pitQueue.length===2){console.log(def.id,station+1,'QUEUE',S.time,S.pitQueue.map(o=>o.id),[b,c].map(o=>o.damage.severity()));S.confirmPitService(a,{tyre:'S',fuel:0});released=true;}
- for(const o of [a,b,c])if(o.pitStops&&!order.includes(o.id))order.push(o.id);if(order.length===3&&[a,b,c].every(o=>!o.pit))break;}
- assert.ok(released);assert.deepEqual(order,[a.id,b.id,c.id]);for(const o of [a,b,c]){assert.equal(o.pitStops,1);assert.equal(o.pit,null);assert.equal(o.damage.severity(),0);}
- console.log(def.id,station+1,'DONE',JSON.stringify({released,time:S.time,order,cars:[a,b,c].map(o=>({id:o.id,stops:o.pitStops,damage:o.damage.severity(),phase:o.pit?.phase,queue:o.pit?.queuePos,s:o.s,d:o.d}))}));}
+for(const def of SIM.CIRCUITS)for(let station=0;station<2;station++){
+ const S=new SIM.Session(new SIM.Track(def),{type:'race',gameMode:'elimination',entries:SIM.DRIVERS.map(driver=>({driver})),seed:11,weather:'dry',mistakes:0,tyreWear:'off'});S.lightsOut=true;
+ const cars=S.cars.slice(0,3),p=S.track.stations[station];for(const o of S.cars.slice(3)){o.inGarage=true;o.ghost=true;}
+ for(const [i,c]of cars.entries()){const s=S.track.wrapS(p.entry0-150-i*45);c.placeAt(S.track,s,0,40);c.totalDist=100-i*45;c.launch.active=false;c.ai.boxThisLap=true;c.ai.strategy=()=>{};c.ai.assessDamage=()=>{};c.stationChoice=p.id;c.boxCompound='S';}
+ S.aiServiceChoice=()=>({tyre:'S',fuel:0});let phases=new Set();
+ while(S.time<90){S.fixedStep(SIM.PHYS_DT);for(const c of cars)if(c.pit)phases.add(c.pit.phase);assert.equal(S.pitQueue.length,0);assert.ok(S.pitBoxes.every(c=>!c));if(cars.every(c=>c.pitStops===1&&!c.pit))break;}
+ for(const c of cars){assert.equal(c.pitStops,1,def.id+' station '+station);assert.equal(c.pit,null);assert.equal(c.damage.severity(),0);assert.equal(c.pitHistory[0].service,0);}
+ assert.deepEqual([...phases],['out']);console.log('PASS',def.id,'station',station+1,'three arrivals serviced without stationary queue');
+}
