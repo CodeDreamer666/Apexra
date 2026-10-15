@@ -171,13 +171,14 @@ for (const id of ['summit', 'rivermere', 'redridge']) {
     assert.equal(me.lastControlStep, greenStep, 'the player drives again in the green-flag step');
     assert.ok(Math.abs(me.vscReturnAt - S.vsc.endedAt) < 1e-9);
     assert.ok(me.input.throttle <= thBefore + SIM.HANDLING.thUp * dt + 1e-9, 'no throttle jump in the green-flag step');
-    let th = me.input.throttle, rose = false;
+    let th = me.input.throttle, rose = false; const vGreen = me.speed;
     for (let k = 0; k < 120; k++) {
       S.events.length = 0; S.fixedStep(dt);
       assert.ok(me.input.throttle <= th + SIM.HANDLING.thUp * dt + 1e-9, 'throttle step ' + (me.input.throttle - th).toFixed(4));
       rose = rose || me.input.throttle > th; th = me.input.throttle;
     }
-    assert.ok(rose && th > thBefore, 'W pressed at the green flag accelerates the car');
+    // (a car still on full throttle when the green flag comes, catching up to the queue, simply keeps it)
+    assert.ok((rose && th > thBefore) || (thBefore === 1 && th === 1 && me.speed > vGreen), 'W pressed at the green flag accelerates the car');
     assert.equal(S.vsc.phase, 'green'); assert.ok(!S.vscActive);
     // after the restart cars race normally again, overtaking included
     run(S, 20);
