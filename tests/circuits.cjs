@@ -132,7 +132,7 @@ function race(id, laps, seed) {
 
 for (const id of ['summit', 'rivermere', 'redridge']) {
   test(id + ': the full 20-car field starts, races, pits and is classified', () => {
-    const { s, pits } = race(id, 4, 21);
+    const { s, pits } = race(id, SIM.GAME_MODES.grandprix.laps, 21);
     assert.ok(pits.maxBoxes <= 4 && pits.assigned.length >= 10, id + ' boxes used ' + pits.assigned.length);
     assert.ok(pits.fifo, id + ': a box went to a car that arrived after one still waiting');
     for (const c of s.cars) assert.notEqual(c.dnfReason, 'Out of fuel', id + ': ' + c.driver.short + ' ran out of fuel');
@@ -141,12 +141,13 @@ for (const id of ['summit', 'rivermere', 'redridge']) {
     // every car still running kept racing: at most a lap or two down at the flag
     for (const c of s.cars) if (!c.dnf) assert.ok(c.laps >= 2, id + ': ' + c.driver.short + ' completed only ' + c.laps + ' laps');
     assert.ok(s.cars.filter(c => c.finished).length >= 12, id + ' finishers');
-    assert.ok(s.stats.pitstops >= 15, id + ' pit stops ' + s.stats.pitstops);
+    // no stop is compulsory (some cars may run the whole race on one set), but the shared boxes see real use
+    assert.ok(s.stats.pitstops >= 10, id + ' pit stops ' + s.stats.pitstops);
     assert.equal(s.stats.boxMissed, 0, id + ': a car overshot its box');
     // without DRS the field still races: positions change through the tow, braking and racecraft
     assert.ok(s.stats.overtakes > 0, id + ' overtakes ' + s.stats.overtakes);
     const res = s.results; assert.equal(res.length, 20); res.forEach((r, k) => assert.equal(r.pos, k + 1));
-    const winner = res[0].car; assert.equal(winner.laps, 4);
+    const winner = res[0].car; assert.equal(winner.laps, SIM.GAME_MODES.grandprix.laps);
     // the leaders' best laps are realistic for six kilometres
     for (const r of res.slice(0, 5)) assert.ok(r.car.bestLap > 70 && r.car.bestLap < 130, id + ' lap time ' + r.car.bestLap);
   });

@@ -168,7 +168,7 @@ function headlessRace(count, cfg = {}) {
   const realTrack = new SIM.Track(SIM.TRACK_DEF);
   const entries = SIM.DRIVERS.slice(0, count).map(driver => ({ driver }));
   const sess = new SIM.Session(realTrack, { type: 'race', laps: 1, difficulty: 0.8, entries, seed: 7, spectate: true, ...cfg });
-  sess.totalLaps = sess.cfg.laps; // sessions are built for the 8-lap race; these runs are shorter
+  sess.totalLaps = sess.cfg.laps; // sessions are built for the full race; these runs are shorter
   return sess;
 }
 
@@ -361,7 +361,8 @@ const STRAIGHT = 600;
 function crashLab(level, n = 2, seed = 3) {
   const entries = SIM.DRIVERS.slice(0, n).map(driver => ({ driver }));
   const S = new SIM.Session(circuit, { type: 'race', laps: 5, entries, seed, spectate: true, damage: level });
-  S.lightsOut = true; S.time = 20; for (const c of S.cars) { c.ai = null; c.started = true; }
+  // staged impacts use one fixed compound, independent of which tyre the strategy would have started on
+  S.lightsOut = true; S.time = 20; for (const c of S.cars) { c.ai = null; c.started = true; S.fitTyres(c, 'H', 78); }
   return S;
 }
 function place(car, s, d, v, yaw = 0) {

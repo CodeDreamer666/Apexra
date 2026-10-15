@@ -339,7 +339,7 @@ test('higher Career tiers judge better (prediction, evaluation, execution), with
   // the chosen path is driven through the normal controls and physics: the same inputs give the same motion
   const r = session('summit', [{ driver: SIM.DRIVERS[3] }], { aiLevel: 1 }), l = session('summit', [{ driver: SIM.DRIVERS[3] }], { aiLevel: 1.75 });
   const cr = r.cars[0], cl = l.cars[0];
-  for (const [s, c] of [[r, cr], [l, cl]]) { s.fitTyres(c, 'M', 90); c.fuel = 15; c.placeAt(r.track, 400, 0, 30); c.speed = c.u = 30; }
+  for (const [s, c] of [[r, cr], [l, cl]]) { s.fitTyres(c, 'H', 90); c.fuel = 15; c.placeAt(r.track, 400, 0, 30); c.speed = c.u = 30; }
   for (let i = 0; i < 480; i++) for (const c of [cr, cl]) { c.input.throttle = 1; c.input.brake = 0; c.input.steer = 0.2; SIM.stepCarPhysics(c, SIM.PHYS_DT, r.track, { wet: 0, wearScale: 1, fuelRate: 0.04, pitLimiter: false }); }
   assert.deepEqual([cl.x, cl.z, cl.speed], [cr.x, cr.z, cr.speed]);
 });

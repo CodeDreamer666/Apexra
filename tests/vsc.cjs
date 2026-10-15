@@ -92,7 +92,10 @@ for (const id of ['summit', 'rivermere', 'redridge']) {
     const { S, t, me } = race(id, { n: 20, player: 11, mash: (sess) => sess.vsc.phase === 'green' && sess.time - sess.vsc.endedAt < 0.5 });
     assert.ok(runUntil(S, () => S.lightsOut && S.time - S.lightsOutTime > 70, 200));
     assert.equal(S.vsc.count, 0, 'nothing neutralised before the crash');
-    const victim = S.order.filter(c => c !== me)[7];
+    // the eighth car, or the next one that is beside a barrier the staged crash can reach (some run-off areas
+    // put the barrier tens of metres away, where an aimed car only slides into the run-off)
+    const reach = (c) => { const w = t.walls(c.idx, c.s, false, { l: 0, r: 0, innerPit: 0 }); return (c.d >= 0 ? w.r : w.l) < 20; };
+    const field = S.order.filter(c => c !== me), victim = reach(field[7]) ? field[7] : field.slice(8).find(c => !c.pit && reach(c)) || field[7];
     const before = {
       laps: new Map(S.cars.map(c => [c, c.laps])), fuel: new Map(S.cars.map(c => [c, c.fuel])), wear: new Map(S.cars.map(c => [c, c.tyre.wear.reduce((a, b) => a + b, 0)])),
       compound: new Map(S.cars.map(c => [c, c.tyre.c])), weather: S.weather.time, time: S.time,
@@ -312,14 +315,14 @@ test('cars in the pit lane carry on with their stops under the VSC, and cars joi
     mon.tick();
     for (const c of S.cars) if (c.pit && c.pit.phase === 'stopped') timers.push([c, c.pit.timer]);
     // the player's service choice is made at once
-    if (me.pit && me.pit.phase === 'awaiting') S.confirmPitService(me, { tyre: 'M', fuel: 0 });
+    if (me.pit && me.pit.phase === 'awaiting') S.confirmPitService(me, { tyre: 'H', fuel: 0 });
   });
   // service timers kept running under the VSC (they only ever count down)
   const byCar = new Map(); for (const [c, tm] of timers) { if (byCar.has(c)) assert.ok(tm <= byCar.get(c) + 1e-9); byCar.set(c, tm); }
   assert.ok(byCar.size >= 1, 'a car was serviced while the VSC was out');
   assert.deepEqual(mon.swaps, []); assert.deepEqual(mon.contacts, []); assert.deepEqual(mon.jumps, []);
   // everyone gets through the lane and back out: no stop cancelled, nobody stuck
-  runUntil(S, () => [...boxers, me].every(c => !c.pit && c.pitStops > stops0.get(c)), 160, () => { if (me.pit && me.pit.phase === 'awaiting') S.confirmPitService(me, { tyre: 'M', fuel: 0 }); });
+  runUntil(S, () => [...boxers, me].every(c => !c.pit && c.pitStops > stops0.get(c)), 160, () => { if (me.pit && me.pit.phase === 'awaiting') S.confirmPitService(me, { tyre: 'H', fuel: 0 }); });
   for (const c of [...boxers, me]) {
     assert.ok(c.pitStops > stops0.get(c), c.driver.short + ' completed its stop');
     assert.ok(!c.pit, c.driver.short + ' left the pit lane');
@@ -336,7 +339,7 @@ test('a car that pits under the VSC rejoins behind the queue, never in it by pas
   const victim = S.order[6]; crash(S, victim);
   assert.ok(runUntil(S, () => S.vscActive, 5));
   const near = S.order.filter(c => c.ai && !c.pit && c !== victim && t.dS(c.s, t.pit.entry0) > 150 && t.dS(c.s, t.pit.entry0) < 900);
-  for (const c of near) { c.ai.boxThisLap = true; c.boxCompound = 'M'; }
+  for (const c of near) { c.ai.boxThisLap = true; c.boxCompound = 'H'; }
   const mon = monitor(S, new Set([victim]));
   let entered = 0;
   runUntil(S, () => !S.vscActive, 25, () => { mon.tick(); entered = Math.max(entered, near.filter(c => c.pit && t.pitProg(c.s) >= 0).length); });
@@ -366,7 +369,7 @@ test('lapped cars keep their place on the circuit: no unlapping and no lapping u
   S.slowUpdate();
   const ld0 = new Map(S.cars.map(c => [c, c.lapsDown])); const pos0 = S.order.filter(c => c !== victim).map(c => c.driver.short);
   assert.equal(lapA.lapsDown, 0, 'just under a lap behind the leader'); assert.equal(lapB.lapsDown, 1);
-  crash(S, victim);
+  crash(S, victim, 70); // the race-ending crash of the scenarios above
   const mon = monitor(S, new Set([victim]));
   assert.ok(runUntil(S, () => S.vscActive, 5, mon.tick));
   runUntil(S, () => !S.vscActive, 25, mon.tick);

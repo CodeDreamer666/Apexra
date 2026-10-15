@@ -41,17 +41,16 @@ test('ties use sorted final laps, then grid slot; existing compound penalties af
  b.finalLaps=[110,80,80];assert.ok(S.compareFinal(a,b)<0);
  a.penalty=30;assert.ok(S.compareFinal(a,b)>0);
 });
-test('dry rule uses whole event and actual driving; wet exceptions and all five lifespans preserved',()=>{
- const S=race('summit',{mandatory:true}),c=S.cars[0];assert.equal(SIM.needsCompound(S,c),true);
- c.tyre.used.add('H');assert.equal(SIM.needsCompound(S,c),true);S.fitTyres(c,'S',80);assert.equal(SIM.needsCompound(S,c),true,'fitting alone does not credit use');c.tyre.used.add('S');assert.equal(SIM.needsCompound(S,c),false);
- c.tyre.used.clear();c.tyre.used.add('I');assert.equal(SIM.needsCompound(S,c),false);c.tyre.used.clear();S.wetRace=true;assert.equal(SIM.needsCompound(S,c),false);
- assert.deepEqual(Object.values(SIM.COMPOUNDS).map(c=>c.life),[2,3,5,3,5]);
+test('no compulsory compound; Elimination counts a compound only once driven on; the four lifespans',()=>{
+ const S=race('summit',{mandatory:true}),c=S.cars[0];assert.equal(SIM.needsCompound,undefined,'no two-compound rule, whatever the config says');
+ S.fitTyres(c,'S',80);assert.equal(c.tyre.used.has('S'),false,'fitting alone does not credit use');
+ assert.deepEqual(Object.values(SIM.COMPOUNDS).map(c=>c.id+c.life),['S2','H4','I2','W4']);
 });
 test('distributed geometry is connected, separated, bounded and never changes GP / Career pits',()=>{
  for(const def of SIM.CIRCUITS){const S=race(def.id),t=S.track;assert.equal(t.stations.length,4);const fake={pit:{station:0},offN:4,s:t.stations[0].entry0,d:-t.stations[0].side*20,idx:0};assert.equal(S.legalProgress(fake,5,0,0),0,'off-route pit state grants no shortcut credit');
   for(const p of t.stations){assert.equal(p.boxes.length,1);assert.ok(p.len<tracks.get(def.id).pit.len);for(let q=0;q<p.len;q+=5){const s=t.wrapS(p.entry0+q),d=t.pitTargetD(s,p.boxes[0]),i=t.wrapI(Math.round(s/SIM.DS));assert.equal(t.pitAt(s).id,p.id);assert.equal(t.surfaceAt(i,d,true),0,def.id+' station '+p.id+' q '+q);const w=t.walls(i,s,true,{innerPit:0});assert.ok(Math.abs(d)<(p.side>0?w.r:w.l));if(w.innerPit)assert.ok(Math.abs(d)>w.innerPit);assert.ok(S.legalProgress({pit:{station:p.id},offN:4,s,d},5,0,0)===5);}
   }
-  const gp=new SIM.Session(tracks.get(def.id),{type:'race',gameMode:'grandprix',entries:SIM.DRIVERS.map(driver=>({driver})),seed:3});assert.equal(gp.totalLaps,8);assert.equal(gp.track.stations,undefined);assert.equal(gp.track.pit.boxes.length,4);
+  const gp=new SIM.Session(tracks.get(def.id),{type:'race',gameMode:'grandprix',entries:SIM.DRIVERS.map(driver=>({driver})),seed:3});assert.equal(gp.totalLaps,6);assert.equal(gp.track.stations,undefined);assert.equal(gp.track.pit.boxes.length,4);
  }
 });
 test('each station independently assigns in physical arrival order and never transfers queues',()=>{

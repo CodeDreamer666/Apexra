@@ -286,7 +286,7 @@ test('each tier sharpens the AI driver, never the car: judgement up, physics and
   const r = session(S, { aiLevel: 1 }), l = session(S, { aiLevel: 1.75 });
   const cr = r.cars[5], cl = l.cars[5];
   // same state (the tiers' own fuel and tyre choices differ, so set them equal), then the same inputs
-  for (const [s, c] of [[r, cr], [l, cl]]) { s.fitTyres(c, 'M', 90); c.fuel = 15; c.placeAt(r.track, 400, 0, 30); c.speed = c.u = 30; }
+  for (const [s, c] of [[r, cr], [l, cl]]) { s.fitTyres(c, 'H', 90); c.fuel = 15; c.placeAt(r.track, 400, 0, 30); c.speed = c.u = 30; }
   for (let i = 0; i < 480; i++) for (const c of [cr, cl]) { c.input.throttle = 1; c.input.brake = 0; c.input.steer = 0.2; S.stepCarPhysics(c, S.PHYS_DT, r.track, { wet: 0, wearScale: 1, fuelRate: 0.04, pitLimiter: false }); }
   assert.deepEqual([cl.x, cl.z, cl.speed, cl.fuel], [cr.x, cr.z, cr.speed, cr.fuel]);
 });

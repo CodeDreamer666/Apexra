@@ -23,17 +23,19 @@ function arrive(S, car, at, q = 1) {
   S.pitArrivals.push({ car, t: at, q });
 }
 
-test('the pit lane is short and every circuit has the same four shared boxes', () => {
+test('the speed-limited lane is short and every circuit has the same four shared boxes', () => {
   for (const t of tracks.values()) {
-    const p = t.pit;
-    assert.ok(p.len >= 195 && p.len <= 250, t.name + ' pit lane ' + p.len.toFixed(0) + ' m');
+    const p = t.pit, limited = p.len - p.E - p.X;
+    // a 300 m entry ramp, a ~100 m working lane limited to 100 km/h and a 60 m exit ramp
+    assert.ok(limited >= 80 && limited <= 120, t.name + ' limited lane ' + limited.toFixed(0) + ' m');
+    assert.ok(Math.abs(p.limit * 3.6 - 100) < 1e-9 && p.len < 480, t.name + ' pit lane ' + p.len.toFixed(0) + ' m');
     assert.equal(p.boxes.length, 4);
     for (let k = 1; k < 4; k++) assert.ok(t.dS(p.boxes[k - 1], p.boxes[k]) >= 15, 'boxes in a row along the lane');
     // the boxes lie inside the speed-limited stretch, the queue line before them
     for (const b of p.boxes) assert.ok(t.inLimiter(b) && t.inPitMain(b));
     assert.ok(t.dS(p.queueS, p.boxes[0]) > 8);
     // a measured clean-stop loss and fuel consumption for this circuit
-    assert.ok(t.def.pitLoss >= 10 && t.def.pitLoss <= 15, t.name + ' pit loss ' + t.def.pitLoss);
+    assert.ok(t.def.pitLoss >= 14 && t.def.pitLoss <= 17.5, t.name + ' pit loss ' + t.def.pitLoss);
     assert.ok(t.def.fuelPerLap > 2 && t.def.fuelPerLap < 3.5);
   }
 });
@@ -100,11 +102,11 @@ function soloRace(id, { stop = false, prep = null, fuelLaps = 8, laps = 4, onSte
 }
 
 for (const id of ['summit', 'rivermere', 'redridge']) {
-  test(id + ': a clean tyre-only stop loses 10–15 s against staying out, as the circuit states', () => {
+  test(id + ': a clean tyre-only stop loses 14–17.5 s against staying out, as the circuit states', () => {
     const base = soloRace(id), pit = soloRace(id, { stop: true });
     const loss = pit.time - base.time;
     assert.ok(pit.P && pit.P.changeTyres && !pit.P.fuelAdd && !pit.P.fwT && !pit.P.rwT, 'a tyre-only stop');
-    assert.ok(loss >= 10 && loss <= 15, id + ' clean stop loss ' + loss.toFixed(2) + ' s');
+    assert.ok(loss >= 14 && loss <= 17.5, id + ' clean stop loss ' + loss.toFixed(2) + ' s');
     assert.ok(Math.abs(loss - tracks.get(id).def.pitLoss) < 1.0, 'the stated loss matches the simulation: ' + loss.toFixed(2) + ' vs ' + tracks.get(id).def.pitLoss);
     assert.equal(pit.car.laps, 4); assert.equal(pit.car.pitStops, 1);
   });
@@ -145,10 +147,10 @@ test('service is chosen only at the box; jobs run at once; wings are replaced wh
     }
     if (p.pit && p.pit.phase === 'awaiting' && !P) {
       const room = S.fuelCapacity - p.fuel;
-      assert.ok(S.pitSelectionError(p, { tyre: 'M', fuel: room + 1 }), 'more fuel than the tank holds is refused');
-      assert.ok(S.pitSelectionError(p, { tyre: 'X', fuel: 0 }), 'only the five compounds or keep');
+      assert.ok(S.pitSelectionError(p, { tyre: 'H', fuel: room + 1 }), 'more fuel than the tank holds is refused');
+      assert.ok(S.pitSelectionError(p, { tyre: 'X', fuel: 0 }), 'only the four compounds or keep');
       massBefore = p.mass;
-      assert.ok(S.confirmPitService(p, { tyre: 'M', fuel: 9 }));
+      assert.ok(S.confirmPitService(p, { tyre: 'H', fuel: 9 }));
       P = p.pit;
     }
     if (P && p.pit === P && P.phase === 'stopped') {
@@ -168,22 +170,22 @@ test('service is chosen only at the box; jobs run at once; wings are replaced wh
   assert.ok(after && after.fw === 0 && after.card && after.rw > 0.3, 'then the new front wing is on; the rear wing is still being changed');
   assert.equal(p.damage.c[2], 0, 'new rear wing');
   assert.ok(p.damage.c[3] >= 0.35 && p.damage.c[5] >= 0.25, 'floor and suspension damage are not repaired');
-  assert.equal(p.tyre.c, 'M');
+  assert.equal(p.tyre.c, 'H');
   assert.ok(Math.abs(p.mass - massBefore - 9) < 0.2, 'the added fuel is carried as mass');
 });
 
-test('fuel: start loads of 3–8 laps, a lighter car accelerates a little harder, the tank and range are respected', () => {
+test('fuel: start loads of 2–7 laps, a lighter car accelerates a little harder, the tank and range are respected', () => {
   const S = session('summit', 20);
   assert.equal(S.fuelCapacity, Math.round(S.fuelPerLap * SIM.FUEL_TANK_LAPS * 2) / 2);
   for (const c of S.cars) {
-    assert.ok(c.startFuelLaps >= 3 && c.startFuelLaps <= 8, c.driver.short + ' start fuel ' + c.startFuelLaps);
+    assert.ok(c.startFuelLaps >= 2 && c.startFuelLaps <= 7, c.driver.short + ' start fuel ' + c.startFuelLaps);
     assert.ok(Math.abs(c.fuel - S.fuelForLaps(c.startFuelLaps)) < 1e-9 && c.fuel <= S.fuelCapacity);
   }
   assert.ok(S.fuelForLaps(20) === S.fuelCapacity, 'never more than the tank');
-  const P = new SIM.Session(tracks.get('summit'), { type: 'race', laps: 8, entries: [{ driver: SIM.DRIVERS[0], isPlayer: true }], seed: 1, startFuelLaps: 3 });
+  const P = new SIM.Session(tracks.get('summit'), { type: 'race', laps: 6, entries: [{ driver: SIM.DRIVERS[0], isPlayer: true }], seed: 1, startFuelLaps: 3 });
   assert.equal(P.player.startFuelLaps, 3);
   assert.ok(Math.abs(P.fuelRange(P.player) - (3 + SIM.FUEL_RESERVE / P.fuelPerLap)) < 1e-9);
-  // mass: the same car with 3 and 8 laps of fuel, full throttle from 100 km/h for 3 s
+  // mass: the same car with 3 and 7 laps of fuel, full throttle from 100 km/h for 3 s
   const flat = { cx: [0], cz: [0], rx: [0], rz: [1], surfaceAt: () => 0, pit: { limit: 22 } };
   const accel = (fuel) => {
     const car = new SIM.Car({ driver: SIM.DRIVERS[0], isPlayer: true }, {}); car.fuel = fuel;
@@ -192,7 +194,7 @@ test('fuel: start loads of 3–8 laps, a lighter car accelerates a little harder
     for (let k = 0; k < 720; k++) { h.step(car, SIM.PHYS_DT, { lightsOut: true, wet: 0 }, { steer: 0, throttle: 1, brake: 0, analog: false }); SIM.stepCarPhysics(car, SIM.PHYS_DT, flat, { wet: 0, wearScale: 0, fuelRate: 0, pitLimiter: false }); }
     return car.speed;
   };
-  const light = accel(S.fuelForLaps(3)), heavy = accel(S.fuelForLaps(8));
+  const light = accel(S.fuelForLaps(3)), heavy = accel(S.fuelForLaps(7));
   assert.ok(light > heavy && light - heavy < 2.5, 'lighter is faster, modestly: ' + ((light - heavy) * 3.6).toFixed(2) + ' km/h after 3 s');
   // consumption is continuous and never negative
   const car = new SIM.Car({ driver: SIM.DRIVERS[0], isPlayer: true }, {}); car.fuel = 0.002; car.vx = car.u = car.speed = 40; car.gear = 6; car.rpm = 11000;

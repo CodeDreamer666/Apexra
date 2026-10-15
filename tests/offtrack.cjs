@@ -247,7 +247,7 @@ test('cutting a corner across the inside is slower than driving it, without any 
   const legit = cornerRun(false), cut = cornerRun(true);
   assert.equal(cut.maxOff, 4, 'the cut car really left the track');
   assert.ok(cut.section > legit.section, `corner section: cut ${cut.section.toFixed(2)} s vs driven ${legit.section.toFixed(2)} s`);
-  assert.ok(cut.car.finishTime > legit.car.finishTime, 'and over the race');
+  assert.ok(cut.car.finishTime > legit.car.finishTime, `and over the race: cut ${cut.car.finishTime.toFixed(2)} s vs driven ${legit.car.finishTime.toFixed(2)} s`);
   assert.ok(cut.deficit > 15, 'the skipped distance is owed: ' + cut.deficit.toFixed(1) + ' m');
   assert.equal(Math.abs(legit.deficit) < 0.5, true);
   assert.equal(cut.car.penaltyLog.length, 0); assert.equal(cut.car.warnings, 0);

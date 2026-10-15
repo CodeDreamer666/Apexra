@@ -1,6 +1,6 @@
 # Elimination Mode implementation and verification
 
-The event is one continuous 15-lap race. Grand Prix and Career keep their existing eight-lap race rules, conventional pit lanes, vehicle handling, damage, fuel, weather, slipstreaming, VSC and blue flags. All runtime code stays in `index.html`.
+The event is one continuous 15-lap race. Grand Prix and Career keep their own six-lap race rules, conventional pit lanes, vehicle handling, damage, fuel, weather, slipstreaming, VSC and blue flags. All runtime code stays in `index.html`.
 
 ## Checkpoints and phases
 
@@ -42,16 +42,16 @@ These are strategy estimates, not deductions from actual lap clocks. Queueing, d
 
 ## Tyres, weather, AI and fuel
 
-All five compounds and the existing 2/3/5/3/5-lap useful-life targets remain unchanged. The pre-race selector and every station retain all five choices. In Elimination, a compound is credited after actual driving, rather than merely fitting an unused set. The existing 30-second two-dry-compound penalty applies to finishers using the entire event's tyre history; eliminated drivers are not penalized early. Existing Intermediate / Full Wet and wet-event exceptions remain.
+Elimination uses the same four compounds as Grand Prix (Soft, Hard, Intermediate, Full Wet; the Medium was removed) with their 2/4/2/4-lap useful-life targets; see the README's *Tyres and strategy*, and its Elimination note for this mode's tyre-wear scale. The pre-race selector and every station offer all four. In Elimination, a compound is credited after actual driving, rather than merely fitting an unused set. There is no compulsory compound or stop and no tyre penalty.
 
-Dynamic weather continues through every phase. Both human and AI engineers use the same observed conditions and uncertain forecasts. Phase 1/2 strategy compares observed position, elimination risk, likely rejoin distance, tyre wear, weather, station distance, observed occupancy, compound compliance and repairs against measured stop loss. Optional stops / repairs can be deferred near the cut; urgent safety and fuel needs remain meaningful. Phase 3 removes physical-position undercut incentives and compares estimated remaining tyre / repair time recovery against stop and queue cost, while enforcing the compound rule. No future weather knowledge or privileged servicing is added.
+Dynamic weather continues through every phase. Both human and AI engineers use the same observed conditions and uncertain forecasts. Phase 1/2 strategy compares observed position, elimination risk, likely rejoin distance, tyre wear, weather, station distance, observed occupancy, compound compliance and repairs against measured stop loss. Optional stops / repairs can be deferred near the cut; urgent safety and fuel needs remain meaningful. Phase 3 removes physical-position undercut incentives and compares estimated remaining tyre / repair time recovery against stop and queue cost. No future weather knowledge or privileged servicing is added.
 
 Elimination has no fuel management: every car carries a fixed 20 kg reference load that never burns, refuelling and fuel strategy are absent, and an empty tank cannot cause retirement (see the README's *Pit stops and fuel*). Grand Prix and Career keep their fuel capacity, consumption, reserve, starting-load limits and refuelling mechanics unchanged. Saved mode selections use the updated `GAME_MODES` lap count; there is no persisted live race state to migrate.
 
 ## Verification
 
-- `node tests/elimination.cjs`: fourteen rule tests, including schedule on all three circuits, checkpoint crossings and pit users, retirements, phase carryover, independent final clocks, pit-inclusive time, fourth-on-road winner, delayed final resolution, ties, compound use, connected surfaces / barriers, shortcut rejection, FIFO isolation, persistent weather, equal crew durations and unchanged fuel mechanics.
-- `node tests/elimination-physics.cjs`: all twelve stations physically entered, stopped, serviced and exited without damage at 240 Hz; paired losses smaller than each circuit's conventional lane.
+- `node tests/elimination.cjs`: fourteen rule tests, including schedule on all three circuits, checkpoint crossings and pit users, retirements, phase carryover, independent final clocks, pit-inclusive time, fourth-on-road winner, delayed final resolution, ties, compound tracking without a compulsory rule, connected surfaces / barriers, shortcut rejection, FIFO isolation, persistent weather, equal crew durations and unchanged fuel mechanics.
+- `node tests/elimination-physics.cjs`: all twelve stations physically entered, stopped, serviced and exited without damage at 240 Hz; paired losses within 1.5 s of each station's recorded measurement (the shorter Grand Prix lane is not applied to stations).
 - `node tests/elimination-queues.cjs`: three cars at each of the twelve stations, occupied box held for twenty seconds until the queue has stopped; service / exit order remains FIFO with no damage.
 - Three seeded full-event smoke trials (60 Hz headless integration): all circuits reached an event result with four finalists and three measured laps each. Summit exercised the normal 20→12→4 schedule; Rivermere and Redridge also exercised crash / stalled-car retirements. Redridge’s third-on-road finalist won on elapsed time. Recorded evidence is in `tests/reference/elimination-race-smoke.json`. Production-resolution station / queue trials use 240 Hz.
 - Additional full-wet physical access trials completed all twelve stations without damage.

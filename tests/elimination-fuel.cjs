@@ -38,7 +38,7 @@ for (const track of tracks) {
     }
   });
   test(track.name + ': tyre and wing servicing ignores fuel input and never shortens jobs', () => {
-    for (const comp of ['S', 'M', 'H', 'I', 'W']) {
+    for (const comp of ['S', 'H', 'I', 'W']) {
       const S = session(track), c = S.player;
       c.damage.c[0] = c.damage.c[1] = .6; c.damage.c[2] = .5;
       c.damage.c[3] = .4; c.damage.c[5] = .25; c.damage.computePerf();
@@ -62,7 +62,7 @@ for (const track of tracks) {
     const S = session(track); S.lightsOut = true;
     const a = S.player;
     const b = new SIM.Car({ driver: a.driver }, S);
-    for (const c of [a, b]) { c.placeAt(track, 200, 0, 35); c.launch.active = false; S.fitTyres(c, 'M', 105); }
+    for (const c of [a, b]) { c.placeAt(track, 200, 0, 35); c.launch.active = false; S.fitTyres(c, 'H', 105); }
     a.fuel = 0; b.fuel = 999;
     const h = [new SIM.PlayerHandling(), new SIM.PlayerHandling()];
     let powered = false;
@@ -150,15 +150,12 @@ test('FIFO queues, physical stopping and safe release still operate in Eliminati
   S.pitLogic(p, SIM.PHYS_DT); assert.equal(P.phase, 'out'); assert.equal(p.frozen, false);
 });
 
-test('all five starting tyres and dry-compound / wet exceptions remain available', () => {
-  for (const comp of ['S', 'M', 'H', 'I', 'W']) {
+test('all four starting tyres are available, a saved Medium becomes the Hard, and no compound is compulsory', () => {
+  for (const comp of ['S', 'H', 'I', 'W']) {
     const S = session(tracks[0], 'elimination', { startCompound: comp });
     assert.equal(S.player.tyre.c, comp);
-    // Elimination counts a compound once it is driven on (see tests/elimination.cjs): drive both sets.
-    S.player.tyre.used.add(comp);
-    assert.equal(SIM.needsCompound(S, S.player), ['S', 'M', 'H'].includes(comp));
-    S.fitTyres(S.player, comp === 'H' ? 'M' : 'H', 80);
-    S.player.tyre.used.add(S.player.tyre.c);
-    assert.equal(SIM.needsCompound(S, S.player), false);
+    assert.equal(SIM.needsCompound, undefined, 'there is no two-compound rule');
   }
+  assert.equal(session(tracks[0], 'elimination', { startCompound: 'M' }).player.tyre.c, 'H');
+  assert.deepEqual(Object.keys(SIM.COMPOUNDS), ['S', 'H', 'I', 'W']);
 });
