@@ -9016,7 +9016,7 @@ function startSession(cfg) {
   // watched camera's view, never visibly teleported out of a battle.
   const recoveryProbe = new THREE.Vector3();
   G.session.canRecover = car => {
-    recoveryProbe.set(car.x, SIM.elevationAt(G.track.def,car.x,car.z) + .8, car.z).project(camera);
+    recoveryProbe.set(car.x, G.track.elevAt(car.x,car.z) + .8, car.z).project(camera);
     return recoveryProbe.z < -1 || recoveryProbe.z > 1 || Math.abs(recoveryProbe.x) > 1.2 || Math.abs(recoveryProbe.y) > 1.2;
   };
   G.mode = G.attract ? 'menu' : cfg.type;
