@@ -1032,9 +1032,12 @@ const SIM = (function () {
   // race-pace consumption, both measured by simulating this circuit. The connected 300 m approach and 200 m limiter zone
   // retain real braking/service time: paired four-lap, tyre-only runs lose 21.34 / 22.13 / 21.30 s (the AI's
   // racing line, measured by tests/pitstops.cjs; fuelPerLap is kept as the tank and fuel-load reference).
+  // fuelLapCost (s per kg per lap) is the lap time each kilogram of fuel costs with the amplified fuel-weight
+  // effect (FUEL_PERF), measured with tools/fuel-calibration.cjs (23 kg against 9 kg, identical cars); the
+  // AI's race-time strategy model uses it.
   const CIRCUITS = [
     {
-      id: 'summit', name: 'Summit Grand Circuit', country: 'Alpine Highlands', halfW: 7.0, length: 6000, pitLoss: 21.3, fuelPerLap: 2.78,
+      id: 'summit', name: 'Summit Grand Circuit', country: 'Alpine Highlands', halfW: 7.0, length: 6000, pitLoss: 21.3, fuelPerLap: 2.78, fuelLapCost: 0.182,
       pts: [[-821, 427], [39, 427], [859, 427], [961, 423], [1020, 399], [1051, 360], [1063, 321], [1063, 286], [1039, 255], [1028, 220], [1043, 181], [1039, 153], [1004, 130], [953, 95], [906, 59], [852, 63], [813, 102], [785, 149], [754, 192], [707, 185], [680, 130], [652, 9], [637, -81], [660, -136], [727, -155], [820, -136], [891, -120], [930, -140], [922, -187], [859, -249], [785, -335], [734, -402], [676, -437], [617, -425], [566, -398], [430, -312], [293, -226], [246, -187], [207, -167], [156, -198], [109, -218], [62, -198], [23, -148], [-28, -89], [-94, -66], [-153, -73], [-192, -105], [-223, -148], [-266, -171], [-340, -171], [-408, -164], [-462, -126], [-520, -84], [-580, -66], [-640, -28], [-790, 48], [-899, 102], [-958, 130], [-1005, 149], [-1040, 185], [-1059, 231], [-1063, 298], [-1048, 337], [-1016, 360], [-1005, 399], [-969, 431], [-891, 435]],
       start: [39, 427],
       elev: [[880, -230, 420, 34], [600, -360, 260, 10], [230, -190, 300, 9], [-420, -120, 380, -6], [960, 200, 200, 6]],
@@ -1042,7 +1045,7 @@ const SIM = (function () {
       env: { style: 'alpine', lake: { x: 1300, z: -1050, a: 700, b: 330, rot: 0.3 }, castle: null, hill: 1.35, mountain: 1.25, snowLine: 620, forest: 1.1, broadleaf: 0.12, grass: [0.92, 1.0, 0.9], village: { x: -1250, z: -900 } },
     },
     {
-      id: 'rivermere', name: 'Rivermere Grand Prix', country: 'Rivermere Valley', halfW: 7.0, length: 6000, pitLoss: 22.1, fuelPerLap: 2.76,
+      id: 'rivermere', name: 'Rivermere Grand Prix', country: 'Rivermere Valley', halfW: 7.0, length: 6000, pitLoss: 22.1, fuelPerLap: 2.76, fuelLapCost: 0.196,
       pts: [[-370, 369], [69, 379], [738, 394], [805, 385], [838, 335], [855, 239], [884, 172], [926, 151], [959, 185], [972, 294], [988, 373], [1039, 415], [1089, 406], [1106, 335], [1093, 231], [1043, 143], [968, 89], [257, -170], [-370, -371], [-495, -417], [-566, -392], [-579, -287], [-495, -187], [-487, -124], [-554, -91], [-637, -99], [-679, -162], [-692, -246], [-738, -275], [-934, -283], [-997, -262], [-1009, -212], [-972, -166], [-959, -124], [-1009, -87], [-1076, -37], [-1105, 14], [-1093, 68], [-1005, 110], [-850, 193], [-775, 268], [-696, 281], [-596, 260], [-495, 294], [-428, 352]],
       start: [69, 379],
       elev: [[-760, -150, 420, 9], [420, -260, 520, 6], [1000, 280, 260, -4]],
@@ -1051,7 +1054,7 @@ const SIM = (function () {
         river: [[-2900, -560], [-2000, -640], [-1300, -760], [-650, -720], [0, -660], [600, -700], [1150, -830], [1500, -960], [2100, -1080], [2900, -1150]] },
     },
     {
-      id: 'redridge', name: 'Redridge International Circuit', country: 'Redridge Canyon', halfW: 7.0, length: 6000, pitLoss: 21.3, fuelPerLap: 2.69,
+      id: 'redridge', name: 'Redridge International Circuit', country: 'Redridge Canyon', halfW: 7.0, length: 6000, pitLoss: 21.3, fuelPerLap: 2.69, fuelLapCost: 0.154,
       pts: [[-1001, 344], [-106, 344], [890, 346], [1033, 331], [1054, 290], [1064, 200], [1067, 110], [1058, 36], [988, -18], [894, -10], [829, 38], [764, 91], [666, 106], [516, 87], [443, 34], [390, -55], [309, -116], [239, -128], [168, -96], [81, -63], [-15, -79], [-90, -120], [-269, -189], [-452, -267], [-631, -332], [-733, -352], [-859, -340], [-944, -269], [-956, -173], [-889, -92], [-747, -10], [-631, 79], [-574, 152], [-594, 219], [-676, 246], [-787, 254], [-832, 209], [-848, 161], [-909, 144], [-970, 177], [-1066, 266], [-1082, 321]],
       start: [-106, 344],
       elev: [[-820, -140, 430, 18], [330, -60, 360, 9], [980, 140, 260, 7], [-120, -330, 260, -5]],
@@ -1778,6 +1781,24 @@ const SIM = (function () {
     brakeMax: 44000, brakeBias: 0.60, maxLock: 0.34,
     B: 16, C: 1.45, aPk: 0.116, rearGrip: 1.06, // pacejka
   };
+  /* ------------------------------------------------------------------
+     FUEL-WEIGHT PERFORMANCE — Grand Prix and Career only (sessions with fuel management).
+     Real F1: about 0.3–0.4 s per lap for every extra 10 kg of fuel. This game amplifies that lap-time
+     sensitivity five-fold (about 1.5–2.0 s per 10 kg), so the starting fuel and refuelling are real
+     strategic choices. The car's actual mass (800 kg + the fuel in the tank) is untouched: the tank,
+     consumption, refuelling and every collision use it. On top of it each driving system feels an
+     *effective* fuel load: `kg of extra effect per kg of fuel` for
+       accel  — inertia when accelerating and coasting (all longitudinal resistance is divided by the same
+                inertia, so the car accelerates more slowly but reaches the same top speed on a long straight);
+       brake  — braking deceleration (the tyre-grip limits still apply on top of it);
+       corner — the steering's yaw-rate ceiling (corner speed), like tyre grip spread over more mass.
+     The three were calibrated together with tools/fuel-calibration.cjs so that the *combined* lap-time
+     cost matches the target, rather than multiplying each system by five. Every factor is a smooth
+     function of the fuel in the tank (no steps), equals 1 with an empty tank (a light car is never faster
+     than the base car), and is exactly 1 in Elimination, which carries a fixed reference load.
+     ------------------------------------------------------------------ */
+  const FUEL_PERF = { accel: 24, brake: 11, corner: 0.9 };
+  const FUEL_LAP_COST = 0.18; // s per kg per lap: fallback for a circuit without a measured fuelLapCost
   function torqueAt(rpm) {
     const T = [[3000, 0.55], [5000, 0.72], [7000, 0.86], [9000, 0.96], [10500, 1.0], [11500, 0.99], [12200, 0.93], [12600, 0.85], [14000, 0.6]];
     if (rpm <= T[0][0]) return 560 * T[0][1];
@@ -1876,6 +1897,15 @@ const SIM = (function () {
     // Elimination carries the same reference load throughout; never replenish a tank per frame.
     // Ignore stale tank values in this mode so every driver retains the ordinary car balance.
     get mass() { return SPEC.mass + (this.race.fuelEnabled === false ? ELIMINATION_FUEL_MASS : this.fuel); }
+    // Fuel load (kg) behind the amplified fuel-weight performance (see FUEL_PERF). Only sessions with fuel
+    // management (Grand Prix, Career) set fuelEnabled to true; Elimination and bare test rigs feel none.
+    fuelPerfLoad() { return this.race.fuelEnabled === true && this.fuel > 0 ? this.fuel : 0; }
+    // Acceleration multiplier from the effective inertia (1 with an empty tank or without fuel management).
+    fuelInertiaMul() { const F = this.fuelPerfLoad(); if (!(F > 0)) return 1; const m = this.mass; return m / (m + FUEL_PERF.accel * F); }
+    // Braking deceleration multiplier.
+    fuelBrakeMul() { const F = this.fuelPerfLoad(); return F > 0 ? SPEC.mass / (SPEC.mass + FUEL_PERF.brake * F) : 1; }
+    // Yaw-rate ceiling (corner speed) multiplier: lateral grip over the effective mass, so a square root.
+    fuelTurnMul() { const F = this.fuelPerfLoad(); return F > 0 ? Math.sqrt(SPEC.mass / (SPEC.mass + FUEL_PERF.corner * F)) : 1; }
     placeAt(track, s, d, speed = 0) {
       const [x, z, h] = track.pointAt(s, d); this.x = x; this.z = z; this.psi = h;
       this.vx = Math.cos(h) * speed; this.vz = Math.sin(h) * speed; this.r = 0;
@@ -1892,8 +1922,9 @@ const SIM = (function () {
       wet=this.surfaceWet ?? wet;
       // Preserve the pedal/braking curve; available rubber grip scales its force.
       const fresh = tyreWeatherGrip(this.tyre.c, wet);
+      // The fuel load's braking effect rides on top of the grip limit (it can only lengthen braking).
       return clamp((this.tyreMu(0, wet) + this.tyreMu(1, wet)) / (2 * fresh) *
-        Math.min(1, fresh / COMPOUNDS[this.tyre.c].mu), 0.25, 1);
+        Math.min(1, fresh / COMPOUNDS[this.tyre.c].mu), 0.25, 1) * this.fuelBrakeMul();
     }
     gripEstimate(wet) { const f = (this.tyreMu(0, wet) + this.tyreMu(1, wet)) / 2, r = (this.tyreMu(2, wet) + this.tyreMu(3, wet)) / 2; return 0.5 * (f + r) / 2 + 0.5 * Math.min(f, r); }
     // Following another car never costs downforce (no dirty-air penalty); only the tow below changes the aero.
@@ -2132,7 +2163,12 @@ const SIM = (function () {
       const response = car.throttle > 0 ? Math.min(1, car.engineResponse / car.throttle) : 0;
       const healthyDrive = Math.max(0, fDrive) * response * DP.power * misfire;
       const launchSlip=launch && launch.active ? clamp(healthyDrive/Math.max(1,rearTraction)-1,0,2):0;
-      car.driveForce=Math.min(healthyDrive,rearTraction*0.98*DP.traction)*(1-0.08*launchSlip);
+      // Fuel-weight inertia (Grand Prix / Career, see FUEL_PERF): the effective fuel load also presses the
+      // tyres down, so the traction limit grows with the inertia. A traction-limited launch or slow-corner
+      // exit is therefore no slower; power-limited acceleration feels the full effective inertia. (Wheelspin
+      // above is still judged on the real traction, so no car launches harder than before.) 1 without fuel.
+      const fI = car.fuelInertiaMul(), tractionCap = rearTraction*0.98*DP.traction;
+      car.driveForce=Math.min(healthyDrive,tractionCap/fI)*(1-0.08*launchSlip);
       if(launchSlip>0.04)for(let i=2;i<4;i++){car.spin[i]=1;car.slipPow[i]+=rearTraction*launchSlip*Math.max(speed,3)*0.15;}
       // Blend aero resistance in with propulsion; S and released-W coasting keep
       // their exact original force law. The slipstream affects the real drag term.
@@ -2141,9 +2177,16 @@ const SIM = (function () {
       const coastAero = H.coastRate * Math.abs(u);
       const poweredDrag = (Math.max(coastAero * car.slipDragMul(), Math.abs(drag) * 1.06 / m) - coastAero) * car.throttle;
       const drive = fuelOk ? car.driveForce / m - poweredDrag : 0;
+      // the same car without the fuel effect: the fuel load may only ever cost acceleration
+      const baseDrive = fI < 1 && fuelOk ? Math.min(healthyDrive, tractionCap) * (1 - 0.08 * launchSlip) / m - poweredDrag : drive;
       const braking = car.brake * Math.max(H.brakeFloor, Math.abs(u) * H.brakeRate * offGrip) * car.runoffGrip * DP.brake * car.brakeGrip(wet);
       const coast = H.coastRate * u + Math.sign(u) * Math.max(0, rollingResistance / m - 0.15);
-      FxSum = m * (drive - coast - Math.sign(u) * braking);
+      // Propulsion and resistance are divided by the same effective inertia (fI), so a heavy car accelerates
+      // more slowly but settles on the same top speed; it never accelerates or coasts better than the car
+      // without the fuel effect. Braking carries its own fuel factor inside brakeGrip. Without fuel
+      // management fI is exactly 1 and this is the original force law.
+      const net = fI < 1 ? Math.min((drive - coast) * fI, baseDrive - coast) : drive - coast;
+      FxSum = m * (net - Math.sign(u) * braking);
       // Match the planted arcade car's rapid rotation and automatic slide catch.
       // Apply angular/lateral accelerations at 240 Hz; never snap its pose or
       // velocity, so contact impulses and steering-release momentum remain real.
@@ -2313,7 +2356,8 @@ const SIM = (function () {
       // model to build yaw. Preserve speed sensitivity and stationary behavior.
       // damage: wing/floor/suspension/tyre losses shrink the turn-rate ceiling (understeer)
       const D = car.damage;
-      const rCap = arcadeTurnCap(u, mu, this.drift, spd) * D.turnMul(spd);
+      // a heavier fuel load lowers the yaw-rate ceiling a little (see FUEL_PERF)
+      const rCap = arcadeTurnCap(u, mu, this.drift, spd) * D.turnMul(spd) * car.fuelTurnMul();
       const rDes = shaped * rCap; this.rDes = rDes;
       const beta = Math.atan2(car.v, Math.max(Math.abs(u), 3));
       const driftAngle = lerp(...H.driftAngle, vN);
@@ -2690,25 +2734,69 @@ const SIM = (function () {
     }
     return cost;
   }
-  function planStrategy(race, car, lapsLeft, current, wearNow) {
+  // Average stationary time of a tyre change (s); refuelling runs alongside it, so only fuel beyond it adds time.
+  const TYRE_SERVICE_T = 2.4;
+  // Tyre wear from which a planned stop is taken (a fresher set waits, see RaceEngineer.analyse).
+  const STINT_STOP_WEAR = 0.45;
+  // Laps of fuel a plan keeps on top of each stint (plus FUEL_RESERVE): bolder drivers run closer to empty.
+  // At least the 0.35 laps the in-race fuel call keeps in hand at each pit entry (see analyse), plus some
+  // allowance for traffic and a slow lap, or the car would box a lap before its plan.
+  const fuelMarginLaps = (car) => lerp(0.8, 0.45, clamp(ratings(car).risk, 0, 1));
+  // The fuel side of a race plan (Grand Prix and Career): the lap time the fuel load costs over each stint
+  // (fuelLapCost s per kg per lap, from the amplified fuel-weight effect), the stationary time refuelling adds
+  // beyond the tyre change, and a steep cost for a stint the fuel cannot cover. `stops` are the laps from now
+  // of each planned stop; at every stop the car takes the fuel for its next stint. `fuel` is { fixed: kg }
+  // (the tank as it is now) or { min: kg } (the load now is a free choice of at least min kg: the start or a
+  // refuel being decided). Uses the race's plain fields only (callers pass copies of the session).
+  function fuelPlanCost(race, car, left, stops, fuel) {
+    const rate = car.fuelPerLapEst || race.fuelPerLap, c = race.fuelLapCost || 0, cap = race.fuelCapacity;
+    // a stint that ends at a stop keeps the driver's margin in hand at the pit entry; the last one only has
+    // to reach the flag (the game's own 'fuel for n laps', as the in-race fuel call judges it)
+    const margin = fuelMarginLaps(car);
+    let cost = 0, at = 0, tank = 0, first = 0;
+    for (let k = 0; k <= stops.length; k++) {
+      const end = k < stops.length ? clamp(stops[k], at, left) : left, len = Math.max(0, end - at);
+      const need = (laps) => laps > 0 ? (laps + (k < stops.length ? margin : 0)) * rate + FUEL_RESERVE : 0;
+      let F;
+      if (k === 0) F = first = fuel.fixed != null ? fuel.fixed : clamp(need(len), fuel.min || 0, cap);
+      else {
+        F = clamp(need(len), tank, cap);
+        const add = F - tank;
+        if (add > 0.05) cost += Math.max(0, REFUEL.connect + add / REFUEL.rate - TYRE_SERVICE_T);
+      }
+      // carried fuel: the average load over the stint costs c per kg on every lap
+      cost += c * len * Math.max(0, F - rate * len / 2);
+      // a stint the fuel cannot cover needs an extra stop (or fuel saving): steep, but smooth in the shortfall
+      const short = need(len) - F;
+      if (short > 0) cost += Math.min(1, short / rate) * (race.pitLoss || 20) + 8 * short / rate;
+      tank = Math.max(0, F - rate * len); at = end;
+    }
+    return { cost, first };
+  }
+  function planStrategy(race, car, lapsLeft, current, wearNow, fuel = null) {
     const N = Math.max(0, Math.ceil(lapsLeft)), comps = race.wet >= 0.7 ? ['W', 'I'] : race.wet > 0.18 ? ['I', 'W', 'M'] : ['S', 'M', 'H'];
+    // Grand Prix / Career races weigh the fuel load too (Elimination carries a fixed load and never refuels)
+    const fuelOn = race.fuelEnabled === true && race.type === 'race' && race.fuelLapCost > 0;
+    const fuelState = fuelOn ? fuel || { fixed: car.fuel } : null;
+    const fc = (stops) => fuelOn ? fuelPlanCost(race, car, lapsLeft, stops, fuelState) : { cost: 0, first: 0 };
     const costs = {};
     for (const c of new Set([...comps, current])) {
       costs[c] = [0];
       for (let n = 1; n <= N; n++) costs[c][n] = stintCost(race, car, c, 0, n);
     }
     const cur = [0]; for (let n = 1; n <= N; n++) cur[n] = stintCost(race, car, current, wearNow, n);
-    let best = { cost: cur[N], stops: [] };
+    const f0 = fc([]);
+    let best = { cost: cur[N] + f0.cost, stops: [], fuel: f0.cost, firstFuel: f0.first };
     // Evaluate an immediate stop as well as delayed one- and two-stop plans.
     // Prefix costs keep this bounded even for the full 20-car field.
     for (const c2 of comps) for (let p = 0; p < N; p++) {
-      const cost = cur[p] + race.pitLoss + costs[c2][N - p] + (p === 0 ? 0.8 : 0);
-      if (cost < best.cost) best = { cost, stops: [{ lap: p, c: c2 }] };
+      const f = fc([p]), cost = cur[p] + race.pitLoss + costs[c2][N - p] + (p === 0 ? 0.8 : 0) + f.cost;
+      if (cost < best.cost) best = { cost, stops: [{ lap: p, c: c2 }], fuel: f.cost, firstFuel: f.first };
     }
     if (N >= 4) for (const c2 of comps) for (const c3 of comps) {
       for (let p1 = 0; p1 < N - 1; p1++) for (let p2 = p1 + 1; p2 < N; p2++) {
-        const cost = cur[p1] + race.pitLoss * 2 + costs[c2][p2 - p1] + costs[c3][N - p2];
-        if (cost < best.cost) best = { cost, stops: [{ lap: p1, c: c2 }, { lap: p2, c: c3 }] };
+        const f = fc([p1, p2]), cost = cur[p1] + race.pitLoss * 2 + costs[c2][p2 - p1] + costs[c3][N - p2] + f.cost;
+        if (cost < best.cost) best = { cost, stops: [{ lap: p1, c: c2 }, { lap: p2, c: c3 }], fuel: f.cost, firstFuel: f.first };
       }
     }
     return best;
@@ -2716,8 +2804,10 @@ const SIM = (function () {
   function chooseStartCompound(race, car) {
     if(race.wet>0.18)return weatherCompound(race.wet);
     const L = race.totalLaps; let best = null;
+    // the starting fuel is still to be chosen, so each compound is judged with its best fuel load
+    const fuel = race.fuelEnabled ? { min: race.fuelForLaps(START_FUEL_LAPS[0]) } : null;
     for (const c of ['S', 'M', 'H']) {
-      const p = planStrategy(race, car, L, c, 0);
+      const p = planStrategy(race, car, L, c, 0, fuel);
       const d = ratings(car);
       let cost = p.cost + (gauss() * 0.4 + (d.risk - 0.5) * (c === 'S' ? -3 : c === 'H' ? 2 : 0)) * (1 - d.strat * 0.6) * 6;
       if (!best || cost < best.cost) best = { c, cost };
@@ -2727,19 +2817,25 @@ const SIM = (function () {
 
   // A driver's ratings as their judgement uses them: AI drivers carry their career-skill profile.
   const ratings = car => car.ai ? car.ai.p : car.driver;
-  // Starting fuel (laps of the circuit's nominal consumption): enough for the planned first stint plus a lap,
-  // or the whole race when no stop is planned. Bolder drivers run lighter; careful ones carry more margin.
+  // Starting fuel (laps of the circuit's nominal consumption), chosen on predicted race time: every load from
+  // 3 to 8 laps is judged with the best tyre, stop and refuelling plan that starts with it, so the lap time a
+  // heavy car loses (the amplified fuel-weight effect) is weighed against refuelling time and extra stops.
+  // A light car needs a stop (and fuel) sooner; a full one can run to the flag without stopping for fuel.
+  // Bolder drivers lean lighter, careful ones carry more margin, and weaker strategists misjudge it more.
   function chooseStartFuelLaps(race, car, comp) {
     if (race.fuelEnabled === false) return null;
-    const L = race.totalLaps; let laps = L;
-    if (race.tyreWearOn && !(race.wet > 0.18)) {
-      const plan = planStrategy(race, car, L, comp, 0);
-      if (plan.stops.length) laps = Math.max(1, plan.stops[0].lap) + 2;
-    }
+    const L = race.totalLaps, hi = Math.min(START_FUEL_LAPS[1], L);
     const d = ratings(car), skill = car.ai ? car.ai.skill : 0;
-    // career skill: a better-judged margin (the bold/careful bias shrinks towards the plan)
-    laps += (0.5 - d.risk) * 1.5 * (1 - 0.5 * skill) + gauss() * 0.4 * (1 - d.strat);
-    return clamp(Math.round(laps * 2) / 2, START_FUEL_LAPS[0], Math.min(START_FUEL_LAPS[1], L));
+    // personality, in s per lap of fuel carried: bold drivers lean lighter, careful ones value the extra range
+    // (negative), and a weaker strategist misjudges the weight effect one way or the other (one draw per call)
+    const tilt = ((d.risk - 0.5) * 1.2 + gauss() * 0.6 * (1 - d.strat)) * (1 - 0.5 * skill);
+    let best = null;
+    for (let laps = START_FUEL_LAPS[0]; laps <= hi + 1e-9; laps += 0.5) {
+      const plan = planStrategy(race, car, L, comp, 0, { fixed: race.fuelForLaps(laps) });
+      const cost = plan.cost + tilt * laps;
+      if (!best || cost < best.cost) best = { laps, cost };
+    }
+    return clamp(best.laps, START_FUEL_LAPS[0], hi);
   }
   // Geometric fallback for the time a clean tyre-only stop costs (circuits carry a simulated measurement).
   function estimatePitLoss(track) {
@@ -2935,14 +3031,15 @@ const SIM = (function () {
       // a damaged car pulls to one side: ask for the turn the path needs minus the pull
       const rDes = Math.max(car.u, 0) * 2 * Math.sin(alpha) / dist - D.pullRate(car.u);
       const grip = this.handling.mu || this.handling.grip(car, race.wet); // as the handling measured it last step
-      const rCap = arcadeTurnCap(car.u, grip, 0, speed) * D.turnMul(speed);
+      const fT = car.fuelTurnMul(); // the same fuel-load turn ceiling the handling applies
+      const rCap = arcadeTurnCap(car.u, grip, 0, speed) * D.turnMul(speed) * fT;
       const use = Math.abs(rDes) / Math.max(rCap, 1e-3);
       this.yawUse = use; this.steerSat = speed > 6 ? Math.max(0, use - 1) : 0;
       inp.steer = rCap > 1e-3 ? Math.sign(rDes) * Math.pow(Math.min(1, use), 1 / arcadeSteerShape(speed)) : clamp(alpha * 2, -1, 1);
       // ---- speed envelope ----
       if ((step + this.tick) % 4 === 0) { this.updateRoom(); this.computeEnvelope(); this.vFollow = this.followLimit(this.neighbors, !!car.pit); }
       let vT = Math.min(this.vEnv, this.vLimit, this.vFollow != null ? this.vFollow : 110);
-      if (this.cornerUse && this.mode === 'race') { const kNeed = 2 * Math.sin(alpha) / dist; vT = Math.min(vT, arcadeCornerSpeed(kNeed, grip, Math.min(1, this.cornerUse * 1.04), D)); }
+      if (this.cornerUse && this.mode === 'race') { const kNeed = 2 * Math.sin(alpha) / dist; vT = Math.min(vT, arcadeCornerSpeed(kNeed, grip, Math.min(1, this.cornerUse * 1.04) * fT, D)); }
       if (car.pit || this.pitting) vT = Math.min(vT, this.pitSpeed());
       // nurse a punctured car back to the pits off the pace; a shredded tyre is slower still
       if (D.anyPuncture() && !car.pit) vT = Math.min(vT, D.shred[0] || D.shred[1] || D.shred[2] || D.shred[3] ? 20 : 30);
@@ -2961,9 +3058,10 @@ const SIM = (function () {
       const earlyThrottle = this.mistake && this.mistake.type === 'throttle' && this.mistakeT > 0;
       this.vscBind = vscBind;
       if (dv < -0.25 && vscBind) {
-        // deceleration in proportion to the excess speed, gently capped (arcade braking is proportional to speed)
+        // deceleration in proportion to the excess speed, gently capped (arcade braking is proportional to speed;
+        // a heavier fuel load needs a little more pedal for the same deceleration)
         const close = car.vscClose;
-        inp.brake = clamp(Math.min(close ? VSC.closeMax : VSC.brakeMax, (close ? VSC.closeGain : VSC.brakeGain) * (-dv - 0.25)) / (HANDLING.brakeRate * Math.max(speed, 8)), 0, close ? 1 : 0.85);
+        inp.brake = clamp(Math.min(close ? VSC.closeMax : VSC.brakeMax, (close ? VSC.closeGain : VSC.brakeGain) * (-dv - 0.25)) / (HANDLING.brakeRate * Math.max(speed, 8) * car.fuelBrakeMul()), 0, close ? 1 : 0.85);
         inp.throttle = 0; this.smoothThrottle = 0;
       } else if (dv < -0.25) {
         const precision = (this.p.brake + this.p.tyre) * 0.5;
@@ -3102,13 +3200,13 @@ const SIM = (function () {
       const misjudged = this.mistake && this.mistakeT > 0 && (this.mistake.type === 'grip' || this.mistake.type === 'wide') ? this.mistake.f || 1.04 : 1;
       const mu = car.gripEstimate(race.wet) * car.runoffGrip * (this.pitOnly ? 1 : this.gripBelief) * misjudged;
       this.muUse = mu; this.brakeUse = brakeC;
-      const v = car.speed;
+      const v = car.speed, fT = car.fuelTurnMul(); // the fuel load's turn ceiling (braking is in brakeGrip)
       const seg = (i) => this.segAdj[Math.floor(i * DS / 50) % this.segAdj.length];
       const look = Math.min(180, 30 + Math.round(v / ((HANDLING.brakeRate + HANDLING.coastRate) * brakeC) / DS)) & ~1;
       let vNext = 110, brakeJ = -1;
       for (let j = look; j >= 0; j -= 2) {
         const i = t.wrapI(car.idx + j);
-        let vc = arcadeCornerSpeed(this.kappaAt(i), mu, Math.min(1, cornerUse * seg(i)), D);
+        let vc = arcadeCornerSpeed(this.kappaAt(i), mu, Math.min(1, cornerUse * seg(i)) * fT, D);
         if (race.yellowAt(i) && !car.pit) vc *= 0.93;
         if (j === look) { vNext = vc; continue; }
         // path length of this step: shorter on the inside of a bend, longer on the outside
@@ -3157,11 +3255,11 @@ const SIM = (function () {
       const [px,pz]=t.pointAt(s,d), c=Math.cos(car.psi), sn=Math.sin(car.psi);
       const lx=(px-car.x)*c+(pz-car.z)*sn, ly=-(px-car.x)*sn+(pz-car.z)*c;
       const dist=Math.max(3,Math.hypot(lx,ly)), alpha=Math.atan2(ly,lx);
-      const mu=this.handling.grip(car,wet), cap=arcadeTurnCap(car.u,mu,0,speed)*car.damage.turnMul(speed);
+      const mu=this.handling.grip(car,wet), fT=car.fuelTurnMul(), cap=arcadeTurnCap(car.u,mu,0,speed)*car.damage.turnMul(speed)*fT;
       const rate=Math.max(0,car.u)*2*Math.sin(alpha)/dist-car.damage.pullRate(car.u);
       cmd.steer=cap>1e-3?Math.sign(rate)*Math.pow(Math.min(1,Math.abs(rate)/cap),1/arcadeSteerShape(speed)):clamp(alpha*2,-1,1);
       const brakeUse=0.65*car.brakeGrip(wet)*car.damage.perf.brake;
-      let target=Math.min(this.pitSpeed(),arcadeCornerSpeed(2*Math.sin(alpha)/dist,mu,0.8,car.damage));
+      let target=Math.min(this.pitSpeed(),arcadeCornerSpeed(2*Math.sin(alpha)/dist,mu,0.8*fT,car.damage));
       // Before a box is given: be able to stop where this car will have to. The driver sees the box lights
       // and the cars already heading in, so it plans for the box it can expect (the furthest free one after
       // the cars in front have taken theirs) or for the queue line when none will be left. Nothing is booked.
@@ -3239,7 +3337,7 @@ const SIM = (function () {
         const rate = (HANDLING.brakeRate * car.brakeGrip(wet) * car.damage.perf.brake + HANDLING.coastRate) * .85;
         for(let ahead=0; ahead<=100; ahead+=20) {
           const at=t.wrapS(s+ahead);
-          v=Math.min(v,arcadeCornerSpeed(t.pitCurvature(at,null,p),mu,.8,car.damage)+rate*ahead);
+          v=Math.min(v,arcadeCornerSpeed(t.pitCurvature(at,null,p),mu,.8*car.fuelTurnMul(),car.damage)+rate*ahead);
         }
       }
       return v;
@@ -3541,8 +3639,10 @@ const SIM = (function () {
     // seen of it). Racecraft sets how much of the expectation is used. Nothing is read from the rival's own plan.
     observe(nb) {
       const car = this.car, t = this.track, L = t.aiLines, N = t.N, M = this.mind, rl = L.off[0], race = this.race;
-      // a rival is expected to drive like this driver would (same read of the grip, same commitment), until seen otherwise
-      const scale = clamp(car.gripEstimate(race.wet) * this.gripBelief / 1.6, 0.45, 1.05) * (this.cornerUse || 0.97) / 0.97;
+      // a rival is expected to drive like this driver would (same read of the grip, same commitment, and a car
+      // carrying fuel like its own: rivals' loads are not known), until seen otherwise
+      const scale = clamp(car.gripEstimate(race.wet) * this.gripBelief / 1.6, 0.45, 1.05) * (this.cornerUse || 0.97) / 0.97 * car.fuelTurnMul();
+      const rivalAccel = car.fuelInertiaMul();
       this.nOpp = 0;
       // the closest (by gap along the lap) eight cars that can matter within the planning horizon
       const pick = this.oppPick || (this.oppPick = []); pick.length = 0;
@@ -3565,7 +3665,7 @@ const SIM = (function () {
           R.so[q] = n.ds + s; R.dd[q] = d; R.vv[q] = vv * slow;
           // speed: kinematic extrapolation blended with the speed the corner ahead allows
           const iA = t.wrapI(iO + Math.round(vv * AI_PRED_DT / DS));
-          const vInt = Math.min(vv + aiAccel(vv) * AI_PRED_DT, L.vRef[iA] * scale * mem.pace);
+          const vInt = Math.min(vv + aiAccel(vv) * rivalAccel * AI_PRED_DT, L.vRef[iA] * scale * mem.pace);
           const vKin = clamp(R.v + R.a * (tau + AI_PRED_DT), 0, 95);
           const vn = Math.max(0, lerp(vKin, vInt, kq * AI_PW.kv[q]));
           s += 0.5 * (vv + vn) * AI_PRED_DT / Math.max(0.6, 1 - t.kappa[iO] * d); vv = vn;
@@ -3763,11 +3863,11 @@ const SIM = (function () {
       const rel = (i) => { let r = i - i0; if (r < -N / 2) r += N; else if (r > N / 2) r -= N; return r; };
       const X = this.ctx || (this.ctx = {});
       X.i0 = i0; X.n = n; X.m = m; X.rel = rel; X.v0 = car.speed; X.rin = clamp(Math.round(v * 1.1 / DS), 15, 50);
-      X.mu = this.muUse || car.gripEstimate(race.wet); X.use = Math.min(1, this.cornerUse || 0.95);
+      X.mu = this.muUse || car.gripEstimate(race.wet); X.use = Math.min(1, this.cornerUse || 0.95) * car.fuelTurnMul();
       X.dec = (HANDLING.brakeRate + HANDLING.coastRate) * (this.brakeUse || this.brakeCommit) * 0.97;
       // a committed attacker brakes a little later (see computeEnvelope): the same judgement when weighing a move
       const bc = this.brakeCommit || 1; X.outbrake = Math.min(1, bc * (1 + 0.025 * (0.5 + M.aggr))) / bc;
-      X.power = car.damage.perf.power; X.dmg = car.damage.perf.turnLoss > 0 || car.damage.perf.aeroTurnLoss > 0 ? car.damage : null;
+      X.power = car.damage.perf.power * car.fuelInertiaMul(); X.dmg = car.damage.perf.turnLoss > 0 || car.damage.perf.aeroTurnLoss > 0 ? car.damage : null;
       X.wRisk = lerp(3.5, 1.2, this.riskBudget) * (1 + this.caution);
       // corner windows in reach: the one being driven (or next), and the one after it
       // the corner to plan for: the one being driven, or once its apex is behind (the exit), the next one
@@ -4458,7 +4558,7 @@ const SIM = (function () {
       let tyreMode = preserve ? 'preserve' : (left < 1.5 || attacking && wear < 0.65 && p.aggr > 0.6) ? 'push' : 'normal';
       let push = 0, defer = false;
       let compound = first ? first.c : (race.wet ? weatherCompound(race.wet) : left > 4 ? 'H' : left > 2.5 ? 'M' : 'S');
-      let reason = first && first.lap <= 1 && wear > 0.45 ? 'optimal stint window' : '';
+      let reason = first && first.lap <= 1 && wear > STINT_STOP_WEAR ? 'optimal stint window' : '';
       const recentRival = race.cars.find(o => o !== car && Math.abs(o.position - car.position) === 1 &&
         o.pitHistory.length && race.time - o.pitHistory[o.pitHistory.length - 1].entry < 32);
       const meanSpeed = t.length / (car.bestLap || 68);
@@ -4547,13 +4647,26 @@ const SIM = (function () {
       if (!this.race.fuelEnabled) return 0;
       const car = this.car, race = this.race, wetHere = car.surfaceWet ?? race.wet;
       const left = race.lapsLeft(car), rate = race.fuelLapRate(car);
-      let laps = left;
+      let want = (left + 0.6) * rate + FUEL_RESERVE - car.fuel;
       if (race.type === 'race' && left > 1.5) {
+        // The load leaving the box is chosen on predicted race time (see fuelPlanCost): enough for the next
+        // planned stop with this driver's margin, or to the flag when another stop would cost more than
+        // carrying the extra weight.
         const comp = tyre === 'keep' ? car.tyre.c : tyre, wear = tyre === 'keep' ? Math.max(...car.tyre.wear) : 0;
-        const plan = planStrategy({ ...race, wet: wetHere }, car, left, comp, wear);
-        if (plan.stops.length) laps = Math.min(left, Math.max(1, plan.stops[0].lap) + 1);
+        const plan = planStrategy({ ...race, wet: wetHere }, car, left, comp, wear, { min: car.fuel });
+        // Count on the next planned stop only if it will really be made: the strategy boxes for tyres once
+        // they pass STINT_STOP_WEAR (see analyse). Otherwise the fuel must reach the point where the tyres
+        // will be worn enough, or the flag.
+        const first = plan.stops[0], wpl = wearPerLap({ ...race, wet: wetHere }, car, comp);
+        let stint = first ? first.lap : left;
+        if (first) {
+          const worn = wpl > 0 ? Math.max(0, (STINT_STOP_WEAR - wear) / wpl) : Infinity;
+          stint = Math.max(stint, Math.ceil(worn));
+        }
+        stint = Math.min(left, Math.max(1, stint));
+        want = Math.max(plan.firstFuel, (stint + fuelMarginLaps(car)) * rate + FUEL_RESERVE) - car.fuel;
+        if (stint >= left) want = Math.max(plan.firstFuel, (left + 0.3) * rate + FUEL_RESERVE) - car.fuel;
       }
-      const want = (laps + 0.6) * rate + FUEL_RESERVE - car.fuel;
       const fuel = clamp(Math.ceil(want * 2) / 2, 0, Math.max(0, race.fuelCapacity - car.fuel));
       return fuel;
     }
@@ -4710,6 +4823,8 @@ const SIM = (function () {
       // Fuel: the circuit's nominal race-pace consumption (measured in simulation), the tank and the refuelling rig.
       this.fuelPerLap=track.def.fuelPerLap || track.length/6000*2.8;
       this.fuelCapacity=Math.round(this.fuelPerLap*FUEL_TANK_LAPS*2)/2;
+      // lap time each kg of fuel costs (strategy model); none where fuel is not managed
+      this.fuelLapCost=this.fuelEnabled ? (track.def.fuelLapCost || FUEL_LAP_COST) : 0;
       this.mistakeMul = cfg.mistakes != null ? cfg.mistakes : 1;
       this.tyreWearOn = cfg.tyreWear !== 'off';
       const wm = cfg.tyreWear === 'high' ? 1.6 : cfg.tyreWear === 'off' ? 0 : 1;
@@ -5320,7 +5435,7 @@ const SIM = (function () {
       let safe=Math.min(p.limit-.6+rate*Math.max(0,p.E-q-5),arcadeStopSpeed(stop-2,use*.85));
       const mu=driver.handling.grip(car,wet);
       for(let ahead=0;ahead<=p.E-q;ahead+=20) {
-        safe=Math.min(safe,arcadeCornerSpeed(t.pitCurvature(t.wrapS(car.s+ahead)),mu,.8,car.damage)+rate*ahead);
+        safe=Math.min(safe,arcadeCornerSpeed(t.pitCurvature(t.wrapS(car.s+ahead)),mu,.8*car.fuelTurnMul(),car.damage)+rate*ahead);
       }
       return car.speed<=safe;
     }
@@ -6342,7 +6457,7 @@ const SIM = (function () {
     return (neg ? '-' : plus ? '+' : '') + str;
   }
 
-  return { G, RHO, PHYS_DT, DS, VSC, GAME_MODES, CAREER, TEAMS, DRIVERS, TRACK_DEF, CIRCUITS, circuitById, circuitCentreLine, elevationAt, COMPOUNDS, SPEC, Track, Car, Session, AIDriver, RaceEngineer, planStrategy, wearPerLap, fmtTime, clamp, lerp, makeRng, stepCarPhysics, SLIPSTREAM, slipstreamStrength, OFF_TRACK, GREEN_RUNOFF, PlayerHandling, KeyboardDriveInput, HANDLING, USEFUL_WEAR, TYRE_STYLES, drivingStyle, tyreWearGrip, tyreWeatherGrip, tyreMismatch, updateTyres, wetnessFor, weatherCompound, DynamicWeather, CarDamage, DAMAGE_LEVELS, PART_KEYS, PART_NAMES, WHEEL_NAMES, REPAIR_TIME, REFUEL, FUEL_TANK_LAPS, FUEL_RESERVE, START_FUEL_LAPS, ELIMINATION_FUEL_MASS, estimatePitLoss, chooseStartFuelLaps, normalizeDamageLevel, partExposure, torqueAt, defaultCompoundModel, setSeed: (s) => { rnd = makeRng(s); } };
+  return { G, RHO, PHYS_DT, DS, VSC, GAME_MODES, CAREER, TEAMS, DRIVERS, TRACK_DEF, CIRCUITS, circuitById, circuitCentreLine, elevationAt, COMPOUNDS, SPEC, Track, Car, Session, AIDriver, RaceEngineer, planStrategy, wearPerLap, fmtTime, clamp, lerp, makeRng, stepCarPhysics, SLIPSTREAM, slipstreamStrength, OFF_TRACK, GREEN_RUNOFF, PlayerHandling, KeyboardDriveInput, HANDLING, USEFUL_WEAR, TYRE_STYLES, drivingStyle, tyreWearGrip, tyreWeatherGrip, tyreMismatch, updateTyres, wetnessFor, weatherCompound, DynamicWeather, CarDamage, DAMAGE_LEVELS, PART_KEYS, PART_NAMES, WHEEL_NAMES, REPAIR_TIME, REFUEL, FUEL_TANK_LAPS, FUEL_RESERVE, START_FUEL_LAPS, ELIMINATION_FUEL_MASS, FUEL_PERF, FUEL_LAP_COST, estimatePitLoss, chooseStartFuelLaps, normalizeDamageLevel, partExposure, torqueAt, defaultCompoundModel, setSeed: (s) => { rnd = makeRng(s); } };
 })();
 // ==SIM-END==
 if (typeof module !== 'undefined') module.exports = SIM;
@@ -9116,7 +9231,9 @@ function startRace(gridOrder, entries) {
   $('briefCondition').textContent = startWeather.water >= .7 ? 'Wet' : startWeather.water > .18 ? 'Damp' : startWeather.water > .01 ? 'Drying' : 'Dry';
   $('briefWet').textContent = Math.round(startWeather.water * 100) + '% wet';
   if (fuelEnabled) {
-    $('briefFuelEstimate').textContent = 'Estimated fuel use: ' + fpl.toFixed(1) + ' kg per lap.';
+    // each kilogram costs lap time (the amplified fuel-weight effect): about this much per lap of fuel carried
+    const lapOfFuelCost = fpl * (G.track.def.fuelLapCost || SIM.FUEL_LAP_COST);
+    $('briefFuelEstimate').textContent = 'Estimated fuel use: ' + fpl.toFixed(1) + ' kg per lap. Every lap of fuel on board costs about ' + lapOfFuelCost.toFixed(1) + ' s per lap.';
     const [minFuel, maxFuel] = SIM.START_FUEL_LAPS, slider = $('briefFuel');
     slider.min = minFuel; slider.max = maxFuel;
     $('briefFuelScale').innerHTML = Array.from({ length: maxFuel - minFuel + 1 }, (_, i) => '<span>' + (minFuel + i) + (minFuel + i === maxFuel ? ' Laps' : '') + '</span>').join('');
