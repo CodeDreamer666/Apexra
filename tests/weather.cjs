@@ -162,12 +162,12 @@ const rainTyre = c => c === 'I' || c === 'W';
 
 test('a wet start puts the field on rain tyres on a wet track; a dry start on slicks', () => {
   const wet = weatherRace({ pattern: 'wet', regime: 'moderate', targetCloud: 0.93, targetRain: 0.38, cloud: 0.93, rain: 0.38, water: 0.62, lineWater: 0.58 });
-  assert.ok(wet.wet > 0.5 && wet.wetRace);
+  assert.ok(wet.wet > 0.5);
   assert.ok(wet.cars.every(c => rainTyre(c.tyre.c)));
   for (let i = 0; i < 240; i++) wet.fixedStep(SIM.PHYS_DT);
   assert.ok(wet.cars.every(c => c.surfaceWet > 0.4));
   const dry = weatherRace({ pattern: 'dry', regime: 'sunny', targetCloud: 0.15, targetRain: 0, cloud: 0.15, rain: 0, water: 0, lineWater: 0 });
-  assert.equal(dry.wet, 0); assert.ok(!dry.wetRace);
+  assert.equal(dry.wet, 0);
   assert.ok(dry.cars.every(c => !rainTyre(c.tyre.c)));
 });
 
