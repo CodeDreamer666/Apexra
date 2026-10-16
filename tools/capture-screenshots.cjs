@@ -84,7 +84,7 @@ const index = [];
       H.botOn = true;
     };
     H.snap = () => { APEX.camRig.init = false; };
-    H.cam = (m) => { APEX.camRig.setMode(m); APEX.camRig.init = false; };
+    H.cam = (m) => { if (APEX.camRig.setMode) APEX.camRig.setMode(m); APEX.camRig.init = false; }; // (Chase is the only camera now)
     // stage a crash: the car is put next to its barrier and aimed into it
     H.crash = (car, v = 60, yaw = 0.5) => {
       const S = APEX.session, t = S.track, w = t.walls(car.idx, car.s, false, { l: 0, r: 0, innerPit: 0 }), side = car.d >= 0 ? 1 : -1;
