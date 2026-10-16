@@ -1042,7 +1042,7 @@ const SIM = (function () {
   // pitLoss (s) is the time a clean tyre-only stop loses against staying out and fuelPerLap (kg) the
   // race-pace consumption, both measured by simulating this circuit. The connected 300 m approach and ~100 m limited
   // working lane retain real braking/service time: paired four-lap, tyre-only runs with 8 laps of fuel on board lose
-  // 18.16 / 18.09 / 18.24 s (the amplified fuel weight slows the launch from the box; the AI's racing line, measured by tests/pitstops.cjs; fuelPerLap is kept as the tank and fuel-load reference). tyrePace
+  // 18.16 / 19.28 / 18.16 s (the amplified fuel weight slows the launch from the box; the AI's racing line, measured by tests/pitstops.cjs; fuelPerLap is kept as the tank and fuel-load reference). tyrePace
   // (s) scales the strategy pace model to how strongly this circuit's lap time reacts to grip, fitted to solo laps on
   // fresh and worn Soft and Hard tyres (Redridge's long straights make it the least sensitive). About
   // 9 s of that is stopping from the limit, the 2–3 s service and launching from rest, which the shorter lane
@@ -1060,7 +1060,7 @@ const SIM = (function () {
       env: { style: 'alpine', lake: { x: 1300, z: -1050, a: 700, b: 330, rot: 0.3 }, castle: null, hill: 1.35, mountain: 1.25, snowLine: 620, forest: 1.1, broadleaf: 0.12, grass: [0.92, 1.0, 0.9], village: { x: -1250, z: -900 } },
     },
     {
-      id: 'rivermere', name: 'Rivermere Grand Prix', country: 'Rivermere Valley', halfW: 7.0, length: 6000, pitLoss: 18.1, fuelPerLap: 2.76, fuelLapCost: 0.196, tyrePace: 77,
+      id: 'rivermere', name: 'Rivermere Grand Prix', country: 'Rivermere Valley', halfW: 7.0, length: 6000, pitLoss: 19.3, fuelPerLap: 2.76, fuelLapCost: 0.196, tyrePace: 77,
       pts: [[-370, 369], [69, 379], [738, 394], [805, 385], [838, 335], [855, 239], [884, 172], [926, 151], [959, 185], [972, 294], [988, 373], [1039, 415], [1089, 406], [1106, 335], [1093, 231], [1043, 143], [968, 89], [257, -170], [-370, -371], [-495, -417], [-566, -392], [-579, -287], [-495, -187], [-487, -124], [-554, -91], [-637, -99], [-679, -162], [-692, -246], [-738, -275], [-934, -283], [-997, -262], [-1009, -212], [-972, -166], [-959, -124], [-1009, -87], [-1076, -37], [-1105, 14], [-1093, 68], [-1005, 110], [-850, 193], [-775, 268], [-696, 281], [-596, 260], [-495, 294], [-428, 352]],
       start: [69, 379],
       elev: [[-760, -150, 420, 9], [420, -260, 520, 6], [1000, 280, 260, -4]],
@@ -3433,6 +3433,8 @@ const SIM = (function () {
           if(!this.race.eliminationMode)v = Math.min(v, arcadeStopSpeed(toEntry + t.pitProg(this.race.expectedStopS(car),p) - 1.3, car.brakeGrip(car.surfaceWet ?? this.race.wet)*car.damage.perf.brake));
         }
       }
+      // until the car is in the lane, stay under the speed the entry check accepts (Session.pitEntrySpeed)
+      if (this.pitting && !car.pit) v = Math.min(v, this.race.pitEntrySpeed(car) - 1);
       if (car.pit && car.pit.phase === 'in') {
         const dd = t.dS(s, car.pit.stopS);
         // aim a metre short of the marks: the brakes are weak at walking pace; past the marks, keep stopping
@@ -5537,10 +5539,19 @@ const SIM = (function () {
       });
     }
     pitEntrySafe(car) {
-      const t=this.track,p=t.pitForCar(car),q=t.wrapS(car.s-p.entry0)<p.len?t.wrapS(car.s-p.entry0):-1,wet=car.surfaceWet ?? this.wet;
+      const t=this.track,p=t.pitForCar(car),q=t.pitProg(car.s,p);
       const heading=car.psi-t.heading[car.idx];
       const driver=car.ai||car.autopilot;
       if(!driver || q<p.commitQ || q>p.E-35 || Math.cos(heading)<.96 || car.u<-.1)return false;
+      return car.speed<=this.pitEntrySpeed(car);
+    }
+    // The highest speed from which a car can still take its pit entry safely: down to the limit by the limit
+    // line, able to stop at the box it can expect, and within the lane's bends, with the brakes its tyres, fuel
+    // load and damage leave it. pitEntrySafe judges a committed entry by it, and the AI's approach aims below
+    // it (AIDriver.pitSpeed), so a heavy car is not waved off at the commit point for arriving too fast.
+    pitEntrySpeed(car) {
+      const t=this.track,p=t.pitForCar(car),wet=car.surfaceWet ?? this.wet,driver=car.ai||car.autopilot;
+      const q0=t.pitProg(car.s,p),q=q0>=0?q0:-Math.max(0,t.dS(car.s,p.entry0)); // negative before the entry
       const use=car.brakeGrip(wet)*car.damage.perf.brake;
       const rate=(HANDLING.brakeRate*use+HANDLING.coastRate)*.85;
       const stop=this.eliminationMode?Infinity:t.dS(car.s,this.expectedStopS(car));
@@ -5549,7 +5560,7 @@ const SIM = (function () {
       for(let ahead=0;ahead<=p.E-q;ahead+=20) {
         safe=Math.min(safe,arcadeCornerSpeed(t.pitCurvature(t.wrapS(car.s+ahead)),mu,.8*car.fuelTurnMul(),car.damage)+rate*ahead);
       }
-      return car.speed<=safe;
+      return safe;
     }
     pitLogic(car, dt) {
       const t = this.track, p = t.pitForCar(car);
@@ -9380,7 +9391,7 @@ function startRace(gridOrder, entries) {
   $('briefFuel').disabled = !fuelEnabled;
   $('briefFuel').oninput = null;
   $('briefModeNote').classList.toggle('hidden', gameMode !== 'elimination');
-  $('briefModeNote').textContent = rules.name+' · '+rules.rules+' Two drive-through stations, instant tyres and eligible repairs. No fuel or sporting penalties. Fixed 820 kg mass.';
+  $('briefModeNote').textContent = rules.name+' · '+rules.rules+' Two drive-through stations, instant tyres and eligible repairs. No fuel management: a fixed 820 kg mass.';
   $('briefDistance').textContent = lapsTotal + ' laps'; $('briefKm').textContent = '(' + (lapsTotal * G.track.length / 1000).toFixed(0) + ' km)';
   $('briefTeams').textContent = (entries || SIM.DRIVERS).length;
   $('briefWeather').textContent = 'Now: ' + startWeather.label;
