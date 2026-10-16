@@ -63,7 +63,7 @@ const icons = html.slice(html.indexOf('const PS_ICON ='), html.indexOf('function
         check(visible($('briefChoices')) === !ranked, 'tyre choice only where there is a strategy');
         check(visible($('briefFuelSection')) === !ranked, 'fuel isolation');
         check(visible($('briefModeNote')) === ranked, 'mode note');
-        if (mode === 'pursuit') check(/25% wear/.test($('briefModeNote').innerText) && /3\.5 s/.test($('briefModeNote').innerText) && /new Softs/.test($('briefModeNote').innerText), 'the rival tyre difference and head start are announced');
+        if (mode === 'pursuit') check(/27% wear/.test($('briefModeNote').innerText) && /3\.5 s/.test($('briefModeNote').innerText) && /new Softs/.test($('briefModeNote').innerText), 'the rival tyre difference and head start are announced');
         const cols = getComputedStyle($('raceBrief').querySelector('.brief-rule-grid')).gridTemplateColumns.split(' ').length;
         check(cols === (ranked ? 1 : 3), 'setup grid has no empty column: ' + cols);
         $('raceBrief').classList.add('hidden');

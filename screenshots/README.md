@@ -194,47 +194,11 @@ Pit exit: control returns, stop summary
 
 ![Pit exit: control returns, stop summary](039-summit-pit-exit.jpg)
 
-### 040-summit-vsc-deployed
-
-Virtual Safety Car deployed (ok)
-
-![Virtual Safety Car deployed (ok)](040-summit-vsc-deployed.jpg)
-
-### 041-summit-vsc-active
-
-VSC running: race control drives the car in the queue
-
-![VSC running: race control drives the car in the queue](041-summit-vsc-active.jpg)
-
-### 042-summit-vsc-cockpit
-
-VSC from the cockpit
-
-![VSC from the cockpit](042-summit-vsc-cockpit.jpg)
-
-### 043-summit-vsc-ending
-
-VSC ending: five-second countdown
-
-![VSC ending: five-second countdown](043-summit-vsc-ending.jpg)
-
-### 044-summit-vsc-green
-
-Green flag after the VSC
-
-![Green flag after the VSC](044-summit-vsc-green.jpg)
-
 ### 045-summit-flag-yellow
 
 Yellow flag in the sector
 
 ![Yellow flag in the sector](045-summit-flag-yellow.jpg)
-
-### 046-summit-flag-blue
-
-Blue flag: a lapping car behind
-
-![Blue flag: a lapping car behind](046-summit-flag-blue.jpg)
 
 ### 047-summit-damage-impact
 
@@ -380,30 +344,6 @@ Pit exit: control returns, stop summary
 
 ![Pit exit: control returns, stop summary](072-rivermere-pit-exit.jpg)
 
-### 073-rivermere-vsc-deployed
-
-Virtual Safety Car deployed (ok)
-
-![Virtual Safety Car deployed (ok)](073-rivermere-vsc-deployed.jpg)
-
-### 074-rivermere-vsc-active
-
-VSC running: race control drives the car in the queue
-
-![VSC running: race control drives the car in the queue](074-rivermere-vsc-active.jpg)
-
-### 075-rivermere-vsc-ending
-
-VSC ending: five-second countdown
-
-![VSC ending: five-second countdown](075-rivermere-vsc-ending.jpg)
-
-### 076-rivermere-vsc-green
-
-Green flag after the VSC
-
-![Green flag after the VSC](076-rivermere-vsc-green.jpg)
-
 ### 077-rivermere-race-results
 
 Race results
@@ -493,30 +433,6 @@ Service complete: release / leaving the box
 Pit exit: control returns, stop summary
 
 ![Pit exit: control returns, stop summary](093-redridge-pit-exit.jpg)
-
-### 094-redridge-vsc-deployed
-
-Virtual Safety Car deployed (ok)
-
-![Virtual Safety Car deployed (ok)](094-redridge-vsc-deployed.jpg)
-
-### 095-redridge-vsc-active
-
-VSC running: race control drives the car in the queue
-
-![VSC running: race control drives the car in the queue](095-redridge-vsc-active.jpg)
-
-### 096-redridge-vsc-ending
-
-VSC ending: five-second countdown
-
-![VSC ending: five-second countdown](096-redridge-vsc-ending.jpg)
-
-### 097-redridge-vsc-green
-
-Green flag after the VSC
-
-![Green flag after the VSC](097-redridge-vsc-green.jpg)
 
 ### 098-redridge-race-results
 

@@ -87,7 +87,7 @@ const JOBS = {
     if (!s.over) return { over: false, time: s.time, leader: s.cars.map(c => c.laps).sort((a, b) => b - a)[0], weather: s.weather.label,
       stuck: s.cars.filter(c => !c.finished && !c.dnf).map(c => c.driver.short + ' L' + c.laps + ' s=' + c.s.toFixed(0) + (c.pit ? ' pit:' + c.pit.phase : '') + (c.ai ? ' ' + c.ai.mode : '')).join('; ') };
     return { over: s.over, laps: s.totalLaps, weather: s.weather.start.label + ' → ' + s.weather.label, record: S.CAREER.raceRecord(s.results),
-      winner: s.results[0].car.driver.name, stops: s.stats.pitstops, vsc: s.vsc.count };
+      winner: s.results[0].car.driver.name, stops: s.stats.pitstops };
   },
   // a full field: four baseline reference cars against sixteen tier cars
   race({ circuit, level, seed, laps, wet }) {
@@ -191,7 +191,7 @@ const name = k => (Math.round(k * 100) + '%').padEnd(10);
           const r = res.find(x => x.job.tier === tier && x.job.race === race).out;
           if (!r.over) { console.log('  R' + (race + 1) + ' NOT CLASSIFIED after ' + r.time.toFixed(0) + ' s (leader lap ' + r.leader + ', ' + r.weather + '): ' + r.stuck); continue; }
           const out = S0.CAREER.record(st, { tier, team, race, id: 'bench-' + tier + '-' + race }, r.record);
-          console.log('  R' + (race + 1) + ' ' + S0.CAREER.CIRCUITS[race].padEnd(9) + ' classified ' + r.over + ' · ' + r.laps + ' laps · ' + r.weather + ' · winner ' + r.winner + ' · ' + r.stops + ' stops · VSC ' + r.vsc + ' · recorded ' + out.ok);
+          console.log('  R' + (race + 1) + ' ' + S0.CAREER.CIRCUITS[race].padEnd(9) + ' classified ' + r.over + ' · ' + r.laps + ' laps · ' + r.weather + ' · winner ' + r.winner + ' · ' + r.stops + ' stops · recorded ' + out.ok);
         }
         const status = S0.CAREER.status(st);
         console.log('  final: ' + status.table.slice(0, 6).map(row => 'P' + row.rank + ' ' + S0.DRIVERS[row.d].name + ' ' + row.points).join(' · ') + ' ...');

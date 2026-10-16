@@ -5,8 +5,8 @@
 //
 // The game runs in headless Chromium (Playwright). Its render loop is driven frame by frame from here, so
 // the capture is deterministic and works with software WebGL. The race is played by the game's own AI
-// driving the player's car through the player's handling (the same way tests/vsc.cjs drives a "human"), and
-// situations such as the Virtual Safety Car, a pit stop or a crash are staged through the game's own
+// driving the player's car through the player's handling (the same way the tests drive a "human"), and
+// situations such as a pit stop or a crash are staged through the game's own
 // session API, so every panel is shown in its real state.
 //
 // Three.js is fetched from the CDN as usual. If the CDN is blocked, set THREE_JS=/path/to/three.module.js
@@ -62,7 +62,7 @@ const index = [];
 
   // ---------- loading ----------
   await page.goto('file://' + path.join(ROOT, 'index.html'));
-  await page.waitForFunction(() => document.getElementById('loadSt').textContent.length > 0, null, { polling: 200 });
+  await page.waitForFunction(() => !!document.getElementById('loadBar'), null, { polling: 200 });
   await shot('loading', 'Loading screen while the 3D engine downloads');
   releaseThree();
   await page.waitForFunction(() => document.getElementById('loading').classList.contains('hidden'), null, { polling: 300, timeout: 600000 });
@@ -85,7 +85,7 @@ const index = [];
     };
     H.snap = () => { APEX.camRig.init = false; };
     H.cam = (m) => { APEX.camRig.setMode(m); APEX.camRig.init = false; };
-    // stage a crash like tests/vsc.cjs: the car is put next to its barrier and aimed into it
+    // stage a crash: the car is put next to its barrier and aimed into it
     H.crash = (car, v = 60, yaw = 0.5) => {
       const S = APEX.session, t = S.track, w = t.walls(car.idx, car.s, false, { l: 0, r: 0, innerPit: 0 }), side = car.d >= 0 ? 1 : -1;
       car.placeAt(t, car.s, side * ((side > 0 ? w.r : w.l) - 3.2), 0);
@@ -179,31 +179,11 @@ const index = [];
     await H('H.ff(60, s => !p.pit)'); await H('H.ff(0.5)'); await settle(8, 1);
     await shot(tag('pit-exit'), 'Pit exit: control returns, stop summary');
 
-    // ---------- Virtual Safety Car ----------
-    await H('H.ff(15)');
-    const vsc = await H(`(() => { const S=APEX.session; if (!S.vscCanDeploy()) return 'cannot';
-      const v = H.ahead(1); if (!v || v === p) return 'no car'; H.crash(v, 70, 0.6);
-      return H.ff(8, s => s.vscActive) ? 'ok' : (S.vscDeploy('crash', [{ car: v }]), 'forced'); })()`);
-    console.log('  VSC:', vsc);
-    await settle(10, 1);
-    await shot(tag('vsc-deployed'), 'Virtual Safety Car deployed (' + vsc + ')');
-    await H('H.ff(3.5)'); await settle(8, 1);
-    await shot(tag('vsc-active'), 'VSC running: race control drives the car in the queue');
-    if (full) { await H('H.cam("cockpit")'); await frames(6, 1); await shot(tag('vsc-cockpit'), 'VSC from the cockpit'); await H('H.cam("chase")'); }
-    await H('H.ff(30, s => s.vsc.phase === "ending")'); await H('H.ff(1.5)'); await settle(6, 1);
-    await shot(tag('vsc-ending'), 'VSC ending: five-second countdown');
-    await H('H.ff(10, s => s.vsc.phase === "green")'); await H('H.ff(0.3)'); await settle(6, 1);
-    await shot(tag('vsc-green'), 'Green flag after the VSC');
-
     if (full) {
       // ---------- flags ----------
       await H('H.ff(10)');
       await H('(() => { const S = APEX.session, k = Math.floor(p.idx / S.track.N * S.track.marshalCount); S.yellow[k] = 8; S.yellow[(k + 1) % S.track.marshalCount] = 8; })()'); await H('H.ff(0.05)'); await settle(6, 1);
       await shot(tag('flag-yellow'), 'Yellow flag in the sector');
-      const blue = await H(`(() => { const S = APEX.session, t = S.track, o = (S.order || S.cars).find(c => c !== p && !c.pit && !c.dnf && !c.inGarage);
-        if (!o) return false; o.placeAt(t, t.wrapS(p.s - 45), p.d > 0 ? -2 : 2, Math.max(p.speed, 30) + 12); o.totalDist = p.totalDist + t.length - 45; o.laps = p.laps + 1;
-        return H.ff(4, s => !!p.blueFlag.target); })()`);
-      await settle(4, 1); await shot(tag('flag-blue'), 'Blue flag: a lapping car behind' + (blue ? '' : ' (not triggered)'));
       await H('H.ff(8)');
       // ---------- damage, respawn ----------
       await H('H.crash(p, 32, 0.3)'); await frames(10, 1); // hard enough to damage the car, not to end its race

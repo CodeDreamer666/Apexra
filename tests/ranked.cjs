@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 // Rival Duel and Pursuit: the eight ranks and their independent progression, the two-car grids, equal cars,
-// tyres and fuel, no pit stops / VSC / weather, the Pursuit head start and rival tyres, the victory rules,
+// tyres and fuel, no pit stops / weather, the Pursuit head start and rival tyres, the victory rules,
 // and real races on all three circuits, through the game's own SIM.
 const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
 const shim = { exports: {} }; new Function('module', html.match(/<script>([\s\S]*?)<\/script>/)[1])(shim);
@@ -24,7 +24,7 @@ test('eight ranks with the exact names and AI levels, an approximately exponenti
   const steps = RANKS.slice(1).map((r, k) => r.level - RANKS[k].level);
   assert.ok(steps[6] > 2 * steps[0], 'not linear: the steps grow');
   assert.deepEqual(RANKS.map(r => r.gap), [2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5]);
-  for (const r of RANKS) assert.ok(r.wear >= 0.2 && r.wear <= 0.3, r.name + ' rival tyre wear ' + r.wear);
+  for (const [k, r] of RANKS.entries()) assert.ok(r.wear >= 0.2 && r.wear <= 0.36 && (k === 0 || r.wear >= RANKS[k - 1].wear), r.name + ' rival tyre wear ' + r.wear);
   // the AI skill steps equally per rank (log scale) and reaches 1 only at 300%
   const skills = RANKS.map(r => SIM.aiSkillForLevel(r.level));
   assert.equal(skills[0], 0); assert.equal(skills[7], 1);
@@ -65,7 +65,7 @@ test('progression: Initiate first, only a win unlocks the next rank, each mode o
   assert.equal(half.pursuit.unlocked, 3, 'unlocks follow wins'); assert.equal(half.duel.complete, false, 'completion needs the Apex win');
 });
 
-test('Rival Duel: two cars side by side on the same line, fresh Softs, the same fuel, a fixed dry track, no pits or VSC', () => {
+test('Rival Duel: two cars side by side on the same line, fresh Softs, the same fuel, a fixed dry track, no pits', () => {
   for (const id of tracks.keys()) {
     for (const duelSide of [0, 1]) {
       const s = session(id, 'duel', { duelSide, startCompound: 'H', startFuelLaps: 7 });
@@ -77,7 +77,7 @@ test('Rival Duel: two cars side by side on the same line, fresh Softs, the same 
       assert.equal(a.totalDist, b.totalDist);
       for (const c of s.cars) { assert.equal(c.tyre.c, 'S'); assert.ok(c.tyre.wear.every(w => w === 0)); assert.equal(c.fuel, s.fuelForLaps(SIM.RANKED_FUEL_LAPS)); assert.equal(c.launch.active, true); }
       assert.equal(a.mass, b.mass); assert.deepEqual(a.team.power, b.team.power); assert.equal(a.effClA(), b.effClA()); assert.equal(a.effCdA(), b.effCdA());
-      assert.equal(s.weather, null); assert.equal(s.wet, 0); assert.equal(s.pitsEnabled, false); assert.equal(s.vscEnabled, false);
+      assert.equal(s.weather, null); assert.equal(s.wet, 0); assert.equal(s.pitsEnabled, false);
       assert.equal(s.totalLaps, 2);
     }
     // the sides swap with duelSide (the game alternates it between attempts)
@@ -128,21 +128,18 @@ test('no artificial catch-up: the rival\'s AI, tyres and physics are the shared 
     assert.equal(JSON.stringify([ai.commit, ai.brakeCommit, ai.mistakeScale, ai.skill, ai.p]), fixed);
   }
   assert.ok(wearRate.every(w => w >= 0), 'the worn set keeps wearing normally');
-  assert.equal(s.stats.pitstops, 0); assert.equal(s.vsc.count, 0);
+  assert.equal(s.stats.pitstops, 0);
 });
 
-test('VSC never deploys in the ranked modes, even after a race-ending crash; Grand Prix keeps it', () => {
+test('a race-ending crash does not neutralise the race: the other car races on at full speed', () => {
   for (const mode of ['duel', 'pursuit']) {
     const s = session('summit', mode);
     while (!s.lightsOut || s.time - s.lightsOutTime < 20) s.fixedStep(SIM.PHYS_DT);
-    assert.equal(s.vscCanDeploy(), false);
     s.startRetirement(s.cars[1], 'Accident damage');
-    for (let k = 0; k < 240 * 30; k++) s.fixedStep(SIM.PHYS_DT);
-    assert.equal(s.vsc.count, 0, mode);
+    let vmax = 0; for (let k = 0; k < 240 * 20; k++) { s.fixedStep(SIM.PHYS_DT); vmax = Math.max(vmax, s.cars[0].speed); }
+    assert.ok(vmax > 60, mode + ': racing speed after the incident ' + (vmax * 3.6).toFixed(0) + ' km/h');
+    assert.equal(s.vsc, undefined);
   }
-  const gp = new SIM.Session(tracks.get('summit'), { type: 'race', seed: 3, weather: 'dynamic', entries: SIM.DRIVERS.map(driver => ({ driver })) });
-  gp.lightsOut = true; gp.time = 30; gp.order = gp.cars;
-  assert.equal(gp.vscCanDeploy(), true);
 });
 
 test('real races on every circuit: legitimate completion decides; Pursuit is won only by finishing ahead', () => {

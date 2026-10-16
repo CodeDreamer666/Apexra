@@ -121,12 +121,11 @@ for (const track of tracks) for (const mode of modes) {
       -Math.cos(c.psi), -Math.sin(c.psi), -20, 2, 200, 400);
     S.time += .2; S.resolveContacts();
     assert.ok(S.stats.collisions > 0); assert.ok(c.damage.severity() > 0 || o.damage.severity() > 0);
-    // Actual blue-flag detection remains active for a car one lap behind.
+    // a car a lap down is recognised as lapped (no blue flags: it simply races on)
     c.placeAt(t, 150, 0, 45); o.placeAt(t, 135, 0, 50);
     c.speed = 45; o.speed = 50; c.totalDist = t.length + 150; o.totalDist = 2 * t.length + 135;
     c.laps = 1; o.laps = 2; c.retiring = o.retiring = null; c.dnf = o.dnf = false;
-    S.vsc.phase = 'idle';
-    S.updateBlueFlags(.1); assert.equal(c.blueFlag.target, o);
+    assert.equal(S.isLapping(c, o, -15), true); assert.equal('blueFlag' in c, false);
     o.speed = 0; o.input.brake = 1;
     S.slowUpdate(); assert.ok(S.yellow.some(x => x > 0), 'stopped car produces yellow flags');
     assert.ok(S.messages.every(msg => !/penalty|second dry|compound rule/i.test(msg.text)));
@@ -141,7 +140,7 @@ for (const track of tracks) for (const gameMode of ['duel', 'pursuit']) {
       entries: SIM.DRIVERS.slice(0, 2).map((driver, i) => ({ driver, isPlayer: i === 0 })), mandatory: true });
     const [a, b] = S.cars;
     for (const c of S.cars) prohibitPenaltyReads(c);
-    assert.equal(S.pitsEnabled, false); assert.equal(S.vscEnabled, false);
+    assert.equal(S.pitsEnabled, false);
     // the gate does nothing: no pit stop is possible
     const p = track.pit; a.placeAt(track, track.wrapS(p.entry0 + p.commitQ + 5), p.side * (track.halfW + 1), 25);
     S.pitLogic(a, SIM.PHYS_DT); assert.equal(a.pit, null);

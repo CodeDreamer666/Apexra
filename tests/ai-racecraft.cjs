@@ -110,7 +110,7 @@ let raceStats = null;
 // two 2-lap races with the full field (Summit and Redridge), instrumented
 function fieldRace() {
   if (raceStats) return raceStats;
-  const R = { overlapT: 0, tightT: 0, defendTicks: 0, weave: 0, defCorners: 0, planMs: 0, plans: 0, lineSep: [], vscAttack: 0,
+  const R = { overlapT: 0, tightT: 0, defendTicks: 0, weave: 0, defCorners: 0, planMs: 0, plans: 0, lineSep: [],
     kinds: {}, attempts: 0, passes: 0, aborts: 0, switchbacks: 0, reasons: [], overtakes: 0, collisions: 0, mistakes: 0, dnf: 0, over: true };
   const P = SIM.AIDriver.prototype, plan = P.planTrajectory;
   P.planTrajectory = function () { const t0 = process.hrtime.bigint(); plan.call(this); R.planMs += Number(process.hrtime.bigint() - t0) / 1e6; R.plans++; };
@@ -132,7 +132,6 @@ function fieldRace() {
       }
       for (const c of s.cars) if (c.ai) {
         if (c.ai.state === 'defend') { R.defendTicks++; const key = c.id + ':' + c.ai.defCorner + ':' + c.laps; defMax.set(key, Math.max(defMax.get(key) || 0, c.ai.defMoves)); }
-        if (s.vscActive && c.ai.state === 'attack') R.vscAttack++;
       }
     }
     for (const v of defMax.values()) { R.defCorners++; if (v > 1) R.weave++; }
@@ -152,7 +151,6 @@ test('20-car races: drivers attack with different moves, complete some, abort ot
   assert.ok(R.passes >= 1, 'moves completed: ' + R.passes);
   assert.ok(R.aborts >= 1 && R.reasons.length >= 1, 'moves called off with a reason: ' + R.reasons.slice(0, 4).join(' | '));
   assert.ok(R.overtakes >= 4, 'overtakes ' + R.overtakes);
-  assert.equal(R.vscAttack, 0, 'no attacking under the VSC');
 });
 
 test('20-car races: racing room, no weaving, believable mistakes, cheap planning', () => {
@@ -314,16 +312,19 @@ test('an AI driver run off the track at speed recovers and rejoins without a res
   }
 });
 
-test('no attacking or defending under the VSC or a yellow flag; blue flags and pit moves keep their own rules', () => {
+test('no attacking or defending under a yellow flag; pit moves keep their own rules; no VSC or blue flags exist', () => {
   const s = session('summit', SIM.DRIVERS.slice(0, 3).map(driver => ({ driver })), { tyreWear: 'normal' }); racing(s);
   const [a, b, c] = s.cars; place(s, a, 600, 60); place(s, b, 588, 62); place(s, c, 578, 62);
-  s.vsc.phase = 'deployed'; // race control's VSC
+  s.yellow.fill(5); // marshals' yellow flags everywhere
   for (const car of s.cars) { car.ai.conviction = 2; car.ai.tactical(0.1); }
   for (const car of s.cars) { assert.notEqual(car.ai.state, 'attack'); assert.notEqual(car.ai.state, 'defend'); assert.notEqual(car.ai.state, 'prepare'); }
-  s.vsc.phase = 'idle';
+  s.yellow.fill(0);
   // a car heading for the pit lane follows the pit route, not a racing plan
   b.ai.pitting = true; b.ai.pitEntryBlend = 1;
   const t = s.track; assert.equal(b.ai.dPlanAt(t.wrapI(b.idx + 5)), t.pitTargetD(t.wrapI(b.idx + 5) * DS, null));
+  // nothing of the Virtual Safety Car or blue flags is left
+  for (const k of ['vsc', 'vscActive', 'vscControls', 'updateBlueFlags', 'blueEligible']) assert.equal(s[k], undefined, k);
+  assert.equal(SIM.VSC, undefined); assert.equal('blueFlag' in a, false); assert.equal('blueYield' in a.ai, false);
 });
 
 test('higher Career tiers and ranks judge better (prediction, evaluation, execution), with the same car and physics', () => {
