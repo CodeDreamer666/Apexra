@@ -133,7 +133,7 @@ test('no artificial catch-up: the rival\'s AI, tyres and physics are the shared 
 
 test('a race-ending crash does not neutralise the race: the other car races on at full speed', () => {
   for (const mode of ['duel', 'pursuit']) {
-    const s = session('summit', mode);
+    const s = session('summit', mode, { entries: [{ driver: SIM.DRIVERS[0] }, { driver: SIM.DRIVERS[1] }] }); // both AI-driven: the survivor must race on
     while (!s.lightsOut || s.time - s.lightsOutTime < 20) s.fixedStep(SIM.PHYS_DT);
     s.startRetirement(s.cars[1], 'Accident damage');
     let vmax = 0; for (let k = 0; k < 240 * 20; k++) { s.fixedStep(SIM.PHYS_DT); vmax = Math.max(vmax, s.cars[0].speed); }
