@@ -94,5 +94,5 @@ for (const f of FUELS) {
     corner150: cornering(f, 150 / 3.6), corner250: cornering(f, 250 / 3.6), top: topSpeed(f) * 3.6,
   };
 }
-out.rig.elimination = { accel0to200_9: accelTime(9, 0.5, 200 / 3.6, false), accel0to200_23: accelTime(23, 0.5, 200 / 3.6, false) };
+out.rig.noFuelManagement = { accel0to200_9: accelTime(9, 0.5, 200 / 3.6, false), accel0to200_23: accelTime(23, 0.5, 200 / 3.6, false) };
 console.log(JSON.stringify(out, (k, v) => typeof v === 'number' ? +v.toFixed(3) : v, 2));

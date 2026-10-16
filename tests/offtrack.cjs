@@ -256,23 +256,21 @@ test('cutting a corner across the inside is slower than driving it, without any 
   assert.equal(cut.car.laps, 3); assert.ok(cut.car.finished && !cut.car.dnf);
 });
 
-test('qualifying: leaving the track deletes nothing, and the lap only ends once a full lap has been earned', () => {
+test('Rival Duel: leaving the track deletes nothing, and a lap only counts once a full lap has been earned', () => {
   const t = tracks.get('summit');
-  const S = new SIM.Session(t, { type: 'quali', entries: SIM.DRIVERS.slice(0, 2).map(driver => ({ driver })), seed: 4, spectate: true, weather: 'dynamic', weatherState: DRY(1) });
-  let flying = null, offFlying = 0;
-  while (!S.over && S.time < 600) {
+  const S = new SIM.Session(t, { type: 'race', gameMode: 'duel', entries: SIM.DRIVERS.slice(0, 2).map(driver => ({ driver })), seed: 4, weather: 'dynamic' });
+  let shoved = null, off = 0;
+  while (!S.over && S.time < 420) {
     S.fixedStep(dt);
-    for (const c of S.cars) {
-      if (c.q.phase === 'flying') {
-        // shove the first car onto the grass in the middle of its flying lap
-        if (!flying && c.q.distance > 2500) { flying = c; c.placeAt(t, c.s, t.pit.side * -(t.halfW + 4), c.speed); }
-        if (c === flying && c.offN === 4) offFlying++;
-      }
-    }
+    const c = S.cars[0];
+    // shove the first car onto the grass in the middle of its first lap
+    if (!shoved && S.lightsOut && c.totalDist > 2500) { shoved = c; c.placeAt(t, c.s, t.pit.side * -(t.halfW + 4), c.speed); }
+    if (c === shoved && c.offN === 4) off++;
   }
-  assert.ok(flying && offFlying > 0, 'a flying lap went off the track');
-  assert.equal(flying.q.result, 'valid', 'lap kept: ' + flying.q.reason);
-  assert.ok(flying.q.distance >= t.length, 'a full lap was earned');
+  assert.ok(shoved && off > 0, 'a car went off the track');
+  assert.ok(S.over && shoved.finished && shoved.laps === 2, 'it still finished both laps');
+  assert.ok(shoved.lapTimes.every(l => l.valid), 'no lap deleted');
+  assert.ok(shoved.totalDist >= 2 * t.length, 'the full distance was earned');
   assert.ok(!S.messages.some(m => /TRACK LIMITS|DELETED|INVALID/i.test(m.text)));
 });
 

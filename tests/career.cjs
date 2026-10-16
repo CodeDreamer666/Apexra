@@ -27,10 +27,10 @@ function play(st, tier, team, orders) {
 // the player (driver `team`) finishing in `pos` in all three races, the others in number order
 function finishing(team, pos) { const rest = ids(20).filter(d => d !== team); rest.splice(pos - 1, 0, team); return rest; }
 
-test('eight tiers with the exact names, AI levels and championship targets', () => {
+test('five tiers with the exact names, AI levels and championship targets', () => {
   assert.deepEqual(C.TIERS.map(t => [t.name, t.level, t.target]), [
-    ['Rookie', 1.00, 12], ['Amateur', 1.10, 10], ['Challenger', 1.20, 8], ['Contender', 1.30, 6],
-    ['Pro', 1.40, 5], ['Elite', 1.50, 4], ['Master', 1.60, 3], ['Legendary', 1.75, 1]]);
+    ['Rookie', 1.00, 12], ['Pro', 1.25, 8], ['Elite', 1.60, 6], ['Master', 2.20, 4], ['Legendary', 3.00, 1]]);
+  assert.equal(C.MAX_LEVEL, 3); assert.equal(SIM.AI_MAX_LEVEL, 3);
   assert.deepEqual(C.CIRCUITS, ['summit', 'rivermere', 'redridge']);
   assert.deepEqual(C.CIRCUITS.map(id => SIM.circuitById(id).name), ['Summit Grand Circuit', 'Rivermere Grand Prix', 'Redridge International Circuit']);
 });
@@ -112,7 +112,8 @@ test('standings tiebreakers: wins, then seconds, thirds and so on, then the late
 });
 
 test('advancement depends on the final championship position for every tier, decided only after race 3', () => {
-  for (let tier = 0; tier < 8; tier++) {
+  const last = C.TIERS.length - 1;
+  for (let tier = 0; tier <= last; tier++) {
     const target = C.TIERS[tier].target;
     for (const pos of [target, target + 1]) {
       const st = C.create(); st.unlocked = tier; const team = 9;
@@ -125,9 +126,9 @@ test('advancement depends on the final championship position for every tier, dec
           assert.equal(out.status.rank, pos);
           assert.equal(out.status.success, pos <= target, C.TIERS[tier].name + ' P' + pos);
           assert.equal(st.completed.includes(tier), pos <= target);
-          assert.equal(st.unlocked, pos <= target ? Math.min(7, tier + 1) : tier);
-          assert.equal(st.champion, tier === 7 && pos === 1);
-          assert.equal(out.unlockedNow, pos <= target && tier < 7);
+          assert.equal(st.unlocked, pos <= target ? Math.min(last, tier + 1) : tier);
+          assert.equal(st.champion, tier === last && pos === 1);
+          assert.equal(out.unlockedNow, pos <= target && tier < last);
         }
       }
     }
@@ -139,10 +140,10 @@ test('failing replays the tier from race 1 with fresh points; unlocked tiers and
   play(st, 0, 3, [finishing(3, 1), finishing(3, 1), finishing(3, 1)]);
   play(st, 1, 3, [finishing(3, 2), finishing(3, 2), finishing(3, 2)]);
   assert.equal(st.unlocked, 2); assert.deepEqual(st.completed, [0, 1]);
-  // Challenger missed (P9 of Top 8)
-  const fail = play(st, 2, 3, [finishing(3, 9), finishing(3, 9), finishing(3, 9)]);
-  assert.equal(fail.status.success, false); assert.equal(fail.status.rank, 9);
-  assert.equal(st.unlocked, 2); assert.deepEqual(st.completed, [0, 1]); assert.equal(st.best[2], 9);
+  // Elite missed (P7 of Top 6)
+  const fail = play(st, 2, 3, [finishing(3, 7), finishing(3, 7), finishing(3, 7)]);
+  assert.equal(fail.status.success, false); assert.equal(fail.status.rank, 7);
+  assert.equal(st.unlocked, 2); assert.deepEqual(st.completed, [0, 1]); assert.equal(st.best[2], 7);
   // replay: race 1 again, no points carried over, attempt counted
   assert.ok(C.start(st, 2, 3));
   assert.equal(st.active.races.length, 0); assert.equal(st.active.attempt, 2);
@@ -153,16 +154,16 @@ test('failing replays the tier from race 1 with fresh points; unlocked tiers and
 });
 
 test('Legendary needs P1 overall: P2 is not enough, the title completes the career for good', () => {
-  const st = C.create(); st.unlocked = 7;
-  const p2 = play(st, 7, 0, [finishing(0, 2), finishing(0, 2), finishing(0, 2)]);
+  const st = C.create(); st.unlocked = 4;
+  const p2 = play(st, 4, 0, [finishing(0, 2), finishing(0, 2), finishing(0, 2)]);
   assert.equal(p2.status.success, false); assert.equal(st.champion, false);
   // P1 overall without winning every race: two wins and a second (70) beat a rival with two seconds and a win (65)
   const r1 = finishing(0, 1), r2 = finishing(0, 1), r3 = finishing(0, 2);
-  const won = play(st, 7, 0, [r1, r2, r3]);
+  const won = play(st, 4, 0, [r1, r2, r3]);
   assert.equal(won.status.rank, 1); assert.equal(won.status.success, true); assert.equal(st.champion, true);
-  assert.ok(st.completed.includes(7)); assert.equal(st.unlocked, 7);
+  assert.ok(st.completed.includes(4)); assert.equal(st.unlocked, 4);
   // a later failed Legendary replay does not take the title away
-  play(st, 7, 0, [finishing(0, 20), finishing(0, 20), finishing(0, 20)]);
+  play(st, 4, 0, [finishing(0, 20), finishing(0, 20), finishing(0, 20)]);
   assert.equal(st.champion, true);
   const saved = C.load(JSON.parse(JSON.stringify(st)));
   assert.equal(saved.champion, true);
@@ -196,7 +197,7 @@ test('saves: round trip, and missing, outdated, partial or corrupted data never 
   C.start(st, 1, 2); C.record(st, { tier: 1, team: 2, race: 0, id: 'q' }, race(finishing(2, 5)));
   const round = C.load(JSON.parse(JSON.stringify(st)));
   assert.deepEqual(round, st);
-  for (const bad of [null, undefined, 42, 'x', [], {}, { v: 2 }, { v: 0, unlocked: 7 }]) {
+  for (const bad of [null, undefined, 42, 'x', [], {}, { v: 3 }, { v: 0, unlocked: 4 }, { v: 1 }, { v: 2 }]) {
     const out = C.load(bad); assert.equal(out.unlocked, 0); assert.equal(out.active, null); assert.equal(out.champion, false);
   }
   const mutate = (fn) => { const raw = JSON.parse(JSON.stringify(st)); fn(raw); return C.load(raw); };
@@ -208,7 +209,7 @@ test('saves: round trip, and missing, outdated, partial or corrupted data never 
     r => { r.active.races[0].results[0].d = 99; },
     r => { r.active.races[0].id = 5; },
     r => { r.active.team = 25; },
-    r => { r.active.tier = 5; },                             // not unlocked
+    r => { r.active.tier = 3; },                             // not unlocked
     r => { r.active.races = [r.active.races[0], r.active.races[0], r.active.races[0], r.active.races[0]]; },
     r => { r.active.races.push(JSON.parse(JSON.stringify(r.active.races[0]))); r.active.races[1].circuit = 'rivermere'; }, // same id twice
     r => { r.active = 'nonsense'; },
@@ -221,7 +222,89 @@ test('saves: round trip, and missing, outdated, partial or corrupted data never 
   assert.equal(mutate(r => { r.unlocked = 0; }).unlocked, 1, 'a completed tier keeps the next one unlocked');
   assert.equal(mutate(r => { r.unlocked = 99; }).unlocked, 1);
   assert.deepEqual(mutate(r => { r.completed = [0, 0, 'x', 12]; }).completed, [0]);
-  assert.deepEqual(mutate(r => { r.best = 'x'; }).best, new Array(8).fill(0));
+  assert.deepEqual(mutate(r => { r.best = 'x'; }).best, new Array(5).fill(0));
+  // a staged result that does not fit (wrong race, already counted, broken) is dropped; the championship stays
+  const staged = mutate(r => { r.active.pending = { circuit: 'rivermere', id: 'p', results: race(ids(20)) }; });
+  assert.equal(staged.active.pending.id, 'p');
+  assert.equal(mutate(r => { r.active.pending = { circuit: 'summit', id: 'p', results: race(ids(20)) }; }).active.pending, null, 'wrong circuit');
+  assert.equal(mutate(r => { r.active.pending = { circuit: 'rivermere', id: 'q', results: race(ids(20)) }; }).active.pending, null, 'id already counted');
+  assert.equal(mutate(r => { r.active.pending = { circuit: 'rivermere', id: 'p', results: race(ids(19)) }; }).active.pending, null, 'broken');
+  assert.equal(mutate(r => { r.active.pending = { circuit: 'rivermere', id: 'p', results: race(ids(19)) }; }).active.races.length, 1);
+});
+
+test('retrying a race: staged results count only when accepted, exactly once, and a retry restores the pre-race state', () => {
+  const st = C.create(), team = 6;
+  play(st, 0, team, [finishing(team, 1), finishing(team, 1), finishing(team, 1)]); // Rookie won: Pro unlocked
+  assert.ok(C.start(st, 1, team));
+  assert.ok(C.record(st, { tier: 1, team, race: 0, id: 'r0' }, race(finishing(team, 3))).ok);
+  const before = JSON.stringify(st);
+  // race 2 finished P15: staged, nothing counted yet
+  const bad = C.stage(st, { tier: 1, team, race: 1, id: 'try-1' }, race(finishing(team, 15)));
+  assert.ok(bad.ok); assert.equal(C.status(st).points, 16, 'the staged race is not counted'); assert.equal(C.status(st).pendingRace, 1);
+  assert.equal(bad.preview.points, 16 + 1, 'the preview shows the total if accepted');
+  // retry: the staged result is discarded, the championship is exactly as it was before race 2
+  assert.ok(C.discard(st));
+  assert.equal(st.active.pending, null); assert.equal(JSON.stringify(st), before);
+  // the retried race (a new session id) is staged and accepted: counted once
+  assert.ok(C.stage(st, { tier: 1, team, race: 1, id: 'try-2' }, race(finishing(team, 2))).ok);
+  const acc = C.accept(st);
+  assert.ok(acc.ok); assert.equal(C.status(st).points, 16 + 20); assert.equal(st.active.races.length, 2);
+  assert.equal(st.active.races[0].id, 'r0', 'earlier race untouched'); assert.equal(C.status(st).pendingRace, null);
+  // accepting again, re-staging the accepted session or the discarded one, or staging race 2 again changes nothing
+  const snap = JSON.stringify(st);
+  assert.equal(C.accept(st).ok, false);
+  assert.equal(C.stage(st, { tier: 1, team, race: 1, id: 'try-2' }, race(finishing(team, 1))).ok, false);
+  assert.equal(C.stage(st, { tier: 1, team, race: 2, id: 'try-2' }, race(finishing(team, 1))).reason, 'duplicate');
+  assert.equal(JSON.stringify(st), snap);
+  // a staged result survives a refresh, and is then accepted or retried from the saved state
+  assert.ok(C.stage(st, { tier: 1, team, race: 2, id: 'last' }, race(finishing(team, 1))).ok);
+  const loaded = C.load(JSON.parse(JSON.stringify(st)));
+  assert.equal(loaded.active.pending.id, 'last'); assert.equal(C.status(loaded).complete, false);
+  const fin = C.accept(loaded);
+  assert.ok(fin.ok && fin.status.complete && fin.status.success && fin.unlockedNow); assert.equal(loaded.unlocked, 2);
+  // the finalized championship cannot be changed: no more staging, accepting or recording
+  const done = JSON.stringify(loaded);
+  assert.equal(C.stage(loaded, { tier: 1, team, race: 3, id: 'x' }, race(finishing(team, 1))).ok, false);
+  assert.equal(C.stage(loaded, { tier: 1, team, race: 2, id: 'y' }, race(finishing(team, 20))).ok, false);
+  assert.equal(C.discard(loaded), false); assert.equal(C.accept(loaded).ok, false);
+  assert.equal(JSON.stringify(loaded), done);
+  // the tier's difficulty is the tier's, attempt after attempt
+  assert.equal(C.TIERS[loaded.active.tier].level, 1.25);
+});
+
+test('eight-tier saves migrate safely: no tier indices carried over, no Master or Legendary awarded, unmappable progress kept', () => {
+  const V1 = C.V1_TIERS, old = (o) => ({ v: 1, unlocked: 0, completed: [], best: new Array(8).fill(0), champion: false, active: null, ...o });
+  // everything completed in the old Career, including its 175% Legendary title
+  let st = C.load(old({ unlocked: 7, completed: [0, 1, 2, 3, 4, 5, 6, 7], best: [1, 1, 2, 3, 3, 2, 2, 1], champion: true }));
+  assert.equal(st.v, 2); assert.deepEqual(st.completed, [0, 1, 2], 'Rookie, Pro and Elite only'); assert.equal(st.unlocked, 3, 'Master unlocked to play');
+  assert.equal(st.champion, false, 'the old title is not the 300% Legendary'); assert.equal(st.best[0], 1); assert.deepEqual(st.best.slice(1), [0, 0, 0, 0]);
+  assert.equal(st.legacy.champion, true); assert.deepEqual(st.legacy.completed, V1.map(t => t.name)); assert.equal(st.legacy.best.legendary, 1);
+  // each new tier is granted only by an old one at least as hard on both counts
+  const grant = (completed) => C.load(old({ completed, unlocked: Math.min(7, Math.max(...completed, -1) + 1) })).completed;
+  assert.deepEqual(grant([0]), [0]);
+  assert.deepEqual(grant([0, 1, 2]), [0], 'Amateur 110%/Top 10 and Challenger 120%/Top 8 are easier than Pro 125%/Top 8');
+  assert.deepEqual(grant([0, 1, 2, 3]), [0, 1], 'Contender 130%/Top 6 covers Pro');
+  assert.deepEqual(grant([0, 1, 2, 3, 4, 5]), [0, 1], 'Elite 160%/Top 6 needs an old tier at 160%');
+  assert.deepEqual(grant([0, 1, 2, 3, 4, 5, 6]), [0, 1, 2], 'old Master 160%/Top 3 covers Elite');
+  for (const k of grant([0, 1, 2, 3, 4, 5, 6, 7])) assert.ok(V1.some(o => o.level >= C.TIERS[k].level && o.target <= C.TIERS[k].target), C.TIERS[k].name);
+  // an unfinished old Rookie championship is the same championship: it continues
+  const rookieRace = { circuit: 'summit', id: 'old-r', results: race(ids(20)) };
+  st = C.load(old({ active: { tier: 0, team: 3, attempt: 2, races: [rookieRace], points: [] } }));
+  assert.ok(st.active && st.active.tier === 0 && st.active.team === 3 && st.active.races.length === 1);
+  assert.equal(C.status(st).points, C.points(4, false)); assert.equal(st.legacy.note, '');
+  // any other unfinished championship cannot be mapped: kept untouched in legacy, with an explanation, never continued
+  const proRace = { circuit: 'summit', id: 'old-p', results: race(ids(20)) };
+  st = C.load(old({ unlocked: 5, completed: [0, 1, 2, 3, 4], active: { tier: 5, team: 1, attempt: 1, races: [proRace] } }));
+  assert.equal(st.active, null); assert.deepEqual(st.legacy.active.races[0], proRace);
+  assert.match(st.legacy.note, /Elite championship \(150% AI/);
+  assert.deepEqual(st.completed, [0, 1]); assert.equal(st.unlocked, 2);
+  // the migrated save is a valid v2 save that round-trips with its legacy record
+  const again = C.load(JSON.parse(JSON.stringify(st)));
+  assert.deepEqual(again, st);
+  // malformed v1 data never crashes or grants anything
+  for (const bad of [{ v: 1, completed: 'x' }, { v: 1, completed: [99, -1, 'a'] }, { v: 1, active: { tier: 9 } }, { v: 1, best: null }]) {
+    const out = C.load(bad); assert.deepEqual(out.completed, []); assert.equal(out.unlocked, 0); assert.equal(out.champion, false);
+  }
 });
 
 /* ---------------- the AI behind the tiers ---------------- */
@@ -283,7 +366,7 @@ test('each tier sharpens the AI driver, never the car: judgement up, physics and
   }
   assert.equal(JSON.stringify({ spec: S.SPEC, handling: S.HANDLING, compounds: S.COMPOUNDS, refuel: S.REFUEL, repair: S.REPAIR_TIME, teams: S.TEAMS, slip: S.SLIPSTREAM, off: S.OFF_TRACK }), physics);
   // the same controls give the same motion whatever the tier: one physics model for everyone
-  const r = session(S, { aiLevel: 1 }), l = session(S, { aiLevel: 1.75 });
+  const r = session(S, { aiLevel: 1 }), l = session(S, { aiLevel: 3 });
   const cr = r.cars[5], cl = l.cars[5];
   // same state (the tiers' own fuel and tyre choices differ, so set them equal), then the same inputs
   for (const [s, c] of [[r, cr], [l, cl]]) { s.fitTyres(c, 'H', 90); c.fuel = 15; c.placeAt(r.track, 400, 0, 30); c.speed = c.u = 30; }

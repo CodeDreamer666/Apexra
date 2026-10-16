@@ -32,36 +32,6 @@ Circuit selection
 
 ![Circuit selection](005-menu-circuit-select.jpg)
 
-### 006-summit-quali-garage
-
-Qualifying: waiting in the pit lane (W to leave)
-
-![Qualifying: waiting in the pit lane (W to leave)](006-summit-quali-garage.jpg)
-
-### 007-summit-quali-outlap
-
-Qualifying: untimed out-lap
-
-![Qualifying: untimed out-lap](007-summit-quali-outlap.jpg)
-
-### 008-summit-quali-flying
-
-Qualifying: flying lap with sector times
-
-![Qualifying: flying lap with sector times](008-summit-quali-flying.jpg)
-
-### 009-summit-pause-quali
-
-Pause menu during qualifying (with forfeit option)
-
-![Pause menu during qualifying (with forfeit option)](009-summit-pause-quali.jpg)
-
-### 010-summit-quali-results
-
-Qualifying results
-
-![Qualifying results](010-summit-quali-results.jpg)
-
 ### 011-summit-race-brief
 
 Race start brief: starting tyre and fuel
@@ -224,47 +194,11 @@ Pit exit: control returns, stop summary
 
 ![Pit exit: control returns, stop summary](039-summit-pit-exit.jpg)
 
-### 040-summit-vsc-deployed
-
-Virtual Safety Car deployed (ok)
-
-![Virtual Safety Car deployed (ok)](040-summit-vsc-deployed.jpg)
-
-### 041-summit-vsc-active
-
-VSC running: race control drives the car in the queue
-
-![VSC running: race control drives the car in the queue](041-summit-vsc-active.jpg)
-
-### 042-summit-vsc-cockpit
-
-VSC from the cockpit
-
-![VSC from the cockpit](042-summit-vsc-cockpit.jpg)
-
-### 043-summit-vsc-ending
-
-VSC ending: five-second countdown
-
-![VSC ending: five-second countdown](043-summit-vsc-ending.jpg)
-
-### 044-summit-vsc-green
-
-Green flag after the VSC
-
-![Green flag after the VSC](044-summit-vsc-green.jpg)
-
 ### 045-summit-flag-yellow
 
 Yellow flag in the sector
 
 ![Yellow flag in the sector](045-summit-flag-yellow.jpg)
-
-### 046-summit-flag-blue
-
-Blue flag: a lapping car behind
-
-![Blue flag: a lapping car behind](046-summit-flag-blue.jpg)
 
 ### 047-summit-damage-impact
 
@@ -331,18 +265,6 @@ Retired: watching the race (←/→ change car)
 Circuit selection: rivermere
 
 ![Circuit selection: rivermere](057-rivermere-circuit-select.jpg)
-
-### 058-rivermere-quali-garage
-
-Qualifying: waiting in the pit lane (W to leave)
-
-![Qualifying: waiting in the pit lane (W to leave)](058-rivermere-quali-garage.jpg)
-
-### 059-rivermere-quali-results
-
-Qualifying results
-
-![Qualifying results](059-rivermere-quali-results.jpg)
 
 ### 060-rivermere-race-brief
 
@@ -422,30 +344,6 @@ Pit exit: control returns, stop summary
 
 ![Pit exit: control returns, stop summary](072-rivermere-pit-exit.jpg)
 
-### 073-rivermere-vsc-deployed
-
-Virtual Safety Car deployed (ok)
-
-![Virtual Safety Car deployed (ok)](073-rivermere-vsc-deployed.jpg)
-
-### 074-rivermere-vsc-active
-
-VSC running: race control drives the car in the queue
-
-![VSC running: race control drives the car in the queue](074-rivermere-vsc-active.jpg)
-
-### 075-rivermere-vsc-ending
-
-VSC ending: five-second countdown
-
-![VSC ending: five-second countdown](075-rivermere-vsc-ending.jpg)
-
-### 076-rivermere-vsc-green
-
-Green flag after the VSC
-
-![Green flag after the VSC](076-rivermere-vsc-green.jpg)
-
 ### 077-rivermere-race-results
 
 Race results
@@ -457,18 +355,6 @@ Race results
 Circuit selection: redridge
 
 ![Circuit selection: redridge](078-redridge-circuit-select.jpg)
-
-### 079-redridge-quali-garage
-
-Qualifying: waiting in the pit lane (W to leave)
-
-![Qualifying: waiting in the pit lane (W to leave)](079-redridge-quali-garage.jpg)
-
-### 080-redridge-quali-results
-
-Qualifying results
-
-![Qualifying results](080-redridge-quali-results.jpg)
 
 ### 081-redridge-race-brief
 
@@ -547,30 +433,6 @@ Service complete: release / leaving the box
 Pit exit: control returns, stop summary
 
 ![Pit exit: control returns, stop summary](093-redridge-pit-exit.jpg)
-
-### 094-redridge-vsc-deployed
-
-Virtual Safety Car deployed (ok)
-
-![Virtual Safety Car deployed (ok)](094-redridge-vsc-deployed.jpg)
-
-### 095-redridge-vsc-active
-
-VSC running: race control drives the car in the queue
-
-![VSC running: race control drives the car in the queue](095-redridge-vsc-active.jpg)
-
-### 096-redridge-vsc-ending
-
-VSC ending: five-second countdown
-
-![VSC ending: five-second countdown](096-redridge-vsc-ending.jpg)
-
-### 097-redridge-vsc-green
-
-Green flag after the VSC
-
-![Green flag after the VSC](097-redridge-vsc-green.jpg)
 
 ### 098-redridge-race-results
 

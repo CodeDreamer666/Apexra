@@ -110,7 +110,7 @@ let raceStats = null;
 // two 2-lap races with the full field (Summit and Redridge), instrumented
 function fieldRace() {
   if (raceStats) return raceStats;
-  const R = { overlapT: 0, tightT: 0, defendTicks: 0, weave: 0, defCorners: 0, planMs: 0, plans: 0, lineSep: [], vscAttack: 0,
+  const R = { overlapT: 0, tightT: 0, defendTicks: 0, weave: 0, defCorners: 0, planMs: 0, plans: 0, lineSep: [],
     kinds: {}, attempts: 0, passes: 0, aborts: 0, switchbacks: 0, reasons: [], overtakes: 0, collisions: 0, mistakes: 0, dnf: 0, over: true };
   const P = SIM.AIDriver.prototype, plan = P.planTrajectory;
   P.planTrajectory = function () { const t0 = process.hrtime.bigint(); plan.call(this); R.planMs += Number(process.hrtime.bigint() - t0) / 1e6; R.plans++; };
@@ -132,7 +132,6 @@ function fieldRace() {
       }
       for (const c of s.cars) if (c.ai) {
         if (c.ai.state === 'defend') { R.defendTicks++; const key = c.id + ':' + c.ai.defCorner + ':' + c.laps; defMax.set(key, Math.max(defMax.get(key) || 0, c.ai.defMoves)); }
-        if (s.vscActive && c.ai.state === 'attack') R.vscAttack++;
       }
     }
     for (const v of defMax.values()) { R.defCorners++; if (v > 1) R.weave++; }
@@ -152,7 +151,6 @@ test('20-car races: drivers attack with different moves, complete some, abort ot
   assert.ok(R.passes >= 1, 'moves completed: ' + R.passes);
   assert.ok(R.aborts >= 1 && R.reasons.length >= 1, 'moves called off with a reason: ' + R.reasons.slice(0, 4).join(' | '));
   assert.ok(R.overtakes >= 4, 'overtakes ' + R.overtakes);
-  assert.equal(R.vscAttack, 0, 'no attacking under the VSC');
 });
 
 test('20-car races: racing room, no weaving, believable mistakes, cheap planning', () => {
@@ -267,8 +265,10 @@ test('personalities: the same opportunity, judged by different temperaments', ()
   assert.ok(A('Team E').mind.predict > A('Team S').mind.predict, 'better racecraft reads rivals further ahead');
   assert.ok(A('Team E').mind.apexSd < A('Team M').mind.apexSd, 'consistency tightens execution');
   // the traits persist: the same driver gets the same mind in every session and mode
-  const a2 = session('summit', SIM.DRIVERS.map(driver => ({ driver }))), b2 = session('redridge', SIM.DRIVERS.map(driver => ({ driver })), { gameMode: 'elimination' });
+  const a2 = session('summit', SIM.DRIVERS.map(driver => ({ driver }))), b2 = session('redridge', SIM.DRIVERS.map(driver => ({ driver })));
   for (let k = 0; k < 20; k++) assert.deepEqual(a2.cars[k].ai.mind, b2.cars[k].ai.mind);
+  const d2 = session('rivermere', SIM.DRIVERS.slice(4, 6).map(driver => ({ driver })), { gameMode: 'duel' });
+  for (let k = 0; k < 2; k++) assert.deepEqual(d2.cars[k].ai.mind, a2.cars[4 + k].ai.mind, 'Rival Duel keeps the same mind');
   const traits = new Set(SIM.DRIVERS.map(d => [d.aggr, d.patience, d.risk, d.craft, d.adapt, d.cons].join()));
   assert.equal(traits.size, 20, 'twenty distinct personalities');
 });
@@ -312,19 +312,22 @@ test('an AI driver run off the track at speed recovers and rejoins without a res
   }
 });
 
-test('no attacking or defending under the VSC or a yellow flag; blue flags and pit moves keep their own rules', () => {
+test('no attacking or defending under a yellow flag; pit moves keep their own rules; no VSC or blue flags exist', () => {
   const s = session('summit', SIM.DRIVERS.slice(0, 3).map(driver => ({ driver })), { tyreWear: 'normal' }); racing(s);
   const [a, b, c] = s.cars; place(s, a, 600, 60); place(s, b, 588, 62); place(s, c, 578, 62);
-  s.vsc.phase = 'deployed'; // race control's VSC
+  s.yellow.fill(5); // marshals' yellow flags everywhere
   for (const car of s.cars) { car.ai.conviction = 2; car.ai.tactical(0.1); }
   for (const car of s.cars) { assert.notEqual(car.ai.state, 'attack'); assert.notEqual(car.ai.state, 'defend'); assert.notEqual(car.ai.state, 'prepare'); }
-  s.vsc.phase = 'idle';
+  s.yellow.fill(0);
   // a car heading for the pit lane follows the pit route, not a racing plan
   b.ai.pitting = true; b.ai.pitEntryBlend = 1;
   const t = s.track; assert.equal(b.ai.dPlanAt(t.wrapI(b.idx + 5)), t.pitTargetD(t.wrapI(b.idx + 5) * DS, null));
+  // nothing of the Virtual Safety Car or blue flags is left
+  for (const k of ['vsc', 'vscActive', 'vscControls', 'updateBlueFlags', 'blueEligible']) assert.equal(s[k], undefined, k);
+  assert.equal(SIM.VSC, undefined); assert.equal('blueFlag' in a, false); assert.equal('blueYield' in a.ai, false);
 });
 
-test('higher Career tiers judge better (prediction, evaluation, execution), with the same car and physics', () => {
+test('higher Career tiers and ranks judge better (prediction, evaluation, execution), with the same car and physics', () => {
   let prev = null;
   for (const tier of SIM.CAREER.TIERS) {
     const s = session('summit', SIM.DRIVERS.map(driver => ({ driver })), { aiLevel: tier.level });
@@ -336,23 +339,33 @@ test('higher Career tiers judge better (prediction, evaluation, execution), with
     prev = now;
     for (const c of s.cars) { assert.equal(c.ai.mind.aggr, c.driver.aggr); assert.equal(c.ai.mind.patience, c.driver.patience); assert.equal(c.ai.mind.risk, c.driver.risk); }
   }
+  // the eight ranks step up every time (no level saturates below 300%)
+  prev = null;
+  for (const r of SIM.RANKED.RANKS) {
+    const s = session('summit', SIM.DRIVERS.slice(0, 2).map(driver => ({ driver })), { gameMode: 'duel', aiLevel: r.level });
+    const a = s.cars[1].ai, now = { skill: a.skill, commit: a.commit, brake: a.brakeCommit, mistakes: a.mistakeScale, predict: a.mind.predict, apex: a.mind.apexSd };
+    if (prev) assert.ok(now.skill > prev.skill && now.commit > prev.commit && now.brake >= prev.brake && now.mistakes < prev.mistakes && now.predict > prev.predict && now.apex < prev.apex, r.name + ' ' + JSON.stringify(now));
+    assert.ok(now.commit <= 1 && now.brake <= 1 && now.mistakes > 0, r.name + ': within the physical limit and never infallible');
+    prev = now;
+  }
   // the chosen path is driven through the normal controls and physics: the same inputs give the same motion
-  const r = session('summit', [{ driver: SIM.DRIVERS[3] }], { aiLevel: 1 }), l = session('summit', [{ driver: SIM.DRIVERS[3] }], { aiLevel: 1.75 });
+  const r = session('summit', [{ driver: SIM.DRIVERS[3] }], { aiLevel: 1 }), l = session('summit', [{ driver: SIM.DRIVERS[3] }], { aiLevel: 3 });
   const cr = r.cars[0], cl = l.cars[0];
   for (const [s, c] of [[r, cr], [l, cl]]) { s.fitTyres(c, 'H', 90); c.fuel = 15; c.placeAt(r.track, 400, 0, 30); c.speed = c.u = 30; }
   for (let i = 0; i < 480; i++) for (const c of [cr, cl]) { c.input.throttle = 1; c.input.brake = 0; c.input.steer = 0.2; SIM.stepCarPhysics(c, SIM.PHYS_DT, r.track, { wet: 0, wearScale: 1, fuelRate: 0.04, pitLimiter: false }); }
   assert.deepEqual([cl.x, cl.z, cl.speed], [cr.x, cr.z, cr.speed]);
 });
 
-test('Elimination and qualifying still run with the new AI', () => {
-  const t = tracks.rivermere;
-  const e = new SIM.Session(t, { type: 'race', gameMode: 'elimination', seed: 9, difficulty: 0.8, weather: 'dynamic', weatherState: DRY(9), tyreWear: 'normal', mandatory: true, damage: 'realistic', entries: SIM.DRIVERS.map(driver => ({ driver })) });
-  while (!e.over && e.elimination.round < 1 && e.time < 260) e.fixedStep(SIM.PHYS_DT);
-  assert.equal(e.elimination.round, 1, 'first checkpoint reached');
-  // Laps 1–8 remove the last driver; a retirement spends that slot, and extra retirements go out too.
-  assert.ok(e.elimination.out.length >= e.eliminationSlots(1), 'last driver eliminated');
-  const q = new SIM.Session(tracks.redridge, { type: 'quali', seed: 4, difficulty: 0.9, weather: 'dynamic', weatherState: DRY(4), entries: SIM.DRIVERS.slice(0, 3).map(driver => ({ driver })) });
-  for (const c of q.cars) q.releaseFromGarage(c);
-  while (q.time < 140) q.fixedStep(SIM.PHYS_DT);
-  assert.ok(q.cars.some(c => c.q && (c.q.phase === 'flying' || c.q.result)), 'qualifying laps under way');
+test('Rival Duel and Pursuit run with the AI; qualifying and Elimination no longer exist', () => {
+  for (const gameMode of ['duel', 'pursuit']) {
+    const e = new SIM.Session(tracks.rivermere, { type: 'race', gameMode, seed: 9, aiLevel: 2.19, weather: 'dynamic', tyreWear: 'normal', damage: 'realistic',
+      pursuit: { gap: 4.5, rivalWear: 0.25, rival: 1 }, entries: SIM.DRIVERS.slice(2, 4).map(driver => ({ driver })) });
+    while (!e.lightsOut || e.time - e.lightsOutTime < 60) e.fixedStep(SIM.PHYS_DT);
+    assert.ok(e.cars.every(c => c.totalDist > 1500 && !c.dnf), gameMode + ': both cars racing');
+    assert.equal(e.weather, null); assert.equal(e.wet, 0);
+  }
+  assert.deepEqual(Object.keys(SIM.GAME_MODES), ['grandprix', 'duel', 'pursuit']);
+  for (const k of ['ELIMINATION_RULES', 'eliminationEvents', 'eliminationSchedule', 'ELIMINATION_FUEL_MASS']) assert.equal(SIM[k], undefined, k);
+  const q = new SIM.Session(tracks.redridge, { type: 'quali', seed: 4, weather: 'dynamic', entries: SIM.DRIVERS.slice(0, 3).map(driver => ({ driver })) });
+  for (const k of ['releaseFromGarage', 'qualifyingTick', 'finishQuali', 'completeQuali']) assert.equal(typeof q[k], 'undefined', k);
 });
