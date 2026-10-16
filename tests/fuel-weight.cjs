@@ -91,8 +91,10 @@ test('acceleration, braking and cornering all suffer with fuel; top speed does n
 });
 
 test('bare rigs feel no fuel effect; Rival Duel and Pursuit give both cars one fixed, equal load with the same fuel physics', () => {
-  assert.equal(accel(9, 0.5, 200 / 3.6, false), accel(23, 0.5, 200 / 3.6, false));
-  assert.equal(brakeDist(9, 250 / 3.6, 80 / 3.6, false), brakeDist(23, 250 / 3.6, 80 / 3.6, false));
+  // without fuel management only the real mass of the fuel acts (a few per cent), not the amplified effect
+  const a9 = accel(9, 0.5, 200 / 3.6, false), a23 = accel(23, 0.5, 200 / 3.6, false), A9 = accel(9, 0.5, 200 / 3.6), A23 = accel(23, 0.5, 200 / 3.6);
+  assert.ok(a23 >= a9 && (a23 - a9) / a9 < 0.03, 'real mass only: ' + a9.toFixed(2) + ' / ' + a23.toFixed(2));
+  assert.ok(A23 - A9 > 3 * (a23 - a9), 'the amplified effect is much larger with fuel management');
   for (const t of tracks.values()) for (const gameMode of ['duel', 'pursuit']) {
     // the player's saved start-fuel choice is ignored: there is no fuel choice in these modes
     const entries = SIM.DRIVERS.slice(0, 2).map((driver, i) => ({ driver, isPlayer: i === 0 }));

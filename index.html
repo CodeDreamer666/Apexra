@@ -954,9 +954,14 @@ const SIM = (function () {
   // settles at about 68 km/h on full throttle. The level follows the tyre count within `rise` seconds and
   // recovers over `fall` seconds once the tyres are back on the track.
   const OFF_TRACK = { grip: 0.5, level: [0, 0.25, 0.55, 0.8, 1], drag: { k2: 0.0088, k1: 0.8, v1: 22, max: 30 }, rise: 0.05, fall: 0.5, tyreHalf: 0.2 };
-  // Green painted asphalt is drivable: tyre count reduces available grip, never speed or resistance.
-  // Keep this separate from OFF_TRACK so paint cannot erase drag from a tyre still on grass/gravel.
-  const GREEN_RUNOFF = { width: 3.8, loss: [0, 0.025, 0.065, 0.11, 0.18], rise: 0.12, fall: 0.3 };
+  // Green painted asphalt is drivable. The number of tyres on it sets a grip loss (`loss`: 2.5 / 6.5 / 11 / 18 %
+  // with one to four tyres) and a mild extra rolling resistance (`drag`, a deceleration of drag[n] × speed in m/s²:
+  // nothing for one tyre, about 0.2 m/s² at 200 km/h for two, 0.7 for three and 1.4 for four, so two seconds
+  // flat out on it with all four tyres cost roughly 10 km/h against the asphalt). Both follow the tyre count within
+  // `rise` seconds and recover over `fall`. It is kept separate from OFF_TRACK (grass and gravel: halved grip and
+  // up to 30 m/s² of drag), so paint never erases the drag of a tyre still on terrain, and it is the same force
+  // for every car, player or AI.
+  const GREEN_RUNOFF = { width: 3.8, loss: [0, 0.025, 0.065, 0.11, 0.18], drag: [0, 0, 0.004, 0.012, 0.025], rise: 0.12, fall: 0.3 };
   const clamp = (x, a, b) => (x < a ? a : x > b ? b : x);
   const lerp = (a, b, t) => a + (b - a) * t;
   const smooth01 = (t) => { t = clamp(t, 0, 1); return t * t * (3 - 2 * t); };
@@ -1637,7 +1642,15 @@ const SIM = (function () {
     // which corner window each sample lies in (-1 on a straight)
     const winOf = new Int16Array(N).fill(-1);
     for (const w of win) span(w.a, w.b, i => { winOf[i] = w.k; });
-    const res = { lim, off, kap, vRef, win, winOf, names: LINE_NAMES };
+    // Green paint the planner may use beyond the asphalt (index 0: the −d side, 1: the +d side): wherever the
+    // edge is painted, except on the inside of a bend (within 10 samples), so a planned path never cuts a corner.
+    const paint = [new Uint8Array(N), new Uint8Array(N)];
+    for (const [k, sg] of [[0, -1], [1, 1]]) for (let i = 0; i < N; i++) {
+      let ok = t.hasPaintedRunoff(i, sg);
+      for (let q = -10; q <= 10 && ok; q += 2) if (t.kappa[(i + q + N) % N] * sg > 1 / 900) ok = false;
+      paint[k][i] = ok ? 1 : 0;
+    }
+    const res = { lim, off, kap, vRef, win, winOf, names: LINE_NAMES, paint };
     AI_LINE_CACHE.set(key, res);
     return res;
   }
@@ -1857,7 +1870,7 @@ const SIM = (function () {
       this.axL = 0; this.ayL = 0; this.gLong = 0; this.gLat = 0;
       this.load = new Float64Array(4); this.slipA = new Float64Array(4); this.lock = new Uint8Array(4); this.spin = new Uint8Array(4);
       this.slipPow = new Float64Array(4); this.surf = new Uint8Array(4); this.offN = 0; this.offLvl = 0; this.offGrip = 1; this.wheelRot = new Float64Array(4); this.util = new Float64Array(4);
-      this.terrainN = 0; this.runoffN = 0; this.runoffLoss = 0; this.runoffGrip = 1;
+      this.terrainN = 0; this.runoffN = 0; this.runoffLoss = 0; this.runoffGrip = 1; this.runoffDrag = 0;
       // Launch control (race starts): the automatic clutch stays open on the grid and engages after lights out.
       this.launch={active:race.type==='race',engagement:race.type==='race'?0:1,releasedAt:null}; this.surfaceWet=null;
       this.engineResponse = 0; this.driveForce = 0; this.pitHistory = [];
@@ -2040,6 +2053,8 @@ const SIM = (function () {
     const runoffTarget = GREEN_RUNOFF.loss[runoffN];
     car.runoffLoss += (runoffTarget - car.runoffLoss) * Math.min(1, dt / (runoffTarget > car.runoffLoss ? GREEN_RUNOFF.rise : GREEN_RUNOFF.fall));
     car.runoffGrip = 1 - car.runoffLoss;
+    const dragTarget = GREEN_RUNOFF.drag[runoffN];
+    car.runoffDrag += (dragTarget - car.runoffDrag) * Math.min(1, dt / (dragTarget > car.runoffDrag ? GREEN_RUNOFF.rise : GREEN_RUNOFF.fall));
     const surfaceGrip = offGrip * car.runoffGrip;
     for (let i = 0; i < 4; i++) {
       const xi = WHEEL_X[i], yi = WHEEL_Y[i];
@@ -2186,6 +2201,8 @@ const SIM = (function () {
     }
     // off-track resistance: grows with the number of tyres off and with speed, so a fast car slows hard but progressively
     if (car.offLvl > 1e-3 && Math.abs(u) > 0.05) { const au = Math.abs(u), D = OFF_TRACK.drag; FxSum -= Math.sign(u) * m * car.offLvl * Math.min(D.max, D.k2 * au * au + D.k1 * Math.max(0, au - D.v1)); }
+    // green paint's extra rolling resistance (see GREEN_RUNOFF)
+    if (car.runoffDrag > 1e-6 && Math.abs(u) > 0.05) FxSum -= Math.sign(u) * m * car.runoffDrag * Math.abs(u);
     // gravity along the slope: climbs cost speed, descents add it (a stationary
     // car is held by its brakes or the launch clutch)
     if (track.grade && car.idx != null && !car.pit && Math.abs(u) > 1) FxSum -= m * G * track.grade[car.idx] * Math.cos(car.psi - track.heading[car.idx]);
@@ -2929,8 +2946,8 @@ const SIM = (function () {
       frustration: lerp(6, 45, patience),
     };
   }
-  const newPath = () => ({ valid: false, i0: 0, n: 0, slot: '', d: new Float32Array(AI_PATH_N), k: new Float32Array(AI_PATH_N), kind: 'line', label: 'racing', side: 0, maneuver: null, cost: 0, risk: 0, time: 0, vEnd: 0, born: 0 });
-  const newCand = () => ({ kind: 'line', label: 'racing', fam: 0, amt: 0, w0: 0, w1: 0, w2: 0, w3: 0, fam2: 0, amt2: 0, v0: 0, v1: 0, v2: 0, v3: 0,
+  const newPath = () => ({ valid: false, ext: 0, i0: 0, n: 0, slot: '', d: new Float32Array(AI_PATH_N), k: new Float32Array(AI_PATH_N), kind: 'line', label: 'racing', side: 0, maneuver: null, cost: 0, risk: 0, time: 0, vEnd: 0, born: 0 });
+  const newCand = () => ({ kind: 'line', label: 'racing', ext: 0, paint: 0, fam: 0, amt: 0, w0: 0, w1: 0, w2: 0, w3: 0, fam2: 0, amt2: 0, v0: 0, v1: 0, v2: 0, v3: 0,
     off: 0, offA: 0, offL: 1, offE: 0, carry: 0, carryL: 1, side: 0, maneuver: null, feasible: true, cost: 0, time: 0, tExit: 0, risk: 0, minGap: 9, lead: 0, vEnd: 0,
     blocked: 0, overlap: 9, dTurn: 0, dMid: 0, sideApex: 0, raw: 0, success: 0, overlapTurn: 99, blend: false, slot: '', why: '', m: 0, dbg: null });
   const newOpp = () => ({ car: null, near: false, ds: 0, d: 0, v: 0, a: 0, vlat: 0, brake: false, along: false, so: new Float32Array(AI_PRED_N), dd: new Float32Array(AI_PRED_N), vv: new Float32Array(AI_PRED_N) });
@@ -2972,6 +2989,10 @@ const SIM = (function () {
       this.pressure = 0; this.blue = false; this.blueYield = false; this.pushMode = 0; this.tyreMode = 'normal'; this.smoothThrottle = 0;
       // ---- racecraft: personality, the tactical state, the planned path, predictions and short-term memory ----
       this.mind = racingMind(p, diff, x);
+      // how far onto green paint (m beyond the planning limit) this driver will take a move, an avoidance or an exit:
+      // about two tyres for a careful driver, all four for a bold one. Whether it is worth it is judged per path.
+      this.paintExt = 1.4 + 1.2 * clamp(0.5 * (p.aggr + p.risk), 0, 1);
+      this.paintAversion = 0.0035 * (1.6 - p.risk - 0.4 * p.aggr); // s per metre of full paint: uncertainty about grip and the rejoin
       // each driver has its own random stream, seeded by the session and the driver: the same seed and grid
       // reproduce the same decisions (for debugging), and one driver's dice never shift another's
       this.rng = makeRng((((race.cfg && race.cfg.seed) | 0) ^ Math.imul(car.driver.num + 17, 0x9E3779B1)) >>> 0);
@@ -3016,10 +3037,18 @@ const SIM = (function () {
       // running wide: the corner was misjudged, so the car is placed progressively wider and back (no steering jolt)
       if (this.mistake && this.mistake.type === 'wide' && this.mistakeT > 0) d += this.mistake.side * 2.6 * Math.sin(Math.PI * clamp(1 - this.mistakeT / this.mistake.dur, 0, 1));
       if (this.pitEntryBlend > 0) d = lerp(d, t.pitForCar(car).side * (t.halfW - 2.0), this.pitEntryBlend);
-      const lim = t.halfW - 1.15;
-      d = clamp(d, -lim, lim);
-      // racing room: never aim into the space a car alongside occupies (the 60 Hz safety layer)
-      if (!this.pitEntryBlend && (this.roomLo > -50 || this.roomHi < 50)) d = this.roomLo <= this.roomHi ? clamp(d, this.roomLo, this.roomHi) : 0.5 * (this.roomLo + this.roomHi);
+      // the asphalt, plus the green paint where the chosen path is allowed onto it (see candD); a misjudged corner
+      // (a 'wide' mistake) may carry the car onto the paint too: the physics, not a clamp, then decides how it ends
+      const lim = t.halfW - 1.15, L = t.aiLines, wide = this.mistake && this.mistake.type === 'wide' && this.mistakeT > 0 ? 2.2 : 0;
+      const ext = Math.max(this.path.valid && !car.pit && !this.pitting ? this.path.ext : 0, wide);
+      d = clamp(d, -lim - ext * L.paint[0][i], lim + ext * L.paint[1][i]);
+      // racing room: never aim into the space a car alongside occupies (the 60 Hz safety layer) — onto the paint if
+      // that is where the room is, never onto the grass
+      if (!this.pitEntryBlend && (this.roomLo > -50 || this.roomHi < 50)) {
+        d = this.roomLo <= this.roomHi ? clamp(d, this.roomLo, this.roomHi) : 0.5 * (this.roomLo + this.roomHi);
+        const edge = t.halfW + 2.4;
+        d = clamp(d, -(L.paint[0][i] ? edge : t.halfW + 0.2), L.paint[1][i] ? edge : t.halfW + 0.2);
+      }
       return d;
     }
     kappaAt(i) { return this.pathK(i); }
@@ -3136,7 +3165,10 @@ const SIM = (function () {
         if (cc && t.rlDist(car.idx, cc.apex) < 180) { this.lastCornerRoll = nc; this.rollExecution(nc); this.rollMistake(); }
       }
       // ---- learning (segment adaptation; not from the slow laps under the VSC) ----
-      if (!race.vscActive) this.learn(latErr, offTrack || car.runoffN > 0);
+      // a corner learnt as too fast is one where the car went off — onto grass or gravel, or onto paint the path did
+      // not mean to use (paint the plan chose is a choice, not an error)
+      const meantPaint = this.path.valid && this.path.ext > 0 && Math.abs(this.pathD(car.idx)) > t.halfW - 1.6;
+      if (!race.vscActive) this.learn(latErr, offTrack || car.runoffN > 0 && !meantPaint);
     }
     // Damage call (10 Hz): pit when the repairable lap-time loss over the remaining laps outweighs the stop,
     // pit at once for a puncture or a lost wing, and retire in the pits when the car can no longer race.
@@ -3852,7 +3884,9 @@ const SIM = (function () {
       if (c.off) d += c.off * (c.offE > 0 ? winW(r, c.offA, c.offA + c.offL, c.offE, c.offE + c.offL) : smooth01((r - c.offA) / c.offL));
       const X = this.exeNow; if (X.v) d += X.v * winW(r, X.a, X.b, X.b, X.c);
       if (c.carry) d += c.carry * (1 - smooth01(r / c.carryL));
-      const lim = L.lim; d = d < -lim ? -lim : d > lim ? lim : d;
+      // the asphalt, plus (for a candidate allowed to: c.ext metres) the green paint beyond it where the planner may use it
+      const lo = -L.lim - (c.ext && L.paint[0][i] ? c.ext : 0), hi = L.lim + (c.ext && L.paint[1][i] ? c.ext : 0);
+      d = d < lo ? lo : d > hi ? hi : d;
       // receding-horizon commitment: up to about the steering look-ahead the path is the one already being driven;
       // a new choice blends in beyond it, so the target the car steers at never jumps
       if (c.blend) { const C = this.ctx, w = smooth01((r - C.rF) / C.rB); if (w < 1) d = this.pathD(i) + (d - this.pathD(i)) * w; }
@@ -3862,7 +3896,7 @@ const SIM = (function () {
       if (this.nCand >= this.cands.length) return null;
       const c = this.cands[this.nCand++];
       c.kind = kind; c.label = label; c.maneuver = maneuver || null; c.side = side || 0;
-      c.fam = 0; c.amt = 0; c.fam2 = 0; c.amt2 = 0; c.off = 0; c.offE = 0; c.offA = 0; c.offL = 1; c.carry = 0; c.carryL = 1; c.why = '';
+      c.fam = 0; c.amt = 0; c.fam2 = 0; c.amt2 = 0; c.off = 0; c.offE = 0; c.offA = 0; c.offL = 1; c.carry = 0; c.carryL = 1; c.why = ''; c.ext = 0; c.paint = 0;
       c.slot = label;
       return c;
     }
@@ -3929,6 +3963,12 @@ const SIM = (function () {
       } else if (!this.pitOnly) {
         if (w1live) {
           this.useLine(this.addCand('line', 'late apex'), false, LINE_LATE, 1, W1, X);
+          // let the car run out onto the paint at the exit: a straighter exit for less grip and a little drag.
+          // Only weighed where it can pay off: racing someone, or a bold driver chasing lap time.
+          if ((X.nNear || this.mind.aggr > 0.7) && X.rel(W1.apex) > -2) {
+            const c = this.addCand('line', 'wide exit');
+            if (c) { c.ext = this.paintExt; this.useOffset(c, -W1.dir * this.paintExt, Math.max(0, X.rel(W1.apex) + 4), X.rel(W1.b) + 15); }
+          }
           if (X.nNear) { // alone, the racing line is the line; the variants matter in company
             this.useLine(this.addCand('line', 'tighter entry'), false, LINE_IN, 0.55, W1, X);
             this.useLine(this.addCand('line', 'wider line'), false, LINE_OUT, 0.6, W1, X);
@@ -3950,7 +3990,8 @@ const SIM = (function () {
           // under the VSC (or a yellow) a car in the queue ahead is followed, never driven around: only a stricken car is
           if ((race.vscActive && race.vscMember(o) || race.yellowAt(car.idx)) && !broken) continue;
           const meet = Math.round(R.ds / DS), rlm = L.off[0][(i0 + meet) % N];
-          for (const sg of [-1, 1]) this.useOffset(this.addCand('avoid', 'avoid ' + o.driver.short), clamp(o.d + sg * 3.3, -L.lim, L.lim) - rlm, 0, meet + 30);
+          // (around it on the paint too, if that is where the room is)
+          for (const sg of [-1, 1]) { const c = this.addCand('avoid', 'avoid ' + o.driver.short); if (!c) break; c.ext = 3.6; this.useOffset(c, clamp(o.d + sg * 3.3, -L.lim - c.ext, L.lim + c.ext) - rlm, 0, meet + 30); }
           break;
         }
       }
@@ -3990,7 +4031,8 @@ const SIM = (function () {
         const until = w1live ? X.rel(W1.a) : 0, from = Math.round(Math.max(0, R.ds - 25) / DS);
         for (const sg of [-1, 1]) {
           const side = w1live ? (sg === W1.dir ? 1 : -1) : sg;
-          this.useOffset(this.addCand('pass', 'slipstream pass ' + (sg > 0 ? 'right' : 'left'), 'slipstream', side), clamp(dT + sg * 3.2, -L.lim, L.lim) - rlm, from, until);
+          const c = this.addCand('pass', 'slipstream pass ' + (sg > 0 ? 'right' : 'left'), 'slipstream', side); if (!c) continue;
+          c.ext = this.paintExt; this.useOffset(c, clamp(dT + sg * 3.2, -L.lim - c.ext, L.lim + c.ext) - rlm, from, until);
         }
       }
       if (w1live) {
@@ -3998,7 +4040,10 @@ const SIM = (function () {
         // inside: the inside line, pulled alongside the rival if it sits on the inside part of the road
         const cIn = this.useLine(this.addCand('pass', 'inside move', 'inside', 1), false, LINE_IN, 1, W1, X);
         if (cIn && (dT * dir) > -1.0) this.useOffset(cIn, clamp((dT * dir + 3.0) * dir, -L.lim, L.lim) - rlm, Math.round(Math.max(0, R.ds - 30) / DS), X.rel(W1.start));
-        this.useLine(this.addCand('pass', 'around the outside', 'outside', -1), false, LINE_OUT, 1, W1, X);
+        const cOut = this.useLine(this.addCand('pass', 'around the outside', 'outside', -1), false, LINE_OUT, 1, W1, X);
+        // around the outside using the paint at the exit: more room alongside, less grip out there
+        const cOutW = this.addCand('pass', 'outside, wide exit', 'outside', -1);
+        if (cOutW) { this.useLine(cOutW, false, LINE_OUT, 1, W1, X); cOutW.ext = this.paintExt; this.useOffset(cOutW, -dir * this.paintExt, X.rel(W1.apex) + 4, X.rel(W1.b) + 15); }
         // switchback: the rival covers the inside, so enter wide, cut back under it and get the better exit
         // (judged on where the rival is now as well as where it is predicted: it is visibly sitting on the inside)
         // (an inside attack always keeps the switchback in mind as its fall-back)
@@ -4018,6 +4063,12 @@ const SIM = (function () {
       for (let q = 1; q < m; q++) K[q] = curv3(PX[q - 1], PZ[q - 1], PX[q], PZ[q], PX[q + 1], PZ[q + 1]);
       K[0] = K[1]; K[m] = K[m - 1];
       for (let q = 0; q < m; q++) { const dx = PX[q + 1] - PX[q], dz = PZ[q + 1] - PZ[q]; SG[q] = Math.sqrt(dx * dx + dz * dz); }
+      // green paint along the path: tyres on it (0, 2 or 4 for a car following the path) cost grip, braking and,
+      // with more of them, a little rolling resistance (GREEN_RUNOFF, the same physics every car has)
+      const GP = this.evP || (this.evP = new Float64Array(AI_EVAL_M + 2)), hwP = t.halfW, tw = SPEC.tw;
+      let paint = 0;
+      for (let q = 0; q <= m; q++) { const ad = D[q] < 0 ? -D[q] : D[q], n = ad > hwP + 0.2 + tw ? 4 : ad > hwP + 0.2 - tw ? 2 : 0; GP[q] = n; if (n && q < m) paint += SG[q] * n / 4; }
+      c.paint = paint;
       // corner speed the handling allows on this curvature (arcadeCornerSpeed, inlined for an undamaged car)
       const A = clamp(X.mu / 1.6, 0.45, 1.05) * X.use, r0 = HANDLING.turnRate[0], gg = (HANDLING.turnRate[1] - r0) / 58, kMax = ARCADE_KGEOM * X.use;
       const cv = (k) => {
@@ -4028,15 +4079,16 @@ const SIM = (function () {
         return vv < 110 ? vv : 110;
       };
       const dec = X.dec * (c.kind === 'pass' && c.maneuver !== 'slipstream' ? X.outbrake : 1);
-      VB[m] = cv(K[m]);
-      for (let q = m - 1; q >= 0; q--) { const vc = cv(K[q]), vb = VB[q + 1] + dec * SG[q]; VB[q] = vc < vb ? vc : vb; }
+      const gripAt = (q) => GP[q] ? 1 - GREEN_RUNOFF.loss[GP[q]] : 1;
+      VB[m] = cv(K[m]) * gripAt(m);
+      for (let q = m - 1; q >= 0; q--) { const g = gripAt(q), vc = cv(K[q]) * g, vb = VB[q + 1] + dec * g * SG[q]; VB[q] = vc < vb ? vc : vb; }
       // early elimination: a path that needs far more than this car can do from here is not a path
       c.feasible = VB[0] > X.v0 - 6 || c.kind === 'keep' || c.kind === 'line';
       let v = X.v0, tt = 0, risk = 0, minGap = 9, blocked = 0, tow = 0, lead = -50, overlap = 99; this.evT[0] = 0; c.overlapTurn = 99;
       const opps = X.opps, no = X.nOpp, tmax = (AI_PRED_N - 1) * AI_PRED_DT;
       c.dTurn = X.qTurn >= 0 ? D[X.qTurn] : D[0]; c.dMid = D[m >> 1];
       for (let q = 0; q < m; q++) {
-        let vn = Math.min(VB[q + 1], Math.sqrt(v * v + 2 * (aiAccel(v) * X.power + tow) * SG[q]));
+        let vn = Math.min(VB[q + 1], Math.sqrt(Math.max(0, v * v + 2 * (aiAccel(v) * X.power + tow - (GP[q] ? GREEN_RUNOFF.drag[GP[q]] * v : 0)) * SG[q])));
         let dt = 2 * SG[q] / Math.max(0.5, v + vn);
         const tq = tt + dt, sc = (q + 1) * AI_EV_STEP * DS, f = Math.min(tq, tmax) / AI_PRED_DT, j = Math.min(AI_PRED_N - 2, f | 0), u = Math.min(1, f - j);
         tow = 0;
@@ -4089,6 +4141,9 @@ const SIM = (function () {
         if (c.fam === LINE_OUT || c.fam2 === LINE_OUT) raw += 0.12 * wet;
         if (c.fam === LINE_LATE) raw += 0.04 * wet;
         if (c.maneuver && mem) raw += 0.07 * (mem.fails[c.maneuver] || 0) * (0.5 + M.adapt);
+        // paint: the modelled grip and drag are in the time already; this is the driver's margin for what it cannot
+        // model (the exact grip out there, the rejoin), larger for careful drivers and in the wet
+        if (c.paint > 0) raw += c.paint * this.paintAversion * (1 + 2 * wet);
         c.raw = raw;
         if (c.kind === 'keep') keep = c;
         if (c.kind === 'line' && c.label === 'racing line') rlC = c;
@@ -4228,7 +4283,7 @@ const SIM = (function () {
       }
       for (let r = 0; r < 3; r++) { Kr[r] = Kr[3]; Kr[n - 1 - r] = Kr[n - 4]; }
       for (let r = 0; r < n; r++) { let s = 0, cnt = 0; for (let q = Math.max(0, r - 3); q <= Math.min(n - 1, r + 3); q++) { s += Kr[q]; cnt++; } P.k[r] = s / cnt; }
-      P.valid = true; P.i0 = X.i0; P.n = n; P.kind = c.kind; P.label = c.label; P.side = c.side; P.maneuver = c.maneuver; P.cost = c.cost; P.risk = c.risk; P.slot = c.label;
+      P.valid = true; P.ext = c.ext; P.i0 = X.i0; P.n = n; P.kind = c.kind; P.label = c.label; P.side = c.side; P.maneuver = c.maneuver; P.cost = c.cost; P.risk = c.risk; P.slot = c.label;
       P.time = c.time; P.vEnd = c.vEnd; P.born = this.race.time;
       this.pathAlt = this.path; this.path = P;
     }
