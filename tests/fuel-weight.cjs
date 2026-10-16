@@ -167,10 +167,11 @@ test('AI starting fuel is chosen on predicted race time, not simply the minimum'
     const heavy = none.cars.filter(c => SIM.chooseStartFuelLaps(none, c, 'S') >= L - 0.5).length;
     assert.ok(heavy >= 16, id + ': ' + heavy + '/20 run to the flag without a fuel stop');
     // with normal tyre wear a tyre stop is often coming anyway: those cars run lighter and refuel then (on
-    // Redridge, where grip matters least, many plan the Hard no-stop and carry the whole race's fuel)
+    // Redridge, where grip matters least, many plan the Hard no-stop and carry the whole race's fuel; with its
+    // measured 19 s pit loss about a third of that grid starts light)
     const stop = grid(id);
     const laps = stop.cars.map(c => c.startFuelLaps);
-    assert.ok(laps.filter(x => x < L - 0.5).length >= 8, id + ' starting fuel ' + laps.join(','));
+    assert.ok(laps.filter(x => x < L - 0.5).length >= (id === 'redridge' ? 6 : 8), id + ' starting fuel ' + laps.join(','));
     for (const c of stop.cars) if (c.startFuelLaps < L - 0.5) {
       const plan = SIM.planStrategy(stop, c, L, c.tyre.c, 0, { fixed: stop.fuelForLaps(c.startFuelLaps) });
       assert.ok(plan.stops.length > 0, id + ': ' + c.driver.short + ' starts on ' + c.startFuelLaps + ' laps of fuel with a stop planned');
