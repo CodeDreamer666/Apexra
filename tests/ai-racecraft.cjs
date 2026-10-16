@@ -95,8 +95,8 @@ test('planned paths are continuous: no lateral jumps when the plan changes', () 
   run(s, 40, () => {
     for (const c of s.cars) {
       const a = c.ai; if (a.mode !== 'race' || c.pit || a.pitting) { last.delete(c); continue; }
-      // the point the steering aims at (look-ahead 9 + 0.34 v metres, as in AIDriver.decide)
-      const i = s.track.wrapI(c.idx + Math.round((9 + 0.34 * c.speed) / DS)), d = a.pathD(i), p = last.get(c);
+      // the point the steering aims at (look-ahead 6 + 0.22 v metres, as in AIDriver.decide)
+      const i = s.track.wrapI(c.idx + Math.round((6 + 0.22 * c.speed) / DS)), d = a.pathD(i), p = last.get(c);
       // (a car pushed more than 2 m off its path, by contact or while giving room, re-plans from where it is)
       if (p && p.i === i && p.near) worst = Math.max(worst, Math.abs(d - p.d));
       last.set(c, { i, d, near: Math.abs(c.d - a.pathD(c.idx)) < 2 });

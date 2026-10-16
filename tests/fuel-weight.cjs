@@ -118,7 +118,7 @@ function lapTimes(id, fuel, seed) {
   return car.lapTimes.slice(1).map(l => l.t);
 }
 for (const id of ['summit', 'rivermere', 'redridge']) {
-  test(id + ': 23 kg against 9 kg costs about 2.1–2.9 s a lap, through the physics (slow)', () => {
+  test(id + ': 23 kg against 9 kg costs about 2.0–3.0 s a lap, through the physics (slow)', () => {
     const d = { 15: [], 23: [] };
     // the calibration seeds of tools/fuel-calibration.cjs (8 seeds × 3 flying laps)
     for (let k = 0; k < 8; k++) { const seed = 11 + 7 * k;
@@ -127,8 +127,10 @@ for (const id of ['summit', 'rivermere', 'redridge']) {
     }
     const mean = a => a.reduce((x, y) => x + y, 0) / a.length;
     const d15 = mean(d[15]), d23 = mean(d[23]);
-    // (2.9 s: the default tyre is now the lower-grip Hard, not the Medium, which makes laps a little more weight-sensitive)
-    assert.ok(d23 >= 2.1 && d23 <= 2.9, id + ': 23 vs 9 kg ' + d23.toFixed(2) + ' s');
+    // (2.9 s: the default tyre is now the lower-grip Hard, not the Medium, which makes laps a little more weight-sensitive;
+    // 2.0–3.0 s: the measuring driver now drives closer to the limits — the full width, the drift — so the same physics
+    // reads a little differently by circuit: about 2.1 s on Redridge's straights, 3.0 s on twisty Rivermere)
+    assert.ok(d23 >= 2.0 && d23 <= 3.0, id + ': 23 vs 9 kg ' + d23.toFixed(2) + ' s');
     assert.ok(d15 > 0.6 && d15 < d23 * 0.65, id + ': 15 vs 9 kg ' + d15.toFixed(2) + ' s');
     // the circuit's strategy figure (s per kg per lap) matches what the cars actually lose
     assert.ok(Math.abs(d23 / 14 - tracks.get(id).def.fuelLapCost) < 0.03, id + ' fuelLapCost ' + tracks.get(id).def.fuelLapCost + ' vs measured ' + (d23 / 14).toFixed(3));
