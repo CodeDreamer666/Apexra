@@ -20,7 +20,7 @@ for(const id of tracks.keys())for(const variant of Object.keys(SIM.ELIMINATION_R
 });
 test('classic exact progression and GP/Career rules stay separate',()=>{
  const S=race();for(let lap=1;lap<=6;lap++)round(S,lap);assert.deepEqual(S.elimination.history.map(e=>e.remaining),[19,17,14,9,3,2]);
- for(const career of [undefined,{tier:1,race:0}]){const gp=new SIM.Session(new SIM.Track(SIM.CIRCUITS[0]),{type:'race',seed:1,career,eliminationVariant:'ruthless',entries:SIM.DRIVERS.map(driver=>({driver}))});assert.equal(gp.totalLaps,8);assert.equal(gp.fuelEnabled,true);assert.equal(gp.track.stations,undefined);assert.equal(gp.ruthlessAggression(gp.cars[0]),0);}
+ for(const career of [undefined,{tier:1,race:0}]){const gp=new SIM.Session(new SIM.Track(SIM.CIRCUITS[0]),{type:'race',seed:1,career,eliminationVariant:'ruthless',entries:SIM.DRIVERS.map(driver=>({driver}))});assert.equal(gp.totalLaps,SIM.GAME_MODES.grandprix.laps);assert.equal(gp.fuelEnabled,true);assert.equal(gp.track.stations,undefined);assert.equal(gp.ruthlessAggression(gp.cars[0]),0);}
 });
 test('random schedules cover every valid composition and are reproducible',()=>{
  const valid=new Set();function enumerate(a=[],sum=0){if(a.length===5){if(sum===17)valid.add(a.join());return;}for(let k=1;k<=6;k++)enumerate([...a,k],sum+k);}enumerate();

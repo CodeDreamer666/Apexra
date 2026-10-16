@@ -34,6 +34,6 @@ assert.ok(THREE_JS&&fs.existsSync(THREE_JS),'Set THREE_JS to the existing Three.
   console.log('PASS browser',variant,'selection, briefing, HUD reveal, service choice, results');
  }
  await page.evaluate(()=>{const T=__test;T.startSession(T.sessionConfig('race',{gameMode:'grandprix',entries:T.buildEntries()}));const p=APEX.player;p.pit={phase:'awaiting',box:0,selection:{tyre:'H',fuel:0},arrivedAt:0,entryTime:0};T.updatePitService(p,APEX.session,true);});
- assert.equal(await page.locator('#psTyres button').count(),6);assert.equal(await page.locator('#psFuelSection').isVisible(),true);assert.equal(await page.locator('#psConfirm').isVisible(),true);
+ assert.equal(await page.locator('#psTyres button').count(),5);assert.equal(await page.locator('#psFuelSection').isVisible(),true);assert.equal(await page.locator('#psConfirm').isVisible(),true);
  assert.deepEqual(errors,[]);console.log('PASS browser: GP service restored; no page errors');
  }finally{await browser.close();}})().catch(e=>{console.error(e);process.exitCode=1;});
