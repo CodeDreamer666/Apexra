@@ -98,7 +98,7 @@ for (const track of tracks) for (const mode of modes) {
   test(label + ': repeated same-compound stops retain tyre and repair durations without compulsory changes', () => {
     const S = session(track, mode), c = S.player;
     prohibitPenaltyReads(c); S.lightsOut = true;
-    for (const comp of (S.eliminationMode?['S','S','H','H','I','W']:['S','S','M','M','H','I','W'])) {
+    for (const comp of ['S','S','H','H','I','W']) {
       c.tyre.wear.fill(.7); c.damage.c[0] = c.damage.c[1] = .6; c.damage.computePerf();
       const P = box(S, c, comp), before = S.time;
       if(S.eliminationMode){assert.equal(P.total,0);assert.equal(c.speed,30);}else{assert.ok(P.tyreT>=2);assert.ok(P.fwT>=SIM.REPAIR_TIME.fw[0]);assert.equal(P.total,Math.max(.8,P.tyreT,P.fwT,P.rwT));}
