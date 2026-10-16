@@ -32,36 +32,6 @@ Circuit selection
 
 ![Circuit selection](005-menu-circuit-select.jpg)
 
-### 006-summit-quali-garage
-
-Qualifying: waiting in the pit lane (W to leave)
-
-![Qualifying: waiting in the pit lane (W to leave)](006-summit-quali-garage.jpg)
-
-### 007-summit-quali-outlap
-
-Qualifying: untimed out-lap
-
-![Qualifying: untimed out-lap](007-summit-quali-outlap.jpg)
-
-### 008-summit-quali-flying
-
-Qualifying: flying lap with sector times
-
-![Qualifying: flying lap with sector times](008-summit-quali-flying.jpg)
-
-### 009-summit-pause-quali
-
-Pause menu during qualifying (with forfeit option)
-
-![Pause menu during qualifying (with forfeit option)](009-summit-pause-quali.jpg)
-
-### 010-summit-quali-results
-
-Qualifying results
-
-![Qualifying results](010-summit-quali-results.jpg)
-
 ### 011-summit-race-brief
 
 Race start brief: starting tyre and fuel
@@ -332,18 +302,6 @@ Circuit selection: rivermere
 
 ![Circuit selection: rivermere](057-rivermere-circuit-select.jpg)
 
-### 058-rivermere-quali-garage
-
-Qualifying: waiting in the pit lane (W to leave)
-
-![Qualifying: waiting in the pit lane (W to leave)](058-rivermere-quali-garage.jpg)
-
-### 059-rivermere-quali-results
-
-Qualifying results
-
-![Qualifying results](059-rivermere-quali-results.jpg)
-
 ### 060-rivermere-race-brief
 
 Race start brief: starting tyre and fuel
@@ -457,18 +415,6 @@ Race results
 Circuit selection: redridge
 
 ![Circuit selection: redridge](078-redridge-circuit-select.jpg)
-
-### 079-redridge-quali-garage
-
-Qualifying: waiting in the pit lane (W to leave)
-
-![Qualifying: waiting in the pit lane (W to leave)](079-redridge-quali-garage.jpg)
-
-### 080-redridge-quali-results
-
-Qualifying results
-
-![Qualifying results](080-redridge-quali-results.jpg)
 
 ### 081-redridge-race-brief
 

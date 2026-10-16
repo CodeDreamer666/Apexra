@@ -120,27 +120,8 @@ const index = [];
     await frames(2);
     if (!full) await shot(tag('circuit-select'), 'Circuit selection: ' + id);
     await page.click('#csGo');
-    await page.waitForFunction(() => APEX.session && APEX.session.type === 'quali' && document.getElementById('loading').classList.contains('hidden'), null, { polling: 300, timeout: 600000 });
-    await H('H.dry()');
-
-    // ---------- qualifying ----------
-    await settle(10);
-    await shot(tag('quali-garage'), 'Qualifying: waiting in the pit lane (W to leave)');
-    if (full) {
-      await H('S.releaseFromGarage(p), H.bot()'); await H('H.ff(6)'); await settle(8, 1);
-      await shot(tag('quali-outlap'), 'Qualifying: untimed out-lap');
-      await H('H.ff(400, s => p.q.phase === "flying")'); await H('H.ff(20)'); await settle(8, 1);
-      await shot(tag('quali-flying'), 'Qualifying: flying lap with sector times');
-      await H('H.ff(30)'); await frames(1); await page.keyboard.press('Escape'); await frames(2);
-      await shot(tag('pause-quali'), 'Pause menu during qualifying (with forfeit option)');
-      await page.click('#btnSkipQ'); await frames(1);
-    } else {
-      await ev(() => { const p = APEX.player; APEX.session.completeQuali(p, 'skipped', 'Attempt forfeited'); });
-    }
-    await H('H.ff(900, s => s.over)'); await frames(2, 1); await wait(1200); await frames(2);
-    await page.waitForFunction(() => !document.getElementById('results').classList.contains('hidden'), null, { polling: 300, timeout: 20000 }).catch(() => ev(() => { /* fall back */ }));
-    await shot(tag('quali-results'), 'Qualifying results');
-    await page.click('#resActions .btn.primary'); await frames(2);
+    await page.waitForFunction(() => !document.getElementById('raceBrief').classList.contains('hidden') && document.getElementById('loading').classList.contains('hidden'), null, { polling: 300, timeout: 600000 });
+    await frames(2);
     await shot(tag('race-brief'), 'Race start brief: starting tyre and fuel');
     await page.click('#briefStart');
     await page.waitForFunction(() => APEX.session && APEX.session.type === 'race', null, { polling: 300 });
@@ -260,9 +241,8 @@ const index = [];
       await page.click('#menu [data-act="play"]'); await frames(2);
       await ev((id) => { const k = SIM.CIRCUITS.findIndex(c => c.id === id); document.getElementById('csCards').children[k].click(); }, id);
       await page.evaluate(() => { document.getElementById('csGo').click(); });
-      await page.waitForFunction(() => APEX.session && !document.getElementById('raceBrief').classList.contains('hidden') || (APEX.session && APEX.session.type === 'quali'), null, { polling: 300 });
-      if (await ev(() => !document.getElementById('raceBrief').classList.contains('hidden'))) await page.click('#briefStart');
-      else { await ev(() => APEX.session.completeQuali(APEX.player, 'skipped', '')); await H('H.ff(900, s => s.over)'); await wait(1200); await frames(2); await page.click('#resActions .btn.primary'); await frames(1); await page.click('#briefStart'); }
+      await page.waitForFunction(() => !document.getElementById('raceBrief').classList.contains('hidden'), null, { polling: 300 });
+      await page.click('#briefStart');
       await page.waitForFunction(() => APEX.session && APEX.session.type === 'race', null, { polling: 300 });
       await H('H.dry(), H.bot()'); await H('H.ff(30, s => s.lightsOut)'); await H('H.ff(30)');
       await H('(p.dnfReason = "Damage", S.retire(p))'); await H('H.ff(2)'); await frames(4, 1); await H('H.ff(1)'); await settle(8, 1);

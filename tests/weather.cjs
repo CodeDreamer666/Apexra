@@ -9,7 +9,7 @@ const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
 const context = { module: { exports: {} } };
 vm.runInNewContext(html.match(/<script>([\s\S]*?)<\/script>/)[1], context);
 const SIM = context.module.exports;
-const RACE_SECONDS = 840, QUALI_SECONDS = 450, GRID_GAP = 120;
+const RACE_SECONDS = 840, SESSION_SECONDS = 450, GRID_GAP = 120;
 const raining = w => w.rain > 0.025;
 const WET = new Set(['light', 'moderate', 'heavy', 'storm']), DRY = new Set(['sunny', 'cloudy']);
 
@@ -95,7 +95,7 @@ test('rain intensity varies, storms occur, and a drying track dries progressivel
   assert.ok(dryingRuns > 5);
 });
 
-test('qualifying weather carries into the race without resetting to sunshine', () => {
+test('a weather snapshot continues the same conditions without resetting to sunshine', () => {
   // A plain snapshot restores the identical conditions.
   for (let seed = 1; seed <= 200; seed++) {
     const q = new SIM.DynamicWeather(seed);
@@ -103,19 +103,19 @@ test('qualifying weather carries into the race without resetting to sunshine', (
     const r = new SIM.DynamicWeather(seed + 999, q.snapshot());
     for (const k of ['pattern', 'regime', 'cloud', 'rain', 'water', 'lineWater', 'ambient', 'trackTemp']) assert.equal(r[k], q[k], k);
   }
-  // Across the grid-formation gap, wet sessions stay wet and dry ones mostly dry.
+  // Continued across a gap of a couple of minutes, wet conditions stay wet and dry ones mostly dry.
   const N = 2000; let wetQ = 0, wetKept = 0, dryQ = 0, dryKept = 0, raceWet = 0;
   for (let i = 0; i < N; i++) {
     const q = new SIM.DynamicWeather(5000 + i * 7);
-    for (let t = 0; t < QUALI_SECONDS; t++) q.update(1);
+    for (let t = 0; t < SESSION_SECONDS; t++) q.update(1);
     const r = new SIM.DynamicWeather(900000 + i, q.snapshot(), GRID_GAP);
     if (raining(r)) raceWet++;
     if (raining(q) && q.rain > 0.15) { wetQ++; if (r.water > 0.15) wetKept++; }
     if (!raining(q) && q.water === 0) { dryQ++; if (r.water < 0.15) dryKept++; }
   }
-  assert.ok(wetKept / wetQ > 0.9, 'wet qualifying leads to a wet grid');
-  assert.ok(dryKept / dryQ > 0.8, 'dry qualifying usually leads to a dry grid');
-  assert.ok(Math.abs(raceWet / N - 0.5) < 0.05, 'race starts after qualifying are still balanced ' + raceWet / N);
+  assert.ok(wetKept / wetQ > 0.9, 'wet conditions stay wet');
+  assert.ok(dryKept / dryQ > 0.8, 'dry conditions usually stay dry');
+  assert.ok(Math.abs(raceWet / N - 0.5) < 0.05, 'continued conditions are still balanced ' + raceWet / N);
 });
 
 test('fresh seeds give different conditions; the game rolls new seeds per event', () => {

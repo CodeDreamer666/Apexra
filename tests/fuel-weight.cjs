@@ -6,7 +6,7 @@ const vm = require('node:vm');
 
 // The amplified fuel-weight effect (Grand Prix and Career): about five times the real-world lap-time cost
 // of carrying fuel, produced by the physics (inertia, braking, cornering) rather than by the lap timer;
-// unchanged top speed, collision mass, consumption and Elimination; and AI fuel strategy that weighs it.
+// unchanged top speed, collision mass and consumption; one fixed, equal load in Rival Duel and Pursuit; and AI fuel strategy that weighs it.
 const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
 const context = { module: { exports: {} } };
 vm.runInNewContext(html.match(/<script>([\s\S]*?)<\/script>/)[1], context);
@@ -90,22 +90,20 @@ test('acceleration, braking and cornering all suffer with fuel; top speed does n
   assert.ok(Math.abs(v9 - topSpeed(0.001)) < 0.005 * v9);
 });
 
-test('without fuel management (Elimination, bare rigs) the fuel load has no performance effect', () => {
+test('bare rigs feel no fuel effect; Rival Duel and Pursuit give both cars one fixed, equal load with the same fuel physics', () => {
   assert.equal(accel(9, 0.5, 200 / 3.6, false), accel(23, 0.5, 200 / 3.6, false));
   assert.equal(brakeDist(9, 250 / 3.6, 80 / 3.6, false), brakeDist(23, 250 / 3.6, 80 / 3.6, false));
-  const entries = SIM.DRIVERS.map((driver, i) => ({ driver, isPlayer: i === 0 }));
-  for (const t of tracks.values()) {
-    const S = new SIM.Session(t, { type: 'race', gameMode: 'elimination', entries, seed: 4, weather: 'dynamic', weatherState: DRY(4) });
-    assert.equal(S.fuelEnabled, false); assert.equal(S.fuelLapCost, 0);
-    for (const c of S.cars) {
-      for (const f of [0, 9, 23, 999]) {
-        c.fuel = f;
-        assert.equal(c.fuelInertiaMul(), 1); assert.equal(c.fuelBrakeMul(), 1); assert.equal(c.fuelTurnMul(), 1);
-        assert.equal(c.mass, SIM.SPEC.mass + SIM.ELIMINATION_FUEL_MASS);
-      }
-      c.fuel = SIM.ELIMINATION_FUEL_MASS;
-    }
-    assert.equal(SIM.chooseStartFuelLaps(S, S.cars[1], 'H'), null);
+  for (const t of tracks.values()) for (const gameMode of ['duel', 'pursuit']) {
+    // the player's saved start-fuel choice is ignored: there is no fuel choice in these modes
+    const entries = SIM.DRIVERS.slice(0, 2).map((driver, i) => ({ driver, isPlayer: i === 0 }));
+    const S = new SIM.Session(t, { type: 'race', gameMode, entries, seed: 4, weather: 'dynamic', startFuelLaps: 7, pursuit: { gap: 3, rivalWear: 0.25, rival: 1 } });
+    assert.equal(S.fuelEnabled, true); assert.equal(S.pitsEnabled, false);
+    const want = S.fuelForLaps(SIM.RANKED_FUEL_LAPS);
+    for (const c of S.cars) { assert.equal(c.fuel, want); assert.equal(c.startFuelLaps, SIM.RANKED_FUEL_LAPS); }
+    assert.ok(want > 2 * S.fuelPerLap, 'enough to finish two laps');
+    const [a, b] = S.cars;
+    for (const f of ['fuelInertiaMul', 'fuelBrakeMul', 'fuelTurnMul']) assert.equal(a[f](), b[f](), f);
+    assert.equal(a.mass, b.mass);
   }
 });
 
