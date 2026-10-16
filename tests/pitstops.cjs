@@ -102,11 +102,11 @@ function soloRace(id, { stop = false, prep = null, fuelLaps = 8, laps = 4, onSte
 }
 
 for (const id of ['summit', 'rivermere', 'redridge']) {
-  test(id + ': a clean tyre-only stop loses 14–17.5 s against staying out, as the circuit states', () => {
+  test(id + ': a clean tyre-only stop loses 16–19.5 s against staying out, as the circuit states', () => {
     const base = soloRace(id), pit = soloRace(id, { stop: true });
     const loss = pit.time - base.time;
     assert.ok(pit.P && pit.P.changeTyres && !pit.P.fuelAdd && !pit.P.fwT && !pit.P.rwT, 'a tyre-only stop');
-    assert.ok(loss >= 14 && loss <= 17.5, id + ' clean stop loss ' + loss.toFixed(2) + ' s');
+    assert.ok(loss >= 16 && loss <= 19.5, id + ' clean stop loss ' + loss.toFixed(2) + ' s');
     assert.ok(Math.abs(loss - tracks.get(id).def.pitLoss) < 1.0, 'the stated loss matches the simulation: ' + loss.toFixed(2) + ' vs ' + tracks.get(id).def.pitLoss);
     assert.equal(pit.car.laps, 4); assert.equal(pit.car.pitStops, 1);
   });
