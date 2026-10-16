@@ -56,7 +56,7 @@ for (const track of tracks) {
     const S = session(track); S.lightsOut = true;
     const a = S.player;
     const b = new SIM.Car({ driver: a.driver }, S);
-    for (const c of [a, b]) { c.placeAt(track, 200, 0, 35); c.launch.active = false; S.fitTyres(c, 'M', 105); }
+    for (const c of [a, b]) { c.placeAt(track, 200, 0, 35); c.launch.active = false; S.fitTyres(c, 'H', 105); }
     a.fuel = 0; b.fuel = 999;
     const h = [new SIM.PlayerHandling(), new SIM.PlayerHandling()];
     let powered = false;
@@ -119,10 +119,11 @@ for (const track of tracks) {
   });
 }
 
-test('only four compounds are used in Elimination; Grand Prix keeps Medium',()=>{
+test('four compounds in every mode; a saved Medium becomes the Hard',()=>{
+ assert.deepEqual(Object.keys(SIM.COMPOUNDS),['S','H','I','W']);
  for(const comp of ['S','M','H','I','W']){
   const S=session(tracks[0],'elimination',{startCompound:comp});assert.equal(S.player.tyre.c,comp==='M'?'H':comp);assert.equal('used' in S.player.tyre,false);
-  const gp=session(tracks[0],'grandprix',{startCompound:comp});assert.equal(gp.player.tyre.c,comp);
+  const gp=session(tracks[0],'grandprix',{startCompound:comp});assert.equal(gp.player.tyre.c,comp==='M'?'H':comp);
  }
 });
 test('invalid service gate triggers cannot change tyres or repair damage',()=>{

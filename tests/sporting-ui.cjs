@@ -15,7 +15,7 @@ function source(name) {
   return code;
 }
 const funcs = ['raceWeatherState', 'circuitFuelPerLap', 'circuitTank', 'circuitPitLoss', 'briefIcon', 'briefTyreArt',
-  'centreLineOf', 'drawBriefCircuit', 'startRace', 'psCard', 'psSelection', 'updatePitService', 'updateStrategyUI', 'renderCareerStrip', 'showResults'];
+  'centreLineOf', 'drawBriefCircuit', 'startRace', 'psCard', 'psSelection', 'updatePitService', 'updateDriveThroughUI', 'updateStrategyUI', 'renderCareerStrip', 'showResults'];
 const settings = html.slice(html.indexOf("const SETTINGS_KEY ="), html.indexOf('function updateModeSelection()'));
 const icons = html.slice(html.indexOf('const PS_ICON ='), html.indexOf('function psCard('));
 (async () => {
@@ -56,7 +56,7 @@ const icons = html.slice(html.indexOf('const PS_ICON ='), html.indexOf('function
         G.session = null; G.track = new SIM.Track(def);
         startRace();
         check(!obsolete.test($('raceBrief').innerText), def.id + ' ' + mode + ': setup text');
-        check($('briefChoices').children.length === 5, 'five starting tyres');
+        check($('briefChoices').children.length === 4, 'four starting tyres');
         check(visible($('briefFuelSection')) === (mode !== 'elimination'), 'fuel isolation');
         check(getComputedStyle($('raceBrief').querySelector('.brief-rule-grid')).gridTemplateColumns.split(' ').length === (mode === 'elimination' ? 2 : 3), 'setup grid has no empty column');
         $('raceBrief').classList.add('hidden');
@@ -71,9 +71,10 @@ const icons = html.slice(html.indexOf('const PS_ICON ='), html.indexOf('function
         p.pit = { phase: 'awaiting', station: pit.id, box: 0, selection: { tyre: p.tyre.c, fuel: 0 } };
         updatePitService(p, sess, true);
         check(!obsolete.test($('pitSvc').innerText), 'pit menu text');
-        const same = $('psTyres').querySelector('[data-c="' + p.tyre.c + '"]');
+        const same = $('psTyres').querySelector('[data-c="' + p.tyre.c + '"],[data-compound="' + p.tyre.c + '"]');
         check(same && !same.disabled, 'current compound is available again'); same.click();
-        check(sess.confirmPitService(p, p.pit.selection), 'same-compound selection accepted');
+        // Elimination's drive-through gate takes the choice as the car passes; Grand Prix confirms a stationary stop
+        check(mode === 'elimination' ? p.boxCompound === p.tyre.c : sess.confirmPitService(p, p.pit.selection), 'same-compound selection accepted');
         updatePitService(p, sess, true);
         check(visible($('psFuelSection')) === (mode !== 'elimination'), 'pit fuel isolation');
         $('pitSvc').classList.add('hidden');

@@ -105,7 +105,7 @@ test('without fuel management (Elimination, bare rigs) the fuel load has no perf
       }
       c.fuel = SIM.ELIMINATION_FUEL_MASS;
     }
-    assert.equal(SIM.chooseStartFuelLaps(S, S.cars[1], 'M'), null);
+    assert.equal(SIM.chooseStartFuelLaps(S, S.cars[1], 'H'), null);
   }
 });
 
@@ -118,7 +118,7 @@ function lapTimes(id, fuel, seed) {
   return car.lapTimes.slice(1).map(l => l.t);
 }
 for (const id of ['summit', 'rivermere', 'redridge']) {
-  test(id + ': 23 kg against 9 kg costs about 2.1–2.8 s a lap, through the physics (slow)', () => {
+  test(id + ': 23 kg against 9 kg costs about 2.1–2.9 s a lap, through the physics (slow)', () => {
     const d = { 15: [], 23: [] };
     // the calibration seeds of tools/fuel-calibration.cjs (8 seeds × 3 flying laps)
     for (let k = 0; k < 8; k++) { const seed = 11 + 7 * k;
@@ -127,7 +127,8 @@ for (const id of ['summit', 'rivermere', 'redridge']) {
     }
     const mean = a => a.reduce((x, y) => x + y, 0) / a.length;
     const d15 = mean(d[15]), d23 = mean(d[23]);
-    assert.ok(d23 >= 2.1 && d23 <= 2.8, id + ': 23 vs 9 kg ' + d23.toFixed(2) + ' s');
+    // (2.9 s: the default tyre is now the lower-grip Hard, not the Medium, which makes laps a little more weight-sensitive)
+    assert.ok(d23 >= 2.1 && d23 <= 2.9, id + ': 23 vs 9 kg ' + d23.toFixed(2) + ' s');
     assert.ok(d15 > 0.6 && d15 < d23 * 0.65, id + ': 15 vs 9 kg ' + d15.toFixed(2) + ' s');
     // the circuit's strategy figure (s per kg per lap) matches what the cars actually lose
     assert.ok(Math.abs(d23 / 14 - tracks.get(id).def.fuelLapCost) < 0.03, id + ' fuelLapCost ' + tracks.get(id).def.fuelLapCost + ' vs measured ' + (d23 / 14).toFixed(3));
@@ -136,18 +137,18 @@ for (const id of ['summit', 'rivermere', 'redridge']) {
 
 function grid(id, extra = {}) {
   const t = tracks.get(id);
-  return new SIM.Session(t, { type: 'race', laps: 8, entries: SIM.DRIVERS.slice(0, 20).map(driver => ({ driver })), seed: 9, spectate: true, weather: 'dynamic', weatherState: DRY(9), ...extra });
+  return new SIM.Session(t, { type: 'race', laps: SIM.GAME_MODES.grandprix.laps, entries: SIM.DRIVERS.slice(0, 20).map(driver => ({ driver })), seed: 9, spectate: true, weather: 'dynamic', weatherState: DRY(9), ...extra });
 }
 
 test('the strategy model prices fuel weight, refuelling time and extra stops', () => {
   const S = grid('summit', { tyreWear: 'off' });
-  const c = S.cars[0], L = 8;
+  const c = S.cars[0], L = S.totalLaps;
   // on the quickest dry tyre with no wear there is no reason to stop: carrying the whole race's fuel
   // beats a stop for fuel
-  const full = SIM.planStrategy(S, c, L, 'S', 0, { fixed: S.fuelForLaps(8) });
-  const light = SIM.planStrategy(S, c, L, 'S', 0, { fixed: S.fuelForLaps(4) });
-  assert.equal(full.stops.length, 0); assert.equal(light.stops.length, 1, 'a 4-lap load has to stop for fuel');
-  assert.ok(light.stops[0].lap <= 4);
+  const full = SIM.planStrategy(S, c, L, 'S', 0, { fixed: S.fuelForLaps(L) });
+  const light = SIM.planStrategy(S, c, L, 'S', 0, { fixed: S.fuelForLaps(3) });
+  assert.equal(full.stops.length, 0); assert.equal(light.stops.length, 1, 'a 3-lap load has to stop for fuel');
+  assert.ok(light.stops[0].lap <= 3);
   assert.ok(full.cost < light.cost, 'with no tyre stop, the extra stop costs more than the weight saves');
   // the fuel weight itself is priced: a lighter load for the same plan is quicker
   const a = SIM.planStrategy(S, c, 3, 'S', 0, { fixed: S.fuelForLaps(4) });
@@ -160,22 +161,28 @@ test('AI starting fuel is chosen on predicted race time, not simply the minimum'
   for (const id of ['summit', 'rivermere', 'redridge']) {
     // soft tyres that last the race and no second compound required: nothing gains from stopping
     const none = grid(id, { tyreWear: 'off' });
-    const heavy = none.cars.filter(c => SIM.chooseStartFuelLaps(none, c, 'S') >= 7.5).length;
+    const L = none.totalLaps, [lo] = SIM.START_FUEL_LAPS;
+    const heavy = none.cars.filter(c => SIM.chooseStartFuelLaps(none, c, 'S') >= L - 0.5).length;
     assert.ok(heavy >= 16, id + ': ' + heavy + '/20 run to the flag without a fuel stop');
-    // with normal tyre wear a tyre stop is usually coming anyway: most run lighter and refuel then
+    // with normal tyre wear a tyre stop is often coming anyway: those cars run lighter and refuel then (on
+    // Redridge, where grip matters least, many plan the Hard no-stop and carry the whole race's fuel)
     const stop = grid(id);
     const laps = stop.cars.map(c => c.startFuelLaps);
-    assert.ok(laps.filter(x => x < 7.5).length >= 12, id + ' starting fuel ' + laps.join(','));
+    assert.ok(laps.filter(x => x < L - 0.5).length >= 8, id + ' starting fuel ' + laps.join(','));
+    for (const c of stop.cars) if (c.startFuelLaps < L - 0.5) {
+      const plan = SIM.planStrategy(stop, c, L, c.tyre.c, 0, { fixed: stop.fuelForLaps(c.startFuelLaps) });
+      assert.ok(plan.stops.length > 0, id + ': ' + c.driver.short + ' starts on ' + c.startFuelLaps + ' laps of fuel with a stop planned');
+    }
     assert.ok(new Set(laps).size >= 3, 'drivers still differ');
-    assert.ok(laps.filter(x => x === 3).length < 12, 'not everyone takes the minimum');
-    for (const x of laps) assert.ok(x >= 3 && x <= 8);
+    assert.ok(laps.filter(x => x === lo).length < 12, 'not everyone takes the minimum');
+    for (const x of laps) assert.ok(x >= lo && x <= L);
   }
   // personality: with the same plan a bold driver leans lighter than a careful one
   const S = grid('summit');
   const bold = S.cars[0], careful = S.cars[1];
   bold.ai.p = { ...bold.ai.p, risk: 1, strat: 1 }; careful.ai.p = { ...careful.ai.p, risk: 0, strat: 1 }; careful.ai.skill = bold.ai.skill = 0;
   careful.fuelPerLapEst = bold.fuelPerLapEst = S.fuelPerLap;
-  const b = SIM.chooseStartFuelLaps(S, bold, 'M'), c = SIM.chooseStartFuelLaps(S, careful, 'M');
+  const b = SIM.chooseStartFuelLaps(S, bold, 'H'), c = SIM.chooseStartFuelLaps(S, careful, 'H');
   assert.ok(b <= c, 'bold ' + b + ' vs careful ' + c);
 });
 

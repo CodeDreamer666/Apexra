@@ -60,7 +60,7 @@ Starting with 23 kg and letting it burn, the lap times on Summit improve 83.8 â†
 - refuelling time beyond the tyre change (0.5 s plus 3 kg/s, less about 2.4 s for the tyres);
 - a steep cost for a stint the fuel cannot cover.
 
-The **starting fuel** (`chooseStartFuelLaps`) is the load from 3 to 8 laps with the best predicted race time. Each load is judged with its best tyre, stop and refuel plan. A driver's risk tolerance adds a small lean towards a lighter or heavier load, and weaker strategists misjudge it more (one random draw per driver).
+The **starting fuel** (`chooseStartFuelLaps`) is the load in the selectable range (`START_FUEL_LAPS`, now 2â€“7 laps, capped at the race distance) with the best predicted race time. Each load is judged with its best tyre, stop and refuel plan. A driver's risk tolerance adds a small lean towards a lighter or heavier load, and weaker strategists misjudge it more (one random draw per driver).
 
 At each stop the AI adds fuel (`refuelFor`) for the next stop it will really make, or for the flag when another stop would cost more. A planned tyre stop only counts once the tyres will be worn enough for the strategy to take it.
 
@@ -72,7 +72,7 @@ Every car runs the same physics, consumption and refuelling rig. There is no AI-
 
 ## Strategy balance
 
-Measured with `tools/fuel-strategy-balance.cjs`: one car over 8 laps, with the AI's own stops and refuelling, 2 seeds per cell. The table shows each start's race time behind the best start.
+Measured with `tools/fuel-strategy-balance.cjs`: one car over 8 laps, with the AI's own stops and refuelling, 2 seeds per cell. The table shows each start's race time behind the best start. These figures (and the side effects above) predate the six-lap race, the Medium's removal and the shorter pit lane; the tool now races 3, 4.5 and 6 laps of fuel over the six-lap distance, so rerun it for current figures.
 
 | Scenario | Light (3 laps) | Medium (5) | Heavy (8) |
 |---|---|---|---|
