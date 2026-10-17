@@ -117,7 +117,8 @@ test('planned paths are continuous: no lateral jumps when the plan changes', () 
 
 /* ---------------- 2-8. a full field: overtaking, defending, room, personalities, mistakes ---------------- */
 let raceStats = null;
-// two 2-lap races with the full field (Summit and Redridge), instrumented
+// two 3-lap races with the full field (Monza and Bahrain), instrumented (three laps: mistakes are situational and rare,
+// a couple per six-lap race, so two laps can pass without one)
 function fieldRace() {
   if (raceStats) return raceStats;
   const R = { overlapT: 0, tightT: 0, defendTicks: 0, weave: 0, defCorners: 0, planMs: 0, plans: 0, lineSep: [],
@@ -126,9 +127,9 @@ function fieldRace() {
   P.planTrajectory = function () { const t0 = process.hrtime.bigint(); plan.call(this); R.planMs += Number(process.hrtime.bigint() - t0) / 1e6; R.plans++; };
   for (const [id, seed] of [['monza', 13], ['bahrain', 14]]) {
     const s = new SIM.Session(tracks[id], { type: 'race', seed, difficulty: 1, weather: 'dynamic', weatherState: DRY(seed), tyreWear: 'normal', mandatory: true, damage: 'realistic', entries: SIM.DRIVERS.map(driver => ({ driver })) });
-    s.totalLaps = 2;
+    s.totalLaps = 3;
     const t = s.track, defMax = new Map();
-    while (!s.over && s.time < 2 * 200 + 120) {
+    while (!s.over && s.time < 3 * 200 + 120) {
       s.fixedStep(SIM.PHYS_DT);
       if (s.step % 24) continue;
       const cars = s.cars.filter(c => !c.pit && !c.dnf && !c.inGarage && c.speed > 15);
