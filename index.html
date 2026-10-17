@@ -1064,7 +1064,7 @@ const SIM = (function () {
   const CIRCUITS = [
     {
       id: 'monza', name: 'Autodromo Nazionale Monza', short: 'Monza', country: 'Italy', length: 5793, start: [0, 0],
-      pitLoss: 18.8, fuelPerLap: 2.7, fuelLapCost: 0.17, tyrePace: 60,
+      pitLoss: 21.1, fuelPerLap: 2.69, fuelLapCost: 0.256, tyrePace: 93.5,
       runoff: { base: 8, scale: 0.9 },
       pit: { side: 1, entry: 5235 },
       corners: named([[655, 'Variante del Rettifilo'], [1035, 'Curva Biassono'], [1855, 'Variante della Roggia'], [2280, 'Lesmo 1'], [2570, 'Lesmo 2'], [3085, 'Serraglio'], [3700, 'Variante Ascari'], [4835, 'Curva Alboreto (Parabolica)']]),
@@ -1072,23 +1072,23 @@ const SIM = (function () {
     },
     {
       id: 'silverstone', name: 'Silverstone Circuit', short: 'Silverstone', country: 'United Kingdom', length: 5891, start: [0, 0],
-      pitLoss: 18.8, fuelPerLap: 2.75, fuelLapCost: 0.17, tyrePace: 70,
+      pitLoss: 23.4, fuelPerLap: 2.75, fuelLapCost: 0.232, tyrePace: 106.3,
       runoff: { base: 14, scale: 1.25 },
-      pit: { side: 1, entry: 5735, rampIn: 180, rampOut: 50 },
+      pit: { side: 1, entry: 5770, rampIn: 180, rampOut: 50 },
       corners: named([[305, 'Abbey'], [555, 'Farm Curve'], [805, 'Village'], [950, 'The Loop'], [1155, 'Aintree'], [1700, 'Wellington Straight'], [1915, 'Brooklands'], [2090, 'Luffield'], [2410, 'Woodcote'], [3040, 'Copse'], [3575, 'Maggotts'], [3880, 'Becketts'], [4105, 'Chapel'], [4500, 'Hangar Straight'], [4995, 'Stowe'], [5430, 'Vale'], [5510, 'Club']]),
       env: { style: 'silverstone', forest: 0.35, broadleaf: 0.9, grass: [0.92, 1.05, 0.84], hill: 0.12, mountain: 0.0, haze: 0xcfd5d8 },
     },
     {
       id: 'spa', name: 'Circuit de Spa-Francorchamps', short: 'Spa', country: 'Belgium', length: 7004, start: [0, 0],
-      pitLoss: 18.8, fuelPerLap: 3.3, fuelLapCost: 0.2, tyrePace: 80,
+      pitLoss: 20.8, fuelPerLap: 3.27, fuelLapCost: 0.354, tyrePace: 104.5,
       runoff: { base: 8, scale: 1.0 },
-      pit: { side: 1, entry: 6730, rampIn: 180, rampOut: 50 },
+      pit: { side: 1, entry: 6760, rampIn: 180, rampOut: 50 },
       corners: named([[255, 'La Source'], [920, 'Eau Rouge'], [1000, 'Raidillon'], [1700, 'Kemmel Straight'], [2290, 'Les Combes'], [2530, 'Malmedy'], [2945, 'Bruxelles (Rivage)'], [3160, 'No Name'], [3750, 'Pouhon'], [4400, 'Fagnes'], [4815, 'Stavelot'], [5820, 'Blanchimont'], [6670, 'Bus Stop']]),
       env: { style: 'spa', forest: 1.6, broadleaf: 0.35, grass: [0.86, 1.02, 0.84], hill: 0.2, mountain: 0.0, haze: 0xc9d0d2, wetter: true },
     },
     {
       id: 'suzuka', name: 'Suzuka International Racing Course', short: 'Suzuka', country: 'Japan', length: 5807, start: [0, 0],
-      pitLoss: 18.8, fuelPerLap: 2.75, fuelLapCost: 0.17, tyrePace: 75,
+      pitLoss: 22.5, fuelPerLap: 2.74, fuelLapCost: 0.253, tyrePace: 115.4,
       runoff: { base: 7, scale: 0.8 },
       pit: { side: 1, entry: 5510 },
       corners: named([[475, 'First Curve'], [650, 'Second Curve'], [875, 'S Curves'], [1000, 'S Curves'], [1165, 'S Curves'], [1370, 'S Curves'], [1495, 'Dunlop Curve'], [2065, 'Degner 1'], [2220, 'Degner 2'], [2685, 'Hairpin'], [2975, '200R'], [3720, 'Spoon Curve'], [4300, 'Back Straight'], [4740, '130R'], [5155, 'Casio Triangle'], [5210, 'Casio Triangle'], [5350, 'Final Curve']]),
@@ -1096,7 +1096,7 @@ const SIM = (function () {
     },
     {
       id: 'bahrain', name: 'Bahrain International Circuit', short: 'Bahrain', country: 'Bahrain', length: 5412, start: [0, 0],
-      pitLoss: 18.8, fuelPerLap: 2.55, fuelLapCost: 0.16, tyrePace: 60,
+      pitLoss: 22.0, fuelPerLap: 2.77, fuelLapCost: 0.317, tyrePace: 130.1,
       runoff: { base: 13, scale: 1.2 },
       pit: { side: 1, entry: 4900 },
       corners: named([[570, 'Turn 1'], [670, 'Turn 2'], [785, 'Turn 3'], [1360, 'Turn 4'], [1640, 'Turn 5'], [1720, 'Turn 6'], [1855, 'Turn 7'], [2115, 'Turn 8'], [2510, 'Turn 9'], [2565, 'Turn 10'], [3280, 'Turn 11'], [3680, 'Turn 12'], [3970, 'Turn 13'], [4765, 'Turn 14'], [4850, 'Turn 15']]),
@@ -1104,7 +1104,7 @@ const SIM = (function () {
     },
     {
       id: 'interlagos', name: 'Autódromo José Carlos Pace (Interlagos)', short: 'Interlagos', country: 'Brazil', length: 4309, start: [0, 0],
-      pitLoss: 18.8, fuelPerLap: 2.1, fuelLapCost: 0.13, tyrePace: 50,
+      pitLoss: 19.5, fuelPerLap: 2.15, fuelLapCost: 0.238, tyrePace: 122.4,
       runoff: { base: 7, scale: 0.85 },
       pit: { side: -1, entry: 3730 },
       corners: named([[340, 'Senna S'], [430, 'Senna S'], [600, 'Curva do Sol'], [1000, 'Reta Oposta'], [1395, 'Descida do Lago'], [1560, 'Descida do Lago'], [2000, 'Ferradura'], [2305, 'Laranjinha'], [2425, 'Pinheirinho'], [2755, 'Bico de Pato'], [2995, 'Mergulho'], [3240, 'Junção'], [3365, 'Subida dos Boxes'], [3640, 'Arquibancadas']]),
@@ -3741,7 +3741,8 @@ const SIM = (function () {
       if(entryQ<0)this.pitEntryAborted=false;
       // A late AI decision may not leave enough time to join the marked route. Abandon it while
       // there is still an open connection to the track, rather than reaching the pit wall uncommitted.
-      if(this.pitting && !car.pit && entryQ>=t.pitForCar(car).E-120 &&
+      // (the check comes about 60% of the way along the entry ramp, so a short ramp still leaves room to cross over)
+      if(this.pitting && !car.pit && entryQ>=0.62*t.pitForCar(car).E &&
         (!race.pitEntrySafe(car) || Math.abs(car.d-t.pitTargetD(car.s,null,t.pitForCar(car)))>3)) {
         this.pitEntryAborted=true;
       }
@@ -4585,9 +4586,9 @@ const SIM = (function () {
         mood: { riskBudget: this.riskBudget, tolerance: this.tolerance, caution: this.caution, conviction: this.conviction, cruise: this.cruise, gripBelief: this.gripBelief, rejoin: this.rejoinT, posValue: this.posValue || 0 },
         rival: mem ? { pace: mem.pace, lineIn: mem.lineIn, coversInside: mem.defIn, fails: { ...mem.fails } } : null,
         mistake: this.mistake && this.mistakeT > 0 ? this.mistake.type : null, path: this.path.label, stats: { ...this.stats, kinds: { ...this.stats.kinds } },
-        brake: this.brakeAt >= 0 ? [pt(this.brakeAt, -t.halfW), pt(this.brakeAt, t.halfW)] : null,
+        brake: this.brakeAt >= 0 ? [pt(this.brakeAt, -t.hw[this.brakeAt]), pt(this.brakeAt, t.hw[this.brakeAt])] : null,
         cands, pathPts: path, racing, preds, x: car.x, z: car.z, psi: car.psi, halfW: t.halfW,
-        edges: (() => { const l = [], r = []; for (let q = -20; q < 200; q += 3) { const i = t.wrapI(car.idx + q); l.push(pt(i, -t.halfW)); r.push(pt(i, t.halfW)); } return [l, r]; })(),
+        edges: (() => { const l = [], r = []; for (let q = -20; q < 200; q += 3) { const i = t.wrapI(car.idx + q); l.push(pt(i, -t.hw[i])); r.push(pt(i, t.hw[i])); } return [l, r]; })(),
       };
     }
     // Write the chosen candidate into the path buffers the controller reads (lateral offset and curvature per sample).
@@ -5263,7 +5264,7 @@ const SIM = (function () {
     let xb = 0; // end of the main straight: where the reference speed first falls
     for (let i = 0; i < track.N / 4; i++) if (track.refSpeed[(i + 1) % track.N] < track.refSpeed[i] - 0.01) { xb = i * DS; break; }
     const want = launchTime(xb + pole) - gap;
-    let lo = 0, hi = Math.max(0, xb - 120);
+    let lo = 0, hi = Math.max(0, xb - 40);
     for (let k = 0; k < 50; k++) { const m = (lo + hi) / 2; if (launchTime(xb - m) > want) lo = m; else hi = m; }
     return Math.round(lo);
   }
@@ -6284,35 +6285,62 @@ const SIM = (function () {
   function progressNew() { return { v: PROGRESS_VERSION, team: null, career: progressModeNew(), duel: progressModeNew(), pursuit: progressModeNew(), legacy: null }; }
 
   // ---- Career lap-time pace (0..50) ----
-  // PACE_REF[circuit]: the measured reference lap (s) of the Master (150%) AI alone on the circuit on fresh tyres for
-  // the conditions, at track water 0, 0.3, 0.6 and 0.9 (wet: the compound the weather calls for), and the standing
-  // start's extra time on lap 1 (from the line). PACE_ANCHORS: lap time against that reference -> points, through the
-  // measured pace of the game's own drivers (Master, Pro, Rookie, the Grand Prix slider at 0%); see
-  // tools/pace-calibration.cjs and the README. Filled in by the calibration; these are its results.
+  // Measured with the game's own handling, physics and AI (tools/pace-calibration.cjs; README "Career"): one car alone,
+  // fresh tyres of the quickest compound for the conditions, a mid-race fuel load, track water held at 0, 0.3, 0.6
+  // and 0.9, four seeds, median of the flying laps. Per circuit and wetness:
+  //   ref     the Master (150%) AI's lap (s): the 50-point pace
+  //   launch  the standing start's extra time on lap 1 from the line, against that lap (no lap-1 traffic caution)
+  //   rookie  the Rookie (100%) AI's lap / ref: 26 points
+  //   slow    the Grand Prix slider at 0% / ref: 12 points
+  //   pro     the Pro (125%) AI's lap / ref, for reference only: its gap to Master is the smallest and least repeatable
+  //           (Monza dry: 0.17% and 0.63% in two calibration runs), too uncertain to anchor points on
+  // 0 points at the slow anchor plus 12/14 of the Rookie-to-slow spread beyond it. Between the anchors the points
+  // follow a monotone cubic (Fritsch-Carlson), so every lap-time change moves the score smoothly and a slower lap
+  // never scores more.
   const PACE_REF = {
-    monza: { water: [0, 0.3, 0.6, 0.9], ref: [81.5, 84.5, 89.0, 94.0], launch: 2.6 },
-    silverstone: { water: [0, 0.3, 0.6, 0.9], ref: [83.5, 86.5, 91.0, 96.5], launch: 2.6 },
-    spa: { water: [0, 0.3, 0.6, 0.9], ref: [101.5, 105.0, 110.5, 117.0], launch: 2.6 },
-    suzuka: { water: [0, 0.3, 0.6, 0.9], ref: [85.5, 88.5, 93.0, 98.5], launch: 2.6 },
-    bahrain: { water: [0, 0.3, 0.6, 0.9], ref: [92.0, 95.0, 100.0, 106.0], launch: 2.6 },
-    interlagos: { water: [0, 0.3, 0.6, 0.9], ref: [68.5, 71.0, 74.5, 79.0], launch: 2.6 },
+    monza: { water: [0, 0.3, 0.6, 0.9], ref: [77.28, 81.09, 84.79, 81.73], launch: [10.0, 10.4, 8.8, 10.4],
+      rookie: [1.0168, 1.0210, 1.0350, 1.0234], slow: [1.0630, 1.0731, 1.1035, 1.0799], pro: [1.0063, 1.0081, 1.0159, 1.0088] },
+    silverstone: { water: [0, 0.3, 0.6, 0.9], ref: [79.39, 83.58, 87.26, 84.15], launch: [9.8, 9.7, 7.8, 9.9],
+      rookie: [1.0230, 1.0326, 1.0413, 1.0315], slow: [1.0877, 1.0985, 1.1280, 1.1061], pro: [1.0119, 1.0173, 1.0233, 1.0149] },
+    spa: { water: [0, 0.3, 0.6, 0.9], ref: [97.18, 102.96, 107.31, 103.47], launch: [7.3, 6.4, 4.8, 6.5],
+      rookie: [1.0161, 1.0221, 1.0351, 1.0225], slow: [1.0784, 1.0812, 1.1205, 1.0868], pro: [1.0065, 1.0083, 1.0188, 1.0073] },
+    suzuka: { water: [0, 0.3, 0.6, 0.9], ref: [79.84, 85.49, 89.98, 86.03], launch: [9.5, 10.1, 7.4, 9.4],
+      rookie: [1.0209, 1.0210, 1.0232, 1.0175], slow: [1.0798, 1.0825, 1.1023, 1.0868], pro: [1.0079, 1.0130, 1.0114, 1.0084] },
+    bahrain: { water: [0, 0.3, 0.6, 0.9], ref: [84.09, 89.42, 95.61, 90.59], launch: [11.0, 11.8, 8.6, 11.4],
+      rookie: [1.0360, 1.0407, 1.0524, 1.0405], slow: [1.1100, 1.1163, 1.1577, 1.1161], pro: [1.0187, 1.0228, 1.0305, 1.0197] },
+    interlagos: { water: [0, 0.3, 0.6, 0.9], ref: [62.50, 66.53, 69.40, 66.71], launch: [7.4, 8.1, 6.8, 8.4],
+      rookie: [1.0318, 1.0385, 1.0479, 1.0413], slow: [1.0937, 1.1009, 1.1357, 1.1100], pro: [1.0157, 1.0201, 1.0269, 1.0226] },
   };
-  // [lap time / reference, points]: monotonic, linear between anchors, clamped at both ends
-  const PACE_ANCHORS = [[1.0, 50], [1.012, 38], [1.025, 26], [1.05, 12], [1.10, 0]];
-  function paceRefAt(circuit, water) {
-    const R = PACE_REF[circuit]; if (!R) return null;
-    const w = clamp(+water || 0, 0, 1), W = R.water, F = R.ref;
+  const PACE_POINTS = { master: 50, rookie: 26, slow: 12 };
+  // a value of a per-wetness table at track water w (linear between the measured wetness, held beyond them)
+  function paceTable(R, key, water) {
+    const w = clamp(+water || 0, 0, 1), W = R.water, F = R[key];
     if (w <= W[0]) return F[0];
     for (let k = 1; k < W.length; k++) if (w <= W[k]) return lerp(F[k - 1], F[k], (w - W[k - 1]) / (W[k] - W[k - 1]));
-    const n = W.length - 1; return F[n] + (F[n] - F[n - 1]) * (w - W[n]) / (W[n] - W[n - 1]);
+    return F[W.length - 1];
   }
-  // points (unrounded) for a lap time ratio
-  function pacePointsFor(ratio) {
-    const A = PACE_ANCHORS;
-    if (!(ratio > 0)) return 0;
+  function paceRefAt(circuit, water) { const R = PACE_REF[circuit]; return R ? paceTable(R, 'ref', water) : null; }
+  function paceLaunchAt(circuit, water) { const R = PACE_REF[circuit]; return R ? paceTable(R, 'launch', water) : 0; }
+  // [lap time / reference, points] for a circuit and wetness
+  function paceAnchors(circuit, water) {
+    const R = PACE_REF[circuit]; if (!R) return null;
+    const rk = paceTable(R, 'rookie', water), sl = paceTable(R, 'slow', water);
+    return [[1, PACE_POINTS.master], [rk, PACE_POINTS.rookie], [sl, PACE_POINTS.slow], [sl + (sl - rk) * PACE_POINTS.slow / (PACE_POINTS.rookie - PACE_POINTS.slow), 0]];
+  }
+  // points (unrounded) for a lap time ratio on a circuit at a wetness: 50 at or under the reference, 0 at the far
+  // anchor and beyond, a monotone cubic through the anchors between
+  function pacePointsFor(circuit, water, ratio) {
+    const A = paceAnchors(circuit, water);
+    if (!A || !(ratio > 0)) return 0;
     if (ratio <= A[0][0]) return A[0][1];
-    for (let k = 1; k < A.length; k++) if (ratio <= A[k][0]) return lerp(A[k - 1][1], A[k][1], (ratio - A[k - 1][0]) / (A[k][0] - A[k - 1][0]));
-    return 0;
+    const n = A.length; if (ratio >= A[n - 1][0]) return 0;
+    const h = [], d = [], m = [];
+    for (let k = 0; k < n - 1; k++) { h[k] = A[k + 1][0] - A[k][0]; d[k] = (A[k + 1][1] - A[k][1]) / h[k]; }
+    m[0] = d[0]; m[n - 1] = d[n - 2];
+    for (let k = 1; k < n - 1; k++) m[k] = d[k - 1] * d[k] <= 0 ? 0 : 3 * (h[k - 1] + h[k]) / ((2 * h[k] + h[k - 1]) / d[k - 1] + (h[k] + 2 * h[k - 1]) / d[k]);
+    let k = 0; while (ratio > A[k + 1][0]) k++;
+    const u = (ratio - A[k][0]) / h[k], u2 = u * u, u3 = u2 * u;
+    return clamp((2 * u3 - 3 * u2 + 1) * A[k][1] + (u3 - 2 * u2 + u) * h[k] * m[k] + (-2 * u3 + 3 * u2) * A[k + 1][1] + (u3 - u2) * h[k] * m[k + 1], 0, 50);
   }
   // The race's pace score (integer 0..50). laps: the player's laps as the session logs them (car.paceLaps:
   // { t, water, laneT, laneD, first }). Each lap is compared with the reference for its own average track water;
@@ -6326,8 +6354,8 @@ const SIM = (function () {
     for (const l of laps) {
       if (!l || !(l.t > 0)) continue;
       const ref = paceRefAt(circuit, l.water), adj = l.t - (l.laneT || 0) + (l.laneD || 0) * ref / length;
-      const target = ref + (l.first ? R.launch : 0), ratio = adj / target;
-      per.push({ t: l.t, adj, ref: target, ratio, points: pacePointsFor(ratio) });
+      const launch = l.first ? paceLaunchAt(circuit, l.water) : 0, ratio = (adj - launch) / ref;
+      per.push({ t: l.t, adj, ref: ref + launch, ratio, points: pacePointsFor(circuit, l.water, ratio) });
     }
     const n = retired ? Math.max(totalLaps, per.length) : Math.max(1, per.length);
     const sum = per.reduce((a, b) => a + b.points, 0);
@@ -6439,7 +6467,7 @@ const SIM = (function () {
     return progressMigrate(oldCareer, oldRanked);
   }
   const PROGRESS = { RANKS, CIRCUITS: PROGRESS_CIRCUITS, MODES: PROGRESS_MODES, VERSION: PROGRESS_VERSION, POS_POINTS: CAREER_POS_POINTS, PROMOTE: CAREER_PROMOTE, WINS: WINS_TO_PROMOTE,
-    PACE_REF, PACE_ANCHORS, create: progressNew, load: progressLoad, status: rankStatus, recordCareer, recordRanked, positionPoints: careerPositionPoints,
+    PACE_REF, PACE_POINTS, paceAnchors, paceLaunch: paceLaunchAt, create: progressNew, load: progressLoad, status: rankStatus, recordCareer, recordRanked, positionPoints: careerPositionPoints,
     paceScore: careerPaceScore, pacePoints: pacePointsFor, paceRef: paceRefAt };
 
   // Strategy pace model: relative lap time for an effective tyre grip mu (fresh Soft ≈ 1.68 = 1.0), fitted to

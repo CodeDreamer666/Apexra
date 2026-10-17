@@ -35,7 +35,7 @@ test('the speed-limited lane is short and every circuit has the same four shared
     for (const b of p.boxes) assert.ok(t.inLimiter(b) && t.inPitMain(b));
     assert.ok(t.dS(p.queueS, p.boxes[0]) > 8);
     // a measured clean-stop loss and fuel consumption for this circuit
-    assert.ok(t.def.pitLoss >= 16 && t.def.pitLoss <= 20, t.name + ' pit loss ' + t.def.pitLoss);
+    assert.ok(t.def.pitLoss >= 18 && t.def.pitLoss <= 25, t.name + ' pit loss ' + t.def.pitLoss);
     assert.ok(t.def.fuelPerLap > 2 && t.def.fuelPerLap < 3.5);
   }
 });
@@ -102,13 +102,14 @@ function soloRace(id, { stop = false, prep = null, fuelLaps = 8, laps = 4, onSte
 }
 
 for (const id of SIM.CIRCUITS.map(c => c.id)) {
-  test(id + ': a clean tyre-only stop loses 16–21 s against staying out, as the circuit states', () => {
+  test(id + ': a clean tyre-only stop loses 17–26 s against staying out, as the circuit states', () => {
     const base = soloRace(id), pit = soloRace(id, { stop: true });
     const loss = pit.time - base.time;
     assert.ok(pit.P && pit.P.changeTyres && !pit.P.fuelAdd && !pit.P.fwT && !pit.P.rwT, 'a tyre-only stop');
-    // (up to 21 s: the AI's quicker racing laps since the 2026 driving overhaul make the fixed-speed lane cost a little more)
-    assert.ok(loss >= 16 && loss <= 21, id + ' clean stop loss ' + loss.toFixed(2) + ' s');
-    assert.ok(Math.abs(loss - tracks.get(id).def.pitLoss) < 1.0, 'the stated loss matches the simulation: ' + loss.toFixed(2) + ' vs ' + tracks.get(id).def.pitLoss);
+    // (each real circuit's lane is measured: 19.5 s at Interlagos to 23.4 s at Silverstone over four seeds; one seed
+    // lands within about 2 s of the mean)
+    assert.ok(loss >= 17 && loss <= 26, id + ' clean stop loss ' + loss.toFixed(2) + ' s');
+    assert.ok(Math.abs(loss - tracks.get(id).def.pitLoss) < 2.0, 'the stated loss matches the simulation: ' + loss.toFixed(2) + ' vs ' + tracks.get(id).def.pitLoss);
     assert.equal(pit.car.laps, 4); assert.equal(pit.car.pitStops, 1);
   });
 }

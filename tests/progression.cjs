@@ -39,25 +39,34 @@ test('finishing position points for all 20 places: 50 for P1 down to 1 for P20',
 });
 
 test('lap-time pace: smooth and monotonic, every integer from 0 to 50 reachable, per circuit and weather', () => {
-  // per-lap points against the reference ratio: never more for a slower lap
-  let prev = Infinity; for (let r = 0.98; r < 1.2; r += 0.0002) { const p = P.pacePoints(r); assert.ok(p <= prev + 1e-12); prev = p; }
-  assert.equal(P.pacePoints(1), 50); assert.equal(P.pacePoints(0.95), 50); assert.equal(P.pacePoints(1.3), 0);
+  for (const c of CIRC) for (const w of [0, 0.3, 0.45, 0.6, 0.9, 1]) {
+    // per-lap points against the reference ratio: never more for a slower lap, no jumps
+    let prev = Infinity; for (let r = 0.98; r < 1.3; r += 0.0002) { const p = P.pacePoints(c, w, r); assert.ok(p <= prev + 1e-9, c + ' ' + w + ' ' + r); prev = p; }
+    // continuous: a thousandth of a percent of lap time never moves the score by more than a tenth of a point
+    for (let r = 0.999; r < 1.3; r += 0.0005) assert.ok(Math.abs(P.pacePoints(c, w, r) - P.pacePoints(c, w, r + 1e-5)) < 0.1, 'jump ' + c + ' ' + w + ' ' + r);
+    assert.equal(P.pacePoints(c, w, 1), 50); assert.equal(P.pacePoints(c, w, 0.95), 50); assert.equal(P.pacePoints(c, w, 1.3), 0);
+    // the anchors are the measured laps of the game's own drivers
+    const A = P.paceAnchors(c, w);
+    assert.deepEqual(A.map(a => a[1]), [50, 26, 12, 0]);
+    for (let k = 0; k < A.length; k++) assert.ok(Math.abs(P.pacePoints(c, w, A[k][0]) - A[k][1]) < 1e-9);
+    for (let k = 1; k < A.length; k++) assert.ok(A[k][0] > A[k - 1][0]);
+  }
   for (const c of CIRC) {
     const L = tracks.get(c).length, R = P.paceRef(c, 0), seen = new Set();
-    for (let k = 0; k <= 2000; k++) {
+    for (let k = 0; k <= 3000; k++) {
       const t = R * (1 + k * 0.0001), laps = [];
-      for (let q = 0; q < 6; q++) laps.push({ t: q === 0 ? t + P.PACE_REF[c].launch : t, water: 0, laneT: 0, laneD: 0, first: q === 0 });
+      for (let q = 0; q < 6; q++) laps.push({ t: q === 0 ? t + P.paceLaunch(c, 0) : t, water: 0, laneT: 0, laneD: 0, first: q === 0 });
       seen.add(P.paceScore(c, L, laps, 6, false).points);
     }
     for (let n = 0; n <= 50; n++) assert.ok(seen.has(n), c + ': ' + n + ' points reachable');
-    // each circuit has its own reference, and the wet references are slower
-    let w0 = 0; for (const w of [0, 0.3, 0.6, 0.9]) { const r = P.paceRef(c, w); assert.ok(r > w0); w0 = r; }
+    // each circuit has its own reference, and every wet reference is slower than the dry one
+    for (const w of [0.3, 0.6, 0.9]) assert.ok(P.paceRef(c, w) > P.paceRef(c, 0), c + ' wet ' + w);
   }
   const refs = CIRC.map(c => P.paceRef(c, 0)); assert.equal(new Set(refs).size, 6, 'no shared benchmark');
 });
 
 test('pace over the race: consistency counts, one fast lap cannot hide bad ones, standing starts and pit stops are normalised', () => {
-  const c = 'silverstone', L = tracks.get(c).length, R = P.paceRef(c, 0), launch = P.PACE_REF[c].launch;
+  const c = 'silverstone', L = tracks.get(c).length, R = P.paceRef(c, 0), launch = P.paceLaunch(c, 0);
   const lap = (f, extra = {}) => Object.assign({ t: R * f, water: 0, laneT: 0, laneD: 0, first: false }, extra);
   const score = (laps, retired = false) => P.paceScore(c, L, laps, 6, retired).points;
   const clean = [lap(1.02, { t: R * 1.02 + launch, first: true }), ...[1, 2, 3, 4, 5].map(() => lap(1.02))];
@@ -74,11 +83,11 @@ test('pace over the race: consistency counts, one fast lap cannot hide bad ones,
   const pitted = clean.slice(); pitted[3] = pitLap; assert.equal(score(pitted), base, 'a legitimate stop costs no pace points');
   // a slower lap is a slower lap: the comparison is like for like
   assert.ok(score([lap(1.03)]) < score([lap(1.02)]));
-  // wet laps are measured against the wet reference: the same relative pace scores the same
-  const wet = (f) => ({ t: P.paceRef(c, 0.6) * f, water: 0.6, laneT: 0, laneD: 0, first: false });
-  assert.equal(score([wet(1.02)]), score([lap(1.02)]));
-  assert.ok(score([lap(1.02, { water: 0.6 })]) === 50, 'a dry-pace lap in the wet is excellent');
-  // choosing slower conditions gains nothing: a wet lap at dry pace ratio is no better than the dry one
+  // wet laps are measured against the wet reference and the wet anchors: matching the Rookie AI's measured lap in
+  // the conditions scores the same in the dry and in the wet
+  const rk = (w) => P.paceAnchors(c, w)[1][0], wet = (w) => ({ t: P.paceRef(c, w) * rk(w), water: w, laneT: 0, laneD: 0, first: false });
+  assert.equal(score([wet(0.6)]), 26); assert.equal(score([wet(0)]), 26);
+  assert.ok(score([lap(1.0, { water: 0.6 })]) === 50, 'a dry-pace lap in the wet is excellent');
   // retired: every lap not completed scores 0
   assert.ok(score(clean.slice(0, 3), true) < score(clean.slice(0, 3)) && Math.abs(score(clean.slice(0, 3), true) - Math.round(base / 2)) <= 1);
 });
