@@ -1022,8 +1022,11 @@ const SIM = (function () {
      ------------------------------------------------------------------ */
   // Six real Formula 1 circuits in their current Grand Prix configurations. The geometry is measured data, embedded
   // by tools/build-circuits.cjs (sources and licences there and in the README):
-  //   centre line and widths  TUM FTM racetrack-database (LGPL-3.0): OpenStreetMap centre lines, 5 m spacing, with the
-  //                           track width to each side extracted from satellite images; re-centred between the edges
+  //   centre line and widths  TUM FTM racetrack-database (LGPL-3.0): OpenStreetMap centre lines (map data
+  //                           © OpenStreetMap contributors, ODbL 1.0), 5 m spacing, with the track width to each side
+  //                           extracted from satellite images; re-centred between the edges. The CIRCUIT_DATA block is
+  //                           a derived work of that data and is distributed under the same terms (docs/circuit-data.md,
+  //                           docs/licenses/)
   //   georeference            bacinger/f1-circuits (MIT) WGS84 traces, fitted to the TUM lines (rotation + translation)
   //   elevation               SRTM 1" DEM (public domain, via the AWS Terrain Tiles open dataset), filtered along the line
   // Each line is in metres (x east, z south), starts on the start/finish line and runs in the racing direction.

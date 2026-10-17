@@ -2,8 +2,8 @@
 // Builds the six real circuits' embedded data (the CIRCUIT_DATA block in index.html) from measured sources:
 //
 //   centre lines and widths  TUM FTM racetrack-database (LGPL-3.0, https://github.com/TUMFTM/racetrack-database):
-//                            OpenStreetMap GPS centre lines (smoothed, 5 m spacing) with track widths to the left and
-//                            right extracted from satellite images.
+//                            OpenStreetMap GPS centre lines (smoothed, 5 m spacing; © OpenStreetMap contributors,
+//                            ODbL 1.0) with track widths to the left and right extracted from satellite images.
 //   georeference             bacinger/f1-circuits (MIT, https://github.com/bacinger/f1-circuits): WGS84 centre lines,
 //                            used to place the TUM lines (which are in local metres) on the globe by a rigid
 //                            (rotation + translation, no scaling) iterative-closest-point fit. The fit residual is

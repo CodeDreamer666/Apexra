@@ -82,37 +82,69 @@ Qualifying, the Elimination variants, Time Attack and Overtake Challenge are not
 
 ## Circuits
 
-Start Grand Prix opens the circuit selection: three cards, each showing only the circuit's name and a glowing map drawn from the same centre line the playable track is built on. Click a card or use the arrow keys, then **Race here** (or Enter) to go to the race brief and the grid; Back or Esc returns to the menu. The choice is saved in the browser, and the main menu's circuit card shows it.
+Six real Formula 1 circuits in their current Grand Prix layouts, built from measured data (centre lines and widths from the TUM FTM racetrack-database, which is based on OpenStreetMap; elevation from SRTM). Sources, licences, attribution and every measured and estimated figure are in **[docs/circuit-data.md](docs/circuit-data.md)**; `tools/build-circuits.cjs` rebuilds the embedded data from the original files.
 
-| Circuit | Character | Corners |
-|---|---|---|
-| **Summit Grand Circuit** | Alpine highlands. A 1.7 km main straight, a tight technical complex climbing to the summit, a fast sweeping descent with about 40 m of elevation change, and a twisting final section back onto the straight. Snow-capped peaks, spruce forests, a lake and a chalet village. | 18 |
-| **Rivermere Grand Prix** | River valley. Medium-speed flowing corners, a tight hairpin at the end of the main straight, a long diagonal back straight and a technical, hairpin-heavy far end that rewards braking and traction. A lake in the infield, a winding river, a castle, a village and broadleaf woods. | 15 |
-| **Redridge International Circuit** | Red canyon. A 1.8 km main straight into heavy braking, a mix of fast sweepers and slow corners, a climb to the far ridge and a hook-shaped final hairpin. Several realistic overtaking spots. Red sandstone mesas and buttes, dry grass, pines and junipers. | 14 |
+Start Grand Prix opens the circuit selection: six cards with the circuit's short name, country and lap length, each with a map drawn from the same centre line the playable track is built on; the selected card also shows the race distance for the mode (6 laps in Grand Prix and Career, 2 in Rival Duel and Pursuit). Click a card or use the arrow keys, then **Race here** (or Enter); Back or Esc returns to the menu. The choice is saved, and the main menu's circuit card shows it.
 
-Each circuit is a genuine, separate track. Its centre line, track width, kerbs, run-off, gravel, barriers and collision walls, racing line, corner speeds and braking points, AI lanes, start grid, pit lane and boxes, sector timing, marshal sectors, lap counting, minimap, terrain and scenery are all generated from that circuit's definition. Corner counts and straights are measured from the geometry, not hard-coded. Elevation is one smooth height field per circuit. The simulation uses it for gradients: climbs cost speed, descents add it. The renderer lifts every vertex by the same field, so the road, kerbs, barriers, buildings, cars and effects follow the hills together. A geometry check (`Track.validate`) rejects layouts where separate parts of the lap come too close, a barrier reaches the road, a corner is too tight to drive or the gradient is excessive.
+| Circuit | Country | Lap (published / in game) | 6-lap race | Direction | Elevation range in game | Pit lane | Setting |
+|---|---|---|---|---|---|---|---|
+| **Autodromo Nazionale Monza** | Italy | 5.793 / 5.794 km | 34.76 km | Clockwise | 14.5 m | Right of the main straight | Royal park: broadleaf woods, grass, light haze |
+| **Silverstone Circuit** | United Kingdom | 5.891 / 5.890 km | 35.34 km | Clockwise | 12.8 m | Right | Open, flat former airfield; wide run-off |
+| **Circuit de Spa-Francorchamps** | Belgium | 7.004 / 7.004 km | 42.02 km | Clockwise | 105.2 m | Right | Ardennes forest and hills; the wettest weather of the six |
+| **Suzuka International Racing Course** | Japan | 5.807 / 5.806 km | 34.84 km | Figure of eight | 42.2 m | Right | Wooded hills, the Ferris wheel; the back straight crosses over the Degner–Hairpin section on a bridge |
+| **Bahrain International Circuit** | Bahrain | 5.412 / 5.412 km | 32.47 km | Clockwise | 19.7 m | Right | Desert: sand, palms, the tower; floodlit night race |
+| **Autódromo José Carlos Pace (Interlagos)** | Brazil | 4.309 / 4.310 km | 25.86 km | Anti-clockwise | 43.0 m | Left | City bowl: towers around the circuit, hills |
+
+Race distances are the real lap length times the mode's laps; nothing is time-scaled. Corners are numbered and named in the real order (for example Monza's Variante del Rettifilo, Curva Grande, Roggia, Lesmo, Ascari and Parabolica; Spa's La Source, Eau Rouge, Raidillon, Les Combes, Pouhon, Blanchimont and the Bus Stop; Bahrain uses turn numbers), checked by `tests/circuits.cjs`.
+
+Each circuit is a separate track generated from its definition: centre line, per-point track width (with a 10 m minimum where the satellite width is narrower), kerbs, run-off and gravel sized per circuit, barriers and collision walls, racing lines, corner speeds and braking points, AI lanes, start grid, pit lane and boxes, sector timing, marshal sectors, lap counting, minimap, terrain and scenery. Elevation is the measured profile along the line, so Eau Rouge and Raidillon climb about 40 m and Interlagos drops from the Senna S to the Descida do Lago; the simulation uses the gradient (climbs cost speed, descents add it), and the renderer lifts the road, kerbs, barriers, buildings and cars by the same heights, with a fine height grid around the circuit and a coarse one out to 10 km. Suzuka's two levels are physically separate: the upper road crosses on a bridge with 7.5 m clearance, cars on different levels never collide, and the walls and height lookup know which road a car is on. A geometry check (`Track.validate`) rejects layouts where separate parts of the lap at the same level come too close, a barrier reaches the road, a corner is too tight to drive or the gradient is excessive.
+
+**Measured per circuit with the game's own physics** (`tools/circuit-calibration.cjs`; one car alone, dry): the pit-stop loss of a tyre-only stop, fuel use and the fuel-weight lap cost, used by the strategy model and the race engineer.
+
+| Circuit | Pit-stop loss | Fuel per lap | Lap cost per kg of fuel |
+|---|---|---|---|
+| Monza | 21.1 s | 2.69 kg | 0.256 s |
+| Silverstone | 23.4 s | 2.75 kg | 0.232 s |
+| Spa-Francorchamps | 20.8 s | 3.27 kg | 0.354 s |
+| Suzuka | 22.5 s | 2.74 kg | 0.253 s |
+| Bahrain | 22.0 s | 2.77 kg | 0.317 s |
+| Interlagos | 19.5 s | 2.15 kg | 0.238 s |
+
+**Not reproduced exactly** (see docs/circuit-data.md): start/finish line positions are estimates; the pit lane is a lane beside the main straight on the real side, so Silverstone's, Spa's and Interlagos's real entries and exits away from the straight are not modelled; SRTM smoothing loses short crests and compressions; the Suzuka bridge height is added (the data has only the ground); kerbs, run-off, barriers and scenery are generated, not surveyed.
+
+**Saves from the old circuits.** A saved circuit choice of Summit, Rivermere or Redridge (the previous fictional circuits, now removed) falls back to Monza; no other setting changes.
 
 ## Career
 
-**Career** (on the main menu) has five championships of rising difficulty. Each is three six-lap Grand Prix from the grid (tyres, fuel, weather, pit stops, damage and race engineers as in Grand Prix), always in the same order: **Summit Grand Circuit**, **Rivermere Grand Prix**, **Redridge International Circuit**. You pick a team when the championship starts and keep it for all three races; the same 19 AI teams race every round.
+**Career** (on the main menu, "Career — 3 Ranks") has three ranks. Every rank holds all six circuits; each race is a six-lap Grand Prix from the grid with all 20 cars (tyres, fuel, weather, pit stops, damage and race engineers as in Grand Prix), with the whole field at the rank's AI level. You pick your team once and keep it.
 
-| Tier | Name | AI difficulty | To advance |
-|---|---|---|---|
-| 1 | Rookie | 100% | Top 12 |
-| 2 | Pro | 125% | Top 8 |
-| 3 | Elite | 160% | Top 6 |
-| 4 | Master | 220% | Top 4 |
-| 5 | Legendary | 300% | P1, Career Champion |
+| Rank | AI level | To be promoted (of 600) |
+|---|---|---|
+| Rookie | 100% | 360 → Pro opens |
+| Pro | 125% | 420 → Master opens |
+| Master | 150% | 480 → Career complete |
 
-**Points** follow the race classification: 25, 20, 16, 13, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1 for P1–P15, nothing for P16–P20 or a retirement, and no bonus points. **Standings** rank all 20 drivers by points; ties go to the most wins, then the most second places, third places and so on, then the better result in the latest race, then car number. Only the final standings after Race 3 decide: finish at or above the tier's target and the next tier unlocks; miss it and replay the tier from Race 1 with fresh points. Unlocked and completed tiers are never taken away. Winning the Legendary championship makes you **Career Champion** and completes the Career.
+Race the six circuits in any order and replay any of them as often as you like. **Every circuit scores up to 100 points**, and the rank's score is the sum of each circuit's **best** result (never a sum of attempts), so a rank is worth at most 600. Promotion needs **all six circuits raced** and the score at or above the threshold. Unlocked ranks stay unlocked; earlier ranks stay replayable.
 
-**Retrying a race.** When a Career race ends, its result is held, uncounted: the results screen offers **Retry race** (that race starts again, at the same tier, with the same team, and the championship is exactly as it was before it) or **Accept result** (it is added to the standings, once). A held result survives closing the game; the Career screen then offers the same two choices. Once a championship's third result is accepted it is final.
+**Position points (0–50)** follow the official classification (a car that retires keeps its classified place):
 
-**The AI levels** are difficulty configuration values, not speed multipliers; see **AI difficulty** under AI drivers.
+| P1 | P2 | P3 | P4 | P5 | P6 | P7 | P8 | P9 | P10 | P11 | P12 | P13 | P14 | P15 | P16 | P17 | P18 | P19 | P20 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 50 | 44 | 39 | 35 | 32 | 29 | 26 | 23 | 20 | 18 | 16 | 14 | 12 | 10 | 8 | 6 | 5 | 4 | 2 | 1 |
 
-**Saving.** Career progress has its own entry in the browser's storage (`apexgp.career.v1`, format version 2): unlocked and completed tiers, best finishes, Career Champion, the championship in progress (tier, team, every accepted race's full classification and any held result; points and standings are recomputed from those results). Saved data is validated on load: a damaged championship in progress is dropped without touching unlocked tiers, unreadable data starts a fresh career. **Restart attempt** resets only the current championship; **Reset career progress** (two clicks) erases everything.
+**Pace points (0–50)** measure your lap times against the game's own drivers on that circuit in the conditions you raced in. Each lap is scored, and the race score is the mean over the race distance (laps not completed after a retirement score 0), so one fast lap cannot hide slow ones. Per lap:
 
-**Old eight-tier saves** (version 1, 100–175%) are migrated once, on load. Tier numbers are never carried over. A new tier counts as completed only when an old completed tier was at least as hard on both counts: an AI level at least as high and a target at least as strict (the old levels drive at least as well as the same percentage today). That can cover Rookie, Pro and Elite; Master (220%) and Legendary (300%) were never part of the old Career and are never awarded, and the old Legendary title does not make you Career Champion. Old Rookie is the same championship as new Rookie, so its best result and an unfinished Rookie championship carry over. Any other unfinished championship has no equivalent tier: it is kept untouched in the save's `legacy` record (with the old completions, best results and title) and the Career screen explains why it cannot be continued.
+- The **reference** is the Master (150%) AI's lap on that circuit at that track wetness, measured with the real physics (`tools/pace-calibration.cjs`: one car alone, four seeds, fresh tyres of the quickest compound for the conditions, a mid-race fuel load, track water held at 0, 0.3, 0.6 and 0.9; values in between are interpolated by the lap's own average wetness). Matching it scores 50.
+- The **anchors** are measured the same way: the Rookie (100%) AI's lap scores 26 and the Grand Prix slider at 0% scores 12; 0 lies 12/14 of the Rookie-to-slider gap beyond that. Between the anchors the score follows a monotone cubic, so it is smooth, never higher for a slower lap, and every whole number from 0 to 50 can be reached (`tests/progression.cjs`).
+- **Normalised:** the standing start (lap 1 is allowed the reference's measured extra time from the line) and pit stops (the time between pit entry and exit is replaced by reference pace over the same distance). **Not normalised:** mistakes, time off the track, contact, damage, worn tyres and fuel weight: they are part of your pace.
+
+Measured references (dry, s): Monza 77.28, Silverstone 79.39, Spa 97.18, Suzuka 79.84, Bahrain 84.09, Interlagos 62.50. Rookie AI against the reference, dry: +1.6% (Monza), +2.3% (Silverstone), +1.6% (Spa), +2.1% (Suzuka), +3.6% (Bahrain), +3.2% (Interlagos); in the wet the spreads are larger. The Pro AI measured +0.6% to +1.9% dry; it is not an anchor because its gap to Master is the smallest and least repeatable (0.17% and 0.63% at Monza in two calibration runs). On the fast circuits the scale is steep: at Monza one dry pace point is about 0.05 s a lap.
+
+**The results screen** shows position points, pace points and the circuit total, whether it improved the circuit's best, the rank score and what is still needed, with **Retry circuit**, **Next circuit** and, once all six are raced and the threshold is met, the promotion. The Career screen shows the three ranks, the six circuit cards of the selected rank with their best results, and a summary table.
+
+**Saving.** Ranked progress for Career, Rival Duel and Pursuit lives in one browser entry (`apexgp.progress.v3`): per mode, the unlocked rank and every circuit's best result per rank. Status (scores, wins, promotion) is always recomputed from those results; malformed entries are dropped one by one, so one bad value never wipes the rest. A result is recorded once per race session.
+
+**Old saves** (the five-tier or eight-tier Career in `apexgp.career.v1`, the eight-rank Rival Duel and Pursuit in `apexgp.ranked.v1`) are migrated once. Their races were on the removed fictional circuits, so **no result, score or win is carried over**; what is kept is access and your team. A rank opens when the old save had completed an old tier or rank whose AI level was at least the level of the rank below it (for example, an old completed 125% tier opens Master; an old completed 100% tier opens Pro). The old entries are left untouched in storage and copied into the new save's `legacy` record.
 
 ## Rival Duel and Pursuit
 
