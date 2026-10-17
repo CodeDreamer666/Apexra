@@ -1,23 +1,25 @@
 // AI difficulty benchmark (slow; not part of the quick test run). It measures, with the real Session, AIDriver,
-// RaceEngineer and physics running headless, how the AI drives at each difficulty level (100%–300%: the Career
-// tiers and the Rival Duel / Pursuit ranks) compared with the difficulty-100 baseline. Nothing here changes the
+// RaceEngineer and physics running headless, how the AI drives at each rank level (Rookie 100%, Pro 125%, Master
+// 150%: the Career, Rival Duel and Pursuit ranks) compared with the difficulty-100 baseline. Nothing here changes the
 // game; the numbers come from simulated laps and races.
 //
 //   node tests/career-ai.cjs pace   solo laps: lap time, lap-to-lap spread, mistakes, time off the track, braking
 //   node tests/career-ai.cjs duel   two identical cars, a baseline one ahead and a level one behind (and the reverse)
 //   node tests/career-ai.cjs race   4-lap dry races: four baseline "reference" cars against sixteen level cars
 //   node tests/career-ai.cjs wet    4-lap races with a rain front arriving early: tyre calls and reference cars
-//   node tests/career-ai.cjs championship   full championships: three 6-lap races per Career tier (CHAMP_TIERS=0,4), recorded by the Career rules
+//   node tests/career-ai.cjs career  Career ranks: 6-lap races on all six circuits with the field at each rank, three
+//                                    stand-in "players" (AI at Rookie, Pro and Master skill, random grid slots) scored
+//                                    by the Career rules (position + pace points), against the promotion thresholds
 //   node tests/career-ai.cjs all
-// Options: LEVELS=1,1.6,2.2,3 CIRCUITS=summit,rivermere,redridge JOBS=4 (environment variables)
+// Options: LEVELS=1,1.25,1.5 CIRCUITS=monza,... SEEDS=901,902 JOBS=4 (environment variables)
 const fs = require('node:fs');
 const path = require('node:path');
-const vm = require('node:vm');
 const os = require('node:os');
 const { fork } = require('node:child_process');
 
 const html = fs.readFileSync(process.env.SIM_HTML || path.join(__dirname, '..', 'index.html'), 'utf8');
-function loadSim() { const ctx = { module: { exports: {} } }; vm.runInNewContext(html.match(/<script>([\s\S]*?)<\/script>/)[1], ctx); return ctx.module.exports; }
+// (a plain function, not vm.runInNewContext: a separate context runs the simulation about five times slower)
+function loadSim() { const m = { exports: {} }; new Function('module', html.match(/<script>([\s\S]*?)<\/script>/)[1])(m); return m.exports; }
 const mean = a => a.length ? a.reduce((x, y) => x + y, 0) / a.length : NaN;
 const sd = a => { const m = mean(a); return a.length > 1 ? Math.sqrt(a.reduce((x, y) => x + (y - m) ** 2, 0) / a.length) : 0; };
 const REF = ['Team E', 'Team G', 'Team O', 'Team T']; // a fast, a strong, a mid-field and a back-marker driver
@@ -78,16 +80,23 @@ const JOBS = {
     return { tierAhead: tierCar.totalDist > other.totalDist, margin: tierCar.totalDist - other.totalDist, passedAt, contacts: s.stats.collisions, mistakes: (tierCar.mistakes || 0),
       attempts: tierCar.ai.stats.attempts, passes: tierCar.ai.stats.passes, aborts: tierCar.ai.stats.aborts, defends: tierCar.ai.stats.defends };
   },
-  // one full Career race: the whole field at the tier, six laps, the game's dynamic weather
-  champRace({ tier, race, seed }) {
-    const S = loadSim(), t = new S.Track(S.circuitById(S.CAREER.CIRCUITS[race]));
-    const s = new S.Session(t, { type: 'race', seed, aiLevel: S.CAREER.TIERS[tier].level, weather: 'dynamic', weatherSeed: seed, tyreWear: 'normal',
-      mandatory: true, damage: 'realistic', entries: S.DRIVERS.map(driver => ({ driver })) });
+  // one Career race: the field at the rank, six laps, the game's dynamic weather, a random grid; three stand-in
+  // players (Teams E, J and O) driven by the AI at Rookie, Pro and Master skill, scored by the Career rules
+  careerRace({ rank, circuit, seed }) {
+    const S = loadSim(), t = new S.Track(S.circuitById(circuit)), P = S.PROGRESS, R = P.RANKS[rank];
+    const stand = { 4: 0, 9: 0.5, 14: 1 }, rng = S.makeRng(seed), order = S.DRIVERS.map((d, i) => i);
+    for (let i = order.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [order[i], order[j]] = [order[j], order[i]]; }
+    const s = new S.Session(t, { type: 'race', gameMode: 'grandprix', laps: 6, seed, difficulty: 1, aiLevel: R.level, weather: 'dynamic', weatherSeed: seed, tyreWear: 'normal',
+      damage: 'realistic', entries: order.map(i => ({ driver: S.DRIVERS[i], aiSkill: stand[i] })) });
     while (!s.over && s.time < 6 * 200 + 300) s.fixedStep(S.PHYS_DT);
-    if (!s.over) return { over: false, time: s.time, leader: s.cars.map(c => c.laps).sort((a, b) => b - a)[0], weather: s.weather.label,
-      stuck: s.cars.filter(c => !c.finished && !c.dnf).map(c => c.driver.short + ' L' + c.laps + ' s=' + c.s.toFixed(0) + (c.pit ? ' pit:' + c.pit.phase : '') + (c.ai ? ' ' + c.ai.mode : '')).join('; ') };
-    return { over: s.over, laps: s.totalLaps, weather: s.weather.start.label + ' → ' + s.weather.label, record: S.CAREER.raceRecord(s.results),
-      winner: s.results[0].car.driver.name, stops: s.stats.pitstops };
+    if (!s.over) return { over: false, time: s.time };
+    const out = {};
+    for (const [i, skill] of Object.entries(stand)) {
+      const r = s.results.find(x => x.car.driver === S.DRIVERS[i]), pace = P.paceScore(circuit, t.length, r.car.paceLaps || [], s.totalLaps, !!r.dnf);
+      out[skill] = { pos: r.pos, dnf: !!r.dnf, posPts: P.positionPoints(r.pos), pacePts: pace.points, grid: order.indexOf(+i) + 1 };
+    }
+    const water = s.cars[0].paceLaps ? s.cars[0].paceLaps.reduce((a, l) => a + l.water, 0) / s.cars[0].paceLaps.length : 0;
+    return { over: true, out, water, weather: s.weather.start.label + ' → ' + s.weather.label, contacts: s.stats.collisions, dnfs: s.results.filter(r => r.dnf).length };
   },
   // a full field: four baseline reference cars against sixteen tier cars
   race({ circuit, level, seed, laps, wet }) {
@@ -122,9 +131,9 @@ if (process.argv[2] === '--worker') {
 
 /* ---- driver ---- */
 const env = process.env, S0 = loadSim();
-const tiers = (env.LEVELS || '1,1.6,2.2,3').split(',').map(Number); // AI levels (1 = 100%)
-const circuits = (env.CIRCUITS || 'summit,rivermere,redridge').split(',');
-const modes = process.argv[2] === 'all' || !process.argv[2] ? ['pace', 'duel', 'race', 'wet', 'championship'] : process.argv.slice(2);
+const tiers = (env.LEVELS || '1,1.25,1.5').split(',').map(Number); // AI levels (1 = 100%)
+const circuits = (env.CIRCUITS || 'monza,silverstone,spa,suzuka,bahrain,interlagos').split(',');
+const modes = process.argv[2] === 'all' || !process.argv[2] ? ['pace', 'duel', 'race', 'wet', 'career'] : process.argv.slice(2);
 function pool(kind, jobs) {
   const n = Math.min(+env.JOBS || os.cpus().length, jobs.length), results = [];
   return new Promise(resolve => {
@@ -179,24 +188,24 @@ const name = k => (Math.round(k * 100) + '%').padEnd(10);
           + '  ' + (att.reduce((a, r) => a + r.attempts, 0) + '/' + att.reduce((a, r) => a + r.passes, 0) + '/' + att.reduce((a, r) => a + r.aborts, 0)).padStart(22) + '  ' + def.reduce((a, r) => a + r.defends, 0).toString().padStart(7));
       }
     }
-    if (mode === 'championship') {
-      const ct = (env.CHAMP_TIERS || '0,4').split(',').map(Number), jobs = [];
-      for (const tier of ct) for (let race = 0; race < 3; race++) jobs.push({ tier, race, seed: 900 + tier * 10 + race });
-      const res = await pool('champRace', jobs);
-      for (const tier of ct) {
-        const st = S0.CAREER.create(); st.unlocked = tier; const team = 4; // the career entry is Team E's seat, driven here by the AI
-        S0.CAREER.start(st, tier, team);
-        console.log('\nCHAMPIONSHIP · ' + S0.CAREER.TIERS[tier].name + ' (three 6-lap races, all 20 cars AI at the tier)');
-        for (let race = 0; race < 3; race++) {
-          const r = res.find(x => x.job.tier === tier && x.job.race === race).out;
-          if (!r.over) { console.log('  R' + (race + 1) + ' NOT CLASSIFIED after ' + r.time.toFixed(0) + ' s (leader lap ' + r.leader + ', ' + r.weather + '): ' + r.stuck); continue; }
-          const out = S0.CAREER.record(st, { tier, team, race, id: 'bench-' + tier + '-' + race }, r.record);
-          console.log('  R' + (race + 1) + ' ' + S0.CAREER.CIRCUITS[race].padEnd(9) + ' classified ' + r.over + ' · ' + r.laps + ' laps · ' + r.weather + ' · winner ' + r.winner + ' · ' + r.stops + ' stops · recorded ' + out.ok);
+    if (mode === 'career') {
+      const P = S0.PROGRESS, seeds = (env.SEEDS || '901,902').split(',').map(Number), jobs = [];
+      for (let rank = 0; rank < P.RANKS.length; rank++) for (const circuit of circuits) for (const seed of seeds) jobs.push({ rank, circuit, seed: seed + rank * 100 });
+      const res = await pool('careerRace', jobs), skills = [['Rookie', 0], ['Pro', 0.5], ['Master', 1]];
+      for (let rank = 0; rank < P.RANKS.length; rank++) {
+        const R = P.RANKS[rank];
+        console.log('\nCAREER · ' + R.name + ' rank (' + Math.round(R.level * 100) + '% field; 6-lap races, ' + seeds.length + ' per circuit; promotion ' + P.PROMOTE[rank] + ' of 600)');
+        const tot = Object.fromEntries(skills.map(([n]) => [n, { best: 0, mean: 0 }]));
+        for (const circuit of circuits) {
+          const rs = res.filter(r => r.job.rank === rank && r.job.circuit === circuit).map(r => r.out);
+          const line = skills.map(([n, k]) => {
+            const e = rs.filter(r => r.over).map(r => r.out[k]); if (!e.length) return n + ' —';
+            const totals = e.map(x => x.posPts + x.pacePts); tot[n].best += Math.max(...totals); tot[n].mean += mean(totals);
+            return n + ' ' + e.map(x => 'G' + x.grid + '→P' + x.pos + (x.dnf ? ' DNF' : '') + ' ' + x.posPts + '+' + x.pacePts).join(', ');
+          });
+          console.log('  ' + circuit.padEnd(11) + line.join('  |  ') + '  · ' + rs.map(r => r.over ? r.weather + ' (water ' + r.water.toFixed(2) + ', ' + r.contacts + ' contacts, ' + r.dnfs + ' DNF)' : 'NOT CLASSIFIED').join('; '));
         }
-        const status = S0.CAREER.status(st);
-        console.log('  final: ' + status.table.slice(0, 6).map(row => 'P' + row.rank + ' ' + S0.DRIVERS[row.d].name + ' ' + row.points).join(' · ') + ' ...');
-        console.log('  ' + S0.DRIVERS[team].name + ': P' + status.rank + ', ' + status.points + ' pts; target Top ' + status.target + ' → ' + (status.success ? 'advances' : 'does not advance')
-          + '; points total ' + status.table.reduce((a, row) => a + row.points, 0) + ' (3 × 140 minus points of retired cars)');
+        console.log('  rank total (best of ' + seeds.length + ' per circuit / mean): ' + skills.map(([n]) => n + ' ' + tot[n].best.toFixed(0) + ' / ' + tot[n].mean.toFixed(0)).join(' · ') + '   threshold ' + P.PROMOTE[rank]);
       }
     }
     if (mode === 'race' || mode === 'wet') {

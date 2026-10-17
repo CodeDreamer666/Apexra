@@ -2,19 +2,19 @@
 // Green painted run-off: what it costs, measured with the real physics and handling (player and AI are the same car).
 // On a straight with paint on one side, a car at 200 km/h runs for 2 s with 0–4 tyres on the green (and, for the
 // surface hierarchy, with all four on grass), coasting and flat out; plus braking from 200 km/h and the steady
-// cornering speed on a constant steering input.   node tools/runoff-calibration.cjs [summit,rivermere,redridge]
+// cornering speed on a constant steering input.   node tools/runoff-calibration.cjs [monza,silverstone,spa,suzuka,bahrain,interlagos]
 const fs = require('node:fs');
 const path = require('node:path');
 const html = fs.readFileSync(process.env.SIM_HTML || path.join(__dirname, '..', 'index.html'), 'utf8');
 const m = { exports: {} }; new Function('module', html.match(/<script>([\s\S]*?)<\/script>/)[1])(m);
 const S = m.exports, DT = S.PHYS_DT;
-const circuits = (process.argv[2] || 'summit,rivermere,redridge').split(',');
+const circuits = (process.argv[2] || 'monza,silverstone,spa,suzuka,bahrain,interlagos').split(',');
 // a straight, level stretch of at least 400 m with green paint on side `sg` (away from the pit lane)
 function straight(t) {
   const sg = -t.pit.side;
   for (let s0 = 300; s0 < t.length; s0 += 20) {
     let ok = true;
-    for (let s = s0; s < s0 + 400 && ok; s += 4) { const i = t.wrapI(Math.round(s / S.DS)); if (Math.abs(t.kappa[i]) > 1 / 3000 || Math.abs(t.grade[i]) > 0.01 || !t.hasPaintedRunoff(i, sg) || t.pitProg(s) >= 0) ok = false; }
+    for (let s = s0; s < s0 + 400 && ok; s += 4) { const i = t.wrapI(Math.round(s / S.DS)); if (Math.abs(t.kappa[i]) > 1 / 3000 || Math.abs(t.grade[i]) > 0.01 || !t.hasPaintedRunoff(i, sg) || t.pitProg(s) >= 0 || Math.abs(t.hw[i] - t.hw[t.wrapI(Math.round(s0 / S.DS))]) > 0.1) ok = false; }
     if (ok) return { s0, sg };
   }
   throw new Error('no straight');
@@ -25,7 +25,7 @@ function rig(t) {
 }
 // lateral offset that puts `n` tyres (the outer side first) on the paint, or all four on grass
 function offsetFor(t, n, grass) {
-  const hw = t.halfW, tw = S.SPEC.tw, lim = hw + 0.2; // a tyre is off once wholly past the white line (+ tyre half-width)
+  const hw = t.hw[t.wrapI(Math.round((straight(t).s0 + 40) / S.DS))], tw = S.SPEC.tw, lim = hw + 0.2; // a tyre is off once wholly past the white line (+ tyre half-width)
   if (grass) return hw + S.GREEN_RUNOFF.width + tw + 1.5;
   if (n === 0) return hw - tw - 0.6;
   if (n === 2) return lim + 0.3;                       // outer pair just past the line, inner pair still in

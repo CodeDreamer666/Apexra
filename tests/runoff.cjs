@@ -17,23 +17,29 @@ function rig(t, isPlayer = false) {
 }
 // a straight, level, painted stretch away from the pit lane
 function straight(t) {
-  const sg = -t.pit.side;
-  for (let s0 = 300; s0 < t.length; s0 += 20) {
-    let ok = true;
-    for (let s = s0; s < s0 + 400 && ok; s += 4) { const i = t.wrapI(Math.round(s / SIM.DS)); if (Math.abs(t.kappa[i]) > 1 / 3000 || Math.abs(t.grade[i]) > 0.01 || !t.hasPaintedRunoff(i, sg) || t.pitProg(s) >= 0) ok = false; }
-    if (ok) return { s0, sg };
+  // (a real circuit's straights are never perfectly level, straight or even in width: the flattest 260 m with paint
+  // beside it, on either side, is enough for 2 s at 200 km/h, and every run of a comparison uses the same stretch)
+  for (const [K, G, W] of [[3000, 0.02, 0.3], [1500, 0.04, 0.5], [1000, 0.05, 0.8], [600, 0.06, 1.2]]) for (const sg of [-t.pit.side, t.pit.side]) {
+    for (let s0 = 300; s0 < t.length; s0 += 20) {
+      let ok = true;
+      for (let s = s0; s < s0 + 260 && ok; s += 4) { const i = t.wrapI(Math.round(s / SIM.DS)); if (Math.abs(t.kappa[i]) > 1 / K || Math.abs(t.grade[i]) > G || !t.hasPaintedRunoff(i, sg) || t.pitProg(s) >= 0 || Math.abs(t.hw[i] - t.hw[t.wrapI(Math.round(s0 / SIM.DS))]) > W) ok = false; }
+      if (ok) return { s0, sg };
+    }
   }
   throw new Error('no straight on ' + t.name);
 }
 // drive 2 s from 200 km/h with `n` tyres on the paint (0, 2, 4) or all four on the grass, on a fixed pedal
 function run(t, { n = 0, grass = false, throttle = 0, brake = 0, secs = 2, isPlayer = false }) {
-  const { s, c } = rig(t, isPlayer), st = straight(t), hw = t.halfW, tw = SIM.SPEC.tw;
-  const d = grass ? hw + GR.width + tw + 1.5 : n === 0 ? hw - tw - 0.6 : n === 2 ? hw + 0.5 : hw + 0.2 + tw + 0.4;
-  c.placeAt(t, st.s0 + 40, st.sg * d, 200 / 3.6); c.speed = c.u = 200 / 3.6; c.gear = 8;
+  // On the circuit's own straight (its grade and road), with the tyre count held exactly: the surface each wheel
+  // reads is forced (n wheels on the paint, or all four on the grass), so a real straight's slight curves and
+  // changes of width cannot move a tyre on or off the paint during the run.
+  const { s, c } = rig(t, isPlayer), st = straight(t);
+  const fake = Object.create(t); let w = 0; fake.surfaceAt = () => grass ? 3 : (w++ % 4) < n ? 2 : 0;
+  c.placeAt(t, st.s0 + 40, 0, 200 / 3.6); c.speed = c.u = 200 / 3.6; c.gear = 8;
   const h = new SIM.PlayerHandling(); const seen = new Set();
   for (let k = 0; k < secs / DT; k++) {
     h.step(c, DT, s, { steer: 0, throttle, brake, analog: true });
-    SIM.stepCarPhysics(c, DT, t, ENV);
+    SIM.stepCarPhysics(c, DT, fake, ENV);
     t.project(c.x, c.z, c.idx, c.proj); c.idx = c.proj.i; c.s = c.proj.s; c.d = c.proj.d;
     if (k > 50) seen.add(grass ? 't' + c.terrainN : c.runoffN);
   }
@@ -51,7 +57,7 @@ test('the green paint keeps its grip loss per tyre and adds no resistance for on
   assert.equal(GR.drag[0], 0); assert.equal(GR.drag[1], 0, 'one tyre: no meaningful extra resistance');
   for (let n = 2; n <= 4; n++) assert.ok(GR.drag[n] > GR.drag[n - 1], 'progressive');
   // force exactly n tyres onto the paint (the per-wheel surface lookup is replaced), coasting at 200 km/h on a straight
-  const t = tracks.get('summit'), st = straight(t), out = [];
+  const t = tracks.get('monza'), st = straight(t), out = [];
   for (let n = 0; n <= 4; n++) {
     const { c } = rig(t), fake = Object.create(t); let w = 0;
     fake.surfaceAt = () => (w++ % 4) < n ? 2 : 0;
@@ -90,7 +96,7 @@ for (const [id, t] of tracks) {
 }
 
 test('identical physics for the player and the AI on the paint', () => {
-  const t = tracks.get('rivermere');
+  const t = tracks.get('silverstone');
   const a = run(t, { n: 4, throttle: 0.6, isPlayer: true }), b = run(t, { n: 4, throttle: 0.6, isPlayer: false });
   assert.deepEqual([a.c.x, a.c.z, a.c.speed, a.c.runoffDrag, a.c.runoffGrip], [b.c.x, b.c.z, b.c.speed, b.c.runoffDrag, b.c.runoffGrip]);
 });
@@ -103,7 +109,7 @@ test('the planner may use paint only where it is painted, never on the inside of
       assert.ok(t.hasPaintedRunoff(i, sg), id + ' painted');
       assert.ok(t.kappa[i] * sg <= 1 / 900, id + ': not on the inside of a bend at ' + i);
       // the furthest a path may go (planning limit + the avoidance allowance, 3.6 m) keeps the outer tyres on the paint
-      assert.ok(t.surfaceAt(i, sg * (L.lim + 3.6 + SIM.SPEC.tw)) <= 2, id + ' outer tyre still on paint at ' + i);
+      assert.ok(t.surfaceAt(i, sg * (L.limA[i] + 3.6 + SIM.SPEC.tw)) <= 2, id + ' outer tyre still on paint at ' + i);
     }
     assert.ok(used > 0.5 * N, id + ': paint usable along most of the lap (' + used + ' of ' + 2 * N + ' samples)');
     // a candidate path is clamped to the asphalt unless it is allowed onto the paint
@@ -111,9 +117,9 @@ test('the planner may use paint only where it is painted, never on the inside of
     const ai = s.cars[1].ai, c = ai.addCand('line', 'test'); ai.exeNow = { v: 0, a: 0, b: 0, c: 0 };
     c.off = 50; c.offA = 0; c.offL = 1;
     const i = L.paint[1].findIndex(x => x), j = L.paint[1].findIndex(x => !x);
-    assert.ok(Math.abs(ai.candD(c, 10, i) - L.lim) < 1e-9, 'no allowance: asphalt only');
-    c.ext = 2; assert.ok(Math.abs(ai.candD(c, 10, i) - (L.lim + 2)) < 1e-9, 'allowance on painted samples');
-    assert.ok(Math.abs(ai.candD(c, 10, j) - L.lim) < 1e-9, 'none where there is no usable paint');
+    assert.ok(Math.abs(ai.candD(c, 10, i) - L.limA[i]) < 1e-9, 'no allowance: asphalt only');
+    c.ext = 2; assert.ok(Math.abs(ai.candD(c, 10, i) - (L.limA[i] + 2)) < 1e-9, 'allowance on painted samples');
+    assert.ok(Math.abs(ai.candD(c, 10, j) - L.limA[j]) < 1e-9, 'none where there is no usable paint');
   }
 });
 
@@ -121,7 +127,7 @@ test('20-car races: the AI uses the paint sometimes, on purpose, briefly; rarely
   // planned paint use is rare (a few tenths of a second to a few seconds in a 20-car, two-lap race, sometimes none
   // on Summit), so it is asserted over both races together
   let plannedAll = 0; const whyAll = {};
-  for (const [id, seed] of [['summit', 31], ['redridge', 32]]) {
+  for (const [id, seed] of [['monza', 31], ['bahrain', 32]]) {
     const t = tracks.get(id);
     const s = new SIM.Session(t, { type: 'race', seed, weather: 'dry', tyreWear: 'normal', damage: 'realistic', difficulty: 1, entries: SIM.DRIVERS.map(driver => ({ driver })) });
     s.totalLaps = 2;
@@ -134,7 +140,7 @@ test('20-car races: the AI uses the paint sometimes, on purpose, briefly; rarely
         carT += DT * 4; if (c.terrainN) grass += DT * 4;
         if (c.runoffN && !c.terrainN) {
           paintT += DT * 4;
-          const P = c.ai.path, meant = P.valid && P.ext > 0 && Math.abs(c.ai.pathD(c.idx)) > t.halfW - 1.6;
+          const P = c.ai.path, meant = P.valid && P.ext > 0 && Math.abs(c.ai.pathD(c.idx)) > t.hw[c.idx] - 1.6;
           if (meant) { planned += DT * 4; why[P.label] = (why[P.label] || 0) + 1; }
         }
       }

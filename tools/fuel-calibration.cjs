@@ -17,7 +17,7 @@ const opt = (name, def) => { const i = args.indexOf('--' + name); return i >= 0 
 const file = args[0] && !args[0].startsWith('--') ? args[0] : path.join(__dirname, '..', 'index.html');
 const html = fs.readFileSync(file, 'utf8');
 const context = { module: { exports: {} } };
-vm.runInNewContext(html.match(/<script>([\s\S]*?)<\/script>/)[1], context);
+new Function('module', html.match(/<script>([\s\S]*?)<\/script>/)[1])(context.module); // (not vm.runInNewContext: a separate context runs the simulation about five times slower)
 const SIM = context.module.exports;
 // --perf accel,brake,corner overrides the effective fuel-load coefficients (calibration scans)
 if (opt('perf', null) && SIM.FUEL_PERF && opt('perf') !== 'default') { const [a, b, c] = opt('perf').split(',').map(Number); Object.assign(SIM.FUEL_PERF, { accel: a, brake: b, corner: c }); }
@@ -25,7 +25,7 @@ const tracks = new Map(SIM.CIRCUITS.map(def => [def.id, new SIM.Track(def)]));
 const DRY = (seed) => Object.assign(new SIM.DynamicWeather(seed).snapshot(), { pattern: 'dry', regime: 'sunny', rain: 0, water: 0, lineWater: 0, cloud: 0.2, targetCloud: 0.2, targetRain: 0, patternEnds: 1e9, regimeEnds: 1e9 });
 const FUELS = [9, 15, 23];
 const SEEDS = +opt('seeds', 4), LAPS = +opt('laps', 4);
-const CIRCUITS = opt('circuits', 'summit,rivermere,redridge').split(',');
+const CIRCUITS = opt('circuits', 'monza,silverstone,spa,suzuka,bahrain,interlagos').split(',');
 
 // One car alone; laps 2..laps are flying laps. `hold` keeps the fuel load fixed.
 function drive(id, fuel, seed, { laps = 3, hold = true, gameMode = 'grandprix' } = {}) {

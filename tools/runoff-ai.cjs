@@ -23,7 +23,7 @@ function race({ circuit, seed, laps, level }) {
       if (c.terrainN > 0) out.terrain += dt;
       if (c.runoffN > 0 && c.terrainN === 0) {
         if (c.runoffN >= 3) out.p34 += dt; else out.p12 += dt;
-        const P = c.ai.path, meant = P.valid && P.ext > 0 && Math.abs(c.ai.pathD(c.idx)) > t.halfW - 1.6;
+        const P = c.ai.path, meant = P.valid && P.ext > 0 && Math.abs(c.ai.pathD(c.idx)) > t.hw[c.idx] - 1.6;
         if (meant) out.planned += dt;
         const k = c.ai.mistake && c.ai.mistakeT > 0 ? 'mistake:' + c.ai.mistake.type : meant ? P.label.replace(/ [A-Z].*$/, '').replace(/ (left|right)$/, '') : c.ai.mode === 'recover' ? 'recovering' : 'unplanned';
         out.why[k] = (out.why[k] || 0) + dt;
@@ -37,7 +37,7 @@ function race({ circuit, seed, laps, level }) {
 if (process.argv[2] === '--worker') { process.on('message', (job) => process.send({ job, out: race(job) })); return; }
 const env = process.env, laps = +process.argv[2] || 3;
 const jobs = [];
-for (const circuit of (env.CIRCUITS || 'summit,rivermere,redridge').split(',')) for (const seed of (env.SEEDS || '31,32').split(',').map(Number)) jobs.push({ circuit, seed, laps, level: +(env.LEVEL || 1) });
+for (const circuit of (env.CIRCUITS || 'monza,silverstone,spa,suzuka,bahrain,interlagos').split(',')) for (const seed of (env.SEEDS || '31,32').split(',').map(Number)) jobs.push({ circuit, seed, laps, level: +(env.LEVEL || 1) });
 const n = Math.min(+env.JOBS || os.cpus().length, jobs.length), res = [];
 let next = 0, done = 0;
 for (let k = 0; k < n; k++) {

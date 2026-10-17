@@ -8,7 +8,7 @@
 const fs = require('node:fs'), path = require('node:path'), vm = require('node:vm');
 const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
 const context = { module: { exports: {} } };
-vm.runInNewContext(html.match(/<script>([\s\S]*?)<\/script>/)[1], context);
+new Function('module', html.match(/<script>([\s\S]*?)<\/script>/)[1])(context.module); // (not vm.runInNewContext: a separate context runs the simulation about five times slower)
 const SIM = context.module.exports;
 const DRY = (seed) => Object.assign(new SIM.DynamicWeather(seed).snapshot(), { pattern: 'dry', regime: 'sunny', rain: 0, water: 0, lineWater: 0, cloud: 0.2, targetCloud: 0.2, targetRain: 0, patternEnds: 1e9, regimeEnds: 1e9 });
 const STRATEGIES = {
@@ -43,7 +43,7 @@ function run(id, name, { style = 'normal', seed = 11, driver = 0 } = {}) {
 }
 module.exports = { run, STRATEGIES };
 if (require.main === module) {
-  const ids = (process.argv[2] || 'summit,rivermere,redridge').split(','), styles = (process.argv[3] || 'normal').split(','), seeds = (process.argv[4] || '11').split(',').map(Number);
+  const ids = (process.argv[2] || 'monza,silverstone,spa,suzuka,bahrain,interlagos').split(','), styles = (process.argv[3] || 'normal').split(','), seeds = (process.argv[4] || '11').split(',').map(Number);
   for (const id of ids) for (const style of styles) {
     const rows = Object.keys(STRATEGIES).map(name => {
       const rs = seeds.map(seed => run(id, name, { style, seed }));

@@ -11,7 +11,7 @@ const opt = (name, def) => { const i = args.indexOf('--' + name); return i >= 0 
 const file = args[0] && !args[0].startsWith('--') ? args[0] : path.join(__dirname, '..', 'index.html');
 const html = fs.readFileSync(file, 'utf8');
 const context = { module: { exports: {} } };
-vm.runInNewContext(html.match(/<script>([\s\S]*?)<\/script>/)[1], context);
+new Function('module', html.match(/<script>([\s\S]*?)<\/script>/)[1])(context.module); // (not vm.runInNewContext: a separate context runs the simulation about five times slower)
 const SIM = context.module.exports;
 const DRY = (seed) => Object.assign(new SIM.DynamicWeather(seed).snapshot(), { pattern: 'dry', regime: 'sunny', rain: 0, water: 0, lineWater: 0, cloud: 0.2, targetCloud: 0.2, targetRain: 0, patternEnds: 1e9, regimeEnds: 1e9 });
 const SCEN = {
@@ -21,7 +21,7 @@ const SCEN = {
   rain: { label: 'rain arriving mid-race (forced tyre stop)', cfg: {}, rainAt: 260 },
 };
 const sc = SCEN[opt('scenario', 'normal')];
-const circuits = opt('circuits', 'summit,rivermere,redridge').split(',');
+const circuits = opt('circuits', 'monza,silverstone,spa,suzuka,bahrain,interlagos').split(',');
 const seeds = +opt('seeds', 2);
 
 function race(id, startLaps, seed) {

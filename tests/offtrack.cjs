@@ -9,7 +9,7 @@ const vm = require('node:vm');
 // that replaces track-limit penalties, and AI recovery — through the game's own physics, Session and AI.
 const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
 const context = { module: { exports: {} } };
-vm.runInNewContext(html.match(/<script>([\s\S]*?)<\/script>/)[1], context);
+new Function('module', html.match(/<script>([\s\S]*?)<\/script>/)[1])(context.module); // (not vm.runInNewContext: a separate context runs the simulation about five times slower)
 const SIM = context.module.exports;
 const dt = SIM.PHYS_DT, OFF = SIM.OFF_TRACK;
 const tracks = new Map(SIM.CIRCUITS.map(def => [def.id, new SIM.Track(def)]));
@@ -55,10 +55,11 @@ function placed(t, s, d, yaw = 0, pit = null) {
 
 test('each tyre is checked at its own position against the legal edge, on every circuit (exhaustive reference)', () => {
   for (const [id, t] of tracks) {
-    const hw = t.halfW, N = t.N, edge = hw + OFF.tyreHalf;
+    const N = t.N;
     let checked = 0, offSeen = 0;
     for (let s = 0; s < t.length; s += 23) {
-      for (const d of [-hw - 4, -hw - 1.1, -hw + 0.3, 0, hw - 0.3, hw + 1.1, hw + 4]) {
+      const hs = t.hw[t.wrapI(Math.round(s / 2))];
+      for (const d of [-hs - 4, -hs - 1.1, -hs + 0.3, 0, hs - 0.3, hs + 1.1, hs + 4]) {
         for (const yaw of [-0.45, 0, 0.3]) {
           const car = placed(t, s, d, yaw);
           const c = Math.cos(car.psi), sn = Math.sin(car.psi);
@@ -69,7 +70,7 @@ test('each tyre is checked at its own position against the legal edge, on every 
             let bi = 0, bd = 1e18;
             for (let i = 0; i < N; i++) { const q = (wx - t.cx[i]) ** 2 + (wz - t.cz[i]) ** 2; if (q < bd) { bd = q; bi = i; } }
             if (Math.abs(t.dS(bi * 2, car.idx * 2)) > 40) continue; // another part of the circuit is closer: walls decide there
-            const dw = (wx - t.cx[bi]) * t.rx[bi] + (wz - t.cz[bi]) * t.rz[bi], ad = Math.abs(dw);
+            const dw = (wx - t.cx[bi]) * t.rx[bi] + (wz - t.cz[bi]) * t.rz[bi], ad = Math.abs(dw), hw = t.hw[bi], edge = hw + OFF.tyreHalf;
             const kerbs = dw > 0 ? t.kerbR : t.kerbL, kerb = kerbs[bi];
             if (kerbs[t.wrapI(bi - 1)] !== kerb || kerbs[t.wrapI(bi + 1)] !== kerb) continue; // a kerb starts or ends right here
             const pitSide = (dw > 0 ? 1 : -1) === t.pit.side && t.pitProg(bi * 2) >= 0 && t.inPitMain(bi * 2) && ad < t.pit.outerWall + 0.5;
@@ -88,13 +89,13 @@ test('each tyre is checked at its own position against the legal edge, on every 
 
 test('one, two, three and four tyres off are counted from the tyres, not the centre of the car', () => {
   for (const [id, t] of tracks) {
-    const s = straight(t), E = t.halfW + OFF.tyreHalf;
+    const s = straight(t), hs = t.hw[t.wrapI(Math.round(s / 2))], E = hs + OFF.tyreHalf;
     // a yawed car: front wheels sit 0.4 m further out, rear wheels 0.32 m further in
     const cases = [[0, 0, 0], [E - 0.8, 0.2, 1], [E, 0, 2], [E + 0.7, 0.2, 3], [E + 1.5, 0, 4]];
     for (const [d, yaw, n] of cases) {
       const car = placed(t, s, d, yaw);
       assert.equal(car.offN, n, `${id}: centre at ${d.toFixed(2)} m, yaw ${yaw}: ${n} tyres off`);
-      if (n === 1) assert.ok(Math.abs(car.d) < t.halfW, 'one tyre off while the centre of the car is still on the track');
+      if (n === 1) assert.ok(Math.abs(car.d) < hs, 'one tyre off while the centre of the car is still on the track');
     }
     // mirrored on the other side of the track
     assert.equal(placed(t, s, -(E + 1.5)).offN, 4);
@@ -186,7 +187,7 @@ test('a pit lane in use counts as track; the same ground is off-track for a car 
     assert.equal(placed(t, ramp, dRamp, 0, null).offN, 4, id + ' entry ramp is not a shortcut for others');
   }
   // through a real stop: never counted off-track in the lane or on rejoining
-  const t = tracks.get('redridge');
+  const t = tracks.get('bahrain');
   const S = new SIM.Session(t, { type: 'race', laps: 3, entries: [{ driver: SIM.DRIVERS[0] }], seed: 11, spectate: true, weather: 'dynamic', tyreWear: 'off', mistakes: 0, mandatory: false, weatherState: DRY(3) });
   S.totalLaps = 3; S.mandatory = false; const car = S.cars[0];
   let pitted = false, lastPit = -1;
@@ -200,14 +201,14 @@ test('a pit lane in use counts as track; the same ground is off-track for a car 
 });
 
 test('the silent progress check: off-track progress counts only movement along the circuit', () => {
-  const t = tracks.get('summit');
+  const t = tracks.get('monza');
   const S = new SIM.Session(t, { type: 'race', laps: 2, entries: [{ driver: SIM.DRIVERS[0] }], seed: 1, spectate: true, weatherState: DRY(1) });
   const car = S.cars[0], corner = t.corners.reduce((a, c) => (c.R < a.R ? c : a)), i = corner.apex;
   car.idx = i; const tx = t.tx[i], tz = t.tz[i];
   car.offN = 2; assert.equal(S.legalProgress(car, 3, 0.5 * tx, 0.5 * tz), 3, 'with a tyre on the track all progress counts');
   car.offN = 4;
   car.d = 0; assert.ok(Math.abs(S.legalProgress(car, 3, 0.5 * tx, 0.5 * tz) - 0.5) < 1e-9, 'only the distance moved along the circuit');
-  const inside = Math.sign(t.kappa[i]) * (t.halfW + 4); car.d = inside;
+  const inside = Math.sign(t.kappa[i]) * (t.hw[i] + 4); car.d = inside;
   assert.ok(S.legalProgress(car, 3, 0.5 * tx, 0.5 * tz) < 0.5 * (1 - Math.abs(t.kappa[i]) * Math.abs(inside)) + 1e-9, 'less again on the inside of the corner');
   car.d = -inside; assert.ok(Math.abs(S.legalProgress(car, 1, 2 * tx, 2 * tz) - 1) < 1e-9, 'running wide on the outside: full circuit distance');
   assert.ok(S.legalProgress(car, 3, -tz * 3, tx * 3) < 1e-9, 'moving across the circuit earns nothing');
@@ -215,9 +216,10 @@ test('the silent progress check: off-track progress counts only movement along t
   car.pit = { phase: 'in' }; assert.equal(S.legalProgress(car, 3, 0.5 * tx, 0.5 * tz), 3, 'the pit lane in use is track');
 });
 
-// one car laps Rivermere; on lap 2 it either drives the corner or cuts a chord across its inside at full throttle
+// one car laps Bahrain; on lap 2 it either drives Turn 4 (a right-hander of about 125° with open ground on its inside)
+// or cuts a chord across its inside at full throttle
 function cornerRun(cut) {
-  const t = tracks.get('rivermere'), c = t.corners.find(k => k.apex * 2 === 4478);
+  const t = tracks.get('bahrain'), c = t.corners.find(k => k.name === 'Turn 1');
   const ia = t.wrapI(c.start - 15), ib = t.wrapI(c.end + 15), span = t.dS(ia * 2, ib * 2), B = t.pointAt(ib * 2, 0);
   const S = new SIM.Session(t, { type: 'race', laps: 3, entries: [{ driver: SIM.DRIVERS[0] }], seed: 11, spectate: true, weather: 'dynamic', tyreWear: 'off', mistakes: 0, mandatory: false, weatherState: DRY(3) });
   S.totalLaps = 3; const car = S.cars[0], own = car.ai.update.bind(car.ai);
@@ -257,14 +259,14 @@ test('cutting a corner across the inside is slower than driving it, without any 
 });
 
 test('Rival Duel: leaving the track deletes nothing, and a lap only counts once a full lap has been earned', () => {
-  const t = tracks.get('summit');
+  const t = tracks.get('monza');
   const S = new SIM.Session(t, { type: 'race', gameMode: 'duel', entries: SIM.DRIVERS.slice(0, 2).map(driver => ({ driver })), seed: 4, weather: 'dynamic' });
   let shoved = null, off = 0;
   while (!S.over && S.time < 420) {
     S.fixedStep(dt);
     const c = S.cars[0];
     // shove the first car onto the grass in the middle of its first lap
-    if (!shoved && S.lightsOut && c.totalDist > 2500) { shoved = c; c.placeAt(t, c.s, t.pit.side * -(t.halfW + 4), c.speed); }
+    if (!shoved && S.lightsOut && c.totalDist > 2500) { shoved = c; c.placeAt(t, c.s, t.pit.side * -(t.hw[c.idx] + 4), c.speed); }
     if (c === shoved && c.offN === 4) off++;
   }
   assert.ok(shoved && off > 0, 'a car went off the track');
@@ -289,7 +291,7 @@ test('AI drivers shoved off the track at speed recover on their own, with no res
           // angled 20° away from it
           const side = k % 2 ? 1 : -1, v = [260, 180, 120, 60][(k >> 1) % 4] / 3.6, w = {};
           t.walls(c.idx, c.s, false, w);
-          const d = Math.max(-w.l + 3, Math.min(w.r - 3, side * (t.halfW + [3, 6, 9][k % 3])));
+          const d = Math.max(-w.l + 3, Math.min(w.r - 3, side * (t.hw[c.idx] + [3, 6, 9][k % 3])));
           const yaw = side * (v < 20 ? 0.35 : [0, -0.25][k % 2]); // +yaw turns towards +d
           c.placeAt(t, c.s, d, v); c.psi += yaw;
           c.vx = Math.cos(c.psi) * v; c.vz = Math.sin(c.psi) * v;
@@ -299,7 +301,8 @@ test('AI drivers shoved off the track at speed recover on their own, with no res
       for (const [c, p] of pushed) if (p.back == null && S.time - p.at > 0.1 && c.offN === 0) p.back = S.time - p.at;
     }
     assert.ok(S.over && pushed.size >= 30 / 5, id + ' race over with cars pushed off: ' + pushed.size);
-    for (const [c, p] of pushed) assert.ok(p.back != null && p.back < 15, `${id} ${c.driver.short} back on track after ${p.back} (dnf ${c.dnf} ${c.dnfReason || ''}, ${c.ai.mode}, d ${c.d.toFixed(1)}, ${p.v} km/h ${p.yaw} rad from d ${p.d.toFixed(1)})`);
+    // (or, put 3 m from a wall at up to 260 km/h, it hits the wall and retires with damage: a crash, not a car stuck)
+    for (const [c, p] of pushed) assert.ok(p.back != null && p.back < 15 || c.dnf && c.dnfReason && c.dnfReason !== 'Out of fuel', `${id} ${c.driver.short} back on track after ${p.back} (dnf ${c.dnf} ${c.dnfReason || ''}, ${c.ai.mode}, d ${c.d.toFixed(1)}, ${p.v} km/h ${p.yaw} rad from d ${p.d.toFixed(1)})`);
     assert.equal(resets, 0, id + ' nobody needed a marshal reset');
     // every car took the flag or retired from racing damage later on (contact between cars); none stuck or out of fuel
     assert.ok(S.cars.every(c => c.finished || (c.dnf && c.dnfReason !== 'Out of fuel')), id + ' every car finished or retired: ' + S.cars.filter(c => !c.finished).map(c => c.driver.short + ' ' + c.dnfReason));

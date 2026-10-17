@@ -15,9 +15,11 @@ function source(name) {
   return code;
 }
 const funcs = ['raceWeatherState', 'circuitFuelPerLap', 'circuitTank', 'circuitPitLoss', 'briefIcon', 'briefTyreArt',
-  'centreLineOf', 'drawBriefCircuit', 'startRace', 'psCard', 'psSelection', 'updatePitService', 'updateStrategyUI', 'renderCareerStrip', 'showResults', 'showRankedResults'];
+  'centreLineOf', 'drawBriefCircuit', 'startRace', 'psCard', 'psSelection', 'updatePitService', 'updateStrategyUI', 'renderCareerStrip', 'showResults', 'showRankedResults', 'recordCareerRace', 'updateCareerButton'];
 const settings = html.slice(html.indexOf("const SETTINGS_KEY ="), html.indexOf('function updateModeSelection()'));
 const icons = html.slice(html.indexOf('const PS_ICON ='), html.indexOf('function psCard('));
+// the Career screen state the results screens update (the ranked progress itself is in the settings block)
+const crui = html.slice(html.indexOf('const CRUI ='), html.indexOf('const teamColour'));
 (async () => {
   const browser = await chromium.launch({ headless: true, executablePath: process.env.CHROMIUM_PATH ||
     (fs.existsSync('/usr/bin/chromium') ? '/usr/bin/chromium' : undefined) });
@@ -38,9 +40,11 @@ const icons = html.slice(html.indexOf('const PS_ICON ='), html.indexOf('function
       // Input clearing belongs to the renderer's input loop, outside this DOM harness.
       const clearKeys = () => {};
       ${icons}
+      ${crui}
       ${funcs.map(source).join('\n')}
       window.testUI = { G, S, startRace, updateStrategyUI, updatePitService, showResults, saveSettings };
       $('loading').classList.add('hidden'); $('menu').classList.add('hidden');` });
+    if (errors.length) throw new Error('harness: ' + errors.join(' | '));
     const checks = await page.evaluate(() => {
       const { G, S, startRace, updateStrategyUI, updatePitService, showResults, saveSettings } = testUI;
       const check = (ok, msg) => { if (!ok) throw Error(msg); };
@@ -52,8 +56,8 @@ const icons = html.slice(html.indexOf('const PS_ICON ='), html.indexOf('function
       const report = [];
       for (const def of SIM.CIRCUITS) for (const mode of ['grandprix', 'career', 'duel', 'pursuit']) {
         const ranked = mode === 'duel' || mode === 'pursuit';
-        G.career = mode === 'career' ? { tier: 0, team: 0 } : null;
-        G.ranked = ranked ? { mode, rank: 3, circuit: def.id } : null;
+        G.career = mode === 'career' ? { rank: 0, team: 0, circuit: def.id } : null;
+        G.ranked = ranked ? { mode, rank: 1, circuit: def.id } : null;
         S.gameMode = ranked ? mode : 'grandprix';
         G.session = null; G.track = new SIM.Track(def);
         startRace();
@@ -63,14 +67,15 @@ const icons = html.slice(html.indexOf('const PS_ICON ='), html.indexOf('function
         check(visible($('briefChoices')) === !ranked, 'tyre choice only where there is a strategy');
         check(visible($('briefFuelSection')) === !ranked, 'fuel isolation');
         check(visible($('briefModeNote')) === ranked, 'mode note');
-        if (mode === 'pursuit') check(/27% wear/.test($('briefModeNote').innerText) && /3\.5 s/.test($('briefModeNote').innerText) && /new Softs/.test($('briefModeNote').innerText), 'the rival tyre difference and head start are announced');
+        if (mode === 'pursuit') { const P0 = SIM.PROGRESS.pursuitSetup(1, def.id);
+          check($('briefModeNote').innerText.includes(Math.round(P0.rivalWear * 100) + '% wear') && $('briefModeNote').innerText.includes(P0.gap.toFixed(1) + ' s') && /new Softs/.test($('briefModeNote').innerText), 'the rival tyre difference and head start are announced'); }
         const cols = getComputedStyle($('raceBrief').querySelector('.brief-rule-grid')).gridTemplateColumns.split(' ').length;
         check(cols === (ranked ? 1 : 3), 'setup grid has no empty column: ' + cols);
         $('raceBrief').classList.add('hidden');
         const entries = ranked ? SIM.DRIVERS.slice(0, 2).map((driver, i) => ({ driver, isPlayer: i === 0 })) : SIM.DRIVERS.map((driver, i) => ({ driver, isPlayer: i === 0 }));
         const sess = new SIM.Session(G.track, { type: 'race', gameMode: S.gameMode, entries, weather: 'dry', seed: 71,
-          career: G.career ? { tier: 0, team: 0, race: 0, id: 'ui' } : null, aiLevel: G.career ? 1 : ranked ? 1.6 : undefined,
-          ranked: ranked ? { ...G.ranked, id: 'ui-' + mode } : null, pursuit: mode === 'pursuit' ? { gap: 3.5, rivalWear: 0.25, rival: 1 } : undefined });
+          career: G.career ? { rank: 0, team: 0, circuit: def.id, id: 'ui-' + def.id } : null, aiLevel: G.career ? 1 : ranked ? 1.25 : undefined,
+          ranked: ranked ? { ...G.ranked, id: 'ui-' + mode } : null, pursuit: mode === 'pursuit' ? { gap: 2, rivalWear: 0.25, rival: 1 } : undefined });
         G.session = sess; G.track = sess.track; G.player = sess.player; G.focus = sess.player;
         const p = sess.player; G.strategyRefresh = 0;
         $('strategyPanel').classList.remove('hidden'); updateStrategyUI(p, sess);
@@ -93,10 +98,7 @@ const icons = html.slice(html.indexOf('const PS_ICON ='), html.indexOf('function
           c.totalDist = sess.totalLaps * sess.track.length; c.finalLaps = [90 + i,90 + i,90 + i]; c.penalty = 90;
         }
         sess.finishRace();
-        if (G.career) {
-          const st = SIM.CAREER.create(); SIM.CAREER.start(st, 0, 0);
-          sess.careerStaged = SIM.CAREER.stage(st, { tier: 0, team: 0, race: 0, id: 'ui' }, sess.results);
-        }
+        if (G.career) recordCareerRace(sess);
         if (ranked) sess.rankedOutcome = { ok: true, win: true, unlockedNow: true };
         showResults();
         check(!obsolete.test($('results').innerText), 'results text');
@@ -105,9 +107,12 @@ const icons = html.slice(html.indexOf('const PS_ICON ='), html.indexOf('function
         check(rows.length === (ranked ? 3 : 21) && rows.every(r => r.cells.length === width), 'aligned result columns');
         check(sess.results[0].time === 1000, 'raw finish time');
         const acts = [...$('resActions').children].map(b => b.textContent);
-        if (mode === 'career') check(acts.includes('Retry race') && acts.includes('Accept result ▸'), 'a career race can be retried or accepted: ' + acts);
+        if (mode === 'career') {
+          check(acts.some(a => /^Retry /.test(a)), 'a career circuit can be retried: ' + acts);
+          check(/Position/i.test($('resCareer').innerText) && /Lap-time pace/i.test($('resCareer').innerText) && /\/ 100/.test($('resCareer').innerText), 'circuit score shown: ' + $('resCareer').innerText);
+        }
         if (ranked) {
-          check(/Victory/i.test($('resTitle').innerText) && /Gold/i.test($('resTitle').innerText), 'verdict and rank: ' + $('resTitle').innerText);
+          check(/Victory/i.test($('resTitle').innerText) && /Pro/i.test($('resTitle').innerText), 'verdict and rank: ' + $('resTitle').innerText);
           check(acts.some(a => /^Retry/.test(a)), 'immediate retry');
           if (mode === 'pursuit') check(/Starting gap/i.test($('resCareer').innerText) && /Final gap/i.test($('resCareer').innerText), 'pursuit gaps shown');
         }
@@ -117,6 +122,6 @@ const icons = html.slice(html.indexOf('const PS_ICON ='), html.indexOf('function
       return report;
     });
     assert.deepEqual(errors, []);
-    console.log(checks.join('\n')); console.log('Legacy settings and all 12 circuit/mode UI combinations pass.');
+    console.log(checks.join('\n')); console.log('Legacy settings and all 24 circuit/mode UI combinations pass.');
   } finally { await browser.close(); }
 })().catch(e => { console.error(e); process.exitCode = 1; });

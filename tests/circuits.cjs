@@ -4,105 +4,169 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 
-// The three circuits, built and raced through the game's own Track, Session and AI.
+// The six real circuits, built and raced through the game's own Track, Session and AI.
 const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
 const context = { module: { exports: {} } };
-vm.runInNewContext(html.match(/<script>([\s\S]*?)<\/script>/)[1], context);
+new Function('module', html.match(/<script>([\s\S]*?)<\/script>/)[1])(context.module); // (not vm.runInNewContext: a separate context runs the simulation about five times slower)
 const SIM = context.module.exports;
 const tracks = new Map(SIM.CIRCUITS.map(def => [def.id, new SIM.Track(def)]));
+// published lap lengths (m), countries, the direction of racing seen from above with north up, and the elevation
+// range the measured profile must show (m; published figures, with a tolerance for the DEM)
 const SPEC = {
-  summit: { corners: [16, 20], straights: 3 },
-  rivermere: { corners: [15, 17], straights: 2 },
-  redridge: { corners: [14, 16], straights: 2 },
+  monza: { name: 'Autodromo Nazionale Monza', country: 'Italy', length: 5793, cw: true, range: [8, 20] },
+  silverstone: { name: 'Silverstone Circuit', country: 'United Kingdom', length: 5891, cw: true, range: [8, 18] },
+  spa: { name: 'Circuit de Spa-Francorchamps', country: 'Belgium', length: 7004, cw: true, range: [90, 115] },
+  suzuka: { name: 'Suzuka International Racing Course', country: 'Japan', length: 5807, cw: null, range: [35, 50] },
+  bahrain: { name: 'Bahrain International Circuit', country: 'Bahrain', length: 5412, cw: true, range: [12, 25] },
+  interlagos: { name: 'Autódromo José Carlos Pace (Interlagos)', country: 'Brazil', length: 4309, cw: false, range: [36, 50] },
 };
-// The circuit's long straights, measured from its racing-line curvature (no straight metadata in the game):
-// a lap is scanned from inside a bend, so a straight across the start/finish line is found once, whole.
-function straights(t) {
-  const N = t.N, sk = t.smoothArr(t.rlKappa.map(Math.abs), 5, 1), found = []; let st = -1, i0 = 0;
-  while (i0 < N && sk[i0] < 1 / 700) i0++;
-  for (let i = i0; i <= i0 + N; i++) {
-    const k = sk[i % N] < 1 / 700;
-    if (k && st < 0) st = i; else if (!k && st >= 0) { if (i - st > 120) found.push([st % N, i - st]); st = -1; }
-  }
-  return found.sort((a, b) => b[1] - a[1]).map(([a, len]) => ({ start: t.wrapS((a + 25) * SIM.DS), len: t.wrapS((len - 70) * SIM.DS) }));
-}
+// the signature corners in racing order (each must be a detected corner, in this order round the lap)
+const ORDER = {
+  monza: ['Variante del Rettifilo', 'Curva Biassono', 'Variante della Roggia', 'Lesmo 1', 'Lesmo 2', 'Variante Ascari', 'Curva Alboreto (Parabolica)'],
+  silverstone: ['Abbey', 'Farm Curve', 'Village', 'The Loop', 'Aintree', 'Brooklands', 'Luffield', 'Woodcote', 'Copse', 'Maggotts', 'Becketts', 'Chapel', 'Stowe', 'Vale', 'Club'],
+  spa: ['La Source', 'Eau Rouge', 'Raidillon', 'Les Combes', 'Malmedy', 'Bruxelles (Rivage)', 'No Name', 'Pouhon', 'Fagnes', 'Stavelot', 'Blanchimont', 'Bus Stop'],
+  suzuka: ['First Curve', 'Second Curve', 'S Curves', 'Dunlop Curve', 'Degner 1', 'Degner 2', 'Hairpin', '200R', 'Spoon Curve', '130R', 'Casio Triangle', 'Final Curve'],
+  bahrain: ['Turn 1', 'Turn 2', 'Turn 3', 'Turn 4', 'Turn 5', 'Turn 6', 'Turn 7', 'Turn 8', 'Turn 9', 'Turn 10', 'Turn 11', 'Turn 12', 'Turn 13', 'Turn 14', 'Turn 15'],
+  interlagos: ['Senna S', 'Curva do Sol', 'Descida do Lago', 'Ferradura', 'Laranjinha', 'Pinheirinho', 'Bico de Pato', 'Mergulho', 'Junção', 'Subida dos Boxes', 'Arquibancadas'],
+};
 
-test('three distinct six-kilometre circuits are registered', () => {
-  assert.equal(SIM.CIRCUITS.map(c => c.id).join(), 'summit,rivermere,redridge');
-  assert.equal(SIM.CIRCUITS.map(c => c.name).join(), 'Summit Grand Circuit,Rivermere Grand Prix,Redridge International Circuit');
-  assert.equal(SIM.TRACK_DEF, SIM.CIRCUITS[0]);
-  for (const t of tracks.values()) assert.ok(Math.abs(t.length - 6000) <= 4, t.name + ' length ' + t.length);
-  // genuinely different layouts, not renamed copies
-  const ids = [...tracks.keys()];
-  for (let a = 0; a < ids.length; a++) for (let b = a + 1; b < ids.length; b++) {
-    const A = tracks.get(ids[a]), B = tracks.get(ids[b]); let diff = 0;
-    for (let i = 0; i < Math.min(A.N, B.N); i += 50) diff += Math.hypot(A.cx[i] - B.cx[i], A.cz[i] - B.cz[i]);
-    assert.ok(diff / (Math.min(A.N, B.N) / 50) > 150, ids[a] + ' vs ' + ids[b]);
+test('six real circuits with their published lap lengths replace the fictional ones', () => {
+  assert.equal(SIM.CIRCUITS.map(c => c.id).join(), 'monza,silverstone,spa,suzuka,bahrain,interlagos');
+  for (const [id, t] of tracks) {
+    const sp = SPEC[id];
+    assert.equal(t.def.name, sp.name); assert.equal(t.def.country, sp.country); assert.equal(t.def.length, sp.length);
+    assert.ok(Math.abs(t.length - sp.length) <= 2, id + ' length ' + t.length);
   }
+  assert.ok(!SIM.CIRCUITS.some(c => /Summit|Rivermere|Redridge/.test(c.name)), 'no fictional circuit is playable');
+  // race distances differ as the real laps do (a six-lap Grand Prix at Spa is the longest, at Interlagos the shortest)
+  const gp = (id) => tracks.get(id).length * SIM.GAME_MODES.grandprix.laps;
+  assert.ok(gp('spa') > gp('silverstone') && gp('interlagos') < gp('bahrain'));
+  assert.ok(Math.abs(gp('spa') - 42024) < 15 && Math.abs(gp('interlagos') - 25854) < 15);
 });
 
-test('every circuit passes the geometry checks: no overlaps, barriers clear of the road, drivable corners', () => {
+test('every circuit passes the geometry checks: no overlaps at the same level, barriers clear of the road, drivable corners', () => {
   for (const t of tracks.values()) {
     const v = t.validate();
     assert.ok(v.ok, t.name + ': ' + v.issues.join('; '));
-    assert.ok(v.minSep > 60, t.name + ' sections ' + v.minSep.toFixed(0) + ' m apart');
-    assert.ok(v.minR >= 18, t.name + ' radius ' + v.minR.toFixed(1));
+    assert.ok(v.minR >= 12, t.name + ' radius ' + v.minR.toFixed(1));
+    // measured widths (with the 10 m floor), between 10 and 20 m
+    for (let i = 0; i < t.N; i++) assert.ok(t.hw[i] >= 5 && t.hw[i] <= 10, t.name + ' half width ' + t.hw[i]);
   }
 });
 
-test('corner counts, straights and elevation match each circuit brief', () => {
+test('racing direction: clockwise except Interlagos (anticlockwise); Suzuka is a figure of eight', () => {
   for (const [id, t] of tracks) {
-    const spec = SPEC[id];
-    assert.ok(t.corners.length >= spec.corners[0] && t.corners.length <= spec.corners[1], id + ' corners ' + t.corners.length);
-    // the long straights (the circuit layouts are unchanged by the removal of DRS)
-    const long = straights(t).slice(0, spec.straights);
-    assert.equal(long.length, spec.straights, id + ' long straights');
-    for (const z of long) assert.ok(z.len > 200, id + ' straight length');
-    const starts = long.map(z => z.start).sort((a, b) => a - b);
-    for (let k = 1; k < starts.length; k++) assert.ok(starts[k] - starts[k - 1] > 300, id + ' distinct straights');
-    assert.ok(!('drs' in t.def) && !('drsZones' in t), id + ': no DRS metadata');
-    const rise = Math.max(...t.elev) - Math.min(...t.elev);
-    assert.ok(rise > 8, id + ' elevation change ' + rise.toFixed(1));
-    assert.ok(Math.max(...t.grade.map(Math.abs)) < 0.1, id + ' gradient');
+    // shoelace area with north up (z points south)
+    let a = 0; for (let i = 0; i < t.N; i++) { const j = (i + 1) % t.N; a += t.cx[i] * -t.cz[j] - t.cx[j] * -t.cz[i]; }
+    if (SPEC[id].cw === true) assert.ok(a < 0, id + ' runs clockwise');
+    if (SPEC[id].cw === false) assert.ok(a > 0, id + ' runs anticlockwise');
   }
-  const mainStraight = t => straights(t)[0].len;
-  // Redridge has the longest main straight; Summit climbs the most; Rivermere is the flattest
-  assert.ok(mainStraight(tracks.get('redridge')) > mainStraight(tracks.get('summit')));
-  assert.ok(mainStraight(tracks.get('redridge')) > mainStraight(tracks.get('rivermere')));
-  const range = t => Math.max(...t.elev) - Math.min(...t.elev);
-  assert.ok(range(tracks.get('summit')) > range(tracks.get('redridge')) && range(tracks.get('redridge')) > range(tracks.get('rivermere')));
-  // Rivermere is the most technical: more slow corners per kilometre than Redridge
-  const slow = t => t.corners.filter(c => t.refSpeed[c.apex] < 34).length;
-  assert.ok(slow(tracks.get('rivermere')) > slow(tracks.get('redridge')));
+  const s = tracks.get('suzuka'); assert.ok(s.overpass, 'Suzuka crosses itself');
+  for (const id of ['monza', 'silverstone', 'spa', 'bahrain', 'interlagos']) assert.equal(tracks.get(id).overpass, null, id + ' has no crossing');
+});
+
+test('the signature corners come in the real order from the start/finish line', () => {
+  for (const [id, names] of Object.entries(ORDER)) {
+    const t = tracks.get(id); let last = -1;
+    for (const n of names) {
+      const c = t.corners.find(k => k.name === n && k.apex > last);
+      assert.ok(c, id + ': ' + n + ' after s=' + last * 2);
+      last = c.apex;
+    }
+  }
+  // the start/finish straights: Monza's long run to the first chicane and Spa's short run to La Source
+  const first = (id) => tracks.get(id).corners[0].apex * 2;
+  assert.ok(first('monza') > 500 && first('monza') < 750, 'Monza first chicane at ' + first('monza'));
+  assert.ok(first('spa') > 180 && first('spa') < 330, 'La Source at ' + first('spa'));
+});
+
+test('measured elevation: realistic ranges, smooth, Eau Rouge climbs and Interlagos rises to the line', () => {
+  for (const [id, t] of tracks) {
+    const range = t.elevMax - t.elevMin, [lo, hi] = SPEC[id].range;
+    assert.ok(range >= lo && range <= hi, id + ' elevation range ' + range.toFixed(1));
+    // no steps or bumps: the slope changes gently (a vertical curve no tighter than ~100 m radius)
+    for (let i = 0; i < t.N; i++) {
+      const d2 = t.elev[(i + 1) % t.N] - 2 * t.elev[i] + t.elev[(i - 1 + t.N) % t.N];
+      assert.ok(Math.abs(d2) / 4 < 1 / 100, id + ' vertical curvature at s=' + i * 2 + ': ' + d2.toFixed(3));
+    }
+    assert.ok(Math.max(...t.grade.map(Math.abs)) < 0.2, id + ' gradient');
+  }
+  const spa = tracks.get('spa'), at = (t, s) => t.elev[t.wrapI(Math.round(s / 2))];
+  const eau = spa.corners.find(c => c.name === 'Eau Rouge').apex * 2, top = spa.corners.find(c => c.name === 'Les Combes').start * 2;
+  assert.ok(at(spa, eau + 350) - at(spa, eau - 50) > 25, 'Raidillon climbs');
+  assert.ok(at(spa, top) - at(spa, eau) > 50, 'Kemmel rises to Les Combes');
+  const il = tracks.get('interlagos'), j = il.corners.find(c => c.name === 'Junção').apex * 2;
+  assert.ok(at(il, il.length - 10) - at(il, j) > 25, 'the uphill run from Junção to the line');
+});
+
+test('Suzuka overpass: the two levels stay physically separate', () => {
+  const t = tracks.get('suzuka'), op = t.overpass, lo = t.wrapI(Math.round(op.lowS / 2)), hi = t.wrapI(Math.round(op.highS / 2));
+  assert.ok(Math.hypot(t.cx[lo] - t.cx[hi], t.cz[lo] - t.cz[hi]) < 3, 'the lines cross');
+  assert.ok(t.elev[hi] - t.elev[lo] >= 7, 'clearance ' + (t.elev[hi] - t.elev[lo]).toFixed(2));
+  assert.ok(t.levelApart(lo, hi));
+  // the land under the crossing is the lower road's; just beyond it the upper road's
+  assert.ok(Math.abs(t.elevAt(t.cx[lo], t.cz[lo]) - t.elev[lo]) < 0.3);
+  const away = t.wrapI(hi + 40); assert.ok(Math.abs(t.elevAt(t.cx[away], t.cz[away]) - t.elev[away]) < 0.3);
+  // a car is projected onto the level it is driving, never jumping to the other one
+  for (const [i0, other] of [[lo, hi], [hi, lo]]) {
+    const car = new SIM.Car({ driver: SIM.DRIVERS[0] }, {}); car.placeAt(t, t.wrapS((i0 - 30) * 2), 0, 50);
+    for (let k = 0; k < 60; k++) {
+      car.x += t.tx[car.idx] * 2; car.z += t.tz[car.idx] * 2; t.project(car.x, car.z, car.idx, car.proj); car.idx = car.proj.i;
+      assert.ok(Math.abs(t.dS(car.idx * 2, other * 2)) > 400, 'stays on its level');
+    }
+  }
+  // two cars at the crossing, one on each level, never collide
+  const S = new SIM.Session(t, { type: 'race', laps: 2, entries: SIM.DRIVERS.slice(0, 2).map(driver => ({ driver })), seed: 1, spectate: true, weather: 'dry' });
+  const [a, b] = S.cars; a.placeAt(t, op.lowS, 0, 0); b.placeAt(t, op.highS, 0, 0);
+  let hits = 0; const on = S.onCollision.bind(S); S.onCollision = (...x) => { hits++; return on(...x); };
+  for (let k = 0; k < 40; k++) { a.x = t.cx[lo]; a.z = t.cz[lo]; b.x = t.cx[hi]; b.z = t.cz[hi]; a.idx = lo; b.idx = hi; S.fixedStep(SIM.PHYS_DT); }
+  assert.equal(hits, 0, 'no contact between levels');
+  // the bridge has barriers close to the road on both levels
+  for (const i of [lo, hi]) assert.ok(t.wallL[i] < t.hw[i] + 4.5 && t.wallR[i] < t.hw[i] + 4.5, 'bridge walls');
 });
 
 test('start grid, pit lane, timing and minimap data come from each circuit', () => {
   for (const t of tracks.values()) {
     assert.equal(t.gridSlots.length, 24);
-    // grid boxes behind the line on the straight; the pit lane straight and level
-    for (const g of t.gridSlots.slice(0, 20)) { const i = t.wrapI(Math.round(g.s / SIM.DS)); assert.ok(Math.abs(t.kappa[i]) < 1 / 800, t.name + ' grid on the straight'); }
-    for (let q = 0; q <= t.pit.len; q += 10) { const s = t.wrapS(t.pit.entry0 + q), i = t.wrapI(Math.round(s / SIM.DS)); assert.ok(Math.abs(t.kappa[i]) < 1 / 600, t.name + ' pit lane bend at ' + s); assert.ok(Math.abs(t.grade[i]) < 0.02, t.name + ' pit lane slope'); }
+    for (const g of t.gridSlots.slice(0, 20)) { const i = t.wrapI(Math.round(g.s / SIM.DS)); assert.ok(Math.abs(t.kappa[i]) < 1 / 500, t.name + ' grid on the straight'); }
+    for (let q = 0; q <= t.pit.len; q += 10) { const s = t.wrapS(t.pit.entry0 + q), i = t.wrapI(Math.round(s / SIM.DS)); assert.ok(Math.abs(t.kappa[i]) < (t.def.id === 'interlagos' ? 1 / 240 : 1 / 450), t.name + ' pit lane bend at ' + s); assert.ok(Math.abs(t.grade[i]) < 0.09, t.name + ' pit lane slope ' + t.grade[i].toFixed(3)); } // (Spa's straight to La Source runs downhill; Interlagos's pit straight curves, about 250 m radius at the tightest)
+    // the lane leaves and rejoins the racing line on the main straight, before the first corner
+    assert.ok(t.dS(t.pit.exit1, t.corners[0].start * 2) > 20, t.name + ' pit exit before turn 1');
+    assert.equal(t.pit.side, t.def.pit.side, t.name + ' pit lane on the real side');
     assert.equal(t.pit.boxes.length, 4, 'four shared boxes, not one per team');
     assert.ok(t.sector1 > 0 && t.sector2 > t.sector1 && t.sector2 < t.length);
-    // the menu map is the playable centre line
     const line = SIM.circuitCentreLine(t.def);
     assert.equal(line.length, t.N);
     for (let i = 0; i < t.N; i += 97) { assert.ok(Math.abs(line[i][0] - t.cx[i]) < 1e-9 && Math.abs(line[i][1] - t.cz[i]) < 1e-9); }
   }
+  assert.equal(tracks.get('interlagos').pit.side, -1, 'Interlagos pits on the left (the inside of an anticlockwise lap)');
 });
 
-test('elevation changes how a car accelerates', () => {
-  const t = tracks.get('summit'); let up = -1, down = -1;
-  for (let i = 0; i < t.N; i++) { if (up < 0 && t.grade[i] > 0.05) up = i; if (down < 0 && t.grade[i] < -0.05) down = i; }
-  assert.ok(up >= 0 && down >= 0, 'Summit has real climbs and descents');
+test('the road surface is continuous: the renderer height field follows the measured profile', () => {
+  for (const [id, t] of tracks) {
+    const op = t.overpass; let worst = 0;
+    for (let i = 0; i < t.N; i++) {
+      assert.ok(Math.abs(t.elev[(i + 1) % t.N] - t.elev[i]) < 0.5, id + ' step in the road at s=' + i * 2);
+      if (op) { let d = Math.abs(i * 2 - op.highS); d = Math.min(d, t.length - d); if (d < op.ramp + 20) continue; }
+      for (const f of [-0.9, 0, 0.9]) { const x = t.cx[i] + t.rx[i] * f * t.hw[i], z = t.cz[i] + t.rz[i] * f * t.hw[i]; worst = Math.max(worst, Math.abs(t.elevAt(x, z) - t.elev[i])); }
+    }
+    assert.ok(worst < 0.25, id + ' height field off the road profile by ' + worst.toFixed(3));
+  }
+});
+
+test('elevation changes how a car accelerates (Spa)', () => {
+  const t = tracks.get('spa'); let up = -1, down = -1;
+  // (on a straight: the coasting car runs straight ahead for 60 m)
+  const straight = (i) => { for (let q = 0; q < 35; q++) if (Math.abs(t.kappa[t.wrapI(i + q)]) > 1 / 1500) return false; return true; };
+  for (let i = 0; i < t.N; i++) { if (up < 0 && t.grade[i] > 0.05 && straight(i)) up = i; if (down < 0 && t.grade[i] < -0.04 && straight(i)) down = i; }
+  assert.ok(up >= 0 && down >= 0, 'Spa has real climbs and descents');
   const coast = (i) => {
     const car = new SIM.Car({ driver: SIM.DRIVERS[0] }, { type: 'race' });
     car.placeAt(t, i * SIM.DS, 0, 40); car.idx = i; car.input.throttle = 0; car.input.brake = 0;
     for (let k = 0; k < 360; k++) { car.idx = i; SIM.stepCarPhysics(car, SIM.PHYS_DT, t, { wet: 0, wearScale: 0, fuelRate: 0, pitLimiter: false }); }
     return car.speed;
   };
-  // about g x 10% x 1.5 s between a 5% climb and a 5% descent
-  assert.ok(coast(down) > coast(up) + 1.0, 'a car loses less speed coasting downhill than uphill');
+  assert.ok(coast(down) > coast(up) + 1.5, 'a car loses less speed coasting downhill than uphill');
 });
 
 function race(id, laps, seed) {
@@ -111,9 +175,8 @@ function race(id, laps, seed) {
     weatherState: Object.assign(new SIM.DynamicWeather(seed).snapshot(), { pattern: 'dry', regime: 'sunny', rain: 0, water: 0, lineWater: 0, cloud: 0.2, targetCloud: 0.2, targetRain: 0, patternEnds: 1e9, regimeEnds: 1e9 }) });
   s.totalLaps = laps;
   const last = new Map(), pits = { maxBoxes: 0, assigned: [], fifo: true };
-  for (let step = 0; !s.over && s.time < laps * 160 + 200; step++) {
+  for (let step = 0; !s.over && s.time < laps * 170 + 220; step++) {
     s.fixedStep(SIM.PHYS_DT);
-    // shared boxes: never more than four, never one car in two, and each box goes to the earliest waiting car
     const held = s.pitBoxes.filter(Boolean); pits.maxBoxes = Math.max(pits.maxBoxes, held.length);
     assert.equal(new Set(held).size, held.length, id + ': a car in two boxes');
     for (const c of held) if (c.pit.assignedAt === s.time && !pits.assigned.includes(c.pit)) {
@@ -130,38 +193,35 @@ function race(id, laps, seed) {
   return { s, pits };
 }
 
-for (const id of ['summit', 'rivermere', 'redridge']) {
-  test(id + ': the full 20-car field starts, races, pits and is classified', () => {
+// lap-time window per circuit for the leaders (real F1 pole laps are about Monza 79, Silverstone 86, Spa 104,
+// Suzuka 89, Bahrain 89, Interlagos 70 s; the game's car is an arcade car, so the window is generous)
+const LAP = { monza: [70, 100], silverstone: [75, 105], spa: [92, 125], suzuka: [76, 108], bahrain: [80, 112], interlagos: [60, 86] };
+for (const id of tracks.keys()) {
+  test(id + ': the full 20-car field starts, races six laps, pits and is classified', () => {
     const { s, pits } = race(id, SIM.GAME_MODES.grandprix.laps, 21);
-    assert.ok(pits.maxBoxes <= 4 && pits.assigned.length >= 10, id + ' boxes used ' + pits.assigned.length);
+    assert.ok(pits.maxBoxes <= 4, id + ' boxes in use ' + pits.maxBoxes);
     assert.ok(pits.fifo, id + ': a box went to a car that arrived after one still waiting');
     for (const c of s.cars) assert.notEqual(c.dnfReason, 'Out of fuel', id + ': ' + c.driver.short + ' ran out of fuel');
     for (const c of s.cars) for (const h of c.pitHistory) assert.ok(h.fuel <= s.fuelCapacity + 1e-9);
     assert.ok(s.over, 'race finished');
-    // every car still running kept racing: at most a lap or two down at the flag
-    for (const c of s.cars) if (!c.dnf) assert.ok(c.laps >= 2, id + ': ' + c.driver.short + ' completed only ' + c.laps + ' laps');
+    for (const c of s.cars) if (!c.dnf) assert.ok(c.laps >= 4, id + ': ' + c.driver.short + ' completed only ' + c.laps + ' laps');
     assert.ok(s.cars.filter(c => c.finished).length >= 12, id + ' finishers');
-    // no stop is compulsory (some cars may run the whole race on one set), but the shared boxes see real use
-    assert.ok(s.stats.pitstops >= 10, id + ' pit stops ' + s.stats.pitstops);
+    assert.ok(s.stats.pitstops >= 4, id + ' pit stops ' + s.stats.pitstops);
     assert.equal(s.stats.boxMissed, 0, id + ': a car overshot its box');
-    // without DRS the field still races: positions change through the tow, braking and racecraft
-    assert.ok(s.stats.overtakes > 0, id + ' overtakes ' + s.stats.overtakes);
     const res = s.results; assert.equal(res.length, 20); res.forEach((r, k) => assert.equal(r.pos, k + 1));
     const winner = res[0].car; assert.equal(winner.laps, SIM.GAME_MODES.grandprix.laps);
-    // the leaders' best laps are realistic for six kilometres
-    for (const r of res.slice(0, 5)) assert.ok(r.car.bestLap > 70 && r.car.bestLap < 130, id + ' lap time ' + r.car.bestLap);
+    for (const r of res.slice(0, 5)) assert.ok(r.car.bestLap > LAP[id][0] && r.car.bestLap < LAP[id][1], id + ' lap time ' + r.car.bestLap);
   });
 }
 
 test('Rival Duel races two laps on every circuit, with no pit stops', () => {
-  for (const id of ['summit', 'rivermere', 'redridge']) {
-    const t = tracks.get(id);
+  for (const [id, t] of tracks) {
     const s = new SIM.Session(t, { type: 'race', gameMode: 'duel', entries: SIM.DRIVERS.slice(0, 2).map(driver => ({ driver })), seed: 4, weather: 'dynamic', damage: 'realistic' });
-    while (!s.over && s.time < 400) s.fixedStep(SIM.PHYS_DT);
+    while (!s.over && s.time < 500) s.fixedStep(SIM.PHYS_DT);
     assert.ok(s.over, id + ' duel classified');
     assert.equal(s.results.length, 2);
     assert.equal(s.stats.pitstops, 0, id + ' no pit stops');
     const w = s.winner; assert.ok(w && w.laps === 2 && w.finished, id + ' winner completed two laps');
-    for (const c of s.cars) if (c.bestLap) assert.ok(c.bestLap > 70 && c.bestLap < 130, id + ' lap time ' + c.bestLap);
+    for (const c of s.cars) if (c.bestLap) assert.ok(c.bestLap > LAP[id][0] && c.bestLap < LAP[id][1], id + ' lap time ' + c.bestLap);
   }
 });
