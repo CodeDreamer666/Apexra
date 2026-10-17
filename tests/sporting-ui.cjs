@@ -15,9 +15,11 @@ function source(name) {
   return code;
 }
 const funcs = ['raceWeatherState', 'circuitFuelPerLap', 'circuitTank', 'circuitPitLoss', 'briefIcon', 'briefTyreArt',
-  'centreLineOf', 'drawBriefCircuit', 'startRace', 'psCard', 'psSelection', 'updatePitService', 'updateStrategyUI', 'renderCareerStrip', 'showResults', 'showRankedResults'];
+  'centreLineOf', 'drawBriefCircuit', 'startRace', 'psCard', 'psSelection', 'updatePitService', 'updateStrategyUI', 'renderCareerStrip', 'showResults', 'showRankedResults', 'recordCareerRace', 'updateCareerButton'];
 const settings = html.slice(html.indexOf("const SETTINGS_KEY ="), html.indexOf('function updateModeSelection()'));
 const icons = html.slice(html.indexOf('const PS_ICON ='), html.indexOf('function psCard('));
+// the Career screen state the results screens update (the ranked progress itself is in the settings block)
+const crui = html.slice(html.indexOf('const CRUI ='), html.indexOf('const teamColour'));
 (async () => {
   const browser = await chromium.launch({ headless: true, executablePath: process.env.CHROMIUM_PATH ||
     (fs.existsSync('/usr/bin/chromium') ? '/usr/bin/chromium' : undefined) });
@@ -38,9 +40,11 @@ const icons = html.slice(html.indexOf('const PS_ICON ='), html.indexOf('function
       // Input clearing belongs to the renderer's input loop, outside this DOM harness.
       const clearKeys = () => {};
       ${icons}
+      ${crui}
       ${funcs.map(source).join('\n')}
       window.testUI = { G, S, startRace, updateStrategyUI, updatePitService, showResults, saveSettings };
       $('loading').classList.add('hidden'); $('menu').classList.add('hidden');` });
+    if (errors.length) throw new Error('harness: ' + errors.join(' | '));
     const checks = await page.evaluate(() => {
       const { G, S, startRace, updateStrategyUI, updatePitService, showResults, saveSettings } = testUI;
       const check = (ok, msg) => { if (!ok) throw Error(msg); };
@@ -63,7 +67,8 @@ const icons = html.slice(html.indexOf('const PS_ICON ='), html.indexOf('function
         check(visible($('briefChoices')) === !ranked, 'tyre choice only where there is a strategy');
         check(visible($('briefFuelSection')) === !ranked, 'fuel isolation');
         check(visible($('briefModeNote')) === ranked, 'mode note');
-        if (mode === 'pursuit') check(/27% wear/.test($('briefModeNote').innerText) && /3\.5 s/.test($('briefModeNote').innerText) && /new Softs/.test($('briefModeNote').innerText), 'the rival tyre difference and head start are announced');
+        if (mode === 'pursuit') { const P0 = SIM.PROGRESS.pursuitSetup(1, def.id);
+          check($('briefModeNote').innerText.includes(Math.round(P0.rivalWear * 100) + '% wear') && $('briefModeNote').innerText.includes(P0.gap.toFixed(1) + ' s') && /new Softs/.test($('briefModeNote').innerText), 'the rival tyre difference and head start are announced'); }
         const cols = getComputedStyle($('raceBrief').querySelector('.brief-rule-grid')).gridTemplateColumns.split(' ').length;
         check(cols === (ranked ? 1 : 3), 'setup grid has no empty column: ' + cols);
         $('raceBrief').classList.add('hidden');
@@ -104,7 +109,7 @@ const icons = html.slice(html.indexOf('const PS_ICON ='), html.indexOf('function
         const acts = [...$('resActions').children].map(b => b.textContent);
         if (mode === 'career') {
           check(acts.some(a => /^Retry /.test(a)), 'a career circuit can be retried: ' + acts);
-          check(/Position/.test($('resCareer').innerText) && /Lap-time pace/.test($('resCareer').innerText) && /\/ 100/.test($('resCareer').innerText), 'circuit score shown: ' + $('resCareer').innerText);
+          check(/Position/i.test($('resCareer').innerText) && /Lap-time pace/i.test($('resCareer').innerText) && /\/ 100/.test($('resCareer').innerText), 'circuit score shown: ' + $('resCareer').innerText);
         }
         if (ranked) {
           check(/Victory/i.test($('resTitle').innerText) && /Pro/i.test($('resTitle').innerText), 'verdict and rank: ' + $('resTitle').innerText);

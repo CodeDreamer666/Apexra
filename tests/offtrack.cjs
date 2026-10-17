@@ -301,7 +301,8 @@ test('AI drivers shoved off the track at speed recover on their own, with no res
       for (const [c, p] of pushed) if (p.back == null && S.time - p.at > 0.1 && c.offN === 0) p.back = S.time - p.at;
     }
     assert.ok(S.over && pushed.size >= 30 / 5, id + ' race over with cars pushed off: ' + pushed.size);
-    for (const [c, p] of pushed) assert.ok(p.back != null && p.back < 15, `${id} ${c.driver.short} back on track after ${p.back} (dnf ${c.dnf} ${c.dnfReason || ''}, ${c.ai.mode}, d ${c.d.toFixed(1)}, ${p.v} km/h ${p.yaw} rad from d ${p.d.toFixed(1)})`);
+    // (or, put 3 m from a wall at up to 260 km/h, it hits the wall and retires with damage: a crash, not a car stuck)
+    for (const [c, p] of pushed) assert.ok(p.back != null && p.back < 15 || c.dnf && c.dnfReason && c.dnfReason !== 'Out of fuel', `${id} ${c.driver.short} back on track after ${p.back} (dnf ${c.dnf} ${c.dnfReason || ''}, ${c.ai.mode}, d ${c.d.toFixed(1)}, ${p.v} km/h ${p.yaw} rad from d ${p.d.toFixed(1)})`);
     assert.equal(resets, 0, id + ' nobody needed a marshal reset');
     // every car took the flag or retired from racing damage later on (contact between cars); none stuck or out of fuel
     assert.ok(S.cars.every(c => c.finished || (c.dnf && c.dnfReason !== 'Out of fuel')), id + ' every car finished or retired: ' + S.cars.filter(c => !c.finished).map(c => c.driver.short + ' ' + c.dnfReason));
