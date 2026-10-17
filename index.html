@@ -5532,6 +5532,21 @@ const SIM = (function () {
         this.pitArrivals.length = 0;
       }
       this.pitQueue = this.pitQueue.filter(c => c.pit && c.pit.phase === 'queue' && !c.dnf && !c.ghost && !c.inGarage);
+      // The queue is one file of cars in the fast lane. A car given a box can find a car that is still waiting
+      // standing between it and that box (an earlier arrival that the other overtook on the entry ramp, or one
+      // that stopped short of the queue line): neither can then move. After two seconds of that, the waiting car
+      // ahead takes the box and the car behind goes back to the head of the queue.
+      for (const I of this.cars) {
+        const P = I.pit; if (!P || P.phase !== 'in' || I.speed > 0.5) { if (P) P.stillAt = null; continue; }
+        if (P.stillAt == null) { P.stillAt = this.time; continue; }
+        if (this.time - P.stillAt < 2) continue;
+        const Q = this.pitQueue.find(q => q.speed < 0.5 && t.dS(I.s, q.s) > 0 && t.dS(I.s, q.s) < 40 && t.dS(q.s, P.stopS) > 0);
+        if (!Q) continue;
+        const k = P.box; B[k] = Q; this.pitQueue.splice(this.pitQueue.indexOf(Q), 1); this.pitQueue.unshift(I);
+        Object.assign(Q.pit, { phase: 'in', box: k, boxS: t.pit.boxes[k], stopS: t.pit.boxes[k], assignedAt: this.time, queuePos: 0, stillAt: null });
+        Object.assign(P, { phase: 'queue', box: null, boxS: null, stopS: null, stillAt: null });
+        this.log(Q, 'pit box ' + (k + 1) + ' (ahead in the queue)');
+      }
       while (this.pitQueue.length) {
         const k = this.freeBoxOrder()[0];
         if (k == null) break;
