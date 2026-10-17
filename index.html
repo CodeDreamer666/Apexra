@@ -1067,7 +1067,7 @@ const SIM = (function () {
   const CIRCUITS = [
     {
       id: 'monza', name: 'Autodromo Nazionale Monza', short: 'Monza', country: 'Italy', length: 5793, start: [0, 0],
-      pitLoss: 21.1, fuelPerLap: 2.69, fuelLapCost: 0.256, tyrePace: 93.5,
+      pitLoss: 21.1, fuelPerLap: 2.69, fuelLapCost: 0.247, tyrePace: 93.5,
       runoff: { base: 8, scale: 0.9 },
       pit: { side: 1, entry: 5235 },
       corners: named([[655, 'Variante del Rettifilo'], [1035, 'Curva Biassono'], [1855, 'Variante della Roggia'], [2280, 'Lesmo 1'], [2570, 'Lesmo 2'], [3085, 'Serraglio'], [3700, 'Variante Ascari'], [4835, 'Curva Alboreto (Parabolica)']]),
@@ -1075,7 +1075,7 @@ const SIM = (function () {
     },
     {
       id: 'silverstone', name: 'Silverstone Circuit', short: 'Silverstone', country: 'United Kingdom', length: 5891, start: [0, 0],
-      pitLoss: 23.4, fuelPerLap: 2.75, fuelLapCost: 0.232, tyrePace: 106.3,
+      pitLoss: 23.4, fuelPerLap: 2.75, fuelLapCost: 0.256, tyrePace: 106.3,
       runoff: { base: 14, scale: 1.25 },
       pit: { side: 1, entry: 5770, rampIn: 180, rampOut: 50 },
       corners: named([[305, 'Abbey'], [555, 'Farm Curve'], [805, 'Village'], [950, 'The Loop'], [1155, 'Aintree'], [1700, 'Wellington Straight'], [1915, 'Brooklands'], [2090, 'Luffield'], [2410, 'Woodcote'], [3040, 'Copse'], [3575, 'Maggotts'], [3880, 'Becketts'], [4105, 'Chapel'], [4500, 'Hangar Straight'], [4995, 'Stowe'], [5430, 'Vale'], [5510, 'Club']]),
@@ -1083,7 +1083,7 @@ const SIM = (function () {
     },
     {
       id: 'spa', name: 'Circuit de Spa-Francorchamps', short: 'Spa', country: 'Belgium', length: 7004, start: [0, 0],
-      pitLoss: 20.9, fuelPerLap: 3.27, fuelLapCost: 0.354, tyrePace: 104.5,
+      pitLoss: 20.9, fuelPerLap: 3.27, fuelLapCost: 0.312, tyrePace: 104.5,
       runoff: { base: 8, scale: 1.0 },
       pit: { side: 1, entry: 6760, rampIn: 180, rampOut: 50 },
       corners: named([[255, 'La Source'], [920, 'Eau Rouge'], [1000, 'Raidillon'], [1700, 'Kemmel Straight'], [2290, 'Les Combes'], [2530, 'Malmedy'], [2945, 'Bruxelles (Rivage)'], [3160, 'No Name'], [3750, 'Pouhon'], [4400, 'Fagnes'], [4815, 'Stavelot'], [5820, 'Blanchimont'], [6670, 'Bus Stop']]),
@@ -1091,7 +1091,7 @@ const SIM = (function () {
     },
     {
       id: 'suzuka', name: 'Suzuka International Racing Course', short: 'Suzuka', country: 'Japan', length: 5807, start: [0, 0],
-      pitLoss: 22.4, fuelPerLap: 2.74, fuelLapCost: 0.253, tyrePace: 115.4,
+      pitLoss: 22.4, fuelPerLap: 2.74, fuelLapCost: 0.252, tyrePace: 115.4,
       runoff: { base: 7, scale: 0.8 },
       pit: { side: 1, entry: 5510 },
       corners: named([[475, 'First Curve'], [650, 'Second Curve'], [875, 'S Curves'], [1000, 'S Curves'], [1165, 'S Curves'], [1370, 'S Curves'], [1495, 'Dunlop Curve'], [2065, 'Degner 1'], [2220, 'Degner 2'], [2685, 'Hairpin'], [2975, '200R'], [3720, 'Spoon Curve'], [4300, 'Back Straight'], [4740, '130R'], [5155, 'Casio Triangle'], [5210, 'Casio Triangle'], [5350, 'Final Curve']]),
@@ -1099,7 +1099,7 @@ const SIM = (function () {
     },
     {
       id: 'bahrain', name: 'Bahrain International Circuit', short: 'Bahrain', country: 'Bahrain', length: 5412, start: [0, 0],
-      pitLoss: 24.4, fuelPerLap: 2.77, fuelLapCost: 0.317, tyrePace: 130.1,
+      pitLoss: 24.4, fuelPerLap: 2.77, fuelLapCost: 0.371, tyrePace: 130.1,
       runoff: { base: 13, scale: 1.2 },
       pit: { side: 1, entry: 4900 },
       corners: named([[570, 'Turn 1'], [670, 'Turn 2'], [785, 'Turn 3'], [1360, 'Turn 4'], [1640, 'Turn 5'], [1720, 'Turn 6'], [1855, 'Turn 7'], [2115, 'Turn 8'], [2510, 'Turn 9'], [2565, 'Turn 10'], [3280, 'Turn 11'], [3680, 'Turn 12'], [3970, 'Turn 13'], [4765, 'Turn 14'], [4850, 'Turn 15']]),
@@ -1107,7 +1107,7 @@ const SIM = (function () {
     },
     {
       id: 'interlagos', name: 'Autódromo José Carlos Pace (Interlagos)', short: 'Interlagos', country: 'Brazil', length: 4309, start: [0, 0],
-      pitLoss: 19.3, fuelPerLap: 2.15, fuelLapCost: 0.238, tyrePace: 122.4,
+      pitLoss: 19.3, fuelPerLap: 2.15, fuelLapCost: 0.242, tyrePace: 122.4,
       runoff: { base: 7, scale: 0.85 },
       pit: { side: -1, entry: 3730 },
       corners: named([[340, 'Senna S'], [430, 'Senna S'], [600, 'Curva do Sol'], [1000, 'Reta Oposta'], [1395, 'Descida do Lago'], [1560, 'Descida do Lago'], [2000, 'Ferradura'], [2305, 'Laranjinha'], [2425, 'Pinheirinho'], [2755, 'Bico de Pato'], [2995, 'Mergulho'], [3240, 'Junção'], [3365, 'Subida dos Boxes'], [3640, 'Arquibancadas']]),

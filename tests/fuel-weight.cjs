@@ -112,23 +112,25 @@ test('bare rigs feel no fuel effect; Rival Duel and Pursuit give both cars one f
 // One AI car alone, the fuel load held fixed through the laps: identical car, tyres, weather and driver.
 function lapTimes(id, fuel, seed) {
   const t = tracks.get(id);
-  const S = new SIM.Session(t, { type: 'race', laps: 4, entries: [{ driver: SIM.DRIVERS[0] }], seed, spectate: true, weather: 'dynamic', tyreWear: 'off', mistakes: 0, weatherState: DRY(seed) });
-  S.totalLaps = 4; const car = S.cars[0]; car.fuel = fuel;
+  // (three laps: with four, 9 kg is less than Spa's three remaining laps need and the driver starts saving fuel,
+  // which is not the weight effect being measured)
+  const S = new SIM.Session(t, { type: 'race', laps: 3, entries: [{ driver: SIM.DRIVERS[0] }], seed, spectate: true, weather: 'dynamic', tyreWear: 'off', mistakes: 0, weatherState: DRY(seed) });
+  S.totalLaps = 3; const car = S.cars[0]; car.fuel = fuel;
   while (!S.over && S.time < 1000) { S.fixedStep(dt); car.fuel = fuel; assert.ok(!car.pit, 'no pit stop'); }
   return car.lapTimes.slice(1).map(l => l.t);
 }
 for (const id of SIM.CIRCUITS.map(c => c.id)) {
   test(id + ': 23 kg against 9 kg costs about 2.5–5.5 s a lap, through the physics (slow)', () => {
     const d = { 15: [], 23: [] };
-    // the calibration seeds of tools/fuel-calibration.cjs (8 seeds × 3 flying laps)
+    // the calibration seeds of tools/fuel-calibration.cjs (8 seeds × 2 flying laps)
     for (let k = 0; k < 8; k++) { const seed = 11 + 7 * k;
       const l9 = lapTimes(id, 9, seed), l15 = lapTimes(id, 15, seed), l23 = lapTimes(id, 23, seed);
       l9.forEach((x, j) => { d[15].push(l15[j] - x); d[23].push(l23[j] - x); });
     }
     const mean = a => a.reduce((x, y) => x + y, 0) / a.length;
     const d15 = mean(d[15]), d23 = mean(d[23]);
-    // (the real circuits differ: about 3.2 s a lap at Silverstone and Interlagos, 4.4 s at Bahrain and 5 s over Spa's
-    // 7 km, where the climbs and the long lap both add to what the weight costs)
+    // (the real circuits differ: about 3.4–3.6 s a lap at Monza, Silverstone, Suzuka and Interlagos, 4.4 s over Spa's
+    // 7 km and 5.2 s at Bahrain, where the slow corners and long full-throttle exits add to what the weight costs)
     assert.ok(d23 >= 2.5 && d23 <= 5.5, id + ': 23 vs 9 kg ' + d23.toFixed(2) + ' s');
     assert.ok(d15 > 0.6 && d15 < d23 * 0.65, id + ': 15 vs 9 kg ' + d15.toFixed(2) + ' s');
     // the circuit's strategy figure (s per kg per lap) matches what the cars actually lose
@@ -175,7 +177,8 @@ test('AI starting fuel is chosen on predicted race time, not simply the minimum'
       const plan = SIM.planStrategy(stop, c, L, c.tyre.c, 0, { fixed: stop.fuelForLaps(c.startFuelLaps) });
       assert.ok(plan.stops.length > 0, id + ': ' + c.driver.short + ' starts on ' + c.startFuelLaps + ' laps of fuel with a stop planned');
     }
-    assert.ok(new Set(laps).size >= 3, 'drivers still differ');
+    // (one shared driver profile: plans split by grid position, in the fuel load or the starting tyre)
+    assert.ok(new Set(laps).size >= 2 || new Set(stop.cars.map(c => c.tyre.c)).size >= 2, 'the grid splits across plans');
     assert.ok(laps.filter(x => x === lo).length < 12, 'not everyone takes the minimum');
     for (const x of laps) assert.ok(x >= lo && x <= L);
   }

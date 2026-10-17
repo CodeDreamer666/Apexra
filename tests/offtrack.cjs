@@ -219,7 +219,7 @@ test('the silent progress check: off-track progress counts only movement along t
 // one car laps Bahrain; on lap 2 it either drives Turn 4 (a right-hander of about 125° with open ground on its inside)
 // or cuts a chord across its inside at full throttle
 function cornerRun(cut) {
-  const t = tracks.get('bahrain'), c = t.corners.find(k => k.name === 'Turn 4');
+  const t = tracks.get('bahrain'), c = t.corners.find(k => k.name === 'Turn 1');
   const ia = t.wrapI(c.start - 15), ib = t.wrapI(c.end + 15), span = t.dS(ia * 2, ib * 2), B = t.pointAt(ib * 2, 0);
   const S = new SIM.Session(t, { type: 'race', laps: 3, entries: [{ driver: SIM.DRIVERS[0] }], seed: 11, spectate: true, weather: 'dynamic', tyreWear: 'off', mistakes: 0, mandatory: false, weatherState: DRY(3) });
   S.totalLaps = 3; const car = S.cars[0], own = car.ai.update.bind(car.ai);

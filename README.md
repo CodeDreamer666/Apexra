@@ -99,16 +99,16 @@ Race distances are the real lap length times the mode's laps; nothing is time-sc
 
 Each circuit is a separate track generated from its definition: centre line, per-point track width (with a 10 m minimum where the satellite width is narrower), kerbs, run-off and gravel sized per circuit, barriers and collision walls, racing lines, corner speeds and braking points, AI lanes, start grid, pit lane and boxes, sector timing, marshal sectors, lap counting, minimap, terrain and scenery. Elevation is the measured profile along the line, so Eau Rouge and Raidillon climb about 40 m and Interlagos drops from the Senna S to the Descida do Lago; the simulation uses the gradient (climbs cost speed, descents add it), and the renderer lifts the road, kerbs, barriers, buildings and cars by the same heights, with a fine height grid around the circuit and a coarse one out to 10 km. Suzuka's two levels are physically separate: the upper road crosses on a bridge with 7.5 m clearance, cars on different levels never collide, and the walls and height lookup know which road a car is on. A geometry check (`Track.validate`) rejects layouts where separate parts of the lap at the same level come too close, a barrier reaches the road, a corner is too tight to drive or the gradient is excessive.
 
-**Measured per circuit with the game's own physics** (`tools/circuit-calibration.cjs`; one car alone, dry): the pit-stop loss of a tyre-only stop, fuel use and the fuel-weight lap cost, used by the strategy model and the race engineer.
+**Measured per circuit with the game's own physics** (one car alone, dry): the pit-stop loss of a tyre-only stop (four seeds, the same seed with and without a stop on lap 2), fuel use at race pace, and the fuel-weight lap cost (8 seeds, 23 kg against 9 kg), used by the strategy model and the race engineer.
 
 | Circuit | Pit-stop loss | Fuel per lap | Lap cost per kg of fuel |
 |---|---|---|---|
-| Monza | 21.1 s | 2.69 kg | 0.256 s |
-| Silverstone | 23.4 s | 2.75 kg | 0.232 s |
-| Spa-Francorchamps | 20.8 s | 3.27 kg | 0.354 s |
-| Suzuka | 22.5 s | 2.74 kg | 0.253 s |
-| Bahrain | 22.0 s | 2.77 kg | 0.317 s |
-| Interlagos | 19.5 s | 2.15 kg | 0.238 s |
+| Monza | 21.1 s | 2.69 kg | 0.247 s |
+| Silverstone | 23.4 s | 2.75 kg | 0.256 s |
+| Spa-Francorchamps | 20.9 s | 3.27 kg | 0.312 s |
+| Suzuka | 22.4 s | 2.74 kg | 0.252 s |
+| Bahrain | 24.4 s | 2.77 kg | 0.371 s |
+| Interlagos | 19.3 s | 2.15 kg | 0.242 s |
 
 **Not reproduced exactly** (see docs/circuit-data.md): start/finish line positions are estimates; the pit lane is a lane beside the main straight on the real side, so Silverstone's, Spa's and Interlagos's real entries and exits away from the straight are not modelled; SRTM smoothing loses short crests and compressions; the Suzuka bridge height is added (the data has only the ground); kerbs, run-off, barriers and scenery are generated, not surveyed.
 
@@ -293,7 +293,7 @@ Gamepads are supported (left stick steer, right trigger throttle, left trigger b
 
 **Rival Duel and Pursuit** have no fuel management: both cars start with the same fixed load (two laps plus a spare lap, `RANKED_FUEL_LAPS`), which burns and weighs exactly as in Grand Prix for both cars; there is no fuel choice, range display, refuelling or pit stop. Grand Prix and Career retain the fuel systems described below.
 
-**Pit lane.** Each circuit has a pit lane beside its main straight, on the real side (the left at Interlagos, the right elsewhere): an entry ramp (180–300 m, long enough to move across smoothly from racing speed), a working lane limited to 100 km/h with four shared service boxes 16 m apart, and an exit ramp that merges back into the circuit. The speed limit runs from the end of the entry ramp to the start of the exit ramp. A clean tyre-only stop costs 19.5–23.4 s against staying out, depending on the circuit (measured per circuit, see **Circuits**). About 9 s of that is braking from the limit to a standstill, the 2–3 s service and accelerating away from rest. Queueing, refuelling and repairs add to that. Real pit lanes that leave or rejoin away from the main straight (Silverstone, Spa, Interlagos) are approximated by this lane.
+**Pit lane.** Each circuit has a pit lane beside its main straight, on the real side (the left at Interlagos, the right elsewhere): an entry ramp (180–300 m, long enough to move across smoothly from racing speed), a working lane limited to 100 km/h with four shared service boxes 16 m apart, and an exit ramp that merges back into the circuit. The speed limit runs from the end of the entry ramp to the start of the exit ramp. A clean tyre-only stop costs 19.3–24.4 s against staying out, depending on the circuit (measured per circuit, see **Circuits**). About 9 s of that is braking from the limit to a standstill, the 2–3 s service and accelerating away from rest. Queueing, refuelling and repairs add to that. Real pit lanes that leave or rejoin away from the main straight (Silverstone, Spa, Interlagos) are approximated by this lane.
 
 **Four shared boxes, first come, first served.** There are no team garages, reservations or priorities. A car joins the pit queue when it physically crosses the pit-entry line. If a box is free, the earliest arrival gets one at once (the furthest free box down the lane with a clear approach); otherwise cars wait, in arrival order, in one queue just ahead of the boxes (a long queue reaches back up the outer half of the entry ramp, clear of the track), and the earliest waiting car takes the next box that comes free. Cars arriving in the same physics step are ordered by how far into the lane they are, then by car number. The player and the AI follow exactly the same rules.
 
@@ -309,14 +309,14 @@ Gamepads are supported (left stick steer, right trigger throttle, left trigger b
 
 | Circuit | 23 kg vs 9 kg (flying lap) |
 |---|---|
-| Monza | +3.58 s |
-| Silverstone | +3.25 s |
-| Spa-Francorchamps | +4.96 s |
-| Suzuka | +3.54 s |
-| Bahrain | +4.44 s |
-| Interlagos | +3.33 s |
+| Monza | +3.45 s |
+| Silverstone | +3.59 s |
+| Spa-Francorchamps | +4.36 s |
+| Suzuka | +3.53 s |
+| Bahrain | +5.19 s |
+| Interlagos | +3.39 s |
 
-(`tools/circuit-calibration.cjs`, fuel held at 23 and 9 kg, flying laps.) Spa is the most sensitive: it is the longest lap, with long climbs.
+(`tests/fuel-weight.cjs`: fuel held at 23 and 9 kg, 8 seeds × 2 flying laps.) Bahrain is the most sensitive, with its slow corners and long full-throttle exits, then Spa, the longest lap.
 
 On a flat test surface, 9 kg against 23 kg:
 
