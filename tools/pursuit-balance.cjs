@@ -7,7 +7,7 @@
 //                                            against a chaser driven by the AI at several levels, a stand-in for
 //                                            players of different skill: who wins, final gaps, passes
 //   node tools/pursuit-balance.cjs all
-// Options: CIRCUITS=summit,rivermere,redridge SEEDS=1,2 CHASERS=1,1.6,2.2,3 RANKS=0,...,7 JOBS=4
+// Options: CIRCUITS=monza,...,interlagos SEEDS=1,2 CHASERS=1,1.25,1.5 RANKS=0,1,2 GAPS=g0,g1,g2 JOBS=4
 const fs = require('node:fs');
 const path = require('node:path');
 const os = require('node:os');
@@ -32,8 +32,8 @@ const JOBS = {
     return { headStart: s.pursuit.headStart, measured: mean(out), min: Math.min(...out), max: Math.max(...out), contacts: s.stats.collisions };
   },
   // one Pursuit as the game sets it up for a rank, the chaser driven by the AI at `chaser` level
-  rank({ circuit, rank, chaser, seed }) {
-    const S = loadSim(), t = new S.Track(S.circuitById(circuit)), R = S.RANKED.RANKS[rank];
+  rank({ circuit, rank, chaser, seed, gap }) {
+    const S = loadSim(), t = new S.Track(S.circuitById(circuit)), R = Object.assign({}, S.PROGRESS.RANKS[rank], gap != null ? { gap } : {});
     const s = new S.Session(t, { type: 'race', gameMode: 'pursuit', seed, aiLevel: R.level, damage: 'realistic',
       pursuit: { gap: R.gap, rivalWear: R.wear, rival: 1 }, entries: [{ driver: S.DRIVERS[3], aiSkill: S.aiSkillForLevel(chaser) }, { driver: S.DRIVERS[11] }] });
     const [ch, rv] = s.cars; let caughtAt = null, passedAt = null, minGap = Infinity;
@@ -54,7 +54,7 @@ const JOBS = {
 if (process.argv[2] === '--worker') { process.on('message', ({ kind, job }) => process.send({ job, out: JOBS[kind](job) })); return; }
 
 const env = process.env, S0 = loadSim();
-const circuits = (env.CIRCUITS || 'summit,rivermere,redridge').split(',');
+const circuits = (env.CIRCUITS || 'monza,silverstone,spa,suzuka,bahrain,interlagos').split(',');
 const seeds = (env.SEEDS || '1,2').split(',').map(Number);
 const modes = !process.argv[2] || process.argv[2] === 'all' ? ['gap', 'ranks'] : process.argv.slice(2);
 function pool(kind, jobs) {
@@ -82,13 +82,15 @@ function pool(kind, jobs) {
       }
     }
     if (mode === 'ranks') {
-      const ranks = (env.RANKS || '0,1,2,3,4,5,6,7').split(',').map(Number), chasers = (env.CHASERS || '1,1.6,2.2,3').split(',').map(Number), jobs = [];
-      for (const rank of ranks) for (const chaser of chasers) for (const circuit of circuits) for (const seed of seeds) jobs.push({ circuit, rank, chaser, seed });
+      const ranks = (env.RANKS || '0,1,2').split(',').map(Number), chasers = (env.CHASERS || '1,1.25,1.5').split(',').map(Number), jobs = [];
+      // GAPS=g0,g1,g2 tries other head starts for the ranks (calibration); otherwise each rank's configured gap
+      const gaps = env.GAPS ? env.GAPS.split(',').map(Number) : null;
+      for (const rank of ranks) for (const chaser of chasers) for (const circuit of circuits) for (const seed of seeds) jobs.push({ circuit, rank, chaser, seed, gap: gaps ? gaps[rank] : null });
       const res = await pool('rank', jobs);
       console.log('\nRANKS (chaser = the player car driven by the AI at a given level; ' + circuits.length + ' circuits x ' + seeds.length + ' seeds)');
       console.log('rank        rival AI  gap  wear   ' + chasers.map(c => ('chaser ' + Math.round(c * 100) + '%: wins  final gap').padEnd(30)).join(''));
       for (const rank of ranks) {
-        const R = S0.RANKED.RANKS[rank];
+        const R = Object.assign({}, S0.PROGRESS.RANKS[rank], gaps ? { gap: gaps[rank] } : {});
         let line = R.name.padEnd(10) + '  ' + (Math.round(R.level * 100) + '%').padStart(8) + '  ' + R.gap.toFixed(1) + '  ' + Math.round(R.wear * 100) + '%   ';
         for (const chaser of chasers) {
           const rs = res.filter(r => r.job.rank === rank && r.job.chaser === chaser).map(r => r.out);
@@ -96,6 +98,8 @@ function pool(kind, jobs) {
         }
         console.log(line);
       }
+      // per circuit: wins of the chaser at each level
+      for (const rank of ranks) for (const chaser of chasers) console.log('  ' + S0.PROGRESS.RANKS[rank].name + ' vs chaser ' + Math.round(chaser * 100) + '%: ' + circuits.map(c => { const rs = res.filter(r => r.job.rank === rank && r.job.chaser === chaser && r.job.circuit === c).map(r => r.out); return c + ' ' + rs.filter(r => r.win).length + '/' + rs.length + ' (' + mean(rs.map(r => r.finalGap).filter(Number.isFinite)).toFixed(2) + ' s)'; }).join(' · '));
       const all = res.map(r => r.out);
       console.log('rival defending moves: ' + all.reduce((a, r) => a + r.rivalDefends, 0) + ' · chaser attempts/passes: ' + all.reduce((a, r) => a + r.chaserAttempts, 0) + '/' + all.reduce((a, r) => a + r.chaserPasses, 0)
         + ' · contacts: ' + all.reduce((a, r) => a + r.contacts, 0) + ' · retirements: ' + all.reduce((a, r) => a + r.dnf.length, 0) + ' · rival worst wear at the flag ' + Math.round(100 * mean(all.map(r => r.rivalWearEnd))) + '%, chaser ' + Math.round(100 * mean(all.map(r => r.chaserWearEnd))) + '%');

@@ -32,7 +32,7 @@ test('the old geometric line hugs the inside; the AI racing line goes outside - 
     let oldIn = 0, newIn = 0, n = 0, oai = 0, corners = 0;
     for (const c of t.corners) {
       const len = (c.end - c.start + N) % N;
-      for (let k = 0; k <= len; k++) { const i = (c.start + k) % N; n++; if (t.rlOff[i] * c.dir > t.halfW - 1.65) oldIn++; if (L.off[0][i] * c.dir > lim - 0.3) newIn++; }
+      for (let k = 0; k <= len; k++) { const i = (c.start + k) % N; n++; if (t.rlOff[i] * c.dir > t.hw[i] - 1.65) oldIn++; if (L.off[0][i] * c.dir > L.limA[i] - 0.3) newIn++; }
       if (c.R > 160) continue; // gentle bends need no full-width line
       corners++;
       const at = (j) => L.off[0][(j + N) % N] * c.dir; // + towards the inside
@@ -89,7 +89,7 @@ test('a lone AI driver drives its racing line: inside at the apex, outside - ape
 });
 
 test('planned paths are continuous: no lateral jumps when the plan changes', () => {
-  const s = session('summit', SIM.DRIVERS.slice(0, 6).map(driver => ({ driver }))); racing(s);
+  const s = session('monza', SIM.DRIVERS.slice(0, 6).map(driver => ({ driver }))); racing(s);
   s.cars.forEach((c, k) => place(s, c, 300 + 14 * k, 55, (k % 2 ? 2 : -2)));
   let worst = 0; const last = new Map();
   run(s, 40, () => {
@@ -114,7 +114,7 @@ function fieldRace() {
     kinds: {}, attempts: 0, passes: 0, aborts: 0, switchbacks: 0, reasons: [], overtakes: 0, collisions: 0, mistakes: 0, dnf: 0, over: true };
   const P = SIM.AIDriver.prototype, plan = P.planTrajectory;
   P.planTrajectory = function () { const t0 = process.hrtime.bigint(); plan.call(this); R.planMs += Number(process.hrtime.bigint() - t0) / 1e6; R.plans++; };
-  for (const [id, seed] of [['summit', 13], ['redridge', 14]]) {
+  for (const [id, seed] of [['monza', 13], ['bahrain', 14]]) {
     const s = new SIM.Session(tracks[id], { type: 'race', seed, difficulty: 1, weather: 'dynamic', weatherState: DRY(seed), tyreWear: 'normal', mandatory: true, damage: 'realistic', entries: SIM.DRIVERS.map(driver => ({ driver })) });
     s.totalLaps = 2;
     const t = s.track, defMax = new Map();
@@ -193,7 +193,7 @@ const hold = (car, t, d) => { const P = car.ai.path; P.valid = true; P.i0 = car.
 
 test('a faster car identifies the opportunity and passes it; the move is judged, not scripted', () => {
   let passed = 0, moves = 0, contacts = 0;
-  for (const [id, k] of [['summit', 0], ['rivermere', 1], ['redridge', 2], ['summit', 3]]) {
+  for (const [id, k] of [['monza', 0], ['silverstone', 1], ['bahrain', 2], ['monza', 3]]) {
     // the car ahead is on badly worn tyres (about 17 % less grip): a real, visible difference in pace
     const { s, front, back } = approach(id, k, 'Team T', 'Team C', { wear: 0.68, gap: 20, before: 400 });
     let lined = false;
@@ -209,13 +209,13 @@ test('a faster car identifies the opportunity and passes it; the move is judged,
 
 test('an unsafe pass is abandoned: the defender closes the door before the corner and the attacker backs out', () => {
   let aborted = 0, contacts = 0; const reasons = [];
-  for (const [id, k] of [['summit', 0], ['redridge', 1], ['rivermere', 2], ['redridge', 3]]) {
+  for (const [id, k] of [['monza', 0], ['bahrain', 1], ['silverstone', 2], ['bahrain', 3]]) {
     const { s, t, front, back, W } = approach(id, k, 'Team I', 'Team M', { gap: 9 });
     back.ai.startAttack({ car: front, maneuver: 'inside', side: 1, corner: W.k });
     let ended = null; const orig = back.ai.endAttack.bind(back.ai);
     back.ai.endAttack = (why, ok) => { if (!ended) ended = { why, ok }; return orig(why, ok); };
     // the defender moves across and holds the inside all the way to the apex
-    run(s, 8, () => hold(front, t, W.dir * (t.halfW - 2.0)));
+    run(s, 8, () => hold(front, t, W.dir * (t.hw[front.idx] - 2.0)));
     if (ended && !ended.ok) { aborted++; reasons.push(ended.why); }
     contacts += s.stats.collisions;
   }
@@ -225,12 +225,12 @@ test('an unsafe pass is abandoned: the defender closes the door before the corne
 
 test('a covered inside makes a good racer weigh (and take) the switchback: wide entry, cut back, better exit', () => {
   let considered = 0, taken = 0;
-  for (const [id, k] of [['summit', 0], ['redridge', 1], ['rivermere', 2], ['summit', 3], ['redridge', 4]]) {
+  for (const [id, k] of [['monza', 0], ['bahrain', 1], ['silverstone', 2], ['monza', 3], ['bahrain', 4]]) {
     const { s, t, front, back, W } = approach(id, k, 'Team I', 'Team E', { gap: 9 });
     back.ai.startAttack({ car: front, maneuver: 'inside', side: 1, corner: W.k });
     let seen = false;
     run(s, 8, () => {
-      hold(front, t, W.dir * (t.halfW - 2.0));
+      hold(front, t, W.dir * (t.hw[front.idx] - 2.0));
       for (let q = 0; q < back.ai.nCand; q++) if (back.ai.cands[q].maneuver === 'switchback') seen = true;
     });
     if (seen) considered++;
@@ -240,10 +240,14 @@ test('a covered inside makes a good racer weigh (and take) the switchback: wide 
   assert.ok(taken >= 1, 'switchbacks taken ' + taken + '/5');
 });
 
-test('personalities: the same opportunity, judged by different temperaments', () => {
-  // identical evaluation of an identical chance, fed to the tactical layer of different drivers
-  const timeToCommit = (short) => {
-    const s = session('summit', [{ driver: byShort('Team T') }, { driver: byShort(short) }]); racing(s);
+test('no personalities: every AI driver shares one aggressive racing profile and judges a chance alike', () => {
+  // one profile for all twenty: no cautious, passive, balanced or aggressive drivers
+  const traits = new Set(SIM.DRIVERS.map(d => [d.pace, d.cons, d.brake, d.craft, d.aggr, d.risk, d.tyre, d.strat, d.start, d.patience, d.adapt].join()));
+  assert.equal(traits.size, 1, 'one shared profile');
+  const D = SIM.DRIVERS[0]; assert.ok(D.aggr >= 0.9 && D.risk >= 0.85 && D.patience <= 0.2, 'that profile attacks: ' + JSON.stringify(D));
+  // identical evaluation of an identical chance, fed to the tactical layer of different drivers: the same, quick commitment
+  const timeToCommit = (short, extra = {}) => {
+    const s = session('monza', [{ driver: byShort('Team T') }, { driver: byShort(short) }], extra); racing(s);
     const [front, back] = s.cars; place(s, front, 600, 60); place(s, back, 588, 60); s.fixedStep(SIM.PHYS_DT);
     const a = back.ai; a.state = 'follow'; a.conviction = 0; a.followTime = 0;
     for (let k = 1; k <= 300; k++) {
@@ -254,43 +258,43 @@ test('personalities: the same opportunity, judged by different temperaments', ()
     }
     return 30;
   };
-  const m = timeToCommit('Team M'), c = timeToCommit('Team C'), i = timeToCommit('Team I'), d = timeToCommit('Team D');
-  // Team M (aggression .85, patience .22) and Team C (.82/.35) go for it; Team I (.50/.88) and Team D (.50/.78) wait
-  assert.ok(m < i && c < i && m < d && c < d, 'commit after ' + JSON.stringify({ M: m, C: c, I: i, D: d }) + ' s');
-  // risk tolerance and racecraft shape the margins and the reading of rivals
-  const s = session('summit', SIM.DRIVERS.map(driver => ({ driver }))); racing(s);
-  const A = (short) => s.cars.find(c => c.driver.short === short).ai;
+  const times = ['Team M', 'Team C', 'Team I', 'Team D'].map(n => timeToCommit(n));
+  assert.equal(new Set(times).size, 1, 'the same chance, the same decision: ' + times);
+  assert.ok(times[0] <= 1.0, 'a plausible chance is taken within a second: ' + times[0] + ' s');
+  // the will to attack is the same at every level (skill changes execution, not willingness)
+  assert.equal(timeToCommit('Team M', { aiLevel: 1.5 }), timeToCommit('Team M', { difficulty: 1 }));
+  // the whole field: the same tolerance and the same reading of rivals at one level
+  const s = session('monza', SIM.DRIVERS.map(driver => ({ driver }))); racing(s);
   for (const a of s.cars.map(c => c.ai)) a.strategic(0.1, 0);
-  assert.ok(A('Team M').tolerance > A('Team F').tolerance, 'a risk-taker accepts closer racing');
-  assert.ok(A('Team E').mind.predict > A('Team S').mind.predict, 'better racecraft reads rivals further ahead');
-  assert.ok(A('Team E').mind.apexSd < A('Team M').mind.apexSd, 'consistency tightens execution');
-  // the traits persist: the same driver gets the same mind in every session and mode
-  const a2 = session('summit', SIM.DRIVERS.map(driver => ({ driver }))), b2 = session('redridge', SIM.DRIVERS.map(driver => ({ driver })));
-  for (let k = 0; k < 20; k++) assert.deepEqual(a2.cars[k].ai.mind, b2.cars[k].ai.mind);
-  const d2 = session('rivermere', SIM.DRIVERS.slice(4, 6).map(driver => ({ driver })), { gameMode: 'duel' });
-  for (let k = 0; k < 2; k++) assert.deepEqual(d2.cars[k].ai.mind, a2.cars[4 + k].ai.mind, 'Rival Duel keeps the same mind');
-  const traits = new Set(SIM.DRIVERS.map(d => [d.aggr, d.patience, d.risk, d.craft, d.adapt, d.cons].join()));
-  assert.equal(traits.size, 20, 'twenty distinct personalities');
+  const minds = new Set(s.cars.map(c => JSON.stringify(c.ai.mind)));
+  assert.equal(minds.size, 1, 'one racing mind for the field');
+  // a visible mistake by the car ahead is pounced on at once
+  const m = session('monza', [{ driver: byShort('Team T') }, { driver: byShort('Team A') }]); racing(m);
+  const [front, back] = m.cars; place(m, front, 620, 45); place(m, back, 600, 50); m.fixedStep(SIM.PHYS_DT);
+  front.offN = 4; front.spun = true;
+  back.ai.tactical(0.1);
+  assert.equal(back.ai.target, front, 'the stricken car becomes the target');
+  assert.ok(back.ai.conviction >= 0.8, 'committed at once: conviction ' + back.ai.conviction.toFixed(2));
 });
 
 /* ---------------- adaptation, recovery, restrictions, tiers ---------------- */
-test('grip reading lags changing conditions (bounded) and adaptable drivers catch up faster', () => {
-  const s = session('summit', SIM.DRIVERS.map(driver => ({ driver }))); racing(s);
-  const quick = s.cars.find(c => c.driver.short === 'Team I').ai, slow = s.cars.find(c => c.driver.short === 'Team S').ai;
+test('grip reading lags changing conditions (bounded) and higher levels catch up faster', () => {
+  const qs = session('monza', SIM.DRIVERS.slice(0, 2).map(driver => ({ driver })), { aiLevel: 1.5 }); racing(qs);
+  const ss = session('monza', SIM.DRIVERS.slice(0, 2).map(driver => ({ driver })), { difficulty: 0 }); racing(ss);
+  const quick = qs.cars[0].ai, slow = ss.cars[0].ai;
   for (const a of [quick, slow]) a.readGrip(0.1);
-  s.wet = 0.6; // rain arrives
+  qs.wet = ss.wet = 0.6; // rain arrives
   const over = { quick: [], slow: [] };
   for (let k = 0; k < 100; k++) { quick.readGrip(0.1); slow.readGrip(0.1); over.quick.push(quick.gripBelief); over.slow.push(slow.gripBelief); }
   assert.ok(over.slow[5] > 1.01 && over.slow[5] <= 1.05 + 1e-9, 'optimistic at first, bounded: ' + over.slow[5].toFixed(3));
-  assert.ok(over.quick[20] < over.slow[20], 'adaptable driver reads it faster ' + over.quick[20].toFixed(3) + ' < ' + over.slow[20].toFixed(3));
+  assert.ok(over.quick[20] < over.slow[20], 'the Master reads it faster ' + over.quick[20].toFixed(3) + ' < ' + over.slow[20].toFixed(3));
   assert.ok(Math.abs(over.slow[99] - 1) < 0.02 && Math.abs(over.quick[99] - 1) < 0.005, 'both converge within ten seconds');
-  // a slide corrects the read at once
-  s.wet = 0.9; slow.readGrip(0.1); const before = slow.gripBelief; slow.steerSat = 0.1; slow.readGrip(0.1);
+  ss.wet = 0.9; slow.readGrip(0.1); const before = slow.gripBelief; slow.steerSat = 0.1; slow.readGrip(0.1);
   assert.ok(slow.gripBelief < before, 'a slide tells the driver');
 });
 
 test('a driver learns a rival\'s habits from what it sees, within bounds, and a scare makes it more careful', () => {
-  const s = session('summit', SIM.DRIVERS.slice(0, 2).map(driver => ({ driver }))); racing(s);
+  const s = session('monza', SIM.DRIVERS.slice(0, 2).map(driver => ({ driver }))); racing(s);
   const [a, b] = s.cars; place(s, b, 500, 50); place(s, a, 470, 50);
   run(s, 60);
   const m = a.ai.mem.get(b.id);
@@ -302,18 +306,18 @@ test('a driver learns a rival\'s habits from what it sees, within bounds, and a 
 test('an AI driver run off the track at speed recovers and rejoins without a reset', () => {
   for (const id of Object.keys(tracks)) {
     const s = session(id, [{ driver: SIM.DRIVERS[7] }]); racing(s);
-    const c = s.cars[0], t = s.track; place(s, c, 800, 60, t.halfW + 4);
+    const c = s.cars[0], t = s.track; place(s, c, 800, 60, t.hw[t.wrapI(400)] + 4);
     let resets = 0; const orig = c.ai.respawn.bind(c.ai); c.ai.respawn = () => { resets++; orig(); };
     let back = null;
-    run(s, 20, () => { if (back == null && Math.abs(c.d) < t.halfW - 0.5 && c.ai.mode === 'race' && c.speed > 20) back = s.time - 50; });
+    run(s, 20, () => { if (back == null && Math.abs(c.d) < t.hw[c.idx] - 0.5 && c.ai.mode === 'race' && c.speed > 20) back = s.time - 50; });
     assert.ok(back != null && back < 12, id + ': back racing after ' + back);
     assert.equal(resets, 0, id + ': no reset');
-    assert.ok(c.speed > 30 && Math.abs(c.d) < t.halfW, id + ': racing again');
+    assert.ok(c.speed > 30 && Math.abs(c.d) < t.hw[c.idx], id + ': racing again');
   }
 });
 
 test('no attacking or defending under a yellow flag; pit moves keep their own rules; no VSC or blue flags exist', () => {
-  const s = session('summit', SIM.DRIVERS.slice(0, 3).map(driver => ({ driver })), { tyreWear: 'normal' }); racing(s);
+  const s = session('monza', SIM.DRIVERS.slice(0, 3).map(driver => ({ driver })), { tyreWear: 'normal' }); racing(s);
   const [a, b, c] = s.cars; place(s, a, 600, 60); place(s, b, 588, 62); place(s, c, 578, 62);
   s.yellow.fill(5); // marshals' yellow flags everywhere
   for (const car of s.cars) { car.ai.conviction = 2; car.ai.tactical(0.1); }
@@ -327,10 +331,10 @@ test('no attacking or defending under a yellow flag; pit moves keep their own ru
   assert.equal(SIM.VSC, undefined); assert.equal('blueFlag' in a, false); assert.equal('blueYield' in a.ai, false);
 });
 
-test('higher Career tiers and ranks judge better (prediction, evaluation, execution), with the same car and physics', () => {
+test('higher levels judge and execute better (prediction, evaluation, execution), with the same car and physics', () => {
   let prev = null;
-  for (const tier of SIM.CAREER.TIERS) {
-    const s = session('summit', SIM.DRIVERS.map(driver => ({ driver })), { aiLevel: tier.level });
+  for (const tier of [{ name: 'GP 0%', difficulty: 0 }, { name: 'GP 50%', difficulty: 0.5 }, ...SIM.PROGRESS.RANKS]) {
+    const s = session('monza', SIM.DRIVERS.map(driver => ({ driver })), tier.level ? { aiLevel: tier.level } : { difficulty: tier.difficulty });
     const ms = s.cars.map(c => c.ai.mind), avg = f => ms.reduce((a, m) => a + f(m), 0) / ms.length;
     const now = { predict: avg(m => m.predict), judge: avg(m => m.judge), apex: avg(m => m.apexSd), brake: avg(m => m.brakeSd), rep: avg(m => m.repertoire) };
     if (prev) {
@@ -339,17 +343,17 @@ test('higher Career tiers and ranks judge better (prediction, evaluation, execut
     prev = now;
     for (const c of s.cars) { assert.equal(c.ai.mind.aggr, c.driver.aggr); assert.equal(c.ai.mind.patience, c.driver.patience); assert.equal(c.ai.mind.risk, c.driver.risk); }
   }
-  // the eight ranks step up every time (no level saturates below 300%)
+  // the three ranks step up every time (nothing saturates below Master)
   prev = null;
-  for (const r of SIM.RANKED.RANKS) {
-    const s = session('summit', SIM.DRIVERS.slice(0, 2).map(driver => ({ driver })), { gameMode: 'duel', aiLevel: r.level });
+  for (const r of SIM.PROGRESS.RANKS) {
+    const s = session('monza', SIM.DRIVERS.slice(0, 2).map(driver => ({ driver })), { gameMode: 'duel', aiLevel: r.level });
     const a = s.cars[1].ai, now = { skill: a.skill, commit: a.commit, brake: a.brakeCommit, mistakes: a.mistakeScale, predict: a.mind.predict, apex: a.mind.apexSd };
     if (prev) assert.ok(now.skill > prev.skill && now.commit > prev.commit && now.brake >= prev.brake && now.mistakes < prev.mistakes && now.predict > prev.predict && now.apex < prev.apex, r.name + ' ' + JSON.stringify(now));
     assert.ok(now.commit <= 1 && now.brake <= 1 && now.mistakes > 0, r.name + ': within the physical limit and never infallible');
     prev = now;
   }
   // the chosen path is driven through the normal controls and physics: the same inputs give the same motion
-  const r = session('summit', [{ driver: SIM.DRIVERS[3] }], { aiLevel: 1 }), l = session('summit', [{ driver: SIM.DRIVERS[3] }], { aiLevel: 3 });
+  const r = session('monza', [{ driver: SIM.DRIVERS[3] }], { aiLevel: 1 }), l = session('monza', [{ driver: SIM.DRIVERS[3] }], { aiLevel: 1.5 });
   const cr = r.cars[0], cl = l.cars[0];
   for (const [s, c] of [[r, cr], [l, cl]]) { s.fitTyres(c, 'H', 90); c.fuel = 15; c.placeAt(r.track, 400, 0, 30); c.speed = c.u = 30; }
   for (let i = 0; i < 480; i++) for (const c of [cr, cl]) { c.input.throttle = 1; c.input.brake = 0; c.input.steer = 0.2; SIM.stepCarPhysics(c, SIM.PHYS_DT, r.track, { wet: 0, wearScale: 1, fuelRate: 0.04, pitLimiter: false }); }
@@ -358,14 +362,14 @@ test('higher Career tiers and ranks judge better (prediction, evaluation, execut
 
 test('Rival Duel and Pursuit run with the AI; qualifying and Elimination no longer exist', () => {
   for (const gameMode of ['duel', 'pursuit']) {
-    const e = new SIM.Session(tracks.rivermere, { type: 'race', gameMode, seed: 9, aiLevel: 2.19, weather: 'dynamic', tyreWear: 'normal', damage: 'realistic',
-      pursuit: { gap: 4.5, rivalWear: 0.25, rival: 1 }, entries: SIM.DRIVERS.slice(2, 4).map(driver => ({ driver })) });
+    const e = new SIM.Session(tracks.silverstone, { type: 'race', gameMode, seed: 9, aiLevel: 1.4, weather: 'dynamic', tyreWear: 'normal', damage: 'realistic',
+      pursuit: { gap: 2, rivalWear: 0.25, rival: 1 }, entries: SIM.DRIVERS.slice(2, 4).map(driver => ({ driver })) });
     while (!e.lightsOut || e.time - e.lightsOutTime < 60) e.fixedStep(SIM.PHYS_DT);
     assert.ok(e.cars.every(c => c.totalDist > 1500 && !c.dnf), gameMode + ': both cars racing');
     assert.equal(e.weather, null); assert.equal(e.wet, 0);
   }
   assert.deepEqual(Object.keys(SIM.GAME_MODES), ['grandprix', 'duel', 'pursuit']);
   for (const k of ['ELIMINATION_RULES', 'eliminationEvents', 'eliminationSchedule', 'ELIMINATION_FUEL_MASS']) assert.equal(SIM[k], undefined, k);
-  const q = new SIM.Session(tracks.redridge, { type: 'quali', seed: 4, weather: 'dynamic', entries: SIM.DRIVERS.slice(0, 3).map(driver => ({ driver })) });
+  const q = new SIM.Session(tracks.bahrain, { type: 'quali', seed: 4, weather: 'dynamic', entries: SIM.DRIVERS.slice(0, 3).map(driver => ({ driver })) });
   for (const k of ['releaseFromGarage', 'qualifyingTick', 'finishQuali', 'completeQuali']) assert.equal(typeof q[k], 'undefined', k);
 });

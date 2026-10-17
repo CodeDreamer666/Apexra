@@ -12,7 +12,7 @@ const shim = { exports: {} }; new Function('module', html.match(/<script>([\s\S]
 const SIM = shim.exports, DT = SIM.PHYS_DT;
 const tracks = new Map(SIM.CIRCUITS.map(d => [d.id, new SIM.Track(d)]));
 const DRY = (seed) => Object.assign(new SIM.DynamicWeather(seed).snapshot(), { pattern: 'dry', regime: 'sunny', rain: 0, water: 0, lineWater: 0, cloud: 0.2, targetCloud: 0.2, targetRain: 0, patternEnds: 1e9, regimeEnds: 1e9 });
-function gp(id = 'summit', extra = {}) {
+function gp(id = 'monza', extra = {}) {
   return new SIM.Session(tracks.get(id), Object.assign({ type: 'race', seed: 9, difficulty: 1, weather: 'dynamic', weatherState: DRY(9), tyreWear: 'normal', damage: 'realistic',
     entries: SIM.DRIVERS.map((driver, i) => ({ driver, isPlayer: i === 5 })) }, extra));
 }
@@ -28,7 +28,7 @@ test('opponent tyre wear is an estimate from public facts (compound, distance on
   assert.equal(I.of(a).estWear, I.of(b).estWear, 'same public facts, same estimate');
   assert.ok(Math.abs(I.of(a).estWear - SIM.USEFUL_WEAR * 9000 / (SIM.COMPOUNDS.S.life * s.track.length)) < 1e-9);
   // the Pursuit rival's announced part-worn set is public and counted
-  const p = new SIM.Session(tracks.get('summit'), { type: 'race', gameMode: 'pursuit', seed: 3, weather: 'dynamic', pursuit: { gap: 3, rivalWear: 0.3, rival: 1 }, entries: SIM.DRIVERS.slice(0, 2).map(driver => ({ driver })) });
+  const p = new SIM.Session(tracks.get('monza'), { type: 'race', gameMode: 'pursuit', seed: 3, weather: 'dynamic', pursuit: { gap: 3, rivalWear: 0.3, rival: 1 }, entries: SIM.DRIVERS.slice(0, 2).map(driver => ({ driver })) });
   assert.equal(p.intel.of(p.cars[1]).est0, 0.3); assert.equal(p.intel.of(p.cars[0]).est0, 0);
 });
 
@@ -57,7 +57,7 @@ test('pace trends need several half-lap samples: one slow sector is not a trend,
 });
 
 test('the AI acts on the shared picture: a vulnerable car ahead is targeted from further back', () => {
-  const s = running(gp('rivermere')), t = s.track, [a, b] = [s.cars[0], s.cars[1]];
+  const s = running(gp('silverstone')), t = s.track, [a, b] = [s.cars[0], s.cars[1]];
   for (const c of s.cars) if (c !== a && c !== b) { c.inGarage = true; c.ghost = true; }
   const place = (c, at, v) => { c.placeAt(t, at, 0, v); c.speed = c.u = v; c.totalDist = t.length + at; c.laps = 1; };
   const M = a.ai.mind, base = 1.3 + 0.3 * M.craft; // the range without a reason to chase (skill 0)
@@ -69,7 +69,7 @@ test('the AI acts on the shared picture: a vulnerable car ahead is targeted from
 });
 
 test('AI strategy: a stop that can wait waits for a chance on track; an adjacent rival\'s stop is overcut on healthy tyres; a firm rain forecast delays a dry stop', () => {
-  const s = running(gp('summit', { tyreWear: 'normal' })), t = s.track;
+  const s = running(gp('monza', { tyreWear: 'normal' })), t = s.track;
   const car = s.cars[8], ahead = s.cars[7];
   // set up a planned stop now: worn softs, laps left
   const prep = () => {
@@ -99,7 +99,7 @@ test('AI strategy: a stop that can wait waits for a chance on track; an adjacent
 });
 
 test('the player\'s engineer: critical first, grounded opportunities, mode-specific advice, every message short', () => {
-  const s = running(gp('redridge'), 2), me = s.player, I = s.intel;
+  const s = running(gp('bahrain'), 2), me = s.player, I = s.intel;
   const msgs = () => { me.engineer.active.clear(); me.engineer.compose(me.surfaceWet ?? s.wet, Math.max(...me.tyre.wear), s.fuelRange(me), s.lapsLeft(me)); return [...me.engineer.active.values()]; };
   s.time = 200;
   // fuel shortage comes from the car's own measured consumption
@@ -124,7 +124,7 @@ test('the player\'s engineer: critical first, grounded opportunities, mode-speci
   for (const k of again) assert.ok(!first.includes(k) || k === 'pursuit-gap', 'not repeated: ' + k);
   // Rival Duel and Pursuit: no pit, fuel or weather advice
   for (const gameMode of ['duel', 'pursuit']) {
-    const r = new SIM.Session(tracks.get('summit'), { type: 'race', gameMode, seed: 5, weather: 'dynamic', pursuit: { gap: 3, rivalWear: 0.27, rival: 1 },
+    const r = new SIM.Session(tracks.get('monza'), { type: 'race', gameMode, seed: 5, weather: 'dynamic', pursuit: { gap: 3, rivalWear: 0.27, rival: 1 },
       entries: [{ driver: SIM.DRIVERS[0], isPlayer: true }, { driver: SIM.DRIVERS[1] }] });
     const p = r.player; p.ai = new SIM.AIDriver(p, r, {});
     const said = [];
@@ -137,7 +137,7 @@ test('the player\'s engineer: critical first, grounded opportunities, mode-speci
 test('no VSC and no blue flags anywhere; a big crash leaves the race running; the slipstream is unchanged', () => {
   assert.equal(SIM.VSC, undefined);
   assert.deepEqual({ ...SIM.SLIPSTREAM }, { maxCut: 0.15, range: 65, full: 8, overlap: 4.5, speedLo: 25, speedHi: 55, tau: 0.4 });
-  const s = gp('summit'); s.totalLaps = 2;
+  const s = gp('monza'); s.totalLaps = 2;
   const events = new Set(); let crashed = false, after = 0, tow = 0;
   while (!s.over && s.time < 520) {
     s.fixedStep(DT);

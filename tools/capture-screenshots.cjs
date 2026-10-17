@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Captures every screen the driver sees, from the loading screen to the race results, for UI review.
 //
-//   node tools/capture-screenshots.cjs [outDir] [--only=name,name] [--circuits=summit,rivermere,redridge]
+//   node tools/capture-screenshots.cjs [outDir] [--only=name,name] [--circuits=monza,silverstone,spa,suzuka,bahrain,interlagos]
 //
 // The game runs in headless Chromium (Playwright). Its render loop is driven frame by frame from here, so
 // the capture is deterministic and works with software WebGL. The race is played by the game's own AI
@@ -21,7 +21,7 @@ const args = process.argv.slice(2);
 const OUT = path.resolve(args.find(a => !a.startsWith('--')) || path.join(ROOT, 'screenshots'));
 const opt = (k) => { const a = args.find(x => x.startsWith('--' + k + '=')); return a ? a.split('=')[1].split(',') : null; };
 const ONLY = opt('only');
-const CIRCUITS = opt('circuits') || ['summit', 'rivermere', 'redridge'];
+const CIRCUITS = opt('circuits') || SIM.CIRCUITS.map(c => c.id);
 const W = 1600, HT = 900;
 fs.mkdirSync(OUT, { recursive: true });
 const index = [];

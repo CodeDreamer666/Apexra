@@ -123,7 +123,7 @@ if (process.argv[2] === '--worker') {
 /* ---- driver ---- */
 const env = process.env, S0 = loadSim();
 const tiers = (env.LEVELS || '1,1.6,2.2,3').split(',').map(Number); // AI levels (1 = 100%)
-const circuits = (env.CIRCUITS || 'summit,rivermere,redridge').split(',');
+const circuits = (env.CIRCUITS || 'monza,silverstone,spa,suzuka,bahrain,interlagos').split(',');
 const modes = process.argv[2] === 'all' || !process.argv[2] ? ['pace', 'duel', 'race', 'wet', 'championship'] : process.argv.slice(2);
 function pool(kind, jobs) {
   const n = Math.min(+env.JOBS || os.cpus().length, jobs.length), results = [];

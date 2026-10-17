@@ -176,7 +176,7 @@ for (const C of CIRCUITS) {
     origin: [+toGeo(0, 0)[0].toFixed(6), +toGeo(0, 0)[1].toFixed(6)], step: 5, n,
     start: [cm[0][0] / 100, cm[0][1] / 100], line: i16(del),
     width: u8(hwR.map(h => h * 20)),            // half width, 5 cm units
-    elev: i16(elR.map(e => e * 20)),            // metres above sea level, 5 cm units
+    elevBase: +Math.min(...elR).toFixed(2), elev: i16(elR.map(e => (e - Math.min(...elR)) * 100)), // centimetres above elevBase (m above sea level)
     near: grid(3000, 100), far: grid(10000, 400),
     bridge: bridge ? { lowS: +wrap(bridge.lowS - s0 * 5, n * 5).toFixed(1), highS: +wrap(bridge.highS - s0 * 5, n * 5).toFixed(1), ramp: C.bridge.ramp } : null,
   };

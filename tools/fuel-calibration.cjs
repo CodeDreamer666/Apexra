@@ -25,7 +25,7 @@ const tracks = new Map(SIM.CIRCUITS.map(def => [def.id, new SIM.Track(def)]));
 const DRY = (seed) => Object.assign(new SIM.DynamicWeather(seed).snapshot(), { pattern: 'dry', regime: 'sunny', rain: 0, water: 0, lineWater: 0, cloud: 0.2, targetCloud: 0.2, targetRain: 0, patternEnds: 1e9, regimeEnds: 1e9 });
 const FUELS = [9, 15, 23];
 const SEEDS = +opt('seeds', 4), LAPS = +opt('laps', 4);
-const CIRCUITS = opt('circuits', 'summit,rivermere,redridge').split(',');
+const CIRCUITS = opt('circuits', 'monza,silverstone,spa,suzuka,bahrain,interlagos').split(',');
 
 // One car alone; laps 2..laps are flying laps. `hold` keeps the fuel load fixed.
 function drive(id, fuel, seed, { laps = 3, hold = true, gameMode = 'grandprix' } = {}) {

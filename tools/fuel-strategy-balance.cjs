@@ -21,7 +21,7 @@ const SCEN = {
   rain: { label: 'rain arriving mid-race (forced tyre stop)', cfg: {}, rainAt: 260 },
 };
 const sc = SCEN[opt('scenario', 'normal')];
-const circuits = opt('circuits', 'summit,rivermere,redridge').split(',');
+const circuits = opt('circuits', 'monza,silverstone,spa,suzuka,bahrain,interlagos').split(',');
 const seeds = +opt('seeds', 2);
 
 function race(id, startLaps, seed) {

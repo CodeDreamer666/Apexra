@@ -43,7 +43,7 @@ function run(id, name, { style = 'normal', seed = 11, driver = 0 } = {}) {
 }
 module.exports = { run, STRATEGIES };
 if (require.main === module) {
-  const ids = (process.argv[2] || 'summit,rivermere,redridge').split(','), styles = (process.argv[3] || 'normal').split(','), seeds = (process.argv[4] || '11').split(',').map(Number);
+  const ids = (process.argv[2] || 'monza,silverstone,spa,suzuka,bahrain,interlagos').split(','), styles = (process.argv[3] || 'normal').split(','), seeds = (process.argv[4] || '11').split(',').map(Number);
   for (const id of ids) for (const style of styles) {
     const rows = Object.keys(STRATEGIES).map(name => {
       const rs = seeds.map(seed => run(id, name, { style, seed }));

@@ -41,7 +41,7 @@ test('the speed-limited lane is short and every circuit has the same four shared
 });
 
 test('boxes go strictly first come, first served: at most four occupied, then one FIFO queue', () => {
-  const S = session('summit', 8); S.lightsOut = true;
+  const S = session('monza', 8); S.lightsOut = true;
   const c = S.cars;
   // six cars arrive; two of them in the same step at the same instant (ordered by distance into the lane, then car)
   arrive(S, c[5], 10.0); arrive(S, c[2], 10.4); arrive(S, c[7], 10.4, 3); arrive(S, c[1], 10.4, 3); arrive(S, c[0], 11.0); arrive(S, c[3], 11.5);
@@ -68,8 +68,8 @@ test('boxes go strictly first come, first served: at most four occupied, then on
 });
 
 test('a car that simply steers into the pit entry, with no request, is given a free box and serviced', () => {
-  const t = tracks.get('rivermere'), p = t.pit;
-  const S = session('rivermere', 2, { spectate: false, entries: [{ driver: SIM.DRIVERS[0] }, { driver: SIM.DRIVERS[1], isPlayer: true }] });
+  const t = tracks.get('silverstone'), p = t.pit;
+  const S = session('silverstone', 2, { spectate: false, entries: [{ driver: SIM.DRIVERS[0] }, { driver: SIM.DRIVERS[1], isPlayer: true }] });
   S.lightsOut = true; S.lightsOutTime = 0; S.time = 30;
   const [other, me] = S.cars; other.placeAt(t, 3000, 0, 40);
   assert.ok(!me.boxRequest);
@@ -101,7 +101,7 @@ function soloRace(id, { stop = false, prep = null, fuelLaps = 8, laps = 4, onSte
   return { S, car, P, time: car.finishTime, visit: car.pitHistory[0] };
 }
 
-for (const id of ['summit', 'rivermere', 'redridge']) {
+for (const id of SIM.CIRCUITS.map(c => c.id)) {
   test(id + ': a clean tyre-only stop loses 16–21 s against staying out, as the circuit states', () => {
     const base = soloRace(id), pit = soloRace(id, { stop: true });
     const loss = pit.time - base.time;
@@ -114,9 +114,9 @@ for (const id of ['summit', 'rivermere', 'redridge']) {
 }
 
 test('queueing for a box and adding fuel lengthen the stop naturally', () => {
-  const clean = soloRace('redridge', { stop: true });
+  const clean = soloRace('bahrain', { stop: true });
   // four parked cars hold every box for the first 12 s the car is in the lane
-  const queued = soloRace('redridge', { stop: true, prep: (S, car) => {
+  const queued = soloRace('bahrain', { stop: true, prep: (S, car) => {
     const extra = SIM.DRIVERS.slice(1, 5).map(driver => new SIM.Car({ driver }, S));
     extra.forEach((o, k) => {
       S.cars.push(o); o.placeAt(S.track, S.track.pit.boxes[k], S.track.pit.side * S.track.pit.boxD, 0); o.frozen = true; o.started = true;
@@ -127,7 +127,7 @@ test('queueing for a box and adding fuel lengthen the stop naturally', () => {
   assert.ok(queued.visit.queued > 5, 'waited in the queue ' + queued.visit.queued.toFixed(1) + ' s');
   assert.ok(queued.visit.laneTime > clean.visit.laneTime + 5, 'longer in the lane: ' + queued.visit.laneTime.toFixed(1) + ' vs ' + clean.visit.laneTime.toFixed(1));
   // a light car takes on fuel: the stop lasts as long as the pumping, longer than the tyre change
-  const fuel = soloRace('redridge', { stop: true, fuelLaps: 2.2 });
+  const fuel = soloRace('bahrain', { stop: true, fuelLaps: 2.2 });
   assert.ok(fuel.P.fuelAdd > 3, 'fuel added ' + fuel.P.fuelAdd);
   assert.ok(Math.abs(fuel.P.total - Math.max(fuel.P.tyreT, SIM.REFUEL.connect + fuel.P.fuelAdd / SIM.REFUEL.rate)) < 1e-9);
   assert.ok(fuel.P.total > clean.P.total && fuel.visit.laneTime > clean.visit.laneTime, 'refuelling took real stationary time');
@@ -135,7 +135,7 @@ test('queueing for a box and adding fuel lengthen the stop naturally', () => {
 });
 
 test('service is chosen only at the box; jobs run at once; wings are replaced when their job is done', () => {
-  const t = tracks.get('summit');
+  const t = tracks.get('monza');
   const S = new SIM.Session(t, { type: 'race', laps: 2, entries: [{ driver: SIM.DRIVERS[0] }, { driver: SIM.DRIVERS[1], isPlayer: true }], seed: 21, damage: 'standard', weather: 'dynamic', weatherState: DRY(5), startFuelLaps: 3 });
   S.totalLaps = 2;
   const p = S.player; p.autoDrive = true; p.boxRequest = true;
@@ -176,14 +176,14 @@ test('service is chosen only at the box; jobs run at once; wings are replaced wh
 });
 
 test('fuel: start loads of 2–7 laps, a lighter car accelerates a little harder, the tank and range are respected', () => {
-  const S = session('summit', 20);
+  const S = session('monza', 20);
   assert.equal(S.fuelCapacity, Math.round(S.fuelPerLap * SIM.FUEL_TANK_LAPS * 2) / 2);
   for (const c of S.cars) {
     assert.ok(c.startFuelLaps >= 2 && c.startFuelLaps <= 7, c.driver.short + ' start fuel ' + c.startFuelLaps);
     assert.ok(Math.abs(c.fuel - S.fuelForLaps(c.startFuelLaps)) < 1e-9 && c.fuel <= S.fuelCapacity);
   }
   assert.ok(S.fuelForLaps(20) === S.fuelCapacity, 'never more than the tank');
-  const P = new SIM.Session(tracks.get('summit'), { type: 'race', laps: 6, entries: [{ driver: SIM.DRIVERS[0], isPlayer: true }], seed: 1, startFuelLaps: 3 });
+  const P = new SIM.Session(tracks.get('monza'), { type: 'race', laps: 6, entries: [{ driver: SIM.DRIVERS[0], isPlayer: true }], seed: 1, startFuelLaps: 3 });
   assert.equal(P.player.startFuelLaps, 3);
   assert.ok(Math.abs(P.fuelRange(P.player) - (3 + SIM.FUEL_RESERVE / P.fuelPerLap)) < 1e-9);
   // mass: the same car with 3 and 7 laps of fuel, full throttle from 100 km/h for 3 s
@@ -206,7 +206,7 @@ test('fuel: start loads of 2–7 laps, a lighter car accelerates a little harder
 
 test('DRS no longer exists: no zones, no eligibility, no control, no drag change, no trace in the game', () => {
   for (const t of tracks.values()) assert.ok(!('drsZones' in t) && !('drs' in t.def), t.name + ' DRS metadata');
-  const S = session('redridge', 2); S.lightsOut = true; S.time = 400; S.leaderLap = 5;
+  const S = session('bahrain', 2); S.lightsOut = true; S.time = 400; S.leaderLap = 5;
   assert.equal(S.updateDRS, undefined); assert.ok(!('drsEnabled' in S));
   const car = S.cars[0];
   assert.ok(!('drsOpen' in car) && !('drsAvail' in car) && !('drs' in car.input));

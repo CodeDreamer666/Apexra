@@ -53,7 +53,7 @@ test('the effect is a smooth, monotonic function of the fuel in the tank, neutra
 });
 
 test('the real mass is unchanged: tank, consumption and collisions keep 800 kg + fuel', () => {
-  const S = new SIM.Session(tracks.get('summit'), { type: 'race', laps: 8, entries: [{ driver: SIM.DRIVERS[0] }], seed: 3, spectate: true, weather: 'dynamic', weatherState: DRY(3) });
+  const S = new SIM.Session(tracks.get('monza'), { type: 'race', laps: 8, entries: [{ driver: SIM.DRIVERS[0] }], seed: 3, spectate: true, weather: 'dynamic', weatherState: DRY(3) });
   const c = S.cars[0];
   for (const f of [3, 9, 15, 23]) { c.fuel = f; assert.equal(c.mass, SIM.SPEC.mass + f); }
   // consumption: the existing throttle/rpm/time formula, whatever the load
@@ -117,7 +117,7 @@ function lapTimes(id, fuel, seed) {
   while (!S.over && S.time < 1000) { S.fixedStep(dt); car.fuel = fuel; assert.ok(!car.pit, 'no pit stop'); }
   return car.lapTimes.slice(1).map(l => l.t);
 }
-for (const id of ['summit', 'rivermere', 'redridge']) {
+for (const id of SIM.CIRCUITS.map(c => c.id)) {
   test(id + ': 23 kg against 9 kg costs about 2.0–3.0 s a lap, through the physics (slow)', () => {
     const d = { 15: [], 23: [] };
     // the calibration seeds of tools/fuel-calibration.cjs (8 seeds × 3 flying laps)
@@ -143,7 +143,7 @@ function grid(id, extra = {}) {
 }
 
 test('the strategy model prices fuel weight, refuelling time and extra stops', () => {
-  const S = grid('summit', { tyreWear: 'off' });
+  const S = grid('monza', { tyreWear: 'off' });
   const c = S.cars[0], L = S.totalLaps;
   // on the quickest dry tyre with no wear there is no reason to stop: carrying the whole race's fuel
   // beats a stop for fuel
@@ -160,7 +160,7 @@ test('the strategy model prices fuel weight, refuelling time and extra stops', (
 });
 
 test('AI starting fuel is chosen on predicted race time, not simply the minimum', () => {
-  for (const id of ['summit', 'rivermere', 'redridge']) {
+  for (const id of SIM.CIRCUITS.map(c => c.id)) {
     // soft tyres that last the race and no second compound required: nothing gains from stopping
     const none = grid(id, { tyreWear: 'off' });
     const L = none.totalLaps, [lo] = SIM.START_FUEL_LAPS;
@@ -171,7 +171,7 @@ test('AI starting fuel is chosen on predicted race time, not simply the minimum'
     // measured 19 s pit loss about a third of that grid starts light)
     const stop = grid(id);
     const laps = stop.cars.map(c => c.startFuelLaps);
-    assert.ok(laps.filter(x => x < L - 0.5).length >= (id === 'redridge' ? 6 : 8), id + ' starting fuel ' + laps.join(','));
+    assert.ok(laps.filter(x => x < L - 0.5).length >= (id === 'bahrain' ? 6 : 8), id + ' starting fuel ' + laps.join(','));
     for (const c of stop.cars) if (c.startFuelLaps < L - 0.5) {
       const plan = SIM.planStrategy(stop, c, L, c.tyre.c, 0, { fixed: stop.fuelForLaps(c.startFuelLaps) });
       assert.ok(plan.stops.length > 0, id + ': ' + c.driver.short + ' starts on ' + c.startFuelLaps + ' laps of fuel with a stop planned');
@@ -181,7 +181,7 @@ test('AI starting fuel is chosen on predicted race time, not simply the minimum'
     for (const x of laps) assert.ok(x >= lo && x <= L);
   }
   // personality: with the same plan a bold driver leans lighter than a careful one
-  const S = grid('summit');
+  const S = grid('monza');
   const bold = S.cars[0], careful = S.cars[1];
   bold.ai.p = { ...bold.ai.p, risk: 1, strat: 1 }; careful.ai.p = { ...careful.ai.p, risk: 0, strat: 1 }; careful.ai.skill = bold.ai.skill = 0;
   careful.fuelPerLapEst = bold.fuelPerLapEst = S.fuelPerLap;
@@ -190,7 +190,7 @@ test('AI starting fuel is chosen on predicted race time, not simply the minimum'
 });
 
 test('AI refuelling: to the next real stop when one is coming, to the flag when not', () => {
-  const S = grid('summit', { tyreWear: 'off' });
+  const S = grid('monza', { tyreWear: 'off' });
   S.lightsOut = true; const c = S.cars[3];
   c.laps = 3; c.totalDist = S.track.length * 3; c.fuel = 2;
   const toFlag = c.engineer.refuelFor('keep'), left = S.lapsLeft(c);

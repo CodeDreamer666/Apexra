@@ -58,7 +58,7 @@ test('following closely on a straight gives a tow that grows as the gap closes',
 });
 
 test('moving sideways out of the wake gradually removes the advantage', () => {
-  const s = session('redridge'), t = s.track, [lead, car] = s.cars, st = straight(t), at = st.start + 400;
+  const s = session('bahrain'), t = s.track, [lead, car] = s.cars, st = straight(t), at = st.start + 400;
   for (const gap of [12, 30, 50]) {
     let prev = 2; const seen = [];
     for (const lat of [0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4.5]) {
@@ -75,7 +75,7 @@ test('moving sideways out of the wake gradually removes the advantage', () => {
 });
 
 test('no tow when stationary, slow, side by side, ahead, going the other way or misaligned', () => {
-  const s = session('summit'), t = s.track, [lead, car] = s.cars, st = straight(t), at = st.start + 300;
+  const s = session('monza'), t = s.track, [lead, car] = s.cars, st = straight(t), at = st.start + 300;
   const setup = (ls, cs, gap = 20) => { place(s, lead, at, 0, ls); place(s, car, at - gap, 0, cs); };
   setup(0, 0); assert.equal(goal(s, car), 0, 'stationary');
   setup(15, 80); assert.equal(goal(s, car), 0, 'behind a crawling car');
@@ -116,7 +116,7 @@ test('cars on nearby but disconnected parts of a circuit never tow each other', 
 });
 
 test('pit lane, the grid, off-track running and calibration get no tow', () => {
-  const s = session('rivermere'), t = s.track, [lead, car] = s.cars, st = straight(t), at = st.start + 300;
+  const s = session('silverstone'), t = s.track, [lead, car] = s.cars, st = straight(t), at = st.start + 300;
   const setup = () => { place(s, lead, at, 0, 80); place(s, car, at - 20, 0, 80); lead.pit = car.pit = null; car.surf.fill(0); s.lightsOut = true; s.type = 'race'; };
   setup(); assert.ok(goal(s, car) > 0.5);
   setup(); car.pit = { phase: 'in' }; assert.equal(goal(s, car), 0, 'follower in the pit lane');
@@ -130,7 +130,7 @@ test('pit lane, the grid, off-track running and calibration get no tow', () => {
 });
 
 test('the player and the bots use the same calculation', () => {
-  const s = session('redridge', 3, 1), t = s.track, [ai, player, ai2] = s.cars, st = straight(t), at = st.start + 500;
+  const s = session('bahrain', 3, 1), t = s.track, [ai, player, ai2] = s.cars, st = straight(t), at = st.start + 500;
   assert.ok(player.isPlayer && !ai2.isPlayer);
   for (const [gap, lat] of [[10, 0], [25, 0.8], [40, 1.6], [58, 0.3]]) {
     place(s, ai, at, 0, 82); place(s, player, at - gap, lat, 80); place(s, ai2, at + 2000, 0, 80);
@@ -194,7 +194,7 @@ test('the tow never changes downforce, cornering, braking or the lift-off coast'
 });
 
 test('drafting builds and fades smoothly, without speed jumps', () => {
-  const s = session('redridge'), t = s.track, [lead, car] = s.cars, st = straight(t);
+  const s = session('bahrain'), t = s.track, [lead, car] = s.cars, st = straight(t);
   for (const c of s.cars) c.ai = null; // no bot driver: the test presses the pedals through the shared handling
   place(s, lead, st.start + 150, 0, 78); place(s, car, st.start + 150 - 18, 0, 78);
   s.cars[2].inGarage = true;
