@@ -73,7 +73,11 @@ test('each tyre is checked at its own position against the legal edge, on every 
             const dw = (wx - t.cx[bi]) * t.rx[bi] + (wz - t.cz[bi]) * t.rz[bi], ad = Math.abs(dw), hw = t.hw[bi], edge = hw + OFF.tyreHalf;
             const kerbs = dw > 0 ? t.kerbR : t.kerbL, kerb = kerbs[bi];
             if (kerbs[t.wrapI(bi - 1)] !== kerb || kerbs[t.wrapI(bi + 1)] !== kerb) continue; // a kerb starts or ends right here
-            const pitSide = (dw > 0 ? 1 : -1) === t.pit.side && t.pitProg(bi * 2) >= 0 && t.inPitMain(bi * 2) && ad < t.pit.outerWall + 0.5;
+            // the pit lane's main section, and the marked approach to it (a connected driving surface for every car)
+            const q = t.pitProg(bi * 2), onPitSide = (dw > 0 ? 1 : -1) === t.pit.side && q >= 0 && ad < t.pit.outerWall + 0.5;
+            const route = onPitSide && q < t.pit.E ? Math.abs(t.pitTargetD(bi * 2, null)) : 0;
+            const pitSide = onPitSide && (t.inPitMain(bi * 2) || (route > 0 && Math.abs(ad - route) <= 2));
+            if (onPitSide && route > 0 && Math.abs(Math.abs(ad - route) - 2) < 0.08) continue; // the approach's own edge
             const near = Math.min(Math.abs(ad - edge), kerb ? Math.abs(ad - hw - 1.3) : 9);
             if (near < 0.08) continue; // within rounding of the line itself
             const legal = ad <= edge || (kerb && ad <= hw + 1.3) || pitSide;
@@ -163,9 +167,11 @@ test('back on the asphalt, grip and acceleration return progressively', () => {
   assert.ok(speeds[479] > speeds[0] + 5, 'the car accelerates again');
 });
 
-test('grass, gravel and asphalt run-off are one surface; player and AI cars get identical physics', () => {
+// (the green painted run-off, surface 2, is milder than grass and gravel by design: tests/runoff.cjs covers it)
+test('grass, gravel and unpainted run-off are one surface; player and AI cars get identical physics', () => {
   const traces = [2, 3, 4].map(surf => drive(rig(220), flat(4, surf), 3, (tm) => ({ steer: Math.sin(tm * 3) * 0.6, throttle: 1, brake: tm > 2 ? 1 : 0 })));
-  assert.deepEqual(traces[1], traces[0]); assert.deepEqual(traces[2], traces[0]);
+  assert.deepEqual(traces[2], traces[1], 'gravel drives exactly like grass');
+  assert.ok(traces[0][traces[0].length - 1] > traces[1][traces[1].length - 1], 'the painted run-off costs less than grass');
   for (const n of [1, 3]) {
     const p = rig(220), ai = rig(220, { player: false, driver: 5 });
     const input = (tm) => ({ steer: Math.sin(tm * 2) * 0.5, throttle: tm < 1.5 ? 1 : 0, brake: tm >= 1.5 ? 1 : 0 });
@@ -182,9 +188,13 @@ test('a pit lane in use counts as track; the same ground is off-track for a car 
     for (const q of [p.E + 5, (p.E + p.len - p.X) / 2, p.len - p.X - 5]) {
       for (const d of [p.fastD, p.boxD]) assert.equal(placed(t, lane(q), p.side * d, 0, { phase: 'in' }).offN, 0, id + ' pit lane q=' + q.toFixed(0));
     }
-    const ramp = lane(p.E * 0.6), dRamp = p.side * (t.halfW + 4);
+    // the marked approach is a connected surface for every car; the ground beside it is the pitting car's only
+    const ramp = lane(p.E * 0.6), route = Math.abs(t.pitTargetD(ramp, null)), dRamp = p.side * route, dBeside = p.side * (route + 4.5);
+    assert.ok(route + 4.5 < p.outerWall, id + ' room beside the approach');
     assert.equal(placed(t, ramp, dRamp, 0, { phase: 'queue' }).offN, 0, id + ' entry ramp while pitting');
-    assert.equal(placed(t, ramp, dRamp, 0, null).offN, 4, id + ' entry ramp is not a shortcut for others');
+    assert.equal(placed(t, ramp, dRamp, 0, null).offN, 0, id + ' the marked approach is track for everyone');
+    assert.equal(placed(t, ramp, dBeside, 0, { phase: 'queue' }).offN, 0, id + ' beside the approach while pitting');
+    assert.equal(placed(t, ramp, dBeside, 0, null).offN, 4, id + ' beside the approach is no shortcut for others');
   }
   // through a real stop: never counted off-track in the lane or on rejoining
   const t = tracks.get('bahrain');
