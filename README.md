@@ -34,7 +34,7 @@ Throttle and braking are controlled by the player's inputs. Steering never appli
 
 ### Leaving the track
 
-Outside the legal track there are two kinds of surface. **Green painted run-off** (a 3.8 m strip of paint beyond the white line wherever the circuit has it) is drivable asphalt with less grip and a little more rolling resistance (see below). **Grass, gravel, sand and unpainted terrain** are one surface with the same physics on all three circuits; only their look differs. The legal track is the asphalt inside the white lines plus the kerbs, and a pit lane while a car is legitimately using it. Each tyre is checked at its own position against the track edge at that point of the circuit, so curves, hairpins and the pit entry and exit are handled the same way as straights; a tyre counts as off only when all of it is past the line.
+Outside the legal track there are two kinds of surface. **Green painted run-off** (a 3.8 m strip of paint beyond the white line wherever the circuit has it) is drivable asphalt with less grip and a little more rolling resistance (see below). **Grass, gravel, sand and unpainted terrain** are one surface with the same physics on all six circuits; only their look differs. The legal track is the asphalt inside the white lines plus the kerbs, and a pit lane while a car is legitimately using it. Each tyre is checked at its own position against the track edge at that point of the circuit, so curves, hairpins and the pit entry and exit are handled the same way as straights; a tyre counts as off only when all of it is past the line.
 
 **Grass, gravel and terrain:**
 
@@ -58,14 +58,14 @@ Reference: [Super Star Car on Poki](https://poki.com/en/g/super-star-car) for bi
 
 ## What's inside
 
-- **Circuits**: three six-kilometre circuits (see below), each with ridged red/white kerbs on both sides, pebbled gravel traps, painted run-off, braking-zone skid marks, 300/200/100 m braking boards, ad-board walls, catch fences, grandstands with a cheering (animated) crowd, waving team flags, a short pit lane, paved and lit like the circuit itself, with four shared, numbered service boxes and an illuminated event sign, a start gantry with working lights and APEX GRAND PRIX branding, a lattice sponsor bridge, TV camera towers, marshal light panels and its own landscape.
+- **Circuits**: six real Formula 1 circuits built from measured data (Monza, Silverstone, Spa-Francorchamps, Suzuka, Bahrain, Interlagos; see below), each with ridged red/white kerbs on both sides, pebbled gravel traps, painted run-off, braking-zone skid marks, 300/200/100 m braking boards, ad-board walls, catch fences, grandstands with a cheering (animated) crowd, waving team flags, a short pit lane, paved and lit like the circuit itself, with four shared, numbered service boxes and an illuminated event sign, a start gantry with working lights and APEX GRAND PRIX branding, a lattice sponsor bridge, TV camera towers, marshal light panels and its own landscape.
 - **Graphics**: late-afternoon sun with long shadows, a sky with a warm sun halo and high cirrus (a dark, rolling cloud deck in the rain), HDR rendering with multisampling, bloom, ACES tone mapping and colour grading; reflections captured from the real scenery; team liveries on clear-coated bodywork; airfoil wing elements, rounded tyres with compound bands, see-through wheel faces and wheel blur at speed; contact shadows; stable sun shadows; a spring-damped chase camera; a cockpit view with its own slim halo, a steering wheel with a live display and gloved hands, and mirrors, plus a T-cam on the airbox; dynamic resolution to hold the frame rate.
 - **Visual effects** (see below): sparks, debris, collision and damage smoke, dust, gravel, fire, brake glow, tyre marks, rain and screen effects, all driven by the simulation.
 - **Physics** (240 Hz; arcade pedal/yaw/slide response for every car, player and AI alike): four-wheel tyre model (Pacejka-style lateral force, friction circle, load sensitivity, lock-ups and wheelspin), downforce and drag (slipstream, aero damage; no dirty air), longitudinal and lateral weight transfer, 8-speed gearbox, fuel mass and consumption (with refuelling) and an amplified fuel-weight effect in Grand Prix and Career (see Pit stops and fuel), tyre temperature and wear (four compounds: soft, hard, intermediate, full wet), surface grip, one universal off-track surface (see below), wall and car-to-car collisions with component damage (see below).
-- **AI drivers**: 19 opponents with persistent personalities (aggression, patience, risk tolerance, racecraft, adaptability, consistency) on top of pace, braking, tyre-management, strategy and start ratings. They drive the same arcade handling as the player through the same three controls. Each one plans its own path through the corners ahead from minimum-curvature reference lines, predicts the cars around it from what it can see, and decides between following, lining up a move, attacking (inside, outside, slipstream, switchback or a two-corner set-up), calling a move off, defending (one move, room left) and yielding. They respect yellow flags, make situational mistakes, adapt to changing grip and to rivals' habits, recover after offs and contact (respawning like the player only when stuck), and plan and react to pit strategy (starting fuel, fuel and tyre stops, undercut, covering, damage stops, a busy pit lane). See **AI drivers** below.
+- **AI drivers**: 19 opponents sharing one aggressive racing philosophy (no personalities; see **AI drivers**), on one talent level set by the rank or the difficulty slider. They drive the same arcade handling as the player through the same three controls. Each one plans its own path through the corners ahead from minimum-curvature reference lines, predicts the cars around it from what it can see, and decides between following, lining up a move, attacking (inside, outside, slipstream, switchback or a two-corner set-up), calling a move off, defending (one move, room left, only against a real threat) and yielding. They pounce on rivals' mistakes, respect yellow flags, make situational mistakes, adapt to changing grip and to rivals' habits, recover after offs and contact (respawning like the player only when stuck), and plan and react to pit strategy (starting fuel, fuel and tyre stops, undercut, covering, damage stops, a busy pit lane).
 - **Race weekend**: no qualifying: races start straight from the grid, with standing starts with automatic launch control (see below), sector timing (purple/green/yellow), time gaps, no track-limit penalties (leaving the track simply costs time, see below), yellow flags, pit stops at four shared boxes with refuelling and no compulsory stops or compounds (see below), chequered flag and classified results with points.
-- **Modes**: exactly four, on the main menu: **Grand Prix** (6 laps, 36 km, 20 drivers from the grid on any circuit), **Career** (five three-race championships, see below), **Rival Duel** and **Pursuit** (two laps, two cars, eight ranks each, see below). Spectator mode with car switching, six cameras, an auto-director and up to 4× time.
-- **Settings**: AI difficulty (Grand Prix only; Career tiers and the Rival Duel / Pursuit ranks set it themselves), your team, starting tyre and fuel (in the race brief), graphics quality, speed effects, engineer voice and volume.
+- **Modes**: exactly four, on the main menu: **Grand Prix** (6 laps, 26–42 km depending on the circuit, 20 drivers from the grid on any circuit), **Career** (three ranks of six circuits, see below), **Rival Duel** and **Pursuit** (two laps, two cars, three ranks of six circuits each, see below). Spectator mode with car switching, six cameras, an auto-director and up to 4× time.
+- **Settings**: AI difficulty (Grand Prix only; the Career, Rival Duel and Pursuit ranks set it themselves), your team, starting tyre and fuel (in the race brief), graphics quality, speed effects, engineer voice and volume.
 
 | | Grand Prix | Career | Rival Duel | Pursuit |
 |---|---|---|---|---|
@@ -76,7 +76,7 @@ Reference: [Super Star Car on Poki](https://poki.com/en/g/super-star-car) for bi
 | Tyres | Chosen, any of four | Chosen, any of four | New Softs for both | New Softs (you); part-worn Softs (rival) |
 | Weather | Dynamic | Dynamic | Fixed dry | Fixed dry |
 | Race engineer | Full (safety, opportunities, strategy) | Full | Minimal (safety, the rival) | Focused on the gap |
-| AI difficulty | Settings slider | Tier (100–300%) | Rank (100–300%) | Rank (100–300%) |
+| AI difficulty | Settings slider | Rank (100–150%) | Rank (100–150%) | Rank (100–150%) |
 
 Qualifying, the Elimination variants, Time Attack and Overtake Challenge are not part of the game. No mode has sporting time penalties or compulsory tyre compounds.
 
@@ -148,24 +148,33 @@ Measured references (dry, s): Monza 77.28, Silverstone 79.39, Spa 97.18, Suzuka 
 
 ## Rival Duel and Pursuit
 
-Two ranked two-lap modes, one rival, the same car for both drivers: same power, aero, grip, brakes and damage model, both on Soft tyres, both with the same fixed fuel load (two laps plus a spare, no fuel choice or refuelling), no pit stops (the pit-lane gate does nothing), a dry track that stays dry, no sporting penalties and no rubber-banding. The rival is a random driver from another team; its rank sets its AI difficulty.
+Two ranked two-lap modes, one rival, the same car for both drivers: same power, aero, grip, brakes and damage model, both on Soft tyres, both with the same fixed fuel load (two laps plus a spare, no fuel choice or refuelling), no pit stops (the pit-lane gate does nothing), a dry track that stays dry, no sporting penalties and no rubber-banding. The rival is a random driver from another team; the rank sets its AI level.
 
 **Rival Duel**: both cars start side by side on the front row, at exactly the same distance from the line; the sides alternate between attempts. The first car to complete two laps wins.
 
-**Pursuit**: you start on pole, on new Softs; the rival starts further up the main straight, on Softs that are already worn (the race brief and the HUD say so). Both cars launch on the same lights and are timed from the same moment; nobody is held back. The rival's head start is a distance, calibrated so that once both cars are up to speed it is the rank's time gap (measured with two identical cars on all three circuits by `tools/pursuit-balance.cjs gap`). You win only by catching, passing and finishing ahead at the end of Lap 2; the rival defends like any AI driver. The results show the starting and final gaps. The rival's tyre wear rises gently with the rank (25% to 35%) to offset the longer head start and the sharper rival: in `tools/pursuit-balance.cjs ranks` (3 circuits × 3 seeds, the player's car driven by the AI as a stand-in for a human) a 220% chaser won 2–4 of 9 and a 300% chaser 3–5 of 9 at every rank from Gold to Apex, and the lower ranks are easier. That is a measurement with an AI proxy, not with human players, so the balance may still need tuning.
+**Pursuit**: you start on pole on new Softs; the rival starts 1.0 s ahead (a distance up the grid, from the launch model, calibrated so that two identical cars are about that far apart once up to speed) on Softs that are already worn (the race brief and the HUD say how much). Both cars launch on the same lights and are timed from the same moment. You win only by finishing ahead at the end of Lap 2; the rival races and defends like any AI driver.
 
-| Rank | Name | AI difficulty | Pursuit head start | Pursuit rival tyres |
-|---|---|---|---|---|
-| 1 | Initiate | 100% | 2.0 s | Softs, 25% worn |
-| 2 | Bronze | 117% | 2.5 s | Softs, 25% worn |
-| 3 | Silver | 137% | 3.0 s | Softs, 26% worn |
-| 4 | Gold | 160% | 3.5 s | Softs, 27% worn |
-| 5 | Platinum | 187% | 4.0 s | Softs, 29% worn |
-| 6 | Diamond | 219% | 4.5 s | Softs, 31% worn |
-| 7 | Ascendant | 256% | 5.0 s | Softs, 33% worn |
-| 8 | Apex | 300% | 5.5 s | Softs, 35% worn |
+**Ranks** (each mode has its own three, and each rank holds all six circuits):
 
-**Progression.** Each mode has its own eight ranks, starting at Initiate. Winning a rank, on any of the three circuits, completes it and unlocks the next one in that mode only; losing allows an immediate retry; completed ranks stay replayable; winning Apex completes the mode. Pick the mode, an unlocked rank (the panel under the mode buttons shows each rank's AI level and whether it is won, next or locked) and a circuit. The best result is kept per rank and circuit. Progress is stored in its own browser entry (`apexgp.ranked.v1`), separate from Career and settings, and validated on load.
+| Rank | Rival AI | To complete the rank |
+|---|---|---|
+| Rookie | 100% | All six circuits attempted and at least five won |
+| Pro | 125% | The same |
+| Master | 150% | The same; completing Master completes the mode |
+
+Pick the mode, an unlocked rank and a circuit; retry any circuit as often as you like. **A win stays won**: a later loss on the same circuit never takes it away. The panel under the mode buttons shows each rank's state and the six circuits (won, lost, not attempted). Completing a rank unlocks the next one in that mode only.
+
+**Pursuit balance.** The rival's tyre wear is set per circuit and rank (`PURSUIT_WEAR`), measured with `tools/pursuit-balance.cjs wear`: a chaser driven by the AI at the rank's own level (a stand-in for a player as good as the rival), four seeds per wear level, choosing the wear at which it wins about half the time. A longer or harder lap wears the tyres further in two laps, and a sharper rival pushes worn tyres harder, so the values differ:
+
+| Rival Soft wear | Monza | Silverstone | Spa | Suzuka | Bahrain | Interlagos |
+|---|---|---|---|---|---|---|
+| Rookie | 38% | 44% | 46% | 46% | 66% | 66% |
+| Pro | 40% | 50% | 46% | 54% | 66% | 64% |
+| Master | 46% | 46% | 40% | 32% | 50% | 42% |
+
+Checked on six fresh seeds (`tools/pursuit-balance.cjs ranks`, seeds 11–16): an equal-level chaser won 23 of 36 at Rookie, 25 of 36 at Pro and 26 of 36 at Master (Master: Monza 3/6, Silverstone 4/6, Spa 5/6, Suzuka 4/6, Bahrain 4/6, Interlagos 6/6; Silverstone and Bahrain re-measured after their Master wear was raised from 40% and 46%). Against the Master rival a 100% chaser won 6 of 36 and a 125% chaser 7 of 36 (before the Silverstone and Bahrain change; on those two circuits afterwards, 1 of 12 each). Outcomes are bimodal: the chaser either gets by as the rival's worn tyres fade in the second lap, or finishes a tenth or two behind, unable to pass an equal car. The AI stand-in passes less readily than a human usually does, so these rates are a guide, not a promise.
+
+**Saving.** Duel and Pursuit progress is stored with Career in `apexgp.progress.v3` (per mode: unlocked rank, and per rank and circuit the attempts, whether it was won, the best time and margin). Old eight-rank saves (`apexgp.ranked.v1`) keep access only (see Career, Old saves); no win is carried over.
 
 ## AI drivers
 
@@ -181,7 +190,12 @@ The 19 AI drivers are meant to feel like 19 racers who observe, plan, attack, de
 
 **Prediction.** Each driver predicts the cars within reach for four seconds from what is observable: position, speed, longitudinal acceleration, brake lights and lateral motion. The prediction blends what a car is doing now with what a racing driver would expect it to do (follow its line at the speed the corner allows), adjusted by what this driver has seen of that car (its corner speed, where it places the car at the apex, whether it covers the inside when attacked). Racecraft decides how much of that expectation is used. Nothing is read from another driver's plan. Measured over races, the predicted position is unbiased, about 3 m out after one second and 10 m after two.
 
-**Personalities.** All 20 drivers have their own fixed traits, the same in every mode and every round of a Career. Aggression and patience decide when a move is worth starting; risk tolerance sets the acceptable predicted contact risk; racecraft sets how well rivals are read, how well paths are judged (a misjudgement of a few hundredths of a second per corner, which persists through that corner) and which moves are in the repertoire; adaptability sets how quickly grip changes and rivals' habits are learnt; consistency sets the scatter of the apex (a few tens of centimetres) and the braking point. Team M (very aggressive, impatient) lunges where Team I (patient, calculating) waits a corner or two.
+**One racing philosophy.** There are no personalities. All 19 AI drivers (and the AI stand-in for the player's car when it is driven by the AI) share one profile (`AI_RACER`): aggressive, impatient, high racecraft, a high tolerance for contact risk. They differ only through what happens in the race (grid position, tyres, fuel, damage, the cars around them), and the rank or difficulty sets one talent level for the whole field. There is no random per-driver speed. Starting strategy (tyres and fuel) varies with the grid slot instead of with a personality, so the field still splits across plans. The attitude:
+
+- **Attack.** A car within striking distance (a few tenths of a second, or clearly closing) lines up a move quickly; a late dive from up to about two car lengths back is a move every driver makes. Following closer than before, a car stays on the gearbox to be ready.
+- **Punish mistakes.** A rival's visible mistake ahead (a lock-up, running wide, a slide, a car off the track) is pounced on at once: the move goes in while the chance is there.
+- **Defend only a real threat.** A car within about half a second behind, closing, at a real passing place (see Defending). A passive follower is not a threat.
+- **Accept the consequences.** Contact, damage and retirement are part of racing hard; there are no safety nets for the AI that the player does not have.
 
 **Mistakes and recovery.** Mistakes come from the situation: pressure from behind, an attack in progress, worn tyres, rain, a grip reading that lags the conditions, and the driver's consistency and difficulty. They are misjudgements played out by the physics: braking too late (more likely when attacking), locking up, running wide, too much throttle on worn tyres, overestimating the grip in changing weather, and underestimating a rival's pace. None is a scripted spin, crash or steering jolt. After a spin or an off the driver re-plans from where the car is and rejoins with a few seconds of extra margin; nobody is reset unless physically stuck.
 
@@ -189,7 +203,18 @@ The 19 AI drivers are meant to feel like 19 racers who observe, plan, attack, de
 
 **Fairness.** The AI changes judgement, never the car: the same acceleration, braking, grip, tyre wear, fuel use and weight, damage, weather, off-track, pit, slipstream and collision physics as the player, through the same steering, throttle and brake controls. There is no DRS or ERS, no rubber-banding and no hidden boosts. No attacking or defending under yellow; the pit entry, exit and lane rules are unchanged. There are no blue flags: a lapped car races its own race and a lapping car has to pass it like anyone else. Higher levels predict better, judge paths better, execute more precisely, use a wider repertoire and make fewer mistakes (see AI difficulty).
 
-**AI difficulty (100–300%).** One talent scale, 0..1, drives every level. The Grand Prix slider (0–100) covers 0–0.35, so its 100 is the 100% that the Career tiers and the Rival Duel / Pursuit ranks start from; the levels 100–300% cover 0.35–1 on a log scale (`aiSkillForLevel`, so every ×1.17 rank step is an equal step). Talent sets the share of the handling's yaw-rate ceiling used in corners (0.85 → 1.0, the physical ceiling and never more) and of the car's braking (0.76 → 1.0), the precision of the pedal control (feed-forward gains, how fast power goes in), how far above the steady cornering limit the driver enters on the drift (none → 15 %), mistakes (rarer and smaller, never zero), how far away a rival's mistake is seen and pounced on, and, through the skill above 100%, judgement (prediction, path judgement, execution scatter, racecraft) moving towards but never reaching perfect. Personality (aggression, risk, patience) stays. A driver's own pace rating also sets its corner commitment (about 1 % between the slowest and quickest drivers at 100%, half that at 300%), so a field has real pace differences to race with. Measured in solo flying laps on fresh Softs (the real Session headless; two drivers, best of three laps): 100% → 300% is 78.4 → 75.1 s on Summit (4.5 %), 80.0 → 77.0 s on Rivermere (4.0 %) and 73.0 → 71.2 s on Redridge (2.5 %, the circuit where 94 % of the lap is flat out), getting quicker rank by rank (160% and 187% tie on Redridge). The previous system spread 0.3–0.7 %. At 300% the laps are 2.7, 1.9 and 1.2 s quicker than the previous 300%, partly from the full width, the pedal control and the curvature fix, and partly from using the drift the player always had; with no mistakes and no time on the grass in those runs. The Grand Prix slider keeps its meaning (100 = the 100% level), so a Grand Prix at the default 75 is a little easier than before.
+**AI difficulty (100–150%).** One talent scale drives every level. The Grand Prix slider (0–100) covers the lower part of it, and its 100 is the 100% level the Rookie rank uses; the ranks are Rookie 100%, Pro 125% and Master 150% (`aiSkillForLevel`, `AI_MAX_LEVEL` = 1.5). Talent sets the share of the handling's yaw-rate ceiling used in corners (up to the physical ceiling, never more), of the car's braking, the precision of the pedal control, how far above the steady cornering limit the driver enters on the drift, mistakes (rarer and smaller, never zero), how far away a rival's mistake is seen and pounced on, and judgement (prediction, path judgement, execution scatter, racecraft), which approaches but never reaches perfect. Measured solo flying laps (`tools/pace-calibration.cjs`, dry, quickest tyres, four seeds, median):
+
+| Circuit | GP slider 0% | Rookie 100% | Pro 125% | Master 150% |
+|---|---|---|---|---|
+| Monza | 82.15 s | 78.58 s | 77.77 s | 77.28 s |
+| Silverstone | 86.35 s | 81.22 s | 80.33 s | 79.39 s |
+| Spa-Francorchamps | 104.79 s | 98.75 s | 97.81 s | 97.18 s |
+| Suzuka | 86.22 s | 81.51 s | 80.47 s | 79.84 s |
+| Bahrain | 93.34 s | 87.12 s | 85.67 s | 84.09 s |
+| Interlagos | 68.36 s | 64.49 s | 63.48 s | 62.50 s |
+
+These are the game's own car and handling on the real layouts, with no time scaling; they are not tuned to real Formula 1 lap times (the game's car is quicker than a current F1 car on most of these circuits). The spread between levels is smallest at Monza, where most of the lap is flat out.
 
 **AI diagnostics (development).** Open the game with `?aidebug` in the URL, or press `F9` during a session, for a panel showing one AI driver's mind: a top-down view with the chosen path, the candidate paths it weighed (feasible or not), the cars it is tracking with their predicted positions, and its braking point; and its tactical state and why, the move in progress and the reasons for any abort, its personality and skill parameters, risk budget, grip read, what it has learnt about the rival, and its candidate costs. `Shift+F9` picks the next AI car. It is off by default, adds nothing to the normal HUD and costs nothing while off.
 
@@ -268,7 +293,7 @@ Gamepads are supported (left stick steer, right trigger throttle, left trigger b
 
 **Rival Duel and Pursuit** have no fuel management: both cars start with the same fixed load (two laps plus a spare lap, `RANKED_FUEL_LAPS`), which burns and weighs exactly as in Grand Prix for both cars; there is no fuel choice, range display, refuelling or pit stop. Grand Prix and Career retain the fuel systems described below.
 
-**Pit lane.** Each circuit has a pit lane beside its main straight: a 300 m entry ramp (long enough to move across smoothly from 320 km/h), a short ~100 m working lane limited to 100 km/h with four shared service boxes 16 m apart, and a 60 m exit ramp that merges back into the circuit. The speed limit runs from the end of the entry ramp to the start of the exit ramp. A clean tyre-only stop loses about 18–19 s against staying out at the AI's race pace (Summit 18.2 s, Rivermere 19.3 s, Redridge 18.2 s with a full tank, measured by simulation and checked by the tests; the amplified fuel weight adds about 1–2 s pulling away from the box; it was 21–22 s with the old 200 m, 80 km/h lane). About 9 s of that is braking from the limit to a standstill, the 2–3 s service and accelerating away from rest, which no shorter lane can remove with this handling. Queueing, refuelling and repairs add to that. Elimination's two drive-through service stations have their own routes and limits.
+**Pit lane.** Each circuit has a pit lane beside its main straight, on the real side (the left at Interlagos, the right elsewhere): an entry ramp (180–300 m, long enough to move across smoothly from racing speed), a working lane limited to 100 km/h with four shared service boxes 16 m apart, and an exit ramp that merges back into the circuit. The speed limit runs from the end of the entry ramp to the start of the exit ramp. A clean tyre-only stop costs 19.5–23.4 s against staying out, depending on the circuit (measured per circuit, see **Circuits**). About 9 s of that is braking from the limit to a standstill, the 2–3 s service and accelerating away from rest. Queueing, refuelling and repairs add to that. Real pit lanes that leave or rejoin away from the main straight (Silverstone, Spa, Interlagos) are approximated by this lane.
 
 **Four shared boxes, first come, first served.** There are no team garages, reservations or priorities. A car joins the pit queue when it physically crosses the pit-entry line. If a box is free, the earliest arrival gets one at once (the furthest free box down the lane with a clear approach); otherwise cars wait, in arrival order, in one queue just ahead of the boxes (a long queue reaches back up the outer half of the entry ramp, clear of the track), and the earliest waiting car takes the next box that comes free. Cars arriving in the same physics step are ordered by how far into the lane they are, then by car number. The player and the AI follow exactly the same rules.
 
@@ -278,17 +303,20 @@ Gamepads are supported (left stick steer, right trigger throttle, left trigger b
 
 **Pit Service panel.** Shows the stop's status (WAITING FOR BOX, TO BOX n, SELECT SERVICE, SERVICING, WAITING FOR SAFE RELEASE, PIT EXIT), the time in the lane or stationary, which of the four boxes are free or busy, your queue position when all four are taken, and one card per service (tyres, fuel, front wing, rear wing). A card animates only while its job is being done and turns complete only once the car itself has been changed: fuel counts up as it is pumped into the tank, the tyres show fitted after they are on, a wing shows replaced when the new one is on.
 
-**Fuel and refuelling.** Refuelling is allowed (a rule of this game, not of modern Formula 1). Before the race, choose your starting fuel as 2–7 laps of range (6.5 is enough for all six laps without a stop). Fuel burns continuously with throttle and revs (about 2.5–2.8 kg per lap at race pace). The tank holds 8.5 laps' worth (about 23–24 kg). The HUD and the steering-wheel display show the estimated laps of range from your own measured consumption, an estimate rather than a guarantee. Running dry stops the car and retires it.
+**Fuel and refuelling.** Refuelling is allowed (a rule of this game, not of modern Formula 1). Before the race, choose your starting fuel as 2–7 laps of range (6.5 is enough for all six laps without a stop). Fuel burns continuously with throttle and revs (2.15 kg per lap at Interlagos to 3.27 kg at Spa at race pace). The tank holds 8.5 laps' worth (about 23–24 kg). The HUD and the steering-wheel display show the estimated laps of range from your own measured consumption, an estimate rather than a guarantee. Running dry stops the car and retires it.
 
-**Fuel weight (Grand Prix and Career).** In real Formula 1, an extra 10 kg of fuel costs about 0.3–0.4 s a lap. Here the effect is five times stronger, so the starting fuel and every refuel are real decisions. The lap time comes from how the car drives, not from a timer penalty. A heavier car accelerates more slowly, takes longer to stop and corners a little slower. It still reaches the same top speed on a long straight. As fuel burns off, the car gets quicker lap by lap, smoothly, with no steps. With an empty tank the car is exactly the base car, never faster. The fuel's real mass (800 kg + fuel) is unchanged for the tank, consumption, refuelling and collisions, so crashes are not five times harsher. Measured with identical cars, one alone on the track, fresh tyres and dry weather, fuel held fixed (`tools/fuel-calibration.cjs`, 8 seeds × 3 flying laps each):
+**Fuel weight (Grand Prix and Career).** In real Formula 1, an extra 10 kg of fuel costs about 0.3–0.4 s a lap. Here the effect is five times stronger, so the starting fuel and every refuel are real decisions. The lap time comes from how the car drives, not from a timer penalty. A heavier car accelerates more slowly, takes longer to stop and corners a little slower. It still reaches the same top speed on a long straight. As fuel burns off, the car gets quicker lap by lap, smoothly, with no steps. With an empty tank the car is exactly the base car, never faster. The fuel's real mass (800 kg + fuel) is unchanged for the tank, consumption, refuelling and collisions, so crashes are not five times harsher. Measured with one car alone on the track, dry weather, fuel held fixed:
 
-| Circuit | 15 kg vs 9 kg | 23 kg vs 9 kg |
-|---|---|---|
-| Summit Grand Circuit | +1.00 s | +2.55 s |
-| Rivermere Grand Prix | +1.17 s | +2.75 s |
-| Redridge International Circuit | +0.92 s | +2.15 s |
+| Circuit | 23 kg vs 9 kg (flying lap) |
+|---|---|
+| Monza | +3.58 s |
+| Silverstone | +3.25 s |
+| Spa-Francorchamps | +4.96 s |
+| Suzuka | +3.54 s |
+| Bahrain | +4.44 s |
+| Interlagos | +3.33 s |
 
-Redridge is the least sensitive because more than half of its lap is spent flat out above 310 km/h, where weight barely matters.
+(`tools/circuit-calibration.cjs`, fuel held at 23 and 9 kg, flying laps.) Spa is the most sensitive: it is the longest lap, with long climbs.
 
 On a flat test surface, 9 kg against 23 kg:
 
@@ -311,14 +339,14 @@ Bots drive under exactly the same fuel-weight physics as the player. Their strat
 
 Four compounds: **Soft** (red), **Hard** (white), **Intermediate** (green) and **Full Wet** (blue). Wear is continuous and distance-based, scaled by how the car is driven (throttle, braking, sliding and wheelspin, cornering load, tyre temperature) and by the surface (a wet-weather tyre on a dry track overheats and wears several times faster). 60 % wear is a reference point, not a failure: a worn tyre keeps going with progressively less cornering, braking and traction grip, and past 80 % the puncture risk climbs with every metre (faster for a driver who slides the car).
 
-| Compound | 60 % wear after (reference driving, suitable conditions) | Measured on the three circuits | Fresh pace |
+| Compound | 60 % wear after (reference driving, suitable conditions) | Measured on the previous three circuits | Fresh pace |
 |---|---|---|---|
-| Soft | 12 km (2 laps) | 11.5–13.0 km | quickest: 1.3–2.3 s a lap faster than a fresh Hard (Summit 2.2, Rivermere 2.3, Redridge 1.3) |
+| Soft | 12 km (2 laps) | 11.5–13.0 km | quickest: 2.4–3.4 s a lap faster than a fresh Hard (Monza 2.5, Silverstone 2.7, Spa 3.4, Suzuka 3.0, Bahrain 2.4, Interlagos 2.4) |
 | Hard | 24 km (4 laps) | 22.9–25.4 km; 85–93 % after six laps | steady, lower grip |
 | Intermediate | 12 km (2 laps) on a damp track | 11.1–12.7 km | best on a damp, moderately wet track |
 | Full Wet | 24 km (4 laps) on a wet track | 23.0–25.6 km | best in heavy rain and standing water |
 
-Grip falls gently to 60 % wear (about 8 %), then faster: at around 90 % a Hard is about 17 s a lap off its fresh pace on Summit (12 s on Redridge): still drivable, but slow in the corners, long in the braking zones, easy to pass and quick to slide.
+Grip falls gently to 60 % wear (about 8 %), then faster: a Soft at 75 % wear is 7.0–9.5 s a lap off its fresh pace on the six circuits, and at around 90 % a Hard was about 12–17 s off on the previous circuits: still drivable, but slow in the corners, long in the braking zones, easy to pass and quick to slide.
 
 **No compulsory stops or compounds.** There is no mandatory pit stop, no two-compound rule and no strategy penalty. Typical dry six-lap plans: Hard all the way (no stop: no pit loss, but a very slow last lap or two and some puncture risk); Soft for two laps then Hard (strong opening, durable finish); Hard then Soft (a fast finish on fresh rubber); Soft three and three; and the Soft two-stop (rarely worth two pit losses). Measured with one AI car alone, the same driver, car and dry weather for every plan, two seeds (`node tools/strategy-compare.cjs`): on **Summit** Soft→Hard is quickest, the Soft two-stop about 4 s behind and the Hard no-stop 8–9 s (about 3 s when the driver pushes throughout); on **Rivermere** the two one-stops and the Hard no-stop finish within about 3 s; on **Redridge**, where grip matters least, Hard→Soft and the Hard no-stop finish within a second of each other. Soft three-and-three is 5–6 s behind everywhere. These comparisons were measured before the amplified fuel-weight effect (see Fuel weight above), which now makes a light start with a refuel more attractive against carrying the whole race's fuel; rerun the tool for current figures. In full 20-car races the AI picks from the same options: on Summit and Rivermere a mix of one-stops in both orders, Soft three-and-three and some Soft two-stops; on Redridge most of the field runs the Hard no-stop (16 of 20 in a sample race), with bolder drivers starting on the Soft. In traffic a Hard wears a little faster (about 16–17 % a lap rather than 15 %), which the planner sees in each car's measured wear and which can turn a planned no-stop into a late stop.
 

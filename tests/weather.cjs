@@ -7,7 +7,7 @@ const vm = require('node:vm');
 // Repeated simulated events through the game's own DynamicWeather and Session.
 const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
 const context = { module: { exports: {} } };
-vm.runInNewContext(html.match(/<script>([\s\S]*?)<\/script>/)[1], context);
+new Function('module', html.match(/<script>([\s\S]*?)<\/script>/)[1])(context.module); // (not vm.runInNewContext: a separate context runs the simulation about five times slower)
 const SIM = context.module.exports;
 const RACE_SECONDS = 840, SESSION_SECONDS = 450, GRID_GAP = 120;
 const raining = w => w.rain > 0.025;

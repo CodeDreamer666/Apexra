@@ -17,7 +17,7 @@ const opt = (name, def) => { const i = args.indexOf('--' + name); return i >= 0 
 const file = args[0] && !args[0].startsWith('--') ? args[0] : path.join(__dirname, '..', 'index.html');
 const html = fs.readFileSync(file, 'utf8');
 const context = { module: { exports: {} } };
-vm.runInNewContext(html.match(/<script>([\s\S]*?)<\/script>/)[1], context);
+new Function('module', html.match(/<script>([\s\S]*?)<\/script>/)[1])(context.module); // (not vm.runInNewContext: a separate context runs the simulation about five times slower)
 const SIM = context.module.exports;
 // --perf accel,brake,corner overrides the effective fuel-load coefficients (calibration scans)
 if (opt('perf', null) && SIM.FUEL_PERF && opt('perf') !== 'default') { const [a, b, c] = opt('perf').split(',').map(Number); Object.assign(SIM.FUEL_PERF, { accel: a, brake: b, corner: c }); }

@@ -14,12 +14,12 @@
 // Options: LEVELS=1,1.25,1.5 CIRCUITS=monza,... SEEDS=901,902 JOBS=4 (environment variables)
 const fs = require('node:fs');
 const path = require('node:path');
-const vm = require('node:vm');
 const os = require('node:os');
 const { fork } = require('node:child_process');
 
 const html = fs.readFileSync(process.env.SIM_HTML || path.join(__dirname, '..', 'index.html'), 'utf8');
-function loadSim() { const ctx = { module: { exports: {} } }; vm.runInNewContext(html.match(/<script>([\s\S]*?)<\/script>/)[1], ctx); return ctx.module.exports; }
+// (a plain function, not vm.runInNewContext: a separate context runs the simulation about five times slower)
+function loadSim() { const m = { exports: {} }; new Function('module', html.match(/<script>([\s\S]*?)<\/script>/)[1])(m); return m.exports; }
 const mean = a => a.length ? a.reduce((x, y) => x + y, 0) / a.length : NaN;
 const sd = a => { const m = mean(a); return a.length > 1 ? Math.sqrt(a.reduce((x, y) => x + (y - m) ** 2, 0) / a.length) : 0; };
 const REF = ['Team E', 'Team G', 'Team O', 'Team T']; // a fast, a strong, a mid-field and a back-marker driver

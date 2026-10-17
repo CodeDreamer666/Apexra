@@ -7,7 +7,7 @@ const vm = require('node:vm');
 // The six real circuits, built and raced through the game's own Track, Session and AI.
 const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
 const context = { module: { exports: {} } };
-vm.runInNewContext(html.match(/<script>([\s\S]*?)<\/script>/)[1], context);
+new Function('module', html.match(/<script>([\s\S]*?)<\/script>/)[1])(context.module); // (not vm.runInNewContext: a separate context runs the simulation about five times slower)
 const SIM = context.module.exports;
 const tracks = new Map(SIM.CIRCUITS.map(def => [def.id, new SIM.Track(def)]));
 // published lap lengths (m), countries, the direction of racing seen from above with north up, and the elevation

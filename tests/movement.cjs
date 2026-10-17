@@ -7,7 +7,7 @@ const vm = require('node:vm');
 // Exercise the actual game controller and tyre physics on a flat, unobstructed test surface.
 const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
 const context = { module: { exports: {} } };
-vm.runInNewContext(html.match(/<script>([\s\S]*?)<\/script>/)[1], context);
+new Function('module', html.match(/<script>([\s\S]*?)<\/script>/)[1])(context.module); // (not vm.runInNewContext: a separate context runs the simulation about five times slower)
 const SIM = context.module.exports;
 const dt = SIM.PHYS_DT;
 const track = { cx: [0], cz: [0], rx: [0], rz: [1], surfaceAt: () => 0, pit: { limit: 22 }, pitAt() { return this.pit; } };
@@ -355,8 +355,8 @@ test('respawn discards queued taps while preserving currently held pedals', () =
 // Collision damage, failures, pit repairs and retirement (same rules for every car).
 // ---------------------------------------------------------------------------
 const circuit = new SIM.Track(SIM.TRACK_DEF);
-// a point on the main straight after the pit exit, well before turn 1
-const STRAIGHT = 600;
+// a point on a flat-out section away from the pit lane (Monza: the run from the Rettifilo through Curva Grande)
+const STRAIGHT = 1300;
 // a race session whose cars are not driven, so impacts can be staged on the real circuit
 function crashLab(level, n = 2, seed = 3) {
   const entries = SIM.DRIVERS.slice(0, n).map(driver => ({ driver }));

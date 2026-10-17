@@ -74,12 +74,13 @@ function pool(kind, jobs) {
 }
 (async () => {
   for (const mode of modes) {
+    const GAPSET = (env.GAPSET || '1,2,3.5').split(',').map(Number);
     if (mode === 'gap') {
-      const jobs = []; for (const circuit of circuits) for (const gap of [2, 3.5, 5.5]) for (const seed of seeds) jobs.push({ circuit, gap, seed });
+      const jobs = []; for (const circuit of circuits) for (const gap of GAPSET) for (const seed of seeds) jobs.push({ circuit, gap, seed });
       const res = await pool('gap', jobs);
       console.log('\nHEAD START (identical cars and AI, rival on new Softs): configured gap vs the gap measured at the timing loops, 2–6 km');
       console.log('circuit     gap s  head start m  measured s (mean / min / max)');
-      for (const circuit of circuits) for (const gap of [2, 3.5, 5.5]) {
+      for (const circuit of circuits) for (const gap of GAPSET) {
         const rs = res.filter(r => r.job.circuit === circuit && r.job.gap === gap).map(r => r.out);
         console.log(circuit.padEnd(10) + '  ' + gap.toFixed(1).padStart(5) + '  ' + String(rs[0].headStart).padStart(12) + '  ' + mean(rs.map(r => r.measured)).toFixed(2) + ' / ' + Math.min(...rs.map(r => r.min)).toFixed(2) + ' / ' + Math.max(...rs.map(r => r.max)).toFixed(2));
       }
