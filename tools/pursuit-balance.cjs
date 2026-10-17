@@ -36,7 +36,7 @@ const JOBS = {
   },
   // one Pursuit as the game sets it up for a rank, the chaser driven by the AI at `chaser` level
   rank({ circuit, rank, chaser, seed, gap, wear }) {
-    const S = loadSim(), t = new S.Track(S.circuitById(circuit)), R = Object.assign({}, S.PROGRESS.RANKS[rank], gap != null ? { gap } : {}, wear != null ? { wear } : {});
+    const S = loadSim(), t = new S.Track(S.circuitById(circuit)), R = Object.assign({}, S.PROGRESS.RANKS[rank], { wear: S.PROGRESS.pursuitSetup(rank, circuit).rivalWear }, gap != null ? { gap } : {}, wear != null ? { wear } : {});
     const s = new S.Session(t, { type: 'race', gameMode: 'pursuit', seed, aiLevel: R.level, damage: 'realistic',
       pursuit: { gap: R.gap, rivalWear: R.wear, rival: 1 }, entries: [{ driver: S.DRIVERS[3], aiSkill: S.aiSkillForLevel(chaser) }, { driver: S.DRIVERS[11] }] });
     const [ch, rv] = s.cars; let caughtAt = null, passedAt = null, minGap = Infinity;
@@ -108,7 +108,7 @@ function pool(kind, jobs) {
       console.log('rank        rival AI  gap  wear   ' + chasers.map(c => ('chaser ' + Math.round(c * 100) + '%: wins  final gap').padEnd(30)).join(''));
       for (const rank of ranks) {
         const R = Object.assign({}, S0.PROGRESS.RANKS[rank], gaps ? { gap: gaps[rank] } : {}, wears ? { wear: wears[rank] } : {});
-        let line = R.name.padEnd(10) + '  ' + (Math.round(R.level * 100) + '%').padStart(8) + '  ' + R.gap.toFixed(1) + '  ' + Math.round(R.wear * 100) + '%   ';
+        let line = R.name.padEnd(10) + '  ' + (Math.round(R.level * 100) + '%').padStart(8) + '  ' + R.gap.toFixed(1) + '  ' + (R.wear != null ? Math.round(R.wear * 100) + '%' : 'table') + '   ';
         for (const chaser of chasers) {
           const rs = res.filter(r => r.job.rank === rank && r.job.chaser === chaser).map(r => r.out);
           line += ((rs.filter(r => r.win).length + '/' + rs.length).padStart(14) + '  ' + mean(rs.map(r => r.finalGap).filter(Number.isFinite)).toFixed(2).padStart(9) + ' s').padEnd(30);

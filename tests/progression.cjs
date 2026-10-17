@@ -247,19 +247,22 @@ test('Pursuit: the rival starts ahead by the calibrated head start on part-worn 
   for (const id of tracks.keys()) {
     let prev = 0;
     for (const r of RANKS) {
-      const s = session(id, 'pursuit', { pursuit: { gap: r.gap, rivalWear: r.wear, rival: 1 }, aiLevel: r.level });
+      const k = RANKS.indexOf(r), P0 = P.pursuitSetup(k, id), s = session(id, 'pursuit', { pursuit: { ...P0, rival: 1 }, aiLevel: r.level });
       const [me, rv] = s.cars, t = s.track;
       assert.equal(s.pursuit.rival, rv); assert.equal(s.pursuit.chaser, me);
       const ahead = t.dS(me.s, rv.s);
       assert.ok(Math.abs(ahead - s.pursuit.headStart) < 0.01, id + ' ' + r.name + ': ' + ahead);
       assert.ok(ahead >= prev, 'a head start no shorter for a larger gap'); prev = ahead;
-      assert.ok(rv.totalDist > 0 && rv.crossings === 1 && rv.laps === 0, 'already on lap 1, beyond the line');
+      // (a head start that reaches past the line puts the rival on lap 1 already; a shorter one leaves it on the grid
+      // ahead of pole, still to cross the line like the chaser)
+      const past = t.gridSlots[0].s + s.pursuit.headStart > t.length;
+      assert.ok(rv.laps === 0 && (past ? rv.totalDist > 0 && rv.crossings === 1 : rv.crossings === me.crossings), 'lap state at the start');
       assert.ok(Math.abs(rv.d - me.d) < 0.3, 'same line: ' + rv.d.toFixed(3) + ' ' + me.d.toFixed(3));
       // the rival stands on the fast start of the lap, not in a corner (on Silverstone's short Hamilton Straight Abbey
       // follows soon after)
       assert.ok(t.refSpeed[t.wrapI(Math.round(rv.s / SIM.DS))] > 0.75 * Math.max(...t.refSpeed), id + ': still on the straight');
       assert.equal(me.tyre.c, 'S'); assert.ok(me.tyre.wear.every(w => w === 0));
-      assert.equal(rv.tyre.c, 'S'); assert.ok(rv.tyre.wear.every(w => w === r.wear));
+      assert.equal(rv.tyre.c, 'S'); assert.ok(rv.tyre.wear.every(w => w === P0.rivalWear));
       assert.equal(me.fuel, rv.fuel); assert.equal(me.launch.active, true); assert.equal(rv.launch.active, true);
     }
   }

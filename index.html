@@ -5386,7 +5386,7 @@ const SIM = (function () {
       }
       const P = this.cfg.pursuit || {};
       const gap = clamp(+P.gap || 0, 0, 8), rival = P.rival != null ? P.rival : Math.max(0, cars.findIndex(c => !c.isPlayer));
-      this.pursuit = { gap, rivalWear: clamp(+P.rivalWear || 0, 0, 0.6), headStart: pursuitHeadStart(t, gap), rival: cars[rival], chaser: cars[1 - rival] };
+      this.pursuit = { gap, rivalWear: clamp(+P.rivalWear || 0, 0, 0.75), headStart: pursuitHeadStart(t, gap), rival: cars[rival], chaser: cars[1 - rival] };
       return cars.map((c, k) => k === rival ? { s: t.wrapS(g0.s + this.pursuit.headStart), d: g0.d, wear: this.pursuit.rivalWear } : { s: g0.s, d: g0.d });
     }
     fitTyres(car, comp, temp) {
@@ -6272,10 +6272,19 @@ const SIM = (function () {
   // level: AI difficulty (driving competence, never physics). Pursuit only: gap, the rival's head start in seconds at
   // racing speed, and wear, the rival's starting Soft tyre wear (calibrated: tools/pursuit-balance.cjs, README).
   const RANKS = [
-    { id: 'rookie', name: 'Rookie', level: 1.00, gap: 1.6, wear: 0.25 },
-    { id: 'pro', name: 'Pro', level: 1.25, gap: 1.8, wear: 0.27 },
-    { id: 'master', name: 'Master', level: 1.50, gap: 2.0, wear: 0.29 },
+    { id: 'rookie', name: 'Rookie', level: 1.00, gap: 1.0 },
+    { id: 'pro', name: 'Pro', level: 1.25, gap: 1.0 },
+    { id: 'master', name: 'Master', level: 1.50, gap: 1.0 },
   ];
+  // Pursuit rival's starting Soft tyre wear, per circuit and rank (Rookie, Pro, Master): measured so that a chaser
+  // driven by the AI at the rank's own level wins about half the time (tools/pursuit-balance.cjs wear; README). A
+  // longer, harder lap wears the tyres further in two laps (so Bahrain and Interlagos need more), and a sharper rival
+  // pushes its worn tyres harder (so Master needs less on most circuits).
+  const PURSUIT_WEAR = {
+    monza: [0.38, 0.40, 0.46], silverstone: [0.44, 0.50, 0.46], spa: [0.46, 0.46, 0.40],
+    suzuka: [0.46, 0.54, 0.32], bahrain: [0.66, 0.66, 0.50], interlagos: [0.66, 0.64, 0.42],
+  };
+  const pursuitSetup = (rank, circuit) => { const r = RANKS[rank] || RANKS[0], w = PURSUIT_WEAR[circuit]; return { gap: r.gap, rivalWear: w ? w[RANKS.indexOf(r)] : 0.45 }; };
   const PROGRESS_CIRCUITS = CIRCUITS.map(c => c.id);
   const PROGRESS_MODES = ['career', 'duel', 'pursuit'], PROGRESS_VERSION = 3, CAREER_FIELD = 20;
   // finishing position points, P1..P20
@@ -6470,7 +6479,7 @@ const SIM = (function () {
     return progressMigrate(oldCareer, oldRanked);
   }
   const PROGRESS = { RANKS, CIRCUITS: PROGRESS_CIRCUITS, MODES: PROGRESS_MODES, VERSION: PROGRESS_VERSION, POS_POINTS: CAREER_POS_POINTS, PROMOTE: CAREER_PROMOTE, WINS: WINS_TO_PROMOTE,
-    PACE_REF, PACE_POINTS, paceAnchors, paceLaunch: paceLaunchAt, create: progressNew, load: progressLoad, status: rankStatus, recordCareer, recordRanked, positionPoints: careerPositionPoints,
+    PACE_REF, PACE_POINTS, PURSUIT_WEAR, pursuitSetup, paceAnchors, paceLaunch: paceLaunchAt, create: progressNew, load: progressLoad, status: rankStatus, recordCareer, recordRanked, positionPoints: careerPositionPoints,
     paceScore: careerPaceScore, pacePoints: pacePointsFor, paceRef: paceRefAt };
 
   // Strategy pace model: relative lap time for an effective tyre grip mu (fresh Soft ≈ 1.68 = 1.0), fitted to
@@ -8865,7 +8874,7 @@ function renderRankPanel() {
   const chips = ss.rows.map(({ circuit, entry }) => '<span class="rk-c ' + (entry ? entry.won ? 'won' : 'lost' : '') + '" title="' + SIM.circuitById(circuit).name + ': ' + (entry ? (entry.won ? winWord : 'not ' + winWord) + ' · ' + entry.attempts + ' attempt' + (entry.attempts > 1 ? 's' : '') : 'not attempted') + '">'
     + (entry ? entry.won ? RK_ICON.check : '✕' : '·') + SIM.circuitById(circuit).short + '</span>').join('');
   $('rankInfo').innerHTML = '<b>' + r.name + '</b> · AI difficulty ' + pct(r.level)
-    + (mode === 'pursuit' ? ' · Rival starts <b>' + r.gap.toFixed(1) + ' s</b> ahead on Softs with <b>' + Math.round(r.wear * 100) + '% wear</b> (yours are new): catch it and finish ahead' : ' · Both cars on new Softs, equal fuel, side by side on the grid')
+    + (mode === 'pursuit' ? ' · Rival starts <b>' + r.gap.toFixed(1) + ' s</b> ahead on part-worn Softs (' + SIM.CIRCUITS.map(c => Math.round(SIM.PROGRESS.pursuitSetup(sel, c.id).rivalWear * 100)).reduce((a, b) => [Math.min(a[0], b), Math.max(a[1], b)], [100, 0]).join('–') + '% wear, set per circuit; yours are new): catch it and finish ahead' : ' · Both cars on new Softs, equal fuel, side by side on the grid')
     + '<span class="rk-circuits">' + chips + '</span>'
     + '<b>' + ss.wins + ' / 6</b> ' + winWord + ' · ' + ss.attempted + ' / 6 attempted · ' + (ss.complete ? (sel < RK.length - 1 ? RK[sel + 1].name + ' unlocked' : name + ' complete') : 'race all six and win at least ' + ss.need + ' to ' + (sel < RK.length - 1 ? 'unlock ' + RK[sel + 1].name : 'complete ' + name)) + '. Pick the circuit after Start; retry any circuit as often as you like.';
 }
@@ -9263,7 +9272,7 @@ function rankedSessionConfig(type) {
   const cfg = { gameMode: mode, laps: SIM.GAME_MODES[mode].laps, difficulty: 1, aiLevel: r.level, weather: 'dry',
     ranked: { ...G.ranked, id: Date.now().toString(36) + Math.random().toString(36).slice(2, 8) } };
   if (mode === 'duel') { G.duelSide = G.duelSide == null ? (Math.random() < 0.5 ? 0 : 1) : 1 - G.duelSide; cfg.duelSide = G.duelSide; }
-  else cfg.pursuit = { gap: r.gap, rivalWear: r.wear, rival: 1 };
+  else cfg.pursuit = { ...SIM.PROGRESS.pursuitSetup(rank, G.ranked.circuit), rival: 1 };
   return cfg;
 }
 function sessionConfig(type, extra = {}) {
@@ -9483,10 +9492,10 @@ function startRace(gridOrder, entries) {
   $('briefFuel').oninput = null;
   $('briefModeNote').classList.toggle('hidden', !ranked);
   if (ranked) {
-    const r = RK[G.ranked.rank], hs = SIM.pursuitHeadStart(G.track, r.gap);
+    const r = RK[G.ranked.rank], P = SIM.PROGRESS.pursuitSetup(G.ranked.rank, G.ranked.circuit), hs = SIM.pursuitHeadStart(G.track, P.gap);
     $('briefModeNote').innerHTML = gameMode === 'duel'
       ? 'Rank ' + (G.ranked.rank + 1) + ' · ' + r.name + ' · rival AI ' + pct(r.level) + '. Two cars, side by side on the front row, identical cars, new Soft tyres for both and the same fixed fuel load. No pit stops, a dry track. First to complete ' + lapsTotal + ' laps wins.'
-      : 'Rank ' + (G.ranked.rank + 1) + ' · ' + r.name + ' · rival AI ' + pct(r.level) + '. Your rival starts <b>' + r.gap.toFixed(1) + ' s</b> ahead (' + hs + ' m up the straight) on <b>Soft tyres with ' + Math.round(r.wear * 100) + '% wear</b>; you start on <b>new Softs</b>. Same car, same fixed fuel load, same lights. No pit stops, a dry track. Catch it, pass it and finish ahead after ' + lapsTotal + ' laps.';
+      : 'Rank ' + (G.ranked.rank + 1) + ' · ' + r.name + ' · rival AI ' + pct(r.level) + '. Your rival starts <b>' + P.gap.toFixed(1) + ' s</b> ahead (' + hs + ' m up the straight) on <b>Soft tyres with ' + Math.round(P.rivalWear * 100) + '% wear</b>; you start on <b>new Softs</b>. Same car, same fixed fuel load, same lights. No pit stops, a dry track. Catch it, pass it and finish ahead after ' + lapsTotal + ' laps.';
   }
   $('briefDistance').textContent = lapsTotal + ' laps'; $('briefKm').textContent = '(' + (lapsTotal * G.track.length / 1000).toFixed(0) + ' km)';
   $('briefTeams').textContent = ranked ? 2 : (entries || SIM.DRIVERS).length;
