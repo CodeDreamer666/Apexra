@@ -1083,7 +1083,7 @@ const SIM = (function () {
     },
     {
       id: 'spa', name: 'Circuit de Spa-Francorchamps', short: 'Spa', country: 'Belgium', length: 7004, start: [0, 0],
-      pitLoss: 20.8, fuelPerLap: 3.27, fuelLapCost: 0.354, tyrePace: 104.5,
+      pitLoss: 20.9, fuelPerLap: 3.27, fuelLapCost: 0.354, tyrePace: 104.5,
       runoff: { base: 8, scale: 1.0 },
       pit: { side: 1, entry: 6760, rampIn: 180, rampOut: 50 },
       corners: named([[255, 'La Source'], [920, 'Eau Rouge'], [1000, 'Raidillon'], [1700, 'Kemmel Straight'], [2290, 'Les Combes'], [2530, 'Malmedy'], [2945, 'Bruxelles (Rivage)'], [3160, 'No Name'], [3750, 'Pouhon'], [4400, 'Fagnes'], [4815, 'Stavelot'], [5820, 'Blanchimont'], [6670, 'Bus Stop']]),
@@ -1091,7 +1091,7 @@ const SIM = (function () {
     },
     {
       id: 'suzuka', name: 'Suzuka International Racing Course', short: 'Suzuka', country: 'Japan', length: 5807, start: [0, 0],
-      pitLoss: 22.5, fuelPerLap: 2.74, fuelLapCost: 0.253, tyrePace: 115.4,
+      pitLoss: 22.4, fuelPerLap: 2.74, fuelLapCost: 0.253, tyrePace: 115.4,
       runoff: { base: 7, scale: 0.8 },
       pit: { side: 1, entry: 5510 },
       corners: named([[475, 'First Curve'], [650, 'Second Curve'], [875, 'S Curves'], [1000, 'S Curves'], [1165, 'S Curves'], [1370, 'S Curves'], [1495, 'Dunlop Curve'], [2065, 'Degner 1'], [2220, 'Degner 2'], [2685, 'Hairpin'], [2975, '200R'], [3720, 'Spoon Curve'], [4300, 'Back Straight'], [4740, '130R'], [5155, 'Casio Triangle'], [5210, 'Casio Triangle'], [5350, 'Final Curve']]),
@@ -1099,7 +1099,7 @@ const SIM = (function () {
     },
     {
       id: 'bahrain', name: 'Bahrain International Circuit', short: 'Bahrain', country: 'Bahrain', length: 5412, start: [0, 0],
-      pitLoss: 22.0, fuelPerLap: 2.77, fuelLapCost: 0.317, tyrePace: 130.1,
+      pitLoss: 24.4, fuelPerLap: 2.77, fuelLapCost: 0.317, tyrePace: 130.1,
       runoff: { base: 13, scale: 1.2 },
       pit: { side: 1, entry: 4900 },
       corners: named([[570, 'Turn 1'], [670, 'Turn 2'], [785, 'Turn 3'], [1360, 'Turn 4'], [1640, 'Turn 5'], [1720, 'Turn 6'], [1855, 'Turn 7'], [2115, 'Turn 8'], [2510, 'Turn 9'], [2565, 'Turn 10'], [3280, 'Turn 11'], [3680, 'Turn 12'], [3970, 'Turn 13'], [4765, 'Turn 14'], [4850, 'Turn 15']]),
@@ -1107,7 +1107,7 @@ const SIM = (function () {
     },
     {
       id: 'interlagos', name: 'Autódromo José Carlos Pace (Interlagos)', short: 'Interlagos', country: 'Brazil', length: 4309, start: [0, 0],
-      pitLoss: 19.5, fuelPerLap: 2.15, fuelLapCost: 0.238, tyrePace: 122.4,
+      pitLoss: 19.3, fuelPerLap: 2.15, fuelLapCost: 0.238, tyrePace: 122.4,
       runoff: { base: 7, scale: 0.85 },
       pit: { side: -1, entry: 3730 },
       corners: named([[340, 'Senna S'], [430, 'Senna S'], [600, 'Curva do Sol'], [1000, 'Reta Oposta'], [1395, 'Descida do Lago'], [1560, 'Descida do Lago'], [2000, 'Ferradura'], [2305, 'Laranjinha'], [2425, 'Pinheirinho'], [2755, 'Bico de Pato'], [2995, 'Mergulho'], [3240, 'Junção'], [3365, 'Subida dos Boxes'], [3640, 'Arquibancadas']]),
@@ -5625,9 +5625,12 @@ const SIM = (function () {
       car.input.brake = car.brake = 1;
     }
     pitReleaseClear(car) {
-      const t=this.track;
+      const t=this.track, waited=car.pit && car.pit.timer>4;
       return !this.cars.some(o=>{
         if(o===car || o.inGarage || o.ghost)return false;
+        // after a few seconds' wait a car standing still is no reason to hold: in a crowded lane (a whole field
+        // pitting for rain) the car it waits for may itself be waiting for this one to go
+        if(waited && o.speed<0.5)return false;
         const ds=t.dS(car.s,o.s);
         if(o.pit && ['awaiting','stopped','release'].includes(o.pit.phase) && Math.abs(o.d-car.d)>2.6)return false;
         // a car standing still behind the box cannot run into a departing car (it follows it when it moves)
@@ -5718,7 +5721,8 @@ const SIM = (function () {
         // is serviced where it stands: the crew comes to it
         const off = Math.abs(car.d - p.side * p.boxD);
         // (or a few metres past them, up to half the box spacing)
-        P.settle = dd < 8 && dd > -8 && car.speed < 0.05 && off < 3 ? (P.settle || 0) + dt : 0;
+        // (a car held in the fast lane beside its box, 4 m out, counts too once it has stood there a while)
+        P.settle = dd < 8 && dd > -8 && car.speed < 0.05 && off < 4.6 ? (P.settle || 0) + dt : 0;
         // further past (an overshoot): counted, and after a few seconds the crew still comes to the car, so it
         // can never be left waiting in the lane
         P.overshoot = dd <= -8 && car.speed < 0.05 ? (P.overshoot || 0) + dt : 0;
@@ -5766,6 +5770,7 @@ const SIM = (function () {
           if (car.isPlayer || car.ai) this.msg(car.driver.short + ' PIT ' + P.total.toFixed(1) + 's' + (P.repair ? ' — new ' + P.repair.toLowerCase() : ''), 'pit', car, 2.5);
         }
       } else if(P.phase==='release') {
+        P.timer+=dt;
         if(this.pitReleaseClear(car)) { P.phase='out';P.stage='PIT EXIT';P.departS=car.s;P.boxS=null;car.frozen=false;car.gear=1; }
       } else if (P.phase === 'out') {
         if (q < 0) {

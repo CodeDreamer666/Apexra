@@ -129,7 +129,7 @@ test('start grid, pit lane, timing and minimap data come from each circuit', () 
   for (const t of tracks.values()) {
     assert.equal(t.gridSlots.length, 24);
     for (const g of t.gridSlots.slice(0, 20)) { const i = t.wrapI(Math.round(g.s / SIM.DS)); assert.ok(Math.abs(t.kappa[i]) < 1 / 500, t.name + ' grid on the straight'); }
-    for (let q = 0; q <= t.pit.len; q += 10) { const s = t.wrapS(t.pit.entry0 + q), i = t.wrapI(Math.round(s / SIM.DS)); assert.ok(Math.abs(t.kappa[i]) < 1 / 450, t.name + ' pit lane bend at ' + s); assert.ok(Math.abs(t.grade[i]) < 0.09, t.name + ' pit lane slope ' + t.grade[i].toFixed(3)); } // (Spa's straight to La Source runs downhill)
+    for (let q = 0; q <= t.pit.len; q += 10) { const s = t.wrapS(t.pit.entry0 + q), i = t.wrapI(Math.round(s / SIM.DS)); assert.ok(Math.abs(t.kappa[i]) < (t.def.id === 'interlagos' ? 1 / 240 : 1 / 450), t.name + ' pit lane bend at ' + s); assert.ok(Math.abs(t.grade[i]) < 0.09, t.name + ' pit lane slope ' + t.grade[i].toFixed(3)); } // (Spa's straight to La Source runs downhill; Interlagos's pit straight curves, about 250 m radius at the tightest)
     // the lane leaves and rejoins the racing line on the main straight, before the first corner
     assert.ok(t.dS(t.pit.exit1, t.corners[0].start * 2) > 20, t.name + ' pit exit before turn 1');
     assert.equal(t.pit.side, t.def.pit.side, t.name + ' pit lane on the real side');
