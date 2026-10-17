@@ -102,11 +102,12 @@ function soloRace(id, { stop = false, prep = null, fuelLaps = 8, laps = 4, onSte
 }
 
 for (const id of ['summit', 'rivermere', 'redridge']) {
-  test(id + ': a clean tyre-only stop loses 16–20 s against staying out, as the circuit states', () => {
+  test(id + ': a clean tyre-only stop loses 16–21 s against staying out, as the circuit states', () => {
     const base = soloRace(id), pit = soloRace(id, { stop: true });
     const loss = pit.time - base.time;
     assert.ok(pit.P && pit.P.changeTyres && !pit.P.fuelAdd && !pit.P.fwT && !pit.P.rwT, 'a tyre-only stop');
-    assert.ok(loss >= 16 && loss <= 20, id + ' clean stop loss ' + loss.toFixed(2) + ' s');
+    // (up to 21 s: the AI's quicker racing laps since the 2026 driving overhaul make the fixed-speed lane cost a little more)
+    assert.ok(loss >= 16 && loss <= 21, id + ' clean stop loss ' + loss.toFixed(2) + ' s');
     assert.ok(Math.abs(loss - tracks.get(id).def.pitLoss) < 1.0, 'the stated loss matches the simulation: ' + loss.toFixed(2) + ' vs ' + tracks.get(id).def.pitLoss);
     assert.equal(pit.car.laps, 4); assert.equal(pit.car.pitStops, 1);
   });
