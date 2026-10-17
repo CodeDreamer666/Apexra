@@ -226,10 +226,13 @@ test('an unsafe pass is abandoned: the defender closes the door before the corne
     back.ai.endAttack = (why, ok) => { if (!ended) ended = { why, ok }; return orig(why, ok); };
     // the defender moves across and holds the inside all the way to the apex
     run(s, 8, () => hold(front, t, W.dir * (t.hw[front.idx] - 2.0)));
+    // (backing out, or turning the move into a switchback behind the closed door: either way it does not force it)
     if (ended && !ended.ok) { aborted++; reasons.push(ended.why); }
+    else if (back.ai.stats.switchbacks > 0) { aborted++; reasons.push('switchback'); }
+    else reasons.push(ended ? 'completed: ' + ended.why : 'still attacking');
     contacts += s.stats.collisions;
   }
-  assert.ok(aborted >= 3, 'aborted ' + aborted + '/4: ' + reasons.join(' | '));
+  assert.ok(aborted >= 3, 'backed out or switched ' + aborted + '/4: ' + reasons.join(' | '));
   assert.ok(contacts <= 1, 'contacts ' + contacts);
 });
 

@@ -3791,11 +3791,12 @@ const SIM = (function () {
         this.targetVuln = vul;
         const range = 1.3 + 0.65 * urgency + 0.5 * this.skill + 0.3 * M.craft + 0.6 * vul;
         if (gapT < range && (ahead.dv > -1.5 - 2 * urgency || lappedCar || vul > 0.3 || gapT < 0.8)) target = ahead.o;
-        // Pounce from further back on a visible mistake (a sharper driver sees it sooner and from further away): wheels
-        // off or a car sliding, a spin, a puncture, braking where this driver would still be flat out, or a slow exit
-        // (closing fast). Only what can be seen from the cockpit counts, the same for a human or an AI car ahead.
-        // A mistake is an invitation, not a hazard: the driver commits at once (no waiting for a better chance).
-        else if (gapT < 1.2 + 1.4 * this.talent) {
+        // Pounce on a visible mistake, close behind or from further back (a sharper driver sees it sooner and from
+        // further away): wheels off or a car sliding, a spin, a puncture, braking where this driver would still be flat
+        // out, or a slow exit (closing fast). Only what can be seen from the cockpit counts, the same for a human or an
+        // AI car ahead. A mistake is an invitation, not a hazard: the driver commits at once (no waiting for a better
+        // chance).
+        if (gapT < 1.2 + 1.4 * this.talent) {
           const o = ahead.o, earlyBrake = o.input.brake > 0.3 && v > 25 && this.vEnv > v + 3 && t.aiLines.toBrake[car.idx] > 60;
           const slip = o.offN >= 2 || o.runoffN >= 3 || o.spun || Math.abs(o.slideAngle || 0) > 0.14 || o.damage.anyPuncture() || earlyBrake || ahead.dv > 3;
           if (slip) { target = o; this.conviction = Math.max(this.conviction, 0.8 + 0.2 * this.talent); this.pounce = 1.5; }
