@@ -59,6 +59,27 @@ for (const t of tracks) {
       });
     }
   });
+  test(t.def.id + ': holding W accelerates immediately after returning from the verge', () => {
+    const s = race(t), c = s.player, keys = new SIM.KeyboardDriveInput(), handling = new SIM.PlayerHandling();
+    keys.setKey('KeyW', true, 0);
+    c.placeAt(t, t.length - 80, -t.pit.side * (t.halfW + 5), 25);
+    c.speed = c.u = 25; c.gear = 3; c.launch.active = false; c.routeDebt = 10000;
+    const env = { wet: 0, trackTemp: 30, wearScale: 0, fuelRate: 0, pitLimiter: false };
+    const step = () => {
+      handling.step(c, DT, s, keys.step(DT)); SIM.stepCarPhysics(c, DT, t, env);
+      t.project(c.x, c.z, c.idx, c.proj); c.idx = c.proj.i; c.s = c.proj.s; c.d = c.proj.d;
+    };
+    for (let k = 0; k < 0.75 / DT; k++) step();
+    assert.equal(c.offN, 4, 'the excursion is really off the circuit');
+    const rejoinSpeed = c.speed;
+    c.placeAt(t, c.s, 0, rejoinSpeed);
+    for (let k = 0; k < 3 / DT; k++) {
+      step(); assert.equal(c.input.throttle, 1); assert.equal(c.input.brake, 0);
+      assert.equal(c.routeDebt, 0, 'no queued slowdown after rejoining');
+      assert.ok(c.speed > 5, 'held W never stalls');
+    }
+    assert.ok(c.speed > rejoinSpeed + 6, 'the car accelerates without another keypress');
+  });
   test(t.def.id + ': marshal recovery keeps the timing coordinate at the car', () => {
     const s = race(t), c = s.player;
     place(s, c, t.length - 2, 0, 2);
@@ -81,21 +102,19 @@ test('backing across the line and driving forward again cannot count a second la
   }
   assert.equal(c.laps, 1); assert.equal(c.lastLap, lastLap); assert.equal(c.lapStart, lapStart);
 });
-test('shortcut recovery slows the car progressively and releases it after the actual speed loss', () => {
+test('pending off-track slowdown cannot brake a car back on the asphalt', () => {
   const t = tracks[0], s = race(t), c = s.player;
-  place(s, c, t.length - 600, 50); c.routeDebt = 100;
-  let previous = 50, slowest = 50, cleared = false, speedAtRelease = 0;
-  for (let k = 0; k < 5 / DT; k++) {
+  place(s, c, t.length - 150, 50); c.routeDebt = 10000;
+  let slowest = 50;
+  for (let k = 0; k < 3 / DT; k++) {
     s.fixedStep(DT);
-    assert.ok(Math.abs(c.speed - previous) < 0.25, 'speed changes progressively, without snapping');
-    assert.ok(c.speed > 0, 'driver can keep moving');
-    if (!cleared && c.routeDebt === 0) { cleared = true; speedAtRelease = c.speed; }
-    slowest = Math.min(slowest, c.speed); previous = c.speed;
+    slowest = Math.min(slowest, c.speed);
+    assert.equal(c.input.brake, 0);
+    assert.equal(c.routeDebt, 0, 'no off-track braking is carried onto asphalt');
   }
-  assert.ok(slowest < 30, 'the cost is visible as slower movement');
-  assert.ok(cleared, 'the slowdown ends');
-  assert.ok(c.speed > speedAtRelease + 10, 'normal acceleration returns');
-  assert.ok(Math.abs(t.dS(t.wrapS(c.totalDist), c.s)) < 1e-6, 'race distance stays attached to the car');
+  assert.ok(slowest > 45, 'no rejoin braking dip');
+  assert.ok(c.speed > 60, 'held W accelerates again');
+  assert.ok(Math.abs(t.dS(t.wrapS(c.totalDist), c.s)) < 1e-6);
 });
 test('a projection jump during an excursion does not leave a permanent timing offset', () => {
   const t = tracks[0], s = race(t), c = s.player;
@@ -103,6 +122,6 @@ test('a projection jump during an excursion does not leave a permanent timing of
   const [x, z] = t.pointAt(c.s + 40, 0);
   c.control = () => { c.x = x; c.z = z; c.control = null; };
   s.fixedStep(DT);
-  assert.ok(c.routeDebt > 30, 'jump retains a physical shortcut cost');
+  assert.equal(c.routeDebt, 0, 'a jump judged on asphalt cannot queue a later braking dip');
   assert.ok(Math.abs(t.dS(t.wrapS(c.totalDist), c.s)) < 1e-6, 'recorded progress still matches the car');
 });

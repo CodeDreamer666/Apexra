@@ -45,6 +45,12 @@ const input = html.slice(html.indexOf('const KEYS = {};'), html.indexOf('const t
       assert.equal(run.throttle, 1, 'held W survives cleared input: ' + JSON.stringify({ surf, start, debt, run }));
       assert.equal(run.brake, 0); assert.ok(run.min > 5 && run.speed > 20 && run.moved > 50, 'sustained forward movement');
       if (surf >= 3 && !debt) assert.ok(run.speed >= 60 && run.speed <= 80, 'settles at the off-road speed limit');
+      if (debt) {
+        const rejoin = await page.evaluate(() => driveTest.advance(0, 3));
+        assert.equal(rejoin.throttle, 1, 'W remains held during the surface transition');
+        assert.equal(rejoin.brake, 0);
+        assert.ok(rejoin.speed > run.speed + 30, 'rejoining asphalt restores acceleration: ' + JSON.stringify({ surf, start, run, rejoin }));
+      }
       await page.keyboard.up('w');
       assert.equal(await page.evaluate(() => DRIVE_KEYS.step(SIM.PHYS_DT).throttle), 0, 'release still releases throttle');
       checks++;
@@ -62,6 +68,6 @@ const input = html.slice(html.indexOf('const KEYS = {};'), html.indexOf('const t
     assert.equal(await page.evaluate(() => DRIVE_KEYS.step(SIM.PHYS_DT).throttle), 0);
     await page.evaluate(() => { G.paused = false; document.getElementById('name').dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyW', repeat: true, bubbles: true })); });
     assert.equal(await page.evaluate(() => DRIVE_KEYS.step(SIM.PHYS_DT).throttle), 0);
-    console.log(checks + ' held-W surface/speed/shortcut cases pass; braking, key release, pause, text input and recovery repeat checks pass.');
+    console.log(checks + ' held-W surface/speed/shortcut cases and asphalt rejoins pass; braking, key release, pause, text input and recovery repeat checks pass.');
   } finally { await browser.close(); }
 })().catch(error => { console.error(error); process.exitCode = 1; });

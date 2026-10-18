@@ -334,13 +334,12 @@ test('an AI driver run off the track at speed recovers and rejoins without a res
   }
 });
 
-test('no attacking or defending under a yellow flag; pit moves keep their own rules; no VSC or blue flags exist', () => {
+test('yellow flags are removed; pit moves keep their own rules; no VSC or blue flags exist', () => {
   const s = session('monza', SIM.DRIVERS.slice(0, 3).map(driver => ({ driver })), { tyreWear: 'normal' }); racing(s);
   const [a, b, c] = s.cars; place(s, a, 600, 60); place(s, b, 588, 62); place(s, c, 578, 62);
-  s.yellow.fill(5); // marshals' yellow flags everywhere
+  assert.equal(s.yellow, undefined); assert.equal(s.yellowAt, undefined); assert.equal(s.flagState, undefined);
   for (const car of s.cars) { car.ai.conviction = 2; car.ai.tactical(0.1); }
-  for (const car of s.cars) { assert.notEqual(car.ai.state, 'attack'); assert.notEqual(car.ai.state, 'defend'); assert.notEqual(car.ai.state, 'prepare'); }
-  s.yellow.fill(0);
+  assert.ok(s.cars.some(car => car.ai.target || car.ai.threat), 'nearby rivals remain eligible for racing');
   // a car heading for the pit lane follows the pit route, not a racing plan
   b.ai.pitting = true; b.ai.pitEntryBlend = 1;
   const t = s.track; assert.equal(b.ai.dPlanAt(t.wrapI(b.idx + 5)), t.pitTargetD(t.wrapI(b.idx + 5) * DS, null));

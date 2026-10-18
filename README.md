@@ -186,7 +186,7 @@ The weather changes during the race. Watch the rain chance and the track wetness
 Following closely behind another car on a straight gives you a tow, which makes you faster. Use it to set up an overtake into the next braking zone.
 
 ### Lap timing and race position
-Lap times are recorded when your car crosses the painted start/finish line. Positions follow completed laps and where each car is on the circuit, including the pit lane. Cutting a corner causes a physical slowdown; it does not move your timing line or leave your displayed position behind your car. Reversing over the line and crossing it again cannot count an extra lap.
+Lap times are recorded when your car crosses the painted start/finish line. Positions follow completed laps and where each car is on the circuit, including the pit lane. Returning a tyre to the track clears extra shortcut braking, so held throttle accelerates the car again as grip returns. It does not move your timing line or leave your displayed position behind your car. Yellow flags and caution restrictions are removed. Reversing over the line and crossing it again cannot count an extra lap.
 
 ### Damage
 Contact has immediate consequences, depending on how hard the hit was:

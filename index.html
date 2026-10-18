@@ -40,9 +40,6 @@
   #hud .panel { background: var(--hp); border: 1px solid var(--hb); border-radius: 10px; box-shadow: 0 8px 26px rgba(0,0,0,.32); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
   .plabel { font-size: 12px; font-weight: 700; letter-spacing: 1.6px; color: var(--hdim); text-transform: uppercase; }
   #accentbar { position: absolute; left: 0; right: 0; top: 0; height: 3px; background: var(--accent); box-shadow: 0 0 10px rgba(225, 6, 0, .55); z-index: 1; }
-  #flagbar { position: absolute; left: 0; right: 0; top: 0; height: 6px; z-index: 2; }
-  #flagbar.yellow { background: repeating-linear-gradient(90deg, #f5c518 0 40px, #222 40px 80px); }
-  #flagbar.green { background: #21c55d; box-shadow: 0 0 12px rgba(33,197,93,.6); }
 
   /* left column: track map */
   #hud-left { position: absolute; left: 24px; top: 24px; bottom: 24px; width: 350px; display: flex; flex-direction: column; gap: 12px; }
@@ -119,9 +116,8 @@
   .msg.critical { border-left-color: #e53935; background: rgba(70, 10, 12, .9); --icc: #ff3b3b; --ic: var(--ic-warn); }
   .msg.dmg { border-left-color: #f59e0b; --icc: #f59e0b; --ic: var(--ic-wrench); }
   .msg.pit { border-left-color: var(--gold); --icc: var(--gold); --ic: var(--ic-wrench); }
-  .msg.rc { border-left-color: #f5c518; background: rgba(36, 31, 6, .92); --icc: #f5c518; --ic: var(--ic-flag); }
+  .msg.rc { border-left-color: #5aa9ff; --icc: #5aa9ff; --ic: var(--ic-warn); }
   .msg.warn::before, .msg.critical::before, .msg.dmg::before, .msg.pit::before, .msg.rc::before { display: block; }
-  .msg.yellow { background: rgba(245, 197, 24, .95); color: #111; border-left-color: #111; }
   .msg.purple { border-left-color: var(--purple); }
   @keyframes msgin { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
   #launchHint { display: flex; align-items: center; gap: 12px; padding: 10px 22px 10px 14px; font-size: 18px; font-weight: 600; white-space: nowrap; }
@@ -150,7 +146,6 @@
     --wx-sun: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='5'/%3E%3Cpath d='M11 0h2v4h-2zM11 20h2v4h-2zM0 11h4v2H0zM20 11h4v2h-4zM3.5 5l1.4-1.4 2.8 2.8-1.4 1.4zM16.3 17.7l1.4-1.4 2.8 2.8-1.4 1.4zM3.5 19l2.8-2.8 1.4 1.4-2.8 2.8zM16.3 6.3l2.8-2.8 1.4 1.4-2.8 2.8z'/%3E%3C/svg%3E");
     --wx-cloud: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6.5 19a4.5 4.5 0 0 1-.6-9 6.5 6.5 0 0 1 12.4 1.6A3.8 3.8 0 0 1 18 19z'/%3E%3C/svg%3E");
     --wx-rain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6.5 14a4.5 4.5 0 0 1-.6-9 6.5 6.5 0 0 1 12.4 1.6A3.8 3.8 0 0 1 18 14zM7 16h2l-1.5 6h-2zM12 16h2l-1.5 6h-2zM17 16h2l-1.5 6h-2z'/%3E%3C/svg%3E");
-    --ic-flag: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 2h2v20H5zM8 3h12l-2.5 4.5L20 12H8z'/%3E%3C/svg%3E");
   }
 
 
@@ -542,7 +537,6 @@
 
 <div id="hud" class="hidden">
   <div id="accentbar"></div>
-  <div id="flagbar"></div>
   <div id="hud-left" class="hz">
     <div class="lstack">
       <div id="hud-bl" class="panel"><div class="plabel">Track map</div><canvas id="minimap" width="652" height="472"></canvas></div>
@@ -1397,7 +1391,7 @@ const SIM = (function () {
         this.corners.forEach((c, k) => { let d = c.apex - i; if (d < 0) d += N; if (d < bd) { bd = d; best = k; } });
         this.nextCorner[i] = best;
       }
-      this.marshalCount = 16; this.timingPoints = 50;
+      this.timingPoints = 50;
       // brake boards: before corners with large speed drop
       this.refSpeed = this.speedProfile(1.65, 0.5 * RHO * 4.0 / 830, 1.15 * 0.5 * RHO / 830, 790000 / 830);
       this.brakeBoards = [];
@@ -2295,11 +2289,12 @@ const SIM = (function () {
     if (car.offLvl > 1e-3 && Math.abs(u) > 0.05) { const au = Math.abs(u), D = OFF_TRACK.drag; FxSum -= Math.sign(u) * m * car.offLvl * Math.min(D.max, D.k2 * au * au + D.k1 * Math.max(0, au - D.v1)); }
     // green paint's extra rolling resistance (see GREEN_RUNOFF)
     if (car.runoffDrag > 1e-6 && Math.abs(u) > 0.05) FxSum -= Math.sign(u) * m * car.runoffDrag * Math.abs(u);
-    // Give back a shortcut's advantage through actual speed loss, never through a hidden offset in race distance.
-    // Braking is progressive and shared by human and AI cars; the car keeps steering and can always move forward.
-    if (car.routeDebt > 0 && !car.pit && !car.finished && !car.dnf) {
+    // A shortcut slowdown only applies while all four tyres are off the circuit. A tyre back on track hands
+    // propulsion straight back to the held pedal; no accumulated braking follows the car onto the asphalt.
+    if (car.offN < 4 || car.pit) car.routeDebt = 0;
+    else if (car.routeDebt > 0 && !car.finished && !car.dnf) {
       const ref = Math.max(30, track.aiLines.vRef[car.idx]), limit = 30 / 3.6;
-      if (u > limit) FxSum = Math.min(FxSum, -m * Math.min(30, (u - limit) * 4));
+      if (u > limit) FxSum = Math.min(FxSum, -m * Math.min(36, (u - limit) * 4));
       car.routeDebt = Math.max(0, car.routeDebt - Math.max(0, ref - speed) * dt);
     }
     // gravity along the slope: climbs cost speed, descents add it (a stationary
@@ -3397,7 +3392,6 @@ const SIM = (function () {
       for (let j = look; j >= 0; j -= 2) {
         const i = t.wrapI(car.idx + j);
         let vc = arcadeCornerSpeed(this.kappaAt(i), mu, Math.min(1, cornerUse * seg(i)) * fT, D);
-        if (race.yellowAt(i) && !car.pit) vc *= 0.93;
         if (j === look) { vNext = vc; continue; }
         if (j === 0) this.vcHere = vc; // the steady cornering limit where the car is
         // path length of this step: shorter on the inside of a bend, longer on the outside
@@ -3695,8 +3689,6 @@ const SIM = (function () {
         else { this.pitting = false; this.pitEntryBlend = 0; }
       } else if (!car.pit) { this.pitting = false; this.pitEntryBlend = 0; }
       if (car.pit) { this.vLimit = 110; this.laneW = 0; this.path.valid = false; this.maneuver = null; this.state = 'race'; return; }
-      // ---- yellow flags: no attacking or defending ----
-      const yellow = race.yellowAt(car.idx) || race.yellowAt(t.wrapI(car.idx + 60));
       // ---- what the driver can see: nearby cars, their motion, and short predictions of where they are going ----
       const M = this.mind;
       this.readGrip(dtT);
@@ -3713,7 +3705,7 @@ const SIM = (function () {
       const firstLap = race.lap1Caution(car);
       // the car to race ahead (a lapped car too, once passing it is safe)
       let target = null; this.targetVuln = 0;
-      if (ahead && race.type === 'race' && !yellow) {
+      if (ahead && race.type === 'race') {
         const gapT = ahead.ds / Math.max(v, 10);
         // (a lapped car is raced like any other: no blue flags, it does not move aside, it is passed when there is a chance)
         const lappedCar = race.isLapping(ahead.o, car, ahead.ds);
@@ -3737,7 +3729,7 @@ const SIM = (function () {
         }
       }
       // a committed move keeps its rival as the target while drawing alongside and past it
-      if (this.state === 'attack' && this.maneuver && !yellow && race.type === 'race') {
+      if (this.state === 'attack' && this.maneuver && race.type === 'race') {
         const mc = this.maneuver.car, ds = t.dS(car.s, mc.s);
         if (ds > -10 && ds < 80 && !mc.pit) target = mc;
       }
@@ -3745,7 +3737,7 @@ const SIM = (function () {
       this.attackTarget = target ? { car: target, gap: t.dS(car.s, target.s) / Math.max(v, 10), ds: t.dS(car.s, target.s) } : null;
       // the car behind that is racing this one for position (not one lapping it, and not a lapped car)
       let threat = null;
-      if (behind && race.type === 'race' && !yellow) {
+      if (behind && race.type === 'race') {
         const gapB = -behind.ds / Math.max(v, 10), sameLap = Math.abs(behind.o.totalDist - car.totalDist) < t.length / 2;
         // A threat is a car close enough to reach this car's gearbox by the next braking zone: within about half
         // a second, or further back but closing fast. An attacker dropping away is no threat. The exit band is
@@ -3760,8 +3752,8 @@ const SIM = (function () {
       // a limping car (puncture, or heading in to retire) holds one lane well off the racing line
       if (car.damage.anyPuncture() || this.retireInPits) { if (this.limpSide == null) this.limpSide = Math.abs(rlA) > 1 ? -Math.sign(rlA) : (car.d >= 0 ? 1 : -1); }
       else this.limpSide = null;
-      // no racing under yellow, while rejoining, limping, pitting or after the flag
-      const noRace = race.type !== 'race' || !race.lightsOut || yellow || this.pitting || car.finished || this.limpSide != null || this.rejoinT > 0 || this.pitOnly;
+      // no racing while rejoining, limping, pitting or after the flag
+      const noRace = race.type !== 'race' || !race.lightsOut || this.pitting || car.finished || this.limpSide != null || this.rejoinT > 0 || this.pitOnly;
       const attackBan = noRace || (firstLap && M.aggr < 0.7) || this.cruise && !this.attackBias;
       this.updateState(dtT, target, threat, attackBan, noRace);
       this.defending = this.state === 'defend';
@@ -4175,8 +4167,6 @@ const SIM = (function () {
           if (R.ds < 3 || R.ds > AI_EV_STEP * m * DS || R === tgtR) continue;
           const broken = o.speed < 15 || o.spun || o.retiring || (o.ai && o.ai.mode === 'recover');
           if (!(broken || o.speed < 0.6 * car.speed)) continue;
-          // under a yellow a slow car ahead is followed, never driven around: only a stricken car is
-          if (race.yellowAt(car.idx) && !broken) continue;
           const meet = Math.round(R.ds / DS), rlm = L.off[0][(i0 + meet) % N];
           // (around it on the paint too, if that is where the room is)
           for (const sg of [-1, 1]) { const c = this.addCand('avoid', 'avoid ' + o.driver.short); if (!c) break; c.ext = 3.6; this.useOffset(c, clamp(o.d + sg * 3.3, -L.limA[o.idx] - c.ext, L.limA[o.idx] + c.ext) - rlm, 0, meet + 30); }
@@ -4563,7 +4553,6 @@ const SIM = (function () {
     }
     followLimit(nb, pitlane) {
       const car = this.car, v = car.speed, p = this.p, t = this.track; let lim = 110;
-      const yellow = !pitlane && this.race.yellowAt(car.idx);
       const cautious = this.race.lap1Caution(car);
       for (const n of nb) {
         const o = n.o; if (o.inGarage) continue;
@@ -4585,8 +4574,6 @@ const SIM = (function () {
           const pulling = this.state === 'attack' && this.maneuver && this.maneuver.kind === 'slipstream' && this.maneuver.car === o && gap > 1.5;
           lat = pulling ? Math.min(Math.abs(o.d - myD), Math.abs(pd - myD)) + 0.3 : Math.min(lat, Math.abs(o.d - myD) + 0.3, Math.abs(pd - myD) + 0.3);
         }
-        // no overtaking under yellow: hold station behind healthy cars even in another lane
-        if (yellow && lat <= 6 && o.speed > 20 && !o.spun && gap < 40 && !(o.ai && o.ai.mode === 'recover')) { lim = Math.min(lim, o.speed + Math.max(0, gap - 8) * 0.4); continue; }
         // a car closing very fast keeps a wider margin (a small lateral misjudgement at 20 m/s is a big accident)
         if (lat > 2.3 + clamp((v - o.speed - 8) * 0.06, 0, 1.6) + clamp((v - o.speed - 10) * 0.05, 0, 0.8) && !pitlane) continue;
         if (pitlane && Math.abs(o.d - car.d) > 2.4) continue;
@@ -5120,7 +5107,6 @@ const SIM = (function () {
       this.time = 0; this.step = 0; this.events = []; this.messages = [];
       this.cars = []; this.lightsOut = this.type !== 'race'; this.lights = 0; this.lightsOutTime = 0; this.startSeqT = 0;
       this.finishedFlag = false; this.leaderLap = 0; this.over = false; this.results = null;
-      this.yellow = new Float64Array(track.marshalCount); this.flagState = new Uint8Array(track.marshalCount);
       this.stats = { overtakes: 0, mistakes: 0, collisions: 0, pitstops: 0, spins: 0, boxMissed: 0 };
       this.bestLap = { time: 0, car: null }; this.bestSectors = [0, 0, 0];
       this.compoundModel = cfg.compoundModel || defaultCompoundModel(track);
@@ -5191,7 +5177,6 @@ const SIM = (function () {
     // Laps still to run to the flag from where the car is (fractional).
     lapsLeft(car) { const t = this.track; return Math.max(0, this.totalLaps - car.laps - t.wrapS(car.totalDist) / t.length); }
     get leader() { return this.order ? this.order[0] : this.cars[0]; }
-    yellowAt(i) { if (this.type !== 'race') return this.yellow[Math.floor(i / this.track.N * this.track.marshalCount)] > 0 && this.type === 'race'; return this.yellow[Math.floor(i / this.track.N * this.track.marshalCount)] > 0; }
     // Whether `other` (at `gap` m ahead of `car` on the circuit) is a lap or more ahead at this point of the route.
     // Total distances are aligned to the same place, so a car just across the line is not mistaken for one a lap up.
     isLapping(car, other, gap) {
@@ -5273,6 +5258,7 @@ const SIM = (function () {
         car.progress = moved;
         if (car.progress > legal) car.routeDebt = (car.routeDebt || 0) + car.progress - legal;
         this.routeCheck(car, legal);
+        if (car.offN < 4 || car.pit) car.routeDebt = 0; // a gate judged after rejoining cannot queue another road slowdown
         car.totalDist += car.progress;
         if(this.weather)this.weather.displace(car,dt);
         collideWalls(car, t, this);
@@ -5626,8 +5612,8 @@ const SIM = (function () {
     // at some moment have at least two tyres on the track or kerb (inside wheels over the kerb are fine), or be on the
     // outside of the corner (running wide is not a shortcut). A car that passes the gate without that has skipped the
     // corner: the progress it earned over the gate's span becomes a physical slowdown (routeDebt), without changing
-    // its race distance, timing line or position. No added time penalty and no warning; the same rule for
-    // every car; the pit lane in use always counts as the route.
+    // its race distance, timing line or position. The extra braking is discarded on rejoining. No added time penalty
+    // or warning; the same rule for every car; the pit lane in use always counts as the route.
     routeCheck(car, p) {
       const t = this.track, G = t.routeGates;
       if (!G || !G.length || this.type === 'calib' || car.inGarage) return p;
@@ -5881,7 +5867,7 @@ const SIM = (function () {
       const c = Math.cos(car.psi), s = Math.sin(car.psi);
       this.addDebris(car.x - c * 1.5, car.z - s * 1.5, 'tyre', 1, car);
     }
-    // Pieces left on the racing surface: a puncture hazard, and a yellow flag until marshals clear them.
+    // Pieces left on the racing surface remain a puncture hazard until marshals clear them.
     addDebris(x, z, kind, n, car, big) {
       if (this.debris.length > 40) this.debris.shift();
       const p = this.track.project(x, z, car ? car.idx : null, { i: 0, d: 0, s: 0 });
@@ -5890,15 +5876,14 @@ const SIM = (function () {
       this.events.push({ type: 'debris', x, z, kind, n, vx: car ? car.vx : 0, vz: car ? car.vz : 0 });
       if (heavy && this.type !== 'calib' && Math.abs(p.d) < this.track.hw[p.i] + 1 && (!this.lastDebrisMsg || this.time - this.lastDebrisMsg > 8)) {
         this.lastDebrisMsg = this.time;
-        this.msg('RACE CONTROL: Debris on track — yellow flag, sector ' + (Math.floor(p.i / this.track.N * this.track.marshalCount) + 1), 'rc', null, 3);
+        this.msg('RACE CONTROL: Debris on track', 'rc', null, 3);
       }
     }
     debrisUpdate() {
-      const t = this.track, M = t.marshalCount, lv = this.damageLevel;
+      const t = this.track, lv = this.damageLevel;
       for (let k = this.debris.length - 1; k >= 0; k--) {
         const db = this.debris[k];
         if (this.time > db.until) { this.debris.splice(k, 1); continue; }
-        if (db.heavy && Math.abs(db.d) < t.hw[db.i] + 1) { const m = Math.floor(db.i / t.N * M); this.yellow[m] = Math.max(this.yellow[m], 3); }
         if (Math.abs(db.d) > t.hw[db.i] + 0.5) continue;
         for (const car of this.cars) {
           if (car.inGarage || car.pit || car.speed < 20 || car.dnf || db.hit.includes(car.id)) continue;
@@ -5960,8 +5945,7 @@ const SIM = (function () {
       car.input.throttle = 0; car.input.brake = 1;
       R.recoverAt = this.time + 14 + (D.fire ? 8 : 0);
       if (D.fire) D.fireOut = 4 + rand(0, 3); // marshals put the fire out
-      const sector = Math.floor(car.idx / this.track.N * this.track.marshalCount) + 1;
-      if (!car.pit) this.msg('RACE CONTROL: ' + car.driver.name + ' stopped — yellow flag, sector ' + sector, 'rc', null, 3.5);
+      if (!car.pit) this.msg('RACE CONTROL: ' + car.driver.name + ' stopped', 'rc', null, 3.5);
       if (this.type === 'race') {
         car.dnf = true; car.dnfReason = R.reason;
         this.msg(car.driver.short + ' RETIRES — ' + R.reason, 'critical', car, 4); this.log(car, 'DNF ' + R.reason);
@@ -6078,18 +6062,15 @@ const SIM = (function () {
           else if (pl && pl.finished && this.time - this.finishLeaderTime > 60) this.finishRace();
         }
       }
-      // yellow flags
-      const M = t.marshalCount;
-      for (let k = 0; k < M; k++) this.yellow[k] = Math.max(0, this.yellow[k] - 0.1);
+      // Keep incident statistics without introducing caution zones or slowing the rest of the field.
       if (this.lightsOut && this.time - this.lightsOutTime > 8 && this.type !== 'calib') {
         for (const c of this.cars) {
           if (c.inGarage || c.pit || c.finished) continue;
           const slow = c.speed < 12 || (Math.abs(c.d) > t.hw[c.idx] + 3 && c.speed < 30) || c.spun || (c.ai && c.ai.mode === 'recover');
-          if (slow) { const k = Math.floor(c.idx / t.N * M); this.yellow[k] = 6; this.yellow[(k - 1 + M) % M] = Math.max(this.yellow[(k - 1 + M) % M], 6); if (!c.wasSlow) { c.wasSlow = true; this.stats.spins += c.spun ? 1 : 0; } }
-          else c.wasSlow = false;
+          if (slow && !c.wasSlow) this.stats.spins += c.spun ? 1 : 0;
+          c.wasSlow = slow;
         }
       }
-      for (let k = 0; k < M; k++) { const st = this.yellow[k] > 0 ? 1 : 0; if (st !== this.flagState[k]) { this.flagState[k] = st; if (st && this.player) { const pk = Math.floor(this.player.idx / t.N * M); if (k === pk || k === (pk + 1) % M) this.msg('YELLOW FLAG — sector ' + (k + 1), 'yellow', this.player, 2.5); } } }
       // the shared race picture (once a second), then each car's strategy analysis
       this.intel.update();
       // Staggered one-second observation, with strategy replanned only on events or a short estimate interval.
@@ -7531,7 +7512,7 @@ function buildTrack(scene, track, T, opts) {
   const G = new THREE.Group(); scene.add(G);
   const hw = track.halfW, N = track.N, wet = opts.wet, Q = opts.quality;
   const P = track.pit, side = P.side;
-  const objs = { marshal: [], lights: [], gantryLamps: [] };
+  const objs = { lights: [], gantryLamps: [] };
   // The one road material (asphalt texture, normal map, rubber/patch vertex shading and the per-vertex wetness
   // that lowers roughness in the rain). The circuit and the pit lane both use it, so they read as one surface.
   const roadMaterial = (extra) => {
@@ -7810,16 +7791,6 @@ function buildTrack(scene, track, T, opts) {
     const [x, z, h] = track.pointAt(P.entry1 - 3, side * (P.trackWall + 0.5));
     const cush = new THREE.Mesh(new THREE.BoxGeometry(5, 1.1, 1.4), new THREE.MeshStandardMaterial({ map: canvasTex(128, 32, (g, w, hh) => { for (let k = 0; k < 8; k++) { g.fillStyle = k % 2 ? '#111' : '#f5c518'; g.fillRect(k * 16, 0, 16, hh); } }), roughness: .7 }));
     cush.position.set(x, 0.55, z); cush.rotation.y = -h; G.add(cush);
-  }
-  // ---- marshal light panels ----
-  for (let k = 0; k < track.marshalCount; k++) {
-    const i = Math.floor(k / track.marshalCount * N); const sgn = (k % 2) ? 1 : -1; const wall = sgn > 0 ? track.wallR[i] : track.wallL[i];
-    if ((sgn === track.pitAt(i*SIM.DS).side && inPitI(i)) || !track.barrierAt(i, sgn)) continue;
-    const [x, z, h] = track.pointAt(i * SIM.DS, sgn * (wall - 0.1)), lf = trackLift(track, i, x, z);
-    const pole = new THREE.Mesh(new THREE.BoxGeometry(0.15, 3, 0.15), concrete); pole.position.set(x, 1.5 + lf, z); G.add(pole);
-    const mat = new THREE.MeshStandardMaterial({ color: 0x111111, emissive: 0x000000, roughness: .5 });
-    const pan = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.7, 0.12), mat); pan.position.set(x, 3.2 + lf, z); pan.rotation.y = -h + Math.PI / 2; G.add(pan);
-    objs.marshal.push({ k, mat });
   }
   // ---- start gantry with lights ----
   {
@@ -10130,13 +10101,6 @@ updateCareerButton();
 function drawMinimap() {
   const { g, tf } = G.mmT; const t = G.track, sess = G.session; const W = G.mm.cvs.width, H = G.mm.cvs.height;
   g.clearRect(0, 0, W, H); g.drawImage(G.mmStatic, 0, 0);
-  // yellow sectors
-  for (let k = 0; k < t.marshalCount; k++) {
-    if (sess.yellow[k] <= 0) continue;
-    const i0 = Math.floor(k * t.N / t.marshalCount), i1 = Math.floor((k + 1) * t.N / t.marshalCount);
-    g.beginPath(); for (let i = i0; i <= i1; i += 2) { const [x, y] = tf(t.cx[i % t.N], t.cz[i % t.N]); if (i === i0) g.moveTo(x, y); else g.lineTo(x, y); }
-    g.strokeStyle = '#f5c518'; g.lineWidth = 9; g.stroke();
-  }
   const cars = sess.cars.filter(c => !c.inGarage && !c.dnf).sort((a, b) => (a === G.focus) - (b === G.focus));
   for (const c of cars) {
     const [x, y] = tf(c.x, c.z); const me = c === G.focus;
@@ -10240,9 +10204,6 @@ function updateHud(dt) {
   }
   updateVehicleStatus(p, sess);
   updateStrategyUI(p, sess);
-  // flags
-  const fb = $('flagbar'); const yel = sess.yellowAt(p.idx) || sess.yellowAt(G.track.wrapI(p.idx + 60));
-  fb.className = yel ? 'yellow' : '';
   $('fps').classList.toggle('hidden', true);
   $('telemetry').classList.toggle('hidden', !G.showTel);
   drawMinimap();
@@ -11151,7 +11112,6 @@ function frame(now) {
       // shadows follow the camera target
       if (R.sun) placeSun(camCar);
       // marshal panels
-      for (const mp of G.trackObj.objs.marshal) { const y = sess.yellow[mp.k] > 0; mp.mat.emissive.setHex(y && (now % 600 < 400) ? 0xffc400 : 0x000000); }
       updateWeatherView(dt);
       if (G.focus && G.mode !== 'menu') drawTelemetry(G.focus, dt);
       updateHud(dt);

@@ -170,12 +170,6 @@ Pit exit: control returns, stop summary
 
 ![Pit exit: control returns, stop summary](039-summit-pit-exit.jpg)
 
-### 045-summit-flag-yellow
-
-Yellow flag in the sector
-
-![Yellow flag in the sector](045-summit-flag-yellow.jpg)
-
 ### 047-summit-damage-impact
 
 Player crash into the barrier: impact effects
