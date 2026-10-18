@@ -52,45 +52,36 @@
 
   /* right column: position & timing (top), tyres / vehicle status (bottom) */
   #hud-tr { position: absolute; right: 24px; top: 24px; width: 350px; padding: 14px 16px 12px; }
-  #hud-tr .pos { display: flex; align-items: baseline; gap: 12px; font-weight: 600; font-size: 22px; padding: 0 4px 8px; border-bottom: 1px solid var(--hl); }
-  #hud-tr .pos b { font-size: 46px; line-height: 1; font-weight: 700; margin-left: 12px; }
-  #hud-tr .pos span.num { font-size: 24px; font-weight: 400; color: #dfe4ec; }
+  #hud-tr .race-top { display: flex; align-items: baseline; justify-content: space-between; padding: 0 4px 8px; border-bottom: 1px solid var(--hl); }
+  #hud-tr .lap, #hud-tr .pos { display: flex; align-items: baseline; gap: 8px; font-weight: 600; font-size: 18px; }
+  #hud-tr .lap b, #hud-tr .pos b { font-size: 42px; line-height: 1; font-weight: 700; margin-left: 4px; }
+  #hud-tr .lap span.num, #hud-tr .pos span.num { font-size: 20px; font-weight: 400; color: #dfe4ec; }
+  #hud-tr .pos { padding-left: 16px; border-left: 1px solid rgba(255,255,255,.18); }
   .kv { display: flex; justify-content: space-between; align-items: center; font-size: 16px; height: 34px; padding: 0 4px; border-bottom: 1px solid var(--hl); }
+  .kv:last-child { border-bottom: 0; }
   .kv .k { color: var(--hlbl); font-weight: 600; letter-spacing: .6px; }
   .kv .v { font-weight: 600; }
-  #hud-right { position: absolute; right: 24px; bottom: 24px; width: 350px; display: flex; flex-direction: column; gap: 10px; max-height: calc(100vh / var(--hz) - 48px - 280px); }
-  #hud-br { padding: 14px 18px 12px; min-height: 0; overflow: hidden; }
-  #hud-br .vhead { display: none; justify-content: space-between; align-items: center; font-weight: 700; letter-spacing: 1px; font-size: 18px; padding-bottom: 8px; margin-bottom: 8px; border-bottom: 1px solid var(--hl); }
-  #hud-br.dmg .vhead { display: flex; }
-  #vsBadge { font-size: 12px; padding: 2px 10px; border-radius: 4px; letter-spacing: 1.2px; color: #fff; }
-  #hud-br .head { display: flex; justify-content: space-between; align-items: center; font-weight: 700; letter-spacing: 1px; font-size: 18px; }
-  #hud-br.dmg .head { font-size: 14px; }
-  #hud-br .cmpw { display: flex; align-items: center; gap: 8px; font-size: 13px; letter-spacing: 1px; }
-  .cmp { width: 30px; height: 30px; border-radius: 50%; border: 3px solid var(--c, #e8212e); display: inline-flex; align-items: center; justify-content: center; font-weight: 900; font-size: 14px; color: #fff; background: #111; }
-  #hud-br.dmg .cmp { width: 24px; height: 24px; font-size: 12px; border-width: 2px; }
-  #tyrew { display: grid; grid-template-columns: 1fr 14px 70px 14px 1fr; grid-template-rows: 1fr 1fr; column-gap: 12px; align-items: center; height: 150px; margin-top: 8px; }
-  #hud-br.dmg #tyrew { height: 118px; margin-top: 4px; }
-  #tyrew .tw { width: 14px; height: 36px; border-radius: 3px; background: #2f7bff; justify-self: center; }
-  #hud-br.dmg #tyrew .tw { height: 28px; }
-  #tyrew svg { grid-column: 3; grid-row: 1 / span 2; width: 60px; height: 130px; justify-self: center; }
-  #hud-br.dmg #tyrew svg { height: 106px; width: 50px; }
-  #tw0 { grid-area: 1 / 2; } #tw1 { grid-area: 1 / 4; } #tw2 { grid-area: 2 / 2; } #tw3 { grid-area: 2 / 4; }
-  #hud-br .trow { display: flex; align-items: center; font-size: 14px; color: var(--hlbl); height: 32px; border-top: 1px solid var(--hl); white-space: nowrap; }
-  #hud-br .trow:first-of-type { margin-top: 8px; }
-  #hud-br .trow > span { flex: 1; } #hud-br .trow > span + span { padding-left: 12px; border-left: 1px solid rgba(255,255,255,.18); flex: 0 1 auto; margin-left: 12px; }
-  #hud-br .trow b { color: #fff; margin-left: 6px; }
-  #hud-br.dmg .trow { height: 26px; font-size: 13px; }
-  #vstat { margin-top: 6px; font-size: 13px; }
-  #vstat .sh { display: flex; align-items: center; gap: 8px; font-weight: 700; letter-spacing: 1px; font-size: 14px; padding: 8px 0 4px; border-top: 1px solid var(--hl); }
-  #vstat .sh i { width: 15px; height: 15px; background: #f59e0b; -webkit-mask: var(--ic-wrench) center / contain no-repeat; mask: var(--ic-wrench) center / contain no-repeat; }
-  #vstat .rows > div { display: grid; grid-template-columns: 4px 1fr auto; column-gap: 10px; align-items: center; padding: 3px 0; }
-  #vstat .rows i { grid-row: 1 / span 2; align-self: stretch; border-radius: 2px; }
-  #vstat .rows .c { font-weight: 600; color: #eef2f8; }
-  #vstat .rows .s { font-weight: 700; font-size: 12px; letter-spacing: .8px; text-align: right; }
-  #vstat .rows .e { grid-column: 3; font-size: 12px; color: var(--hlbl); text-align: right; }
-  #vstat .rows .e.l { grid-column: 2; text-align: left; }
-  #vsPit > div { display: flex; justify-content: space-between; gap: 10px; padding: 1px 0; color: var(--hlbl); }
-  #vsPit > div b { font-weight: 600; text-align: right; }
+  #hud-right { position: absolute; right: 24px; bottom: 24px; width: 350px; display: flex; flex-direction: column; gap: 10px; }
+  #hud-br { padding: 6px 16px 8px; }
+  #hud-br .srow { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 38px; border-bottom: 1px solid var(--hl); }
+  #hud-br .srow:last-of-type { border-bottom: 0; }
+  #hud-br .sk { font-size: 12px; font-weight: 700; letter-spacing: 1.4px; color: var(--hdim); white-space: nowrap; }
+  #hud-br .sv { display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 600; letter-spacing: .6px; color: var(--hlbl); white-space: nowrap; }
+  #hud-br .sv b { color: #fff; font-weight: 700; }
+  #hud-br .wxv + .wxv { padding-left: 10px; border-left: 1px solid rgba(255,255,255,.18); }
+  #hud-br .ico { width: 20px; height: 20px; background: #cfd5df; -webkit-mask: var(--wx) center / contain no-repeat; mask: var(--wx) center / contain no-repeat; }
+  #hud-br .wear { padding-left: 10px; border-left: 1px solid rgba(255,255,255,.18); }
+  .cmp { width: 26px; height: 26px; border-radius: 50%; border: 3px solid var(--c, #e8212e); display: inline-flex; align-items: center; justify-content: center; font-weight: 900; font-size: 12px; color: #fff; background: #111; }
+  #hud-br .wbar { height: 4px; border-radius: 2px; background: rgba(255,255,255,.12); margin: -4px 0 4px; overflow: hidden; }
+  #hud-br .wbar i { display: block; height: 100%; width: 0; background: #21c55d; border-radius: 2px; }
+  #fuelVal.short { color: #ff5a5a; }
+  #vsBadge { font-size: 12px; padding: 2px 10px; border-radius: 4px; letter-spacing: 1.2px; color: #fff; background: #2e7d4f; }
+  #vstat .rows { padding: 0 0 4px; }
+  #vstat .rows > div { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: #eef2f8; padding: 2px 0; }
+  #vstat .rows i { width: 4px; height: 14px; border-radius: 2px; flex-shrink: 0; }
+  /* a short, wordless alert when the car is damaged: the status row flashes */
+  @keyframes dmgflash { 0%, 100% { background: transparent; } 30% { background: rgba(229, 57, 53, .45); } }
+  #hud-br.hit #rowCar { animation: dmgflash .45s ease-out 2; border-radius: 6px; }
   /* bottom centre: speed, gear, rpm, fuel */
   #hud-bc { position: absolute; left: 50%; bottom: 24px; transform: translateX(-50%); width: 600px; height: 162px; }
   #hud-bc.compact { height: 128px; }
@@ -113,7 +104,6 @@
   .chip b { font-weight: 600; color: var(--hlbl); }
   .chip.warn, .chip.warn b { color: #ff5a5a; }
   .chip.ot b, .chip.ot { color: #c77dff; }
-  #chipFuel b { min-width: 74px; text-align: right; }
 
   /* top centre: messages, race-start sequence, pit stop timer */
   #topc { position: absolute; left: 50%; top: 40px; transform: translateX(-50%); width: 720px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
@@ -152,10 +142,12 @@
   #telemetry { position: absolute; left: 50%; bottom: 206px; transform: translateX(-50%); width: 620px; padding: 8px 10px; display: grid; grid-template-columns: 1fr 140px; gap: 10px; }
   #telemetry canvas { width: 100%; height: 120px; display: block; }
   #fps { position: absolute; right: 8px; top: 6px; font-size: 11px; color: #8f8; text-shadow: 0 0 3px #000; }
-  #vstat svg rect, #vstat svg line { transition: fill .2s, stroke .2s; }
   #hud {
     --ic-warn: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill-rule='evenodd' d='M12 1.5 0.8 21.5h22.4zM11 9h2v6h-2zM11 16.6h2v2.2h-2z'/%3E%3C/svg%3E");
     --ic-wrench: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M22.7 19l-9.1-9.1c.9-2.3.4-5-1.5-6.9-2-2-5-2.4-7.4-1.3L9 6 6 9 1.6 4.7C.4 7.1.9 10.1 2.9 12.1c1.9 1.9 4.6 2.4 6.9 1.5l9.1 9.1c.4.4 1 .4 1.4 0l2.3-2.3c.5-.4.5-1.1.1-1.4z'/%3E%3C/svg%3E");
+    --wx-sun: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='5'/%3E%3Cpath d='M11 0h2v4h-2zM11 20h2v4h-2zM0 11h4v2H0zM20 11h4v2h-4zM3.5 5l1.4-1.4 2.8 2.8-1.4 1.4zM16.3 17.7l1.4-1.4 2.8 2.8-1.4 1.4zM3.5 19l2.8-2.8 1.4 1.4-2.8 2.8zM16.3 6.3l2.8-2.8 1.4 1.4-2.8 2.8z'/%3E%3C/svg%3E");
+    --wx-cloud: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6.5 19a4.5 4.5 0 0 1-.6-9 6.5 6.5 0 0 1 12.4 1.6A3.8 3.8 0 0 1 18 19z'/%3E%3C/svg%3E");
+    --wx-rain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6.5 14a4.5 4.5 0 0 1-.6-9 6.5 6.5 0 0 1 12.4 1.6A3.8 3.8 0 0 1 18 14zM7 16h2l-1.5 6h-2zM12 16h2l-1.5 6h-2zM17 16h2l-1.5 6h-2z'/%3E%3C/svg%3E");
     --ic-flag: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 2h2v20H5zM8 3h12l-2.5 4.5L20 12H8z'/%3E%3C/svg%3E");
   }
 
@@ -225,7 +217,7 @@
   /* the strategy and pit-service panels open over the tyre panel, in the right column */
   #strategyPanel { position:absolute; z-index:2; right:24px; bottom:78px; width:350px; max-height:calc(100vh / var(--hz) - 78px - 304px); overflow:auto; padding:16px; pointer-events:auto; }
   #strategyPanel h3 { margin:0 0 8px; letter-spacing:1px; }
-  #strategyPanel p, #tyreLife { font-size:13px; line-height:1.35; color:#cfd5df; margin:7px 0; }
+  #strategyPanel p { font-size:13px; line-height:1.35; color:#cfd5df; margin:7px 0; }
   .strategyChoices { display:grid; grid-template-columns:repeat(2,1fr); gap:7px; }
   .strategyChoice { color:#fff; font:600 14px var(--font); text-align:left; border:1px solid #424958; border-top:3px solid var(--c); border-radius:5px; padding:9px; background:#181d27; cursor:pointer; }
   .strategyChoice.sel { background:#303b50; outline:2px solid #c9a24a; }
@@ -555,40 +547,33 @@
     </div>
   </div>
   <div id="hud-tr" class="panel hz">
-    <div class="pos"><span>POS</span><b class="num" id="posNow">1</b><span class="num" id="posTot">/ 20</span></div>
-    <div class="kv"><span class="k">BEST</span><span class="v num" id="tBest">--:--.---</span></div>
+    <div class="race-top">
+      <div class="lap"><span>LAP</span><b class="num" id="lapNow">1</b><span class="num" id="lapTot">/ 6</span></div>
+      <div class="pos"><span>POS</span><b class="num" id="posNow">1</b><span class="num" id="posTot">/ 20</span></div>
+    </div>
     <div class="kv"><span class="k">CURRENT</span><span class="v num" id="tCur">0:00.000</span></div>
+    <div class="kv"><span class="k">BEST</span><span class="v num" id="tBest">--:--.---</span></div>
   </div>
   <div id="hud-right" class="hz">
-    <div id="hud-br" class="panel">
-      <div class="vhead"><span>VEHICLE STATUS</span><b id="vsBadge">OK</b></div>
-      <div class="head"><span id="tyreLabel">TYRES</span><span class="cmpw"><span class="cmp" id="cmpIcon">S</span><span id="cmpName">SOFT</span></span></div>
-      <div id="tyrew">
-        <div class="tw" id="tw0"></div>
-        <svg viewBox="0 0 60 130" aria-hidden="true">
-          <rect id="vsFloor" x="13" y="36" width="34" height="68" rx="7" fill="none" stroke-width="2"/>
-          <rect id="vsChas" x="24.5" y="12" width="11" height="62" rx="5"/>
-          <rect id="vsCoolL" x="14.5" y="48" width="8.5" height="26" rx="3"/><rect id="vsCoolR" x="37" y="48" width="8.5" height="26" rx="3"/>
-          <rect id="vsEng" x="24.5" y="77" width="11" height="22" rx="3"/>
-          <rect id="vsFwL" x="2" y="2" width="27" height="7" rx="2"/><rect id="vsFwR" x="31" y="2" width="27" height="7" rx="2"/>
-          <rect id="vsRw" x="12" y="119" width="36" height="8" rx="2"/>
-          <line id="vsS0" x1="12" y1="31" x2="25" y2="31" stroke-width="3"/><line id="vsS1" x1="35" y1="31" x2="48" y2="31" stroke-width="3"/>
-          <line id="vsS2" x1="13" y1="99" x2="25" y2="99" stroke-width="3"/><line id="vsS3" x1="35" y1="99" x2="47" y2="99" stroke-width="3"/>
-          <rect id="vsT0" x="2" y="22" width="10" height="18" rx="3"/><rect id="vsT1" x="48" y="22" width="10" height="18" rx="3"/>
-          <rect id="vsT2" x="1" y="88" width="12" height="22" rx="3"/><rect id="vsT3" x="47" y="88" width="12" height="22" rx="3"/>
-        </svg>
-        <div class="tw" id="tw1"></div>
-        <div class="tw" id="tw2"></div>
-        <div class="tw" id="tw3"></div>
+    <div id="hud-br" class="panel" aria-label="Race status">
+      <div class="srow" id="rowWx">
+        <span class="sk">WEATHER</span>
+        <span class="sv"><i class="ico" id="wxIcon"></i><span class="wxv" title="Chance of rain in the next few minutes">RAIN <b class="num" id="wxRain">0%</b></span><span class="wxv" title="How wet the track surface is">TRACK <b class="num" id="wxWet">0%</b> WET</span></span>
       </div>
-      <div class="trow"><span id="tyreLife">USEFUL LIFE <b>—</b></span><span id="tyreNext">NEXT <b>--</b></span></div>
-      <div class="trow"><span>WEAR <b class="num" id="wearPct">0%</b></span><span id="dmgTxt">CAR <b>OK</b></span></div>
-      <div id="vstat" class="hidden">
-        <div class="sh"><i></i>DAMAGE &amp; EFFECTS</div>
-        <div class="rows" id="vsRows"></div>
-        <div class="sh"><i></i>PIT SERVICE</div>
-        <div id="vsPit"></div>
+      <div class="srow">
+        <span class="sk">TYRES</span>
+        <span class="sv"><span class="cmp" id="cmpIcon">S</span><span id="cmpName">SOFT</span><span class="wear">WEAR <b class="num" id="wearPct">0%</b></span></span>
       </div>
+      <div class="wbar"><i id="wearBar"></i></div>
+      <div class="srow">
+        <span class="sk">FUEL</span>
+        <span class="sv"><b class="num" id="fuelVal">-- LAPS</b></span>
+      </div>
+      <div class="srow" id="rowCar">
+        <span class="sk">CAR STATUS</span>
+        <span class="sv"><b id="vsBadge">OK</b></span>
+      </div>
+      <div id="vstat" class="hidden"><div class="rows" id="vsRows"></div></div>
     </div>
   </div>
   <div id="hud-bc" class="hz">
@@ -602,7 +587,6 @@
       <div class="sub panel" id="dashStatus">
         <span class="chip warn" id="chipLim" style="display:none">PIT LIMITER</span>
         <span class="chip ot" id="chipDrift" style="display:none">SLIDE</span>
-        <span class="chip" id="chipFuel"><span class="k">FUEL</span><b class="num" id="fuelVal">+0.0</b></span>
       </div>
     </div>
   </div>
@@ -2451,6 +2435,8 @@ const SIM = (function () {
   // Vehicle Damage setting: scales real thresholds and failure odds.
   //  thr/scale: energy needed to start / complete damage; fatigue: how much sub-threshold knocks weaken parts;
   //  puncture/failure/fire: odds multipliers; fatal: suspension condition at which the car is out.
+  // an impact closes after this long without contact, or this long after it began (s): see Session.recordContact
+  const CONTACT_GAP = 0.05, CONTACT_MAX = 0.08;
   const DAMAGE_LEVELS = {
     reduced: { id: 'reduced', name: 'Reduced', thr: 2.3, scale: 1.9, fatigue: 0.25, puncture: 0.3, failure: 0.35, fire: 0, fatal: 1.0, chassisFatal: 0.85, reliability: 0 },
     standard: { id: 'standard', name: 'Standard', thr: 1.0, scale: 1.0, fatigue: 1.0, puncture: 1.0, failure: 1.0, fire: 0.45, fatal: 0.9, chassisFatal: 0.6, reliability: 0 },
@@ -5197,6 +5183,8 @@ const SIM = (function () {
       // throughout selection, service and release, even if another car touches them.
       for (const car of this.cars) if (car.pit && ['awaiting','stopped','release'].includes(car.pit.phase)) this.holdPitCar(car);
       if (this.step % 4 === 0) this.updateSlipstream();
+      // live positions at 60 Hz from the one classification (the HUD, the map and the AI read the same order)
+      if (this.type === 'race' && this.step % 4 === 2) this.standings();
       if (this.step % 24 === 0) this.slowUpdate();
     }
     // Slipstream targets for every car (60 Hz). Cars are sorted by lap position once, so each car only
@@ -5538,7 +5526,9 @@ const SIM = (function () {
       if (car.lastLapBase === undefined) { car.lastLapBase = lapBase; car.lastWithin = within; return; }
       if (lapBase > car.lastLapBase) {
         car.lastLapBase = lapBase; car.lastWithin = within;
-        this.crossLine(car, at);
+        // the moment the line was crossed within this step (cars crossing in the same step keep their real order)
+        const over = car.progress > 1e-6 ? clamp(within / car.progress, 0, 1) : 0;
+        this.crossLine(car, at - over * dt);
       } else if (lapBase < car.lastLapBase) { car.lastLapBase = lapBase; car.lapValid = false; }
       if (car.crossings > 0) {
         // the lap's pace record (Career scoring): the track water the car drove on, and time and distance in the pit lane
@@ -5611,6 +5601,8 @@ const SIM = (function () {
         if (!this.finishedFlag && car.laps >= this.totalLaps) { this.finishedFlag = true; this.finishLeaderTime = at; this.events.push({ type: 'chequered' }); this.msg('CHEQUERED FLAG', 'big', null, 4); }
         if (this.finishedFlag && !car.finished) {
           car.finished = true; car.finishTime = at - this.lightsOutTime; car.finishOrder = (this.finishCount = (this.finishCount || 0) + 1);
+          car.finishDist = Math.floor(car.totalDist / t.length + 1e-9) * t.length; // the line it has just crossed
+          this.standings();
           if (car.isPlayer) this.msg('FINISHED P' + car.position, 'big', car, 5);
           if (car.ai) car.ai.mode = 'race';
           if (car.isPlayer) car.autoDrive = true;
@@ -5629,12 +5621,15 @@ const SIM = (function () {
       if (j > 800) this.events.push({ type: 'wall', car, j, x, z, nx, nz, vt });
       this.recordContact(-1 - car.id, car, null, x, z, nx, nz, vn, vt, jt, mEff);
     }
-    // One impact = all contact steps between a pair (or a car and the wall) with no gap longer than 0.1 s.
-    // It is judged once, on its peak: the closing speed at the contact point and the effective mass
+    // One impact = the contact steps between a pair (or a car and the wall) with no gap longer than 0.05 s, judged
+    // as soon as the contact ends or at most 0.08 s after it began (an impact's energy arrives within a few
+    // hundredths of a second, so a hit is never judged late). Contact that goes on (a car pinned against the barrier,
+    // two cars grinding side by side) continues as fresh impacts, each judged as it happens. Each contact step
+    // belongs to exactly one impact, so nothing is counted twice. Each impact is judged on its peak: the closing speed at the contact point and the effective mass
     // give the energy the crash structures absorb (0.5·m·v²); sliding friction adds scraping energy.
     recordContact(key, A, B, x, z, nx, nz, vn, vt, jt, mEff) {
       let ev = this.contacts.get(key);
-      if (!ev) { ev = { a: A, b: B, last: 0, E: 0, peak: 0, vn: 0, vt: 0, x, z, scrape: 0, hits: [] }; this.contacts.set(key, ev); }
+      if (!ev) { ev = { a: A, b: B, t0: this.time, last: 0, E: 0, peak: 0, vn: 0, vt: 0, x, z, scrape: 0, hits: [] }; this.contacts.set(key, ev); }
       ev.last = this.time;
       const E = 0.5 * mEff * vn * vn, sc = Math.abs(jt * vt) * 0.5; // friction impulse × sliding speed
       ev.E += E; ev.scrape += sc;
@@ -5657,7 +5652,7 @@ const SIM = (function () {
     resolveContacts() {
       if (!this.contacts.size) return;
       for (const [k, ev] of this.contacts) {
-        if (this.time - ev.last < 0.1) continue;
+        if (this.time - ev.last < CONTACT_GAP && this.time - ev.t0 < CONTACT_MAX) continue;
         this.contacts.delete(k);
         this.reportImpact(ev);
         if (this.damageOn) this.evaluateImpact(ev);
@@ -5722,31 +5717,31 @@ const SIM = (function () {
       const D = car.damage, c = D.c;
       const say = (k, tier, text, kind = 'dmg') => { if (D.tier[k] < tier) { D.tier[k] = tier; this.msg(text, kind, car, 3.5); } };
       const fw = D.fw;
-      if (D.detached[0] || D.detached[1]) say(P_FWL, 3, 'Front Wing Lost — Heavy Understeer, Pit Now', 'critical');
-      else if (fw > 0.5) say(P_FWL, 2, 'Front Wing Badly Damaged — Pit Recommended');
-      else if (fw > 0.1) say(P_FWL, 1, 'Front Wing Damaged — Reduced Front Grip');
-      if (c[P_RW] > 0.6) say(P_RW, 2, 'Rear Wing Badly Damaged — Pit Recommended');
-      else if (c[P_RW] > 0.15) say(P_RW, 1, 'Rear Wing Damaged — Reduced Rear Stability');
-      if (c[P_FLOOR] > 0.15) say(P_FLOOR, 1, 'Floor Damaged — Downforce Reduced');
+      if (D.detached[0] || D.detached[1]) say(P_FWL, 3, 'Front wing lost — heavy understeer');
+      else if (fw > 0.5) say(P_FWL, 2, 'Front wing badly damaged — understeer');
+      else if (fw > 0.1) say(P_FWL, 1, 'Front wing damaged');
+      if (c[P_RW] > 0.6) say(P_RW, 2, 'Rear wing badly damaged — unstable rear');
+      else if (c[P_RW] > 0.15) say(P_RW, 1, 'Rear wing damaged');
+      if (c[P_FLOOR] > 0.15) say(P_FLOOR, 1, 'Floor damaged — less grip');
       for (let i = 0; i < 4; i++) {
         const v = c[P_SUS + i], dir = i % 2 ? 'Right' : 'Left';
-        if (v > 0.5) say(P_SUS + i, 2, WHEEL_NAMES[i] + ' Suspension Badly Damaged — Car Pulling ' + dir);
-        else if (v > 0.12) say(P_SUS + i, 1, WHEEL_NAMES[i] + ' Suspension Damaged — Car Pulling ' + dir);
+        if (v > 0.5) say(P_SUS + i, 2, 'Suspension badly damaged — pulls ' + dir.toLowerCase());
+        else if (v > 0.12) say(P_SUS + i, 1, 'Suspension damaged — pulls ' + dir.toLowerCase());
       }
-      if (c[P_ENG] > 0.6) say(P_ENG, 2, 'Power Unit Misfiring — Power Reduced');
-      else if (c[P_ENG] > 0.15) say(P_ENG, 1, 'Power Unit Damaged — Power Reduced');
-      if (c[P_COOL] > 0.2) say(P_COOL, 1, 'Cooling Damaged — Watch Engine Temperature');
-      if (c[P_CHAS] > 0.2) say(P_CHAS, 1, 'Chassis Damaged — Handling Affected');
+      if (c[P_ENG] > 0.6) say(P_ENG, 2, 'Engine misfiring — power down');
+      else if (c[P_ENG] > 0.15) say(P_ENG, 1, 'Engine damaged — power down');
+      if (c[P_COOL] > 0.2) say(P_COOL, 1, 'Cooling damaged — engine runs hot');
+      if (c[P_CHAS] > 0.2) say(P_CHAS, 1, 'Chassis damaged');
     }
     onPuncture(car, i, cause = '') {
       this.stats.punctures = (this.stats.punctures || 0) + 1;
       this.log(car, 'puncture ' + WHEEL_NAMES[i] + (cause ? ' (' + cause + ')' : ''));
       this.events.push({ type: 'puncture', car, wheel: i });
-      this.msg(WHEEL_NAMES[i] + ' Tyre Puncture — Pit Recommended', 'critical', car, 4);
+      this.msg(WHEEL_NAMES[i] + ' tyre puncture', 'dmg', car, 4);
       car.damage.computePerf();
     }
     onTyreShred(car, i) {
-      this.msg(WHEEL_NAMES[i] + ' Tyre Destroyed — Box Now', 'critical', car, 4);
+      this.msg(WHEEL_NAMES[i] + ' tyre destroyed', 'dmg', car, 4);
       const c = Math.cos(car.psi), s = Math.sin(car.psi);
       this.addDebris(car.x - c * 1.5, car.z - s * 1.5, 'tyre', 1, car);
     }
@@ -5804,7 +5799,7 @@ const SIM = (function () {
       if (kind === 'engine' || kind === 'fire') { D.c[P_ENG] = 1; this.events.push({ type: 'failure', car, fire: kind === 'fire' }); }
       D.computePerf();
       this.log(car, 'failure ' + kind);
-      this.msg(text, 'critical', car, 5);
+      this.msg(text, 'dmg', car, 5);
       if (kind === 'fire') this.msg('RACE CONTROL: Car fire — ' + car.driver.name + ' stopping', 'rc', null, 4);
       this.startRetirement(car, reason);
     }
@@ -5856,7 +5851,7 @@ const SIM = (function () {
           this.log(car, 'reliability failure');
         }
         if (!D.failed && !car.retiring) {
-          if (D.overheat && !D.ohSaid) { D.ohSaid = true; this.msg('Power Unit Overheating — Lift and Coast', 'dmg', car, 4); }
+          if (D.overheat && !D.ohSaid) { D.ohSaid = true; this.msg('Engine overheating — power down', 'dmg', car, 4); }
           else if (D.engT < 112) D.ohSaid = false;
           this.announceDamage(car);
         }
@@ -5876,24 +5871,34 @@ const SIM = (function () {
       car.vx = car.vz = car.r = 0; car.gear = 1;
       this.log(car, 'marshal reset');
     }
+    // The one classification of the race (live positions, the finish, the results, Career): running cars by the
+    // validated race distance (cumulative, never reset at the line); a car that has taken the flag keeps the distance
+    // at which it crossed the line, so a lapped car that finishes behind the leader stays behind every car still
+    // running on the lead lap; cars that finished on the same lap by their finishing time; retirements last, by
+    // distance covered.
+    raceCompare(a, b) {
+      if (a.dnf !== b.dnf) return a.dnf ? 1 : -1;
+      const da = a.finished ? a.finishDist : a.totalDist, db = b.finished ? b.finishDist : b.totalDist;
+      if (a.finished && b.finished && Math.abs(da - db) < 1) return (a.finishTime - b.finishTime) || (a.finishOrder - b.finishOrder);
+      if (da !== db) return db - da;
+      if (a.finished !== b.finished) return a.finished ? -1 : 1;
+      return a.id - b.id;
+    }
+    standings() {
+      const order = this.cars.slice();
+      if (this.type === 'race') order.sort((a, b) => this.raceCompare(a, b));
+      else order.sort((a, b) => (a.bestLap || 1e9) - (b.bestLap || 1e9) || a.id - b.id);
+      order.forEach((c, k) => { c.position = k + 1; });
+      this.order = order;
+      return order;
+    }
     slowUpdate() {
       const t = this.track;
       this.damageTick(0.1);
       // standings
-      const order = this.cars.slice();
-      if (this.type === 'race') {
-        order.sort((a, b) => {
-          if (a.dnf !== b.dnf) return a.dnf ? 1 : -1;
-          if (a.finished && b.finished) return a.finishOrder - b.finishOrder;
-          if (a.finished !== b.finished) { const fa = a.finished ? a : b; const nf = a.finished ? b : a; if (nf.laps >= fa.laps) return a.finished ? -1 : 1; return a.finished ? -1 : 1; }
-          return b.totalDist - a.totalDist;
-        });
-      } else {
-        order.sort((a, b) => (a.bestLap || 1e9) - (b.bestLap || 1e9) || a.id - b.id);
-      }
-      const prevPos = new Map(this.cars.map(c => [c, c.position]));
-      order.forEach((c, k) => { c.position = k + 1; });
-      this.order = order;
+      const prevPos = this.slowPos || new Map(this.cars.map(c => [c, c.position]));
+      const order = this.standings();
+      this.slowPos = new Map(this.cars.map(c => [c, c.position]));
       // gaps
       if (this.type === 'race') {
         const lead = order[0];
@@ -5957,16 +5962,10 @@ const SIM = (function () {
     finishRace() {
       if (this.over) return;
       this.over = true;
-      const res = this.cars.map(c => ({ car: c, laps: c.laps, time: c.finished ? c.finishTime : null, dnf: c.dnf, best: c.bestLap, pits: c.pitStops, dist: c.totalDist }));
-      res.sort((a, b) => {
-        if (a.dnf !== b.dnf) return a.dnf ? 1 : -1;
-        if (b.laps !== a.laps) return b.laps - a.laps;
-        if (a.time != null && b.time != null) return a.time - b.time;
-        if (a.time != null) return -1; if (b.time != null) return 1;
-        return b.dist - a.dist;
-      });
-      const pts = [25, 18, 15, 12, 10, 8, 6, 4, 2, 1];
-      res.forEach((r, k) => { r.pos = k + 1; r.points = r.dnf ? 0 : (pts[k] || 0); });
+      // the results are the race classification itself (standings), never a separate ordering
+      const res = this.standings().map(c => ({ car: c, laps: c.laps, time: c.finished ? c.finishTime : null, dnf: c.dnf, best: c.bestLap, pits: c.pitStops, dist: c.finished ? c.finishDist : c.totalDist, pos: c.position }));
+      const pts = [25, 18, 15, 12, 10, 8, 6, 4, 2, 1]; // the Grand Prix results table's points column
+      for (const r of res) r.points = r.dnf ? 0 : (pts[r.pos - 1] || 0);
       // the winner is the first car to complete the race distance; a race nobody finished (all cars retired) has none
       this.winner = res[0] && res[0].car.finished ? res[0].car : null;
       this.results = res; this.events.push({ type: 'raceover' });
@@ -9244,7 +9243,6 @@ function updateStrategyUI(p, sess) {
   const wear=Math.max(...p.tyre.wear), rate=SIM.wearPerLap(sess,p,p.tyre.c);
   const life=rate>0?Math.max(0,(SIM.USEFUL_WEAR-wear)/rate):Infinity;
   const lifeText=isFinite(life)?life.toFixed(1)+' laps':'—';
-  $('tyreLife').innerHTML='USEFUL LIFE <b>~'+lifeText+'</b>'; $('tyreNext').innerHTML=sess.fuelEnabled?'FUEL <b>≈'+sess.fuelRange(p).toFixed(1)+' L</b>':'STYLE <b>'+p.tyre.style.name+'</b>';
   $('strategyTitle').textContent = sess.fuelEnabled ? 'TYRES, FUEL & PIT STOP' : 'TYRES & PIT STOP';
   $('strategyFuel').classList.toggle('hidden', !sess.fuelEnabled);
   if($('strategyPanel').classList.contains('hidden')) return;
@@ -9276,6 +9274,8 @@ function hudMessages() {
     const relevant = !m.car || m.car === G.focus || m.kind === 'purple' || m.kind === 'critical' || m.kind === 'big' || (m.kind === 'pit' && m.car === G.focus);
     if (G.attract) continue;
     if (m.kind === 'pit' && m.car !== G.focus) continue;
+    // damage is shown by the car status panel (with a brief flash), never as a text pop-up
+    if (m.kind === 'dmg') continue;
     if (m.kind === 'critical' && m.car && m.car !== G.focus && sess.cars.length > 12 && !m.car.isPlayer) continue;
     if (relevant) pushMsg(m.text, m.kind, m.dur);
   }
@@ -9618,67 +9618,46 @@ function drawMinimap() {
     g.lineWidth = me ? 3.5 : 2; g.strokeStyle = me ? '#fff' : 'rgba(0,0,0,.7)'; g.stroke();
   }
 }
+// damage colour from 0 (healthy) to 1 (destroyed): amber, orange, red
+const DMG_COL = (d) => d >= 0.55 ? '#ff3b3b' : d >= 0.25 ? '#ff8a1f' : '#f5c518';
+const WHEEL_SHORT = ['Front-left', 'Front-right', 'Rear-left', 'Rear-right'];
+// Car status: one word (OK, DAMAGED, RETIRING, RETIRED) and, only when something matters, up to three short lines
+// saying what the damage does to the car. A new problem flashes the status row briefly (no text pop-up).
 function updateVehicleStatus(p, sess) {
-  const el = $('vstat'), D = p.damage, c = D.c;
-  const show = !p.inGarage && (!D.isClean() || D.engT > 115 || !!p.retiring || D.scuff > 0.05);
-  el.classList.toggle('hidden', !show); $('hud-br').classList.toggle('dmg', show);
-  // the car silhouette in the tyre panel doubles as the component diagram: neutral while the car is healthy
-  const fill = (id, d) => { $(id).setAttribute('fill', show ? DMG_COL(d) : '#cfd5df'); };
-  fill('vsFwL', D.detached[0] ? 1 : c[0]); fill('vsFwR', D.detached[1] ? 1 : c[1]); fill('vsRw', D.detached[2] ? 1 : c[2]);
-  $('vsFloor').setAttribute('stroke', show ? DMG_COL(c[3]) : 'rgba(207,213,223,.6)');
-  fill('vsChas', c[10]); fill('vsEng', D.failed === 'engine' ? 1 : Math.max(c[8], D.engT > 125 ? 0.3 : 0));
-  fill('vsCoolL', c[9]); fill('vsCoolR', c[9]);
-  const blink = performance.now() % 600 < 300;
+  const D = p.damage, c = D.c, fatal = sess.damageLevel.fatal, rows = [];
+  // [severity, text]
+  if (p.retiring) rows.push([2, (p.dnf ? 'Out of the race' : 'Stopping') + (p.retiring.reason ? ' — ' + p.retiring.reason.toLowerCase() : '')]);
   for (let i = 0; i < 4; i++) {
-    $('vsS' + i).setAttribute('stroke', show ? DMG_COL(c[4 + i] >= sess.damageLevel.fatal ? 1 : c[4 + i]) : 'rgba(207,213,223,.7)');
-    $('vsT' + i).setAttribute('fill', D.shred[i] ? '#4a4f58' : D.punctRate[i] > 0 ? (blink ? '#ff3b3b' : '#5a1010') : '#7d8696');
+    if (D.shred[i]) rows.push([1.2, WHEEL_SHORT[i] + ' tyre destroyed']);
+    else if (D.punctRate[i] > 0) rows.push([1.1, WHEEL_SHORT[i] + ' tyre puncture']);
   }
-  if (!show) return;
-  // problems, worst first: [severity, component, state, effect]
-  const rows = [];
-  const pct = (d) => Math.round(d * 100) + '%';
-  const state = (d) => d >= 0.55 ? 'SEVERE' : d >= 0.25 ? 'DAMAGED' : 'MINOR';
   const fw = D.fw;
-  if (D.detached[0] || D.detached[1]) rows.push([1, 'Front wing', 'LOST', 'Heavy understeer']);
-  else if (fw > 0.04) rows.push([fw, 'Front wing ' + pct(fw), state(fw), fw > 0.4 ? 'Heavy understeer' : 'Less front grip']);
-  for (let i = 0; i < 4; i++) {
-    if (D.shred[i]) rows.push([1.2, WHEEL_SHORT[i] + ' tyre', 'DESTROYED', 'Box now']);
-    else if (D.punctRate[i] > 0) rows.push([1.1, WHEEL_SHORT[i] + ' tyre', 'PUNCTURE', 'Pit']);
-  }
-  if (D.detached[2]) rows.push([1, 'Rear wing', 'LOST', 'Unstable rear']);
-  else if (c[2] > 0.04) rows.push([c[2], 'Rear wing ' + pct(c[2]), state(c[2]), 'Less rear stability']);
-  for (let i = 0; i < 4; i++) if (c[4 + i] > 0.04) rows.push([c[4 + i], WHEEL_SHORT[i] + ' suspension ' + pct(c[4 + i]), c[4 + i] >= sess.damageLevel.fatal ? 'BROKEN' : state(c[4 + i]), 'Pulls ' + (i % 2 ? 'right' : 'left')]);
-  if (c[3] > 0.04) rows.push([c[3] * 0.9, 'Floor ' + pct(c[3]), state(c[3]), 'Less downforce']);
-  if (D.failed === 'engine') rows.push([1.3, 'Power unit', D.fire ? 'FIRE' : 'FAILED', 'No power']);
-  else if (c[8] > 0.04) rows.push([c[8], 'Power unit ' + pct(c[8]), state(c[8]), '−' + Math.round((1 - D.perf.power) * 100) + '% power']);
-  if (D.engT > 115 && D.failed !== 'engine') rows.push([D.engT > 125 ? 0.7 : 0.3, 'Engine ' + Math.round(D.engT) + '°C', D.engT > 125 ? 'OVERHEATING' : 'HOT', D.engT > 125 ? 'Lift and coast' : 'Running hot']);
-  if (c[9] > 0.04) rows.push([c[9], 'Cooling ' + pct(c[9]), state(c[9]), D.leak > 0.05 ? 'Leaking' : 'Runs hot']);
-  if (c[10] > 0.04) rows.push([c[10] * 1.4, 'Chassis ' + pct(c[10]), state(c[10]), 'Structural']);
-  if (!rows.length && D.scuff > 0.05) rows.push([0, 'Bodywork', 'SCUFFED', 'Cosmetic only']);
-  rows.sort((a, b) => b[0] - a[0]);
-  $('vsRows').innerHTML = rows.slice(0, 3).map(r => { const col = r[0] >= 1 ? '#ff3b3b' : DMG_COL(Math.max(0.06, r[0])); return `<div><i style="background:${col}"></i><span class="c">${r[1]}</span><span class="s" style="color:${col}">${r[2]}</span><span class="e l"></span><span class="e">${r[3]}</span></div>`; }).join('');
-  const sev = p.retiring ? 2 : D.severity();
+  if (D.detached[0] || D.detached[1]) rows.push([1, 'Front wing lost — heavy understeer']);
+  else if (fw > 0.1) rows.push([fw, fw > 0.4 ? 'Front wing damaged — understeer' : 'Front wing damaged']);
+  if (D.detached[2]) rows.push([1, 'Rear wing lost — unstable rear']);
+  else if (c[2] > 0.15) rows.push([c[2], 'Rear wing damaged']);
+  let pull = 0, sus = 0;
+  for (let i = 0; i < 4; i++) if (c[4 + i] > 0.12) { sus = Math.max(sus, c[4 + i]); pull += (i % 2 ? 1 : -1) * c[4 + i]; }
+  if (sus > 0) rows.push([sus >= fatal ? 1 : sus, 'Suspension damaged' + (Math.abs(pull) > 0.08 ? ' — pulls ' + (pull > 0 ? 'right' : 'left') : '')]);
+  if (c[3] > 0.15) rows.push([c[3] * 0.9, 'Floor damaged — less grip']);
+  if (D.failed === 'engine') rows.push([1.3, D.fire ? 'Engine fire' : 'Engine failure']);
+  else if (c[8] > 0.15) rows.push([c[8], 'Engine damage — power down']);
+  else if (D.engT > 125) rows.push([0.7, 'Engine overheating']);
+  if (c[9] > 0.2 && D.failed !== 'engine') rows.push([c[9] * 0.8, 'Cooling damaged']);
+  if (c[10] > 0.2) rows.push([c[10], 'Chassis damaged']);
+  rows.sort((x, y) => y[0] - x[0]);
+  const word = p.retiring ? (p.dnf ? 'RETIRED' : 'RETIRING') : rows.length ? 'DAMAGED' : 'OK';
   const badge = $('vsBadge');
-  badge.textContent = p.retiring ? (p.dnf ? 'RETIRED' : 'RETIRING') : sev < 0.05 ? 'OK' : sev < 0.25 ? 'MINOR' : sev < 0.55 ? 'DAMAGED' : 'SEVERE';
-  badge.style.background = p.retiring ? '#e53935' : sev < 0.05 ? '#2e7d4f' : sev < 0.25 ? '#b8860b' : sev < 0.55 ? '#c2410c' : '#c62828';
-  // Factual component and service estimates; no pit recommendation.
-  const pit = $('vsPit'), kv = (k, v, col) => `<div>${k}<b style="color:${col || '#fff'}">${v}</b></div>`;
-  const drivable = p.retiring ? (p.dnf ? 'Out of the race' : 'Stop the car safely') : 'Drivable';
-  const status = kv('Car status', drivable, p.retiring ? '#ff6b6b' : '#3ee07a');
-  if (p.retiring) { pit.innerHTML = status; return; }
-  if (p.pit) { const P = p.pit; pit.innerHTML = kv('Pit lane', P.phase === 'awaiting' ? (sess.fuelEnabled ? 'Choose tyres and fuel' : 'Choose tyres') : P.phase === 'release' ? 'Waiting for a safe release' : P.phase === 'stopped' ? 'Crew working' : P.phase === 'out' ? 'Automatic pit exit' : P.phase === 'queue' ? 'Queueing for a box' : 'Automatic pit entry', '#f5c518') + status; return; }
-  const plan = D.repairPlan({ service: true }); const loss = D.lapLoss();
-  const punct = D.anyPuncture();
-  const items = (punct ? ['Tyres'] : []).concat(plan.items);
-  if (!items.length) {
-    const fixed = loss.fixed > 0.3;
-    pit.innerHTML = kv('Repairable', fixed ? 'Not in the pits' : 'No repair needed', fixed ? '#ff8a1f' : '#9aa3b2') + status;
-  } else {
-    const urgent = punct || D.detached[0] || D.detached[1] || D.detached[2] || fw > 0.5 || c[2] > 0.5;
-    const stopT = Math.max(2.4, plan.time);
-    pit.innerHTML = kv('Repairable', items.join(' + '), urgent ? '#ff6b6b' : '#fff') + kv('Est. stop time', '≈ ' + stopT.toFixed(1) + ' s') +
-      (loss.rep > 0.05 && loss.rep < 20 ? kv('Time lost', '≈ ' + loss.rep.toFixed(1) + ' s/lap', loss.rep > 0.6 ? '#f5c518' : '#dfe4ec') : '') + status;
+  badge.textContent = word;
+  badge.style.background = word === 'OK' ? '#2e7d4f' : word === 'DAMAGED' ? (rows[0][0] >= 0.55 ? '#c62828' : '#c2410c') : '#e53935';
+  $('vstat').classList.toggle('hidden', !rows.length);
+  $('vsRows').innerHTML = rows.slice(0, 3).map(r => '<div><i style="background:' + (r[0] >= 1 ? '#ff3b3b' : DMG_COL(Math.max(0.1, r[0]))) + '"></i>' + r[1] + '</div>').join('');
+  // a new or worse problem: flash the status row
+  const sig = rows.map(r => r[1]).join('|') + Math.round((rows[0] ? rows[0][0] : 0) * 10);
+  if (G.dmgCar === p && G.dmgSig != null && sig !== G.dmgSig && rows.length) {
+    const el = $('hud-br'); el.classList.remove('hit'); void el.offsetWidth; el.classList.add('hit');
   }
+  G.dmgCar = p; G.dmgSig = sig;
 }
 let hudT = 0;
 function updateHud(dt) {
@@ -9696,41 +9675,43 @@ function updateHud(dt) {
   hudT += dt; if (hudT < 0.066) return; hudT = 0;
   const p = car;
   $('spdUnit').textContent = 'KM/H';
-  // top-right
+  // top-right: lap and position (from the race classification), current and best lap
+  const lapsTotal = sess.totalLaps || SIM.GAME_MODES.grandprix.laps;
+  $('lapNow').textContent = p.finished ? lapsTotal : Math.min(lapsTotal, Math.max(1, (p.laps || 0) + 1));
+  $('lapTot').textContent = '/ ' + lapsTotal;
   $('posNow').textContent = p.position || '-'; $('posTot').textContent = '/ ' + sess.cars.length;
   $('tBest').textContent = p.bestLap ? fmt(p.bestLap) : '--:--.---';
   const started = sess.lightsOut;
   const cur = started ? sess.time - (sess.type === 'race' && p.crossings === 0 ? sess.lightsOutTime : p.lapStart) : 0;
   $('tCur').textContent = fmt(Math.max(0, cur));
   $('tCur').style.color = !p.lapValid && sess.type === 'race' ? '#ff6b6b' : '';
-  // pit limiter / fuel
+  // pit limiter and slide chips under the dashboard
   $('chipLim').style.display = p.pit && G.track.inLimiter(p.s) ? '' : 'none';
   const dr = $('chipDrift'); const sa = Math.abs(p.slideAngle || 0);
   if (sa > 0.08 && p.speed > 6) { dr.style.display = ''; dr.textContent = 'SLIDE ' + Math.round(sa * 57.3) + '°'; } else dr.style.display = 'none';
-  // fuel: estimated laps of range from the car's own consumption (an estimate, not a guarantee)
-  const showFuel = sess.fuelEnabled;
-  const compact = !showFuel && $('chipLim').style.display === 'none' && $('chipDrift').style.display === 'none';
-  $('chipFuel').classList.toggle('hidden', !showFuel);
+  const compact = $('chipLim').style.display === 'none' && $('chipDrift').style.display === 'none';
   $('dashStatus').classList.toggle('hidden', compact);
   $('hud-bc').classList.toggle('compact', compact);
-  if (showFuel) {
-    const range = sess.fuelRange(p), toGo = sess.type === 'race' ? sess.lapsLeft(p) : Infinity;
-    $('fuelVal').textContent = '≈' + range.toFixed(1) + ' LAPS'; $('chipFuel').title = p.fuel.toFixed(1) + ' kg in the tank';
-    $('chipFuel').className = 'chip' + (sess.type === 'race' && range < toGo && range < 1.3 ? ' warn' : '');
-  }
-  // tyres
+  // weather: the forecast's chance of rain (the same public forecast the AI teams use) and how wet the track is
+  const W = sess.weather, fc = W ? W.forecast() : null, wet = clamp(p.surfaceWet ?? sess.wet ?? 0, 0, 1);
+  $('wxRain').textContent = Math.round((fc ? fc.probability : 0) * 100) + '%';
+  $('wxWet').textContent = Math.round(wet * 100) + '%';
+  $('wxIcon').style.setProperty('--wx', W && W.raining ? 'var(--wx-rain)' : W && W.cloud > 0.55 ? 'var(--wx-cloud)' : 'var(--wx-sun)');
+  // tyres: compound and one overall wear figure (the mean of the four tyres)
   const comp = SIM.COMPOUNDS[p.tyre.c];
-  $('cmpIcon').textContent = p.tyre.c; $('cmpIcon').style.setProperty('--c', comp.color); $('cmpName').textContent = comp.name.toUpperCase();
-  $('tyreLabel').textContent = 'TYRES';
-  for (let i = 0; i < 4; i++) {
-    const T = p.tyre.temp[i]; const dT = T - comp.topt;
-    const col = dT < -25 ? '#2f7bff' : dT < -10 ? '#29b6f6' : dT < 12 ? '#21c55d' : dT < 25 ? '#f5c518' : '#e53935';
-    $('tw' + i).style.background = col; $('tw' + i).style.opacity = (1 - p.tyre.wear[i] * 0.7).toFixed(2); $('tw' + i).style.boxShadow = '0 0 8px ' + col + '66';
-  }
+  $('cmpIcon').textContent = p.tyre.c; $('cmpIcon').style.setProperty('--c', comp.color); $('cmpName').textContent = comp.name;
   const wavg = (p.tyre.wear[0] + p.tyre.wear[1] + p.tyre.wear[2] + p.tyre.wear[3]) / 4;
   $('wearPct').textContent = Math.round(wavg * 100) + '%';
-  const sev = p.retiring ? 1 : p.damage.severity();
-  $('dmgTxt').innerHTML = 'CAR <b style="color:' + (sev < 0.05 ? '#fff' : DMG_COL(sev)) + '">' + (p.retiring ? 'OUT' : sev < 0.05 ? 'OK' : sev < 0.25 ? 'MINOR' : sev < 0.55 ? 'DAMAGED' : 'SEVERE') + '</b>';
+  const wb = $('wearBar'); wb.style.width = Math.round(clamp(wavg, 0, 1) * 100) + '%';
+  wb.style.background = wavg < 0.5 ? '#21c55d' : wavg < 0.7 ? '#f5c518' : wavg < 0.85 ? '#ff8a1f' : '#ff3b3b';
+  // fuel: estimated laps left at the car's own measured consumption, flagged when it will not reach the flag
+  const fuelRow = $('fuelVal').closest('.srow'); fuelRow.classList.toggle('hidden', !sess.fuelEnabled);
+  if (sess.fuelEnabled) {
+    const range = sess.fuelRange(p), toGo = sess.type === 'race' && !p.finished ? sess.lapsLeft(p) : 0;
+    const short = toGo > 0 && range < toGo - 0.05;
+    $('fuelVal').textContent = range.toFixed(1) + ' LAPS' + (short ? ' · SHORT' : '');
+    $('fuelVal').classList.toggle('short', short);
+  }
   updateVehicleStatus(p, sess);
   updateStrategyUI(p, sess);
   // flags

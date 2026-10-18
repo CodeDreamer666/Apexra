@@ -53,8 +53,13 @@ const crui = html.slice(html.indexOf('const CRUI ='), html.indexOf('const teamCo
       check(S.startTyre === 'H' && S.startFuel === 6 && S.difficulty === undefined && S.volume === 70, 'race choices kept and removed settings ignored');
       saveSettings(); const saved = JSON.parse(localStorage.getItem('apexgp.settings.v1'));
       check(!('mandatory' in saved) && !('penalty' in saved) && !('compoundPenalty' in saved), 'legacy settings discarded');
-      for (const id of ['settings', 'hud-tl', 'board', 'engineerRadio', 'strategyToggle', 'tLast', 'tDelta', 's1', 's2', 's3', 'tt0', 'tt1', 'tt2', 'tt3', 'tyreAge']) check(!$(id), id + ' removed');
-      for (const id of ['posNow', 'tCur', 'tBest', 'minimap', 'spd', 'gear', 'rpm', 'cmpIcon', 'wearPct', 'fuelVal', 'vstat']) check(!!$(id), id + ' retained');
+      for (const id of ['settings', 'hud-tl', 'board', 'engineerRadio', 'strategyToggle', 'tLast', 'tDelta', 's1', 's2', 's3', 'tt0', 'tt1', 'tt2', 'tt3', 'tyreAge',
+        'tw0', 'tw1', 'tw2', 'tw3', 'tyreLife', 'tyreNext', 'vsPit', 'dmgTxt', 'chipFuel']) check(!$(id), id + ' removed');
+      for (const id of ['lapNow', 'lapTot', 'posNow', 'posTot', 'tCur', 'tBest', 'minimap', 'spd', 'gear', 'rpm', 'cmpIcon', 'cmpName', 'wearPct', 'fuelVal', 'wxRain', 'wxWet', 'vsBadge', 'vstat']) check(!!$(id), id + ' retained');
+      // lap and position share the top-right panel; weather, tyres, fuel and car status share the right panel
+      check($('lapNow').closest('#hud-tr') && $('posNow').closest('#hud-tr'), 'lap and position together');
+      for (const id of ['wxRain', 'wxWet', 'wearPct', 'fuelVal', 'vsBadge']) check($(id).closest('#hud-br'), id + ' in the status panel');
+      check(document.querySelectorAll('#hud [id="fuelVal"]').length === 1, 'fuel shown once');
       check(!document.querySelector('[data-mode="duel"], [data-mode="pursuit"], [data-act="settings"]'), 'deleted menu entries');
       const report = [];
       for (const def of SIM.CIRCUITS) for (const mode of ['grandprix', 'career']) {
