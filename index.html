@@ -8695,7 +8695,7 @@ window.addEventListener('keydown', (e) => {
     return;
   }
   if(G.player && G.player.pit && G.player.pit.phase==='awaiting' && ['Tab','Space','Enter','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','PageUp','PageDown','Home','End'].includes(k))return;
-  if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space','Tab'].includes(k))e.preventDefault();
+  if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(k))e.preventDefault();
   if(e.repeat)return;
   if (!KEYS[k]) PRESSED[k] = true; KEYS[k] = true; DRIVE_KEYS.setKey(k, true, performance.now() / 1000);
 });

@@ -271,6 +271,7 @@ test('cutting a corner across the inside is slower than driving it, without any 
 test('Grand Prix: leaving the track deletes nothing, and a lap only counts once a full lap has been earned', () => {
   const t = tracks.get('monza');
   const S = new SIM.Session(t, { type: 'race', gameMode: 'grandprix', entries: SIM.DRIVERS.slice(0, 2).map(driver => ({ driver })), seed: 4, weather: 'dynamic' });
+  S.totalLaps = 2; // Shortened Grand Prix test run; playable races still use six laps.
   let shoved = null, off = 0;
   while (!S.over && S.time < 420) {
     S.fixedStep(dt);
