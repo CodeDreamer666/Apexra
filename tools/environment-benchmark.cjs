@@ -9,6 +9,7 @@ const root = path.resolve(process.env.BENCH_ROOT || path.join(__dirname, '..'));
 const out = path.resolve(process.env.BENCH_OUT || '/tmp/apexra-environment-benchmark');
 const ids = (process.env.CIRCUITS || 'monza,silverstone,spa,suzuka,bahrain,interlagos').split(',');
 const samples = Number(process.env.BENCH_FRAMES || 32), width = 640, height = 360;
+const localThree = process.env.THREE_JS || (fs.existsSync('/tmp/apexra-three.module.js') ? '/tmp/apexra-three.module.js' : null);
 fs.mkdirSync(out, { recursive: true });
 const probe = `window.__environmentBench = {
   setup(id, rain) {
@@ -53,7 +54,7 @@ const percentile=(a,p)=>a.slice().sort((x,y)=>x-y)[Math.min(a.length-1,Math.floo
   args:['--use-angle=swiftshader','--enable-unsafe-swiftshader','--ignore-gpu-blocklist','--js-flags=--expose-gc']});
  const report={protocol:{width,height,quality:'medium',samplesPerWeather:samples,seed:741,
   timing:'Synchronized frame throughput (production frame plus WebGL finish and blocking pixel readback); CPU is submission time, not isolated physics time.',
-  regions:['forest straight','fast straight','tightest corner','overpass / distant hillside'],gpuFrameTimeMs:null},source:{indexSha256:crypto.createHash('sha256').update(fs.readFileSync(path.join(root,'index.html'))).digest('hex')},results:[]};
+  regions:['quarter-lap pack','middle-lap pack','tightest-corner approach','overpass / hillside approach'],gpuFrameTimeMs:null},source:{indexSha256:crypto.createHash('sha256').update(fs.readFileSync(path.join(root,'index.html'))).digest('hex')},results:[]};
  try {
   const page=await browser.newPage({viewport:{width,height}});page.setDefaultTimeout(180000);
   const errors=[];page.on('console',m=>{if(m.type()==='error')errors.push(m.text())});page.on('pageerror',e=>{errors.push(e.message);console.error('pageerror:',e.message)});
@@ -61,7 +62,7 @@ const percentile=(a,p)=>a.slice().sort((x,y)=>x-y)[Math.min(a.length-1,Math.floo
   await page.addInitScript(()=>{localStorage.setItem('apexgp.settings.v1',JSON.stringify({quality:'medium',camera:'chase',volume:0,circuit:'monza'}));let seed=741;Math.random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296};window.requestAnimationFrame=()=>1;});
   await page.route('**/*',r=>{
     const url=r.request().url();
-    if(url.includes('three.module'))return r.fulfill({contentType:'application/javascript',body:fs.readFileSync(process.env.THREE_JS||'/tmp/apexra-three.module.js')});
+    if(localThree && url.includes('three.module'))return r.fulfill({contentType:'application/javascript',body:fs.readFileSync(localThree)});
     if(url.includes('fonts.googleapis.com'))return r.fulfill({contentType:'text/css',body:''});
     return r.continue();
   });
@@ -69,7 +70,7 @@ const percentile=(a,p)=>a.slice().sort((x,y)=>x-y)[Math.min(a.length-1,Math.floo
   await page.waitForFunction(()=>document.getElementById('loading').classList.contains('hidden') || !document.getElementById('loadErr').classList.contains('hidden'), null, {polling:200});
   console.log('Renderer ready');const loadError=await page.locator('#loadErr').textContent();if(loadError)throw Error(loadError);
   for(const id of ids)for(const rain of [false,true]) {
-    console.log('Rendering',id,rain?'rain':'sun');await page.evaluate(({id,rain})=>__environmentBench.setup(id,rain),{id,rain});
+    console.log('Rendering',id,rain?'rain':'dry');await page.evaluate(({id,rain})=>__environmentBench.setup(id,rain),{id,rain});
     const rows=[];
     for(let region=0;region<4;region++){
       console.log('Region',region);await page.evaluate(region=>__environmentBench.pose(region),region);
@@ -81,7 +82,7 @@ const percentile=(a,p)=>a.slice().sort((x,y)=>x-y)[Math.min(a.length-1,Math.floo
     }
     const avg=key=>rows.reduce((n,f)=>n+f[key],0)/rows.length;
     const info=await page.evaluate(()=>__environmentBench.info());
-    const result={circuit:id,weather:rain?'rain':'sun',...info,frames:rows.length,
+    const result={circuit:id,weather:rain?'rain':'dry',...info,frames:rows.length,
       avgFps:1000/avg('ms'),p95FrameMs:percentile(rows.map(f=>f.ms),.95),p99FrameMs:percentile(rows.map(f=>f.ms),.99),
       cpuFrameMs:avg('cpuMs'),drawCalls:avg('calls'),triangles:avg('triangles'),geometries:Math.max(...rows.map(f=>f.geometries)),
       textures:Math.max(...rows.map(f=>f.textures)),heapMB:Math.max(...rows.map(f=>f.heapBytes||0))/1048576,

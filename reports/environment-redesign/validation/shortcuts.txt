@@ -1,0 +1,15 @@
+✔ every chicane apex has a gate, in lap order (1.210402ms)
+✔ kerbs, inside wheels over the kerb and running wide keep the full progress (17.727419ms)
+✔ skipping a chicane apex creates a physical slowdown without changing race progress (8.820289ms)
+✔ the pit lane in use always counts as the route (1.765362ms)
+✔ Suzuka's crossover: a lap driven along the line is credited in full, with no gate missed (7.715922ms)
+✔ cutting straight across a chicane is slower than driving it: Rettifilo, Ascari, Bus Stop, Casio Triangle (5843.624759ms)
+✔ the AI never trips a gate in a full-field race (Monza, Suzuka) (44086.050703ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 7
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 49991.356968
