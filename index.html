@@ -83,7 +83,7 @@
   .vsep { display: inline-block; width: 1px; height: 14px; background: rgba(255,255,255,.22); margin: 0 6px; }
   #hud-bl { padding: 9px 12px 5px; }
   #hud-bl .plabel { padding-left: 4px; }
-  #minimap { display: block; width: 100%; height: 88px; margin-top: 2px; }
+  #minimap { display: block; width: 100%; height: 236px; margin-top: 2px; }
 
   /* right column: position & timing (top), tyres / vehicle status (bottom) */
   #hud-tr { position: absolute; right: 24px; top: 24px; width: 350px; padding: 14px 16px 12px; }
@@ -671,7 +671,7 @@
         <div class="radio-head"><span>RACE ENGINEER</span><span id="radioCategory"></span></div>
         <p id="radioText"></p>
       </div>
-      <div id="hud-bl" class="panel"><div class="plabel">Track map</div><canvas id="minimap" width="640" height="176"></canvas></div>
+      <div id="hud-bl" class="panel"><div class="plabel">Track map</div><canvas id="minimap" width="652" height="472"></canvas></div>
     </div>
   </div>
   <div id="hud-tr" class="panel hz">
@@ -1237,7 +1237,12 @@ const SIM = (function () {
     // half width at sample i (the legal edge is the white line at +/- hwAt)
     hwAt(i) { return this.hw[i]; }
     // two parts of the circuit at samples i and j are vertically separated (an overpass): they cannot touch
-    levelApart(i, j) { return Math.abs(this.elev[i] - this.elev[j]) > 4; }
+    // (only at an overpass: elsewhere two parts of the lap at different heights are on one hillside, side by side)
+    levelApart(i, j) {
+      const op = this.overpass; if (!op || Math.abs(this.elev[i] - this.elev[j]) <= 4) return false;
+      const near = (k, s0) => Math.abs(this.dS(k * DS, s0)) < op.ramp + 60;
+      return (near(i, op.lowS) && near(j, op.highS)) || (near(i, op.highS) && near(j, op.lowS));
+    }
     // the road surface height (m) at sample i
     roadY(i) { return this.elev[i]; }
     // Height of the land and road at (x, z) for the renderer (the simulation itself is 2D and uses the profile):
@@ -1428,6 +1433,34 @@ const SIM = (function () {
       }
       this.wallL = this.smoothArr(this.wallL, 4, 2); this.wallR = this.smoothArr(this.wallR, 4, 2);
       for (let i = 0; i < N; i++) { this.wallL[i] = Math.max(this.wallL[i], hwA[i] + floor[i]); this.wallR[i] = Math.max(this.wallR[i], hwA[i] + floor[i]); }
+      // On the inside of a tight bend an offset larger than the bend's radius folds back over the corner: nothing can
+      // stand there, since a car never gets that far from the centre line before another part of the bend is closer.
+      // The reach of each side is the largest offset that stays clear of the centre line all round the bend; a barrier
+      // beyond it is open (the infield of a hairpin): the renderer draws no barrier, run-off or scenery there.
+      this.reachL = this.sideReach(-1); this.reachR = this.sideReach(1);
+    }
+    // whether the barrier on side sg (+1 right, -1 left) of sample i stands where it can be reached (see reachL)
+    barrierAt(i, sg) { return (sg > 0 ? this.wallR[i] : this.wallL[i]) < (sg > 0 ? this.reachR[i] : this.reachL[i]) - 0.5; }
+    // Largest lateral offset (m, up to 160) on side sg (+1 right, -1 left) of every sample at which a point stays at
+    // least that far (less 1.5 m) from the centre line of the same part of the circuit within 160 m either way.
+    sideReach(sg) {
+      const N = this.N, out = new Float64Array(N), K = 80;
+      const ok = (i, w) => {
+        const x = this.cx[i] + this.rx[i] * sg * w, z = this.cz[i] + this.rz[i] * sg * w, lim = (w - 1.5) * (w - 1.5);
+        for (let q = -K; q <= K; q++) { if (!q) continue; const j = (i + q + N) % N; if (this.levelApart(i, j)) continue; if ((x - this.cx[j]) ** 2 + (z - this.cz[j]) ** 2 < lim) return false; }
+        return true;
+      };
+      for (let i = 0; i < N; i++) {
+        let lo = this.hw[i] + 3.2, hi = 160;
+        if (ok(i, hi)) { out[i] = hi; continue; }
+        if (!ok(i, lo)) { out[i] = lo; continue; }
+        for (let it = 0; it < 12; it++) { const m = (lo + hi) / 2; if (ok(i, m)) lo = m; else hi = m; }
+        out[i] = lo;
+      }
+      // no narrow spikes: a running minimum over ±16 m
+      const r = Float64Array.from(out);
+      for (let i = 0; i < N; i++) { let v = 1e9; for (let q = -8; q <= 8; q++) v = Math.min(v, r[(i + q + N) % N]); out[i] = v; }
+      return out;
     }
     buildPit() {
       // interior side of the loop (clockwise => right)
@@ -4655,8 +4688,11 @@ const SIM = (function () {
         // (in the tow on a straight it closes right up, carrying the tow's extra speed into the move)
         const hunting = this.target === o ? (straightRun && this.state !== 'race' ? 0.15 : this.state === 'attack' ? 0.35 : this.state === 'prepare' ? 0.55 : this.state === 'follow' ? 0.8 : 1) : 1;
         const safe = 1.5 + v * (0.15 - 0.06 * p.aggr) * (cautious ? 1.5 : 1) * (1 - 0.2 * this.skill) * hunting;
-        // anticipate the car ahead braking (brake lights / closing rate)
-        const oBr = o.input.brake > 0.25 ? o.input.brake * 30 * (0.25 + 0.1 * (1 - p.craft)) : 0;
+        // anticipate the car ahead braking (brake lights / closing rate) — close behind it, where a reaction is needed:
+        // further back the limit below already leaves room to brake behind it (braking sheds speed per metre, so a car
+        // no faster than the car ahead plus that margin can always stop behind it), and reacting to brake lights from
+        // fifty metres back made a follower brake early for every corner and lose seconds a lap behind anyone
+        const oBr = o.input.brake > 0.25 ? o.input.brake * 30 * (0.25 + 0.1 * (1 - p.craft)) * clamp(1 - (gap - safe) / 15, 0, 1) : 0;
         const brakePerMetre=HANDLING.brakeRate*car.brakeGrip(car.surfaceWet ?? this.race.wet)*car.damage.perf.brake+HANDLING.coastRate;
         const vl=o.speed-oBr+Math.max(0,gap-safe)*brakePerMetre*(0.88+0.10*p.brake);
         if (vl < lim) lim = vl;
@@ -5423,9 +5459,24 @@ const SIM = (function () {
       }
       if (n >= maxSteps) acc = 0;
       this.acc = acc;
+      // how far the time not yet simulated reaches into the next step: the renderer draws each car that fraction of
+      // the way from its pose before the last step to its pose after it, so the motion stays even whatever the
+      // number of steps a frame happens to contain
+      this.alpha = n >= maxSteps ? 1 : Math.min(1, Math.max(0, acc / PHYS_DT));
+    }
+    // The pose to draw `car` in (see alpha): out.x, out.z, out.psi. A car placed or respawned in its last step (moved
+    // more than 5 m) is drawn where it is. Returns false when the pose is simply the car's own.
+    viewPose(car, out) {
+      const a = this.alpha ?? 1; out.x = car.x; out.z = car.z; out.psi = car.psi;
+      if (a >= 1 || car.prevX == null) return false;
+      const dx = car.x - car.prevX, dz = car.z - car.prevZ; if (dx * dx + dz * dz > 25) return false;
+      let dp = car.psi - car.prevPsi; dp = Math.atan2(Math.sin(dp), Math.cos(dp));
+      out.x = car.prevX + dx * a; out.z = car.prevZ + dz * a; out.psi = car.psi - dp * (1 - a);
+      return true;
     }
     fixedStep(dt) {
       this.time += dt; this.step++;
+      for (const c of this.cars) { c.prevX = c.x; c.prevZ = c.z; c.prevPsi = c.psi; }
       if(this.weather) {
         this.weather.update(dt);this.wet=this.weather.water;this.trackTemp=this.weather.trackTemp;
         for(const car of this.cars) car.surfaceWet=this.weather.wetAt(car,this.track);
@@ -6595,6 +6646,24 @@ function surfaceAt(x, z, hint) {
 }
 // height of the warped scene at (x, z) as seen from a camera at (cx, cz), both following track sample `hint`
 function elevWarp(x, z, cx, cz, hint) { return G.track ? surfaceAt(x, z, hint) - surfaceAt(cx, cz, hint) : 0; }
+// Whether trackside scenery at (x, z) stands clear of the circuit by `margin` metres: behind the barriers of every
+// part of the lap near it, outside the pit lane, and at least half a road width plus 4 m from any centre line (which
+// also covers the inside of a hairpin, where the cross-sections fan out). Level-blind, so cautious at an overpass.
+function sceneryClear(track, x, z, margin = 1) {
+  const { cell, grid } = track.spatial, gx = Math.floor(x / cell), gz = Math.floor(z / cell), P = track.pit;
+  for (let dx = -4; dx <= 4; dx++) for (let dz = -4; dz <= 4; dz++) {
+    const arr = grid.get((gx + dx + 1000) * 100000 + (gz + dz + 1000)); if (!arr) continue;
+    for (const j of arr) {
+      const ex = x - track.cx[j], ez = z - track.cz[j], d = ex * track.rx[j] + ez * track.rz[j], al = ex * track.tx[j] + ez * track.tz[j];
+      if (ex * ex + ez * ez < (track.hw[j] + 4 + margin) ** 2) return false;
+      if (Math.abs(al) > SIM.DS) continue;
+      let w = d > 0 ? track.wallR[j] : track.wallL[j];
+      if (Math.sign(d) === P.side && track.pitProg(j * SIM.DS) >= 0) w = Math.max(w, P.outerWall + 0.5);
+      if (Math.abs(d) < w + margin) return false;
+    }
+  }
+  return true;
+}
 function setElevationCamera(x, z, hint) { ELEV[0].set(x, z, G.track ? surfaceAt(x, z, hint) : 0, 0); }
 
 // ---------- small helpers ----------
@@ -6997,12 +7066,18 @@ R.center = { x: 0, z: 0 }; R.env = {};
 function groundTint(env, n, x, z, h, slope, wet) {
   const tint = env.grass || [1, 1, 1], v = n.fbm(x / 180, z / 180, 3), v2 = n(x / 45, z / 45);
   let r = (0.78 + v * 0.18 + v2 * 0.05) * tint[0], g = (0.92 + v * 0.14 + v2 * 0.05) * tint[1], b = (0.62 + v * 0.1) * tint[2];
+  // Slopes read as hillside, not as a bank of sand: the turf darkens and browns as the ground steepens, and the
+  // steepest faces are bare rock (grey in the green hills, red-brown sandstone in the desert).
+  const rough = smooth01(0.03, 0.14, slope), rock = smooth01(0.12, 0.3, slope), rv = 0.9 + n(x / 23, z / 23) * 0.12;
   if (env.desert) {
     // sand and gravel plain, a few darker scrub patches
     const scrub = smooth01(0.25, 0.55, n.fbm(x / 90 + 3, z / 90, 2) * 0.5 + 0.5) * 0.25;
     r = (1.36 + v * 0.12) * (1 - scrub * 0.3); g = (1.13 + v * 0.1) * (1 - scrub * 0.25); b = (0.78 + v * 0.08) * (1 - scrub * 0.35);
+    const k = Math.max(rough * 0.5, rock);
+    r += (1.02 * rv - r) * k; g += (0.66 * rv - g) * k; b += (0.46 * rv - b) * k;
   } else {
-    const rock = smooth01(0.2, 0.36, slope); r = r + (1.0 - r) * rock * 0.6; g = g + (0.95 - g) * rock * 0.6; b = b + (0.88 - b) * rock * 0.6;
+    r += (0.6 * tint[0] - r) * rough * 0.55; g += (0.68 * tint[1] - g) * rough * 0.55; b += (0.42 * tint[2] - b) * rough * 0.55;
+    r += (0.66 * rv - r) * rock * 0.85; g += (0.63 * rv - g) * rock * 0.85; b += (0.58 * rv - b) * rock * 0.85;
   }
   if (wet) { r *= 0.82; g *= 0.86; b *= 0.9; }
   return [r, g, b];
@@ -7022,7 +7097,7 @@ function vergeExtents(track) {
       }
     }
     const k = track.kappa[i], inner = Math.abs(k) > 1e-4 ? 0.9 / Math.abs(k) : 1e9;
-    ext[0][i] = Math.min(80, mL / 2 - 1, k < 0 ? inner : 1e9); ext[1][i] = Math.min(80, mR / 2 - 1, k > 0 ? inner : 1e9);
+    ext[0][i] = Math.min(80, mL / 2 - 1, k < 0 ? inner : 1e9, track.reachL[i] - 1); ext[1][i] = Math.min(80, mR / 2 - 1, k > 0 ? inner : 1e9, track.reachR[i] - 1);
   }
   // no narrow spikes: a running minimum then a light smoothing
   for (const e of ext) { const m = Float32Array.from(e); for (let i = 0; i < N; i++) { let v = 1e9; for (let q = -12; q <= 12; q++) v = Math.min(v, m[(i + q + N) % N]); e[i] = v; } const sm = track.smoothArr(e, 6, 2); for (let i = 0; i < N; i++) e[i] = Math.max(track.hw[i] + 4, sm[i]); }
@@ -7054,6 +7129,25 @@ function buildTerrain(world, track, T, opts) {
     return dist < 150 ? -0.06 : h * flat - 0.06;
   };
   for (let j = 0; j < W; j++) for (let k = 0; k < W; k++) H[j * W + k] = hAt(x0 + k * step, z0 + j * step, dT[j * W + k]);
+  // The coarse triangles are planar in the real (warped) relief, so in a dip a 26 m triangle can rise through the road
+  // or the fine verge beside it (dirt on the track). Over the road and the verge, every triangle is sunk until it
+  // stays at least 0.25 m below the surface there; sinking only lowers neighbouring triangles, so one pass is enough.
+  {
+    const E = new Float32Array(W * W); for (let j = 0; j < W; j++) for (let k = 0; k < W; k++) E[j * W + k] = track.elevAt(x0 + k * step, z0 + j * step);
+    for (let i = 0; i < track.N; i++) for (const sg of [-1, 1]) {
+      const reach = Math.max(track.hw[i] + 4, ext[sg > 0 ? 1 : 0][i] + 2);
+      for (let dd = 0; dd <= reach; dd += 2) {
+        const x = track.cx[i] + track.rx[i] * sg * dd, z = track.cz[i] + track.rz[i] * sg * dd;
+        if (trackLift(track, i, x, z) > 0.3) continue;
+        const fx = (x - x0) / step, fz = (z - z0) / step; if (fx < 0 || fz < 0 || fx >= Rn || fz >= Rn) continue;
+        const k = Math.floor(fx), j = Math.floor(fz), u = fx - k, v = fz - j, a = j * W + k, b = a + 1, c = a + W, d = c + 1;
+        const h = (q) => H[q] - sunk[q] + E[q];
+        const tri = u + v < 1 ? [[a, 1 - u - v], [b, u], [c, v]] : [[d, u + v - 1], [c, 1 - u], [b, 1 - v]];
+        const excess = tri.reduce((acc, [q, w]) => acc + h(q) * w, 0) - (track.elevAt(x, z) - 0.25);
+        if (excess > 0) for (const [q] of tri) sunk[q] += excess;
+      }
+    }
+  }
   const heightAt = (x, z) => {
     const fx = (x - x0) / step, fz = (z - z0) / step; if (fx < 0 || fz < 0 || fx >= Rn || fz >= Rn) return 0;
     const k = Math.floor(fx), j = Math.floor(fz), u = fx - k, v = fz - j;
@@ -7078,7 +7172,7 @@ function buildTerrain(world, track, T, opts) {
   }
   g.setAttribute('color', new THREE.BufferAttribute(col, 3));
   const mat = antiTile(new THREE.MeshStandardMaterial({ map: env.desert ? T.gravel : T.grass, vertexColors: true, roughness: 0.95, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 2 }), 0.17, 0.45, 0.22, true);
-  const mesh = new THREE.Mesh(g, mat); mesh.receiveShadow = true; world.add(mesh);
+  const mesh = new THREE.Mesh(g, mat); mesh.receiveShadow = true; mesh.userData.kind = 'terrain'; world.add(mesh);
   // ---- the fine verge along both sides of the circuit ----
   {
     const N = track.N, P = track.pit, U = [0, 0.04, 0.1, 0.2, 0.36, 0.6, 1], pos2 = [], col2 = [], uv2 = [], idx2 = [];
@@ -7106,7 +7200,7 @@ function buildTerrain(world, track, T, opts) {
     }
     const gv = new THREE.BufferGeometry(); gv.setAttribute('position', new THREE.Float32BufferAttribute(pos2, 3)); gv.setAttribute('uv', new THREE.Float32BufferAttribute(uv2, 2)); gv.setAttribute('color', new THREE.Float32BufferAttribute(col2, 3)); gv.setIndex(idx2);
     gv.computeVertexNormals(); for (let k = 0; k < gv.attributes.normal.count; k++) gv.attributes.normal.setXYZ(k, 0, 1, 0);
-    const vm = new THREE.Mesh(gv, mat); vm.receiveShadow = true; world.add(vm);
+    const vm = new THREE.Mesh(gv, mat); vm.receiveShadow = true; vm.userData.kind = 'verge'; world.add(vm);
   }
   return { heightAt, distAt, mesh };
 }
@@ -7163,7 +7257,7 @@ function buildMountains(world, opts, track) {
   }
   g.setAttribute('color', new THREE.BufferAttribute(col, 3));
   const m = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.92 }));
-  world.add(m); return m;
+  m.userData.kind = 'terrain'; world.add(m); return m;
 }
 
 // Circuit landmarks, kept light (instanced, merged): São Paulo's towers beyond Interlagos, Suzuka's Ferris wheel,
@@ -7251,7 +7345,7 @@ function buildWorld(scene, track, T, opts) {
     const p = g.attributes.position;
     for (let k = 0; k < p.count; k++) { const u = p.getX(k) * LAKE.a * 1.32, v = -p.getY(k) * LAKE.b * 1.32; /* v mirrored so the faces point up */ p.setXYZ(k, LAKE.x + u * c - v * s, -0.7, LAKE.z + u * s + v * c); }
     g.computeVertexNormals(); for (let k = 0; k < p.count; k++) g.attributes.normal.setXYZ(k, 0, 1, 0);
-    const lake = new THREE.Mesh(g, wm); world.add(lake);
+    const lake = new THREE.Mesh(g, wm); lake.userData.kind = 'water'; world.add(lake);
     // sailing boats and launches dotted over the lake
     const hull = xf(new THREE.CylinderGeometry(0.9, 0.5, 7, 6, 1), { p: [0, 0.2, 0], r: [0, 0, Math.PI / 2], s: [1, 1, 0.45] });
     const mast = xf(new THREE.CylinderGeometry(0.08, 0.08, 9, 4), { p: [0.6, 4.8, 0] });
@@ -7279,7 +7373,7 @@ function buildWorld(scene, track, T, opts) {
     });
     const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals();
     for (let k = 0; k < g.attributes.normal.count; k++) g.attributes.normal.setXYZ(k, 0, 1, 0);
-    world.add(new THREE.Mesh(g, wm));
+    world.add(Object.assign(new THREE.Mesh(g, wm), { userData: { kind: 'water' } }));
   }
 
   // ---------- mountains ----------
@@ -7363,7 +7457,7 @@ function buildTrack(scene, track, T, opts) {
     T.wetRough.repeat.set(0.35,0.11);mat.roughnessMap=T.wetRough;
     mat.onBeforeCompile=sh=>{
       sh.vertexShader=sh.vertexShader.replace('#include <common>','#include <common>\nattribute float aRoadWater; varying float vRoadWater;').replace('#include <begin_vertex>','#include <begin_vertex>\nvRoadWater=aRoadWater;');
-      sh.fragmentShader=sh.fragmentShader.replace('#include <common>','#include <common>\nvarying float vRoadWater;').replace('#include <roughnessmap_fragment>','#include <roughnessmap_fragment>\nroughnessFactor=mix(0.86,max(0.04,roughnessFactor),vRoadWater);');
+      sh.fragmentShader=sh.fragmentShader.replace('#include <common>','#include <common>\nvarying float vRoadWater;').replace('#include <roughnessmap_fragment>','#include <roughnessmap_fragment>\nroughnessFactor=mix(0.86,max(0.16,roughnessFactor),vRoadWater);');
     };
     return mat;
   };
@@ -7392,7 +7486,7 @@ function buildTrack(scene, track, T, opts) {
     const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3)); g.setIndex(idx);g.computeVertexNormals();g.setAttribute('aRoadWater',new THREE.Float32BufferAttribute(new Float32Array(col.length/3),1));
     T.asphalt.repeat.set(1, 1); T.asphaltN.repeat.set(1, 1);
     const mat = roadMaterial({});
-    const m = new THREE.Mesh(g, mat); m.receiveShadow = true; G.add(m); objs.asphaltMat=mat;objs.asphaltMesh=m;objs.dryColors=col.slice();
+    const m = new THREE.Mesh(g, mat); m.receiveShadow = true; m.userData.kind = 'road'; G.add(m); objs.asphaltMat=mat;objs.asphaltMesh=m;objs.dryColors=col.slice();
   }
   // ---- skid marks in the braking zones (two tyre tracks, several cars' worth) ----
   {
@@ -7422,13 +7516,13 @@ function buildTrack(scene, track, T, opts) {
     const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.setAttribute('color', new THREE.Float32BufferAttribute(col, 4)); g.setIndex(idx); g.computeVertexNormals();
     for (let k = 0; k < g.attributes.normal.count; k++) g.attributes.normal.setXYZ(k, 0, 1, 0);
     const mat = new THREE.MeshStandardMaterial({ color: 0x050505, map: T.skid, vertexColors: true, transparent: true, depthWrite: false, roughness: 0.6, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
-    const m = new THREE.Mesh(g, mat); m.receiveShadow = true; m.renderOrder = 1; G.add(m);
+    const m = new THREE.Mesh(g, mat); m.receiveShadow = true; m.renderOrder = 1; m.userData.kind = 'marking'; G.add(m);
   }
   const lineMat = new THREE.MeshStandardMaterial({ color: 0xf2f2f2, roughness: .6, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
   // white edge lines
   for (const sgn of [-1, 1]) {
     const g = ribbon(track, 0, N, 1, (i) => [sgn * (track.hw[i] - 0.28), sgn * (track.hw[i] - 0.02), 0.012], { flat: true });
-    const m = new THREE.Mesh(g, lineMat); m.receiveShadow = true; G.add(m);
+    const m = new THREE.Mesh(g, lineMat); m.receiveShadow = true; m.userData.kind = 'marking'; G.add(m);
   }
   // ---- kerbs ----
   T.kerb.repeat.set(1, 1);
@@ -7436,7 +7530,7 @@ function buildTrack(scene, track, T, opts) {
   for (const sgn of [-1, 1]) {
     const arr = sgn > 0 ? track.kerbR : track.kerbL;
     const g = ribbon(track, 0, N, 1, (i) => arr[i] ? [sgn * track.hw[i], sgn * (track.hw[i] + 1.3), 0.035, 0.008] : null, { vScale: 4, uFlip: sgn < 0 });
-    const m = new THREE.Mesh(g, kerbMat); m.receiveShadow = true; G.add(m);
+    const m = new THREE.Mesh(g, kerbMat); m.receiveShadow = true; m.userData.kind = 'kerb'; G.add(m);
   }
   // ---- painted run-off (green) and gravel ----
   T.paint.repeat.set(1, 1);
@@ -7446,13 +7540,16 @@ function buildTrack(scene, track, T, opts) {
     const arr = sgn > 0 ? track.kerbR : track.kerbL;
     const g = ribbon(track, 0, N, 2, (i) => {
       if (!track.hasPaintedRunoff(i, sgn)) return null;
-      return [sgn * (track.hw[i] + (arr[i] ? 1.3 : 0)), sgn * (track.hw[i] + SIM.GREEN_RUNOFF.width), 0.006];
+      // (the paint stops short of the barrier on the inside of a tight bend)
+      const reach = Math.min(sgn > 0 ? track.wallR[i] : track.wallL[i], sgn > 0 ? track.reachR[i] : track.reachL[i]) - 0.3, d0 = track.hw[i] + (arr[i] ? 1.3 : 0), d1 = Math.min(track.hw[i] + SIM.GREEN_RUNOFF.width, reach);
+      return d1 > d0 + 0.2 ? [sgn * d0, sgn * d1, 0.006] : null;
     }, { flat: true, vScale: 6 });
-    G.add(Object.assign(new THREE.Mesh(g, paintMat), { receiveShadow: true }));
+    G.add(Object.assign(new THREE.Mesh(g, paintMat), { receiveShadow: true, userData: { kind: 'paint' } }));
     const gr = sgn > 0 ? track.gravelR : track.gravelL; const wall = sgn > 0 ? track.wallR : track.wallL;
     T.gravel.repeat.set(1, 1);
-    const g2 = ribbon(track, 0, N, 2, (i) => gr[i] && !(sgn === track.pitAt(i*SIM.DS).side && track.pitProg(i * SIM.DS) >= 0) ? [sgn * (track.hw[i] + 5), sgn * (wall[i] - 0.4), 0.01] : null, { flat: true, vScale: 8 });
-    G.add(Object.assign(new THREE.Mesh(g2, gravelMat), { receiveShadow: true }));
+    const reachA = sgn > 0 ? track.reachR : track.reachL, gEnd = (i) => Math.min(wall[i] - 0.4, reachA[i] - 1);
+    const g2 = ribbon(track, 0, N, 2, (i) => gr[i] && gEnd(i) > track.hw[i] + 6 && !(sgn === track.pitAt(i*SIM.DS).side && track.pitProg(i * SIM.DS) >= 0) ? [sgn * (track.hw[i] + 5), sgn * gEnd(i), 0.01] : null, { flat: true, vScale: 8 });
+    G.add(Object.assign(new THREE.Mesh(g2, gravelMat), { receiveShadow: true, userData: { kind: 'gravel' } }));
   }
   // ---- pit lane surfaces ----
   objs.pitSurfaces=[];objs.boxSurfaces=[];
@@ -7488,7 +7585,7 @@ function buildTrack(scene, track, T, opts) {
       g.computeVertexNormals(); for (let k = 0; k < g.attributes.normal.count; k++) g.attributes.normal.setXYZ(k, 0, 1, 0);
       g.setAttribute('aRoadWater', new THREE.Float32BufferAttribute(new Float32Array(col.length / 3), 1));
       const mat = roadMaterial({ polygonOffset: true, polygonOffsetFactor: -1 });
-      const m = new THREE.Mesh(g, mat); m.receiveShadow = true; G.add(m);
+      const m = new THREE.Mesh(g, mat); m.receiveShadow = true; m.userData.kind = 'road'; G.add(m);
       objs.pitMat = mat; objs.pitMesh = m; objs.pitDryColors = col.slice();objs.pitSurfaces.push({mat,mesh:m,colors:col.slice()});
     }
     const [entryX,entryZ,entryH]=track.pointAt(P.commit,track.pitTargetD(P.commit,null));
@@ -7581,8 +7678,9 @@ function buildTrack(scene, track, T, opts) {
   const pitStartI = Math.floor(P.entry0 / SIM.DS), pitEndI = pitStartI + Math.ceil(P.len / SIM.DS);
   const inPitI = (i) => track.pitProg(i * SIM.DS) >= 0;
   // left/right walls (skip pit side within pit region)
-  wallStrip((i) => (track.pitAt(i*SIM.DS).side < 0 && inPitI(i)) ? null : -track.wallL[i], 0, N, 1.05, true);
-  wallStrip((i) => (track.pitAt(i*SIM.DS).side > 0 && inPitI(i)) ? null : track.wallR[i], 0, N, 1.05, true);
+  // (none on the open inside of a hairpin, where a barrier at that offset would fold back across the road)
+  wallStrip((i) => (track.pitAt(i*SIM.DS).side < 0 && inPitI(i)) || !track.barrierAt(i, -1) ? null : -track.wallL[i], 0, N, 1.05, true);
+  wallStrip((i) => (track.pitAt(i*SIM.DS).side > 0 && inPitI(i)) || !track.barrierAt(i, 1) ? null : track.wallR[i], 0, N, 1.05, true);
   // The pit-lane barriers; entry and exit stay open.
   for(const P of [track.pit]) {
     const side=P.side, i0=Math.floor(P.entry0/SIM.DS),i1=i0+Math.ceil(P.len/SIM.DS);
@@ -7611,13 +7709,14 @@ function buildTrack(scene, track, T, opts) {
       quad(pt(i, -wl(i), -1.3), pt(i, wr(i), -1.3), pt(j, -wl(j), -1.3), pt(j, wr(j), -1.3));
       for (const sg of [-1, 1]) { const di = sg > 0 ? wr(i) : -wl(i), dj = sg > 0 ? wr(j) : -wl(j); quad(pt(i, di, -1.3), pt(i, di, 0.02), pt(j, dj, -1.3), pt(j, dj, 0.02)); }
     }
-    // abutments: concrete faces along the lower road's walls, from its level up to the deck
-    const topY = track.elev[hiI];
+    // abutments: concrete faces along the lower road's walls, from its level up to the underside of the deck above
+    // them (the upper road falls away from the crossing, so the deck height is taken where it passes over each face)
+    const deckY = (x, z) => { let best = 1e18, y = track.elev[hiI]; for (let q = -60; q <= 60; q++) { const u = track.wrapI(hiI + q), dd = (x - track.cx[u]) ** 2 + (z - track.cz[u]) ** 2; if (dd < best) { best = dd; y = track.elev[u]; } } return y; };
     for (const sg of [-1, 1]) for (let k = -16; k < 16; k++) {
       const i = track.wrapI(loI + k), j = track.wrapI(loI + k + 1), w = (ii) => (sg > 0 ? track.wallR[ii] : track.wallL[ii]) + 0.3;
       const P0 = [track.cx[i] + track.rx[i] * sg * w(i), track.cz[i] + track.rz[i] * sg * w(i)], P1 = [track.cx[j] + track.rx[j] * sg * w(j), track.cz[j] + track.rz[j] * sg * w(j)];
-      const h0 = topY - track.elevAt(P0[0], P0[1]) - 1.3, h1 = topY - track.elevAt(P1[0], P1[1]) - 1.3;
-      if (h0 < 0.5 && h1 < 0.5) continue;
+      const h0 = deckY(P0[0], P0[1]) - track.elevAt(P0[0], P0[1]) - 1.3, h1 = deckY(P1[0], P1[1]) - track.elevAt(P1[0], P1[1]) - 1.3;
+      if ((h0 < 0.5 && h1 < 0.5) || Math.hypot(P1[0] - P0[0], P1[1] - P0[1]) > 4) continue; // (no face across a step in the barrier line)
       quad([P0[0], -0.6, P0[1]], [P0[0], Math.max(0, h0), P0[1]], [P1[0], -0.6, P1[1]], [P1[0], Math.max(0, h1), P1[1]]);
     }
     const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals();
@@ -7633,7 +7732,7 @@ function buildTrack(scene, track, T, opts) {
   // ---- marshal light panels ----
   for (let k = 0; k < track.marshalCount; k++) {
     const i = Math.floor(k / track.marshalCount * N); const sgn = (k % 2) ? 1 : -1; const wall = sgn > 0 ? track.wallR[i] : track.wallL[i];
-    if (sgn === track.pitAt(i*SIM.DS).side && inPitI(i)) continue;
+    if ((sgn === track.pitAt(i*SIM.DS).side && inPitI(i)) || !track.barrierAt(i, sgn)) continue;
     const [x, z, h] = track.pointAt(i * SIM.DS, sgn * (wall - 0.1)), lf = trackLift(track, i, x, z);
     const pole = new THREE.Mesh(new THREE.BoxGeometry(0.15, 3, 0.15), concrete); pole.position.set(x, 1.5 + lf, z); G.add(pole);
     const mat = new THREE.MeshStandardMaterial({ color: 0x111111, emissive: 0x000000, roughness: .5 });
@@ -7698,9 +7797,10 @@ function buildTrack(scene, track, T, opts) {
         const s = track.wrapS(bb.i * SIM.DS + 100 - dist), i = Math.floor(s / SIM.DS);
         if (sgn === track.pitAt(s).side && track.pitProg(s) >= 0) continue;
         const wall = sgn > 0 ? track.wallR[i] : track.wallL[i];
-        // on the verge where there is run-off, otherwise just behind a close barrier
-        const hwi = track.hw[i], dd = wall > hwi + 7 ? Math.min(wall - 1.5, hwi + 9) : wall + 0.9;
+        // just behind the barrier, where a car cannot run through them
+        const dd = wall + 0.9;
         const [x, z, h] = track.pointAt(s, sgn * dd), yaw = Math.atan2(-Math.cos(h), -Math.sin(h));
+        if (!sceneryClear(track, x, z, 0.4)) continue;
         panels[dist].push(xf(new THREE.PlaneGeometry(1.25, 0.86), { p: [x - Math.cos(h) * 0.05, 1.95, z - Math.sin(h) * 0.05], r: [0, yaw, 0] }));
         frame.push(xf(new THREE.BoxGeometry(1.3, 0.9, 0.08), { p: [x, 1.95, z], r: [0, yaw, 0] }));
         for (const o of [-0.45, 0.45]) frame.push(xf(new THREE.CylinderGeometry(0.045, 0.045, 1.6, 6), { p: [x + Math.cos(yaw) * o, 0.8, z - Math.sin(yaw) * o] }));
@@ -7742,10 +7842,24 @@ function buildGrandstands(G, track, T, opts, objs) {
   const standMat = new THREE.MeshStandardMaterial({ color: 0x8d949c, roughness: .9 });
   const seatMat = new THREE.MeshStandardMaterial({ color: 0x2a4f8a, roughness: .7 });
   const roofMat = new THREE.MeshStandardMaterial({ color: 0xe9ecef, roughness: .5, metalness: .2 });
+  let fasciaMat = null; const seatMats = {};
+  // A stand from s0 to s1 at lateral offset dOff (signed, away from the track) follows the circuit in short straight
+  // pieces; a piece whose footprint (seats, back wall and roof) would reach the road, a barrier or the pit lane is
+  // left out, so a stand never cuts across a corner the way one long straight block would.
   const stand = (s0, s1, dOff, rows, roof, seatColor) => {
-    // stand built along the track from s0 to s1 at lateral offset dOff (signed, away from track)
-    const sgn = Math.sign(dOff);
-    const [x0, z0] = track.pointAt(s0, dOff), [x1, z1] = track.pointAt(s1, dOff);
+    const span = track.wrapS(s1 - s0), n = Math.max(1, Math.ceil(span / 22)), sgn = Math.sign(dOff), depth = rows * 0.9;
+    for (let k = 0; k < n; k++) {
+      const [x0, z0] = track.pointAt(s0 + span * k / n, dOff), [x1, z1] = track.pointAt(s0 + span * (k + 1) / n, dOff);
+      const len = Math.hypot(x1 - x0, z1 - z0); if (len < 4) continue;
+      const ux = (x1 - x0) / len, uz = (z1 - z0) / len; let ok = true;
+      for (let a = 0; a <= 1.0001 && ok; a += 1 / Math.ceil(len / 3)) for (const v of [-1.5, depth / 2, depth + 2]) {
+        const x = x0 + (x1 - x0) * a - uz * sgn * v, z = z0 + (z1 - z0) * a + ux * sgn * v;
+        if (!sceneryClear(track, x, z, 1)) { ok = false; break; }
+      }
+      if (ok) standPiece(x0, z0, x1, z1, sgn, rows, roof, seatColor);
+    }
+  };
+  const standPiece = (x0, z0, x1, z1, sgn, rows, roof, seatColor) => {
     const len = Math.hypot(x1 - x0, z1 - z0); const ang = Math.atan2(z1 - z0, x1 - x0);
     const g = new THREE.Group(); g.position.set((x0 + x1) / 2, 0, (z0 + z1) / 2); g.rotation.y = -ang;
     // local frame: +x along track, +z = right of track direction; away from track = sgn*z
@@ -7764,14 +7878,14 @@ function buildGrandstands(G, track, T, opts, objs) {
       }
     }
     const mA = new THREE.Mesh(mergeGeoms(stepsA), standMat); mA.receiveShadow = true; g.add(mA);
-    const mB = new THREE.Mesh(mergeGeoms(stepsB), seatColor ? new THREE.MeshStandardMaterial({ color: seatColor, roughness: .7 }) : seatMat); mB.receiveShadow = true; g.add(mB);
+    const mB = new THREE.Mesh(mergeGeoms(stepsB), seatColor ? (seatMats[seatColor] || (seatMats[seatColor] = new THREE.MeshStandardMaterial({ color: seatColor, roughness: .7 }))) : seatMat); mB.receiveShadow = true; g.add(mB);
     const back = new THREE.Mesh(new THREE.BoxGeometry(len, 0.55 * rows + 3, 0.4), standMat); back.position.set(0, (0.55 * rows + 3) / 2, sgn * (depth + 0.2)); g.add(back);
     if (roof) {
-      const rf = new THREE.Mesh(new THREE.BoxGeometry(len + 2, 0.3, depth + 3), roofMat); rf.position.set(0, 0.55 * rows + 5, sgn * (depth / 2 + 0.5)); rf.rotation.x = sgn * 0.08; rf.castShadow = true; g.add(rf);
+      const rf = new THREE.Mesh(new THREE.BoxGeometry(len, 0.3, depth + 3), roofMat); rf.position.set(0, 0.55 * rows + 5, sgn * (depth / 2 + 0.5)); rf.rotation.x = sgn * 0.08; rf.castShadow = true; g.add(rf);
       const cols = []; for (let k = 0; k <= len; k += 18) cols.push(xf(new THREE.BoxGeometry(0.3, 0.55 * rows + 5, 0.3), { p: [-len / 2 + k, (0.55 * rows + 5) / 2, sgn * (depth + 0.3)] }));
       g.add(new THREE.Mesh(mergeGeoms(cols), roofMat));
       // sponsor fascia
-      const fas = new THREE.Mesh(new THREE.PlaneGeometry(len, 1.6), new THREE.MeshStandardMaterial({ map: T.banner('PANORAMIC SYSTEMS', '#ffffff', '#2c3036', 2048, 160), roughness: .6 }));
+      const fas = new THREE.Mesh(new THREE.PlaneGeometry(len, 1.6), fasciaMat || (fasciaMat = new THREE.MeshStandardMaterial({ map: T.banner('PANORAMIC SYSTEMS', '#ffffff', '#2c3036', 2048, 160), roughness: .6 })));
       fas.position.set(0, 0.55 * rows + 4.2, sgn * -1.0); if (sgn > 0) fas.rotation.y = Math.PI; g.add(fas);
     }
     G.add(g);
@@ -7855,6 +7969,7 @@ function buildGrandstands(G, track, T, opts, objs) {
       const s = L - 300 + k * 40; const i = Math.floor(track.wrapS(s) / SIM.DS);
       const wall = -side > 0 ? track.wallR[i] : track.wallL[i];
       const [x, z, h] = track.pointAt(s, -side * (wall + 2));
+      if (!sceneryClear(track, x, z, 0.5)) continue;
       const team = SIM.TEAMS[k % SIM.TEAMS.length];
       const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 9, 6), new THREE.MeshStandardMaterial({ color: 0xcccccc, metalness: .6 })); pole.position.set(x, 4.5, z); G.add(pole);
       const tex = canvasTex(64, 256, (g, w, hh) => { g.fillStyle = team.c1; g.fillRect(0, 0, w, hh); g.fillStyle = team.c2; g.fillRect(0, hh * .7, w, hh * .08); g.save(); g.translate(w / 2 + 10, hh / 2); g.rotate(-Math.PI / 2); g.fillStyle = team.c1 === '#141414' || team.c1 === '#14276b' ? '#fff' : '#111'; g.font = '900 30px Titillium Web, Arial'; g.textAlign = 'center'; g.fillText(team.name, 0, 0); g.restore(); });
@@ -8227,8 +8342,8 @@ function makeCarMesh(car, opts = {}) {
   const grp = new THREE.Group();
   // per-car materials share the car's part mask (broken-off pieces)
   const mask = { value: 0 }, depthMat = partMask(new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking }), mask);
-  const bodyMat = partMask(new THREE.MeshPhysicalMaterial({ color: 0xffffff, map: liveryTex(team), roughness: 0.36, metalness: team.id === 'voltex' ? 0.25 : 0.12, clearcoat: 1, clearcoatRoughness: 0.08, envMapIntensity: 1.0 }), mask);
-  const accentMat = partMask(new THREE.MeshPhysicalMaterial({ color: team.c2, roughness: 0.35, metalness: team.id === 'voltex' ? 0.85 : 0.3, clearcoat: 0.8 }), mask);
+  const bodyMat = partMask(new THREE.MeshPhysicalMaterial({ color: 0xffffff, map: liveryTex(team), roughness: 0.36, metalness: team.id === 'voltex' ? 0.25 : 0.12, clearcoat: 0.6, clearcoatRoughness: 0.3, specularIntensity: 0.6, envMapIntensity: 1.0 }), mask);
+  const accentMat = partMask(new THREE.MeshPhysicalMaterial({ color: team.c2, roughness: 0.35, metalness: team.id === 'voltex' ? 0.85 : 0.3, clearcoat: 0.5, clearcoatRoughness: 0.3, specularIntensity: 0.6 }), mask);
   const carbonMat = partMask(new THREE.MeshStandardMaterial({ color: 0x15171a, roughness: 0.45, metalness: 0.3 }), mask);
   const mirrorMat = partMask(new THREE.MeshStandardMaterial({ color: 0xc8ced6, metalness: 1, roughness: 0.06 }), mask);
   const darkMat = MAT_CACHE.dark || (MAT_CACHE.dark = new THREE.MeshStandardMaterial({ color: 0x050506, roughness: 0.6 }));
@@ -8708,7 +8823,9 @@ class PostFX {
       vec3 s(vec2 o){ return texture2D(tSrc, vUv + o * texel).rgb; }
       void main(){
         vec3 c = (s(vec2(-1.0,-1.0)) + s(vec2(1.0,-1.0)) + s(vec2(-1.0,1.0)) + s(vec2(1.0,1.0))) * 0.25;
-        c = min(c, vec3(60.0));
+        // (a sun glint on a car's clear coat is a tiny, extremely bright spot: capped, it gives a small sparkle rather than
+        // a halo swallowing the whole car that flickers as the body rocks over the kerbs)
+        c = min(c, vec3(4.0));
         float br = max(c.r, max(c.g, c.b));
         float rq = clamp(br - thr + knee, 0.0, 2.0 * knee); rq = rq * rq / (4.0 * knee + 1e-4);
         gl_FragColor = vec4(c * (max(rq, br - thr) / max(br, 1e-4)), 1.0);
@@ -9413,7 +9530,7 @@ function broadcastTowerPositions(track) {
     const i = Math.floor(s / SIM.DS); const sgn = (towers.length % 2) ? 1 : -1;
     const wall = sgn > 0 ? track.wallR[i] : track.wallL[i];
     const d = sgn * (wall + 16); if (sgn === track.pitAt(s).side && track.pitProg(s) >= 0) continue;
-    const [x, z] = track.pointAt(s, d); towers.push({ s, x, y: 9 + Math.random() * 6, z });
+    const [x, z] = track.pointAt(s, d); if (!sceneryClear(track, x, z, 3)) continue; towers.push({ s, x, y: 9 + Math.random() * 6, z });
   }
   return towers;
 }
@@ -9821,24 +9938,31 @@ function updateBoard(sess) {
   if (top < el.scrollTop + BOARD_ROW_H * 2 || top + BOARD_ROW_H > el.scrollTop + view - BOARD_ROW_H * 2)
     el.scrollTop = clamp(top - (view - BOARD_ROW_H) / 2, 0, el.scrollHeight - view);
 }
+// The track map fills its panel: the circuit is turned to the angle at which it fits the panel largest (most
+// circuits are long and narrow, the panel is wide), so every corner is far enough from the next to read at a glance.
+function mapFit(t, W, H, pad) {
+  let best = null;
+  for (let deg = 0; deg < 180; deg += 3) {
+    const a = deg * Math.PI / 180, c = Math.cos(a), s = Math.sin(a); let minU = 1e9, maxU = -1e9, minV = 1e9, maxV = -1e9;
+    for (let i = 0; i < t.N; i += 4) { const u = t.cx[i] * c - t.cz[i] * s, v = t.cx[i] * s + t.cz[i] * c; minU = Math.min(minU, u); maxU = Math.max(maxU, u); minV = Math.min(minV, v); maxV = Math.max(maxV, v); }
+    const sc = Math.min((W - 2 * pad) / (maxU - minU), (H - 2 * pad) / (maxV - minV));
+    // a small preference for the circuit's own orientation (and a quarter turn of it) when the fit is about the same
+    const score = sc * (deg === 0 ? 1.06 : deg === 90 ? 1.03 : 1);
+    if (!best || score > best.score) best = { score, sc, c, s, minU, maxU, minV, maxV };
+  }
+  const { sc, c, s, minU, maxU, minV, maxV } = best, ox = (W - (maxU - minU) * sc) / 2, oz = (H - (maxV - minV) * sc) / 2;
+  return (x, z) => [ox + (x * c - z * s - minU) * sc, oz + (x * s + z * c - minV) * sc];
+}
 function prepMinimap() {
-  const t = G.track; let minX = 1e9, maxX = -1e9, minZ = 1e9, maxZ = -1e9;
-  for (let i = 0; i < t.N; i++) { minX = Math.min(minX, t.cx[i]); maxX = Math.max(maxX, t.cx[i]); minZ = Math.min(minZ, t.cz[i]); maxZ = Math.max(maxZ, t.cz[i]); }
-  G.mmBounds = { minX, maxX, minZ, maxZ };
-  const draw = (cvs, pad, widthPx) => {
-    const g = cvs.getContext('2d'); const W = cvs.width, H = cvs.height;
-    const sc = Math.min((W - 2 * pad) / (maxX - minX), (H - 2 * pad) / (maxZ - minZ));
-    const ox = (W - (maxX - minX) * sc) / 2, oz = (H - (maxZ - minZ) * sc) / 2;
-    const tf = (x, z) => [ox + (x - minX) * sc, oz + (z - minZ) * sc];
-    return { g, tf, sc, W, H, widthPx };
-  };
-  G.mmT = draw(G.mm.cvs, 16, 8);
+  const t = G.track, cvs = G.mm.cvs, W = cvs.width, H = cvs.height;
+  G.mmT = { g: cvs.getContext('2d'), tf: mapFit(t, W, H, 22), W, H };
   // static layer
-  const st = document.createElement('canvas'); st.width = G.mm.cvs.width; st.height = G.mm.cvs.height; const sg = st.getContext('2d');
+  const st = document.createElement('canvas'); st.width = W; st.height = H; const sg = st.getContext('2d');
   const path = (g, tf, w, col) => { g.beginPath(); for (let i = 0; i <= t.N; i += 2) { const [x, y] = tf(t.cx[i % t.N], t.cz[i % t.N]); if (i === 0) g.moveTo(x, y); else g.lineTo(x, y); } g.closePath(); g.strokeStyle = col; g.lineWidth = w; g.lineJoin = 'round'; g.stroke(); };
-  path(sg, G.mmT.tf, 13, 'rgba(0,0,0,.5)'); path(sg, G.mmT.tf, 7, '#f2f4f8');
-  // start line
-  const [sx, sy] = G.mmT.tf(t.cx[0], t.cz[0]); sg.fillStyle = '#e10600'; sg.fillRect(sx - 3, sy - 9, 6, 18);
+  path(sg, G.mmT.tf, 16, 'rgba(0,0,0,.55)'); path(sg, G.mmT.tf, 9, '#f2f4f8');
+  // start line, across the track
+  const [sx, sy] = G.mmT.tf(t.cx[0], t.cz[0]), [ax, ay] = G.mmT.tf(t.cx[0] + t.tx[0], t.cz[0] + t.tz[0]);
+  sg.save(); sg.translate(sx, sy); sg.rotate(Math.atan2(ay - sy, ax - sx)); sg.fillStyle = '#e10600'; sg.fillRect(-4, -13, 8, 26); sg.restore();
   G.mmStatic = st;
   updateCircuitCard();
 }
@@ -10142,12 +10266,12 @@ function drawMinimap() {
     if (sess.yellow[k] <= 0) continue;
     const i0 = Math.floor(k * t.N / t.marshalCount), i1 = Math.floor((k + 1) * t.N / t.marshalCount);
     g.beginPath(); for (let i = i0; i <= i1; i += 2) { const [x, y] = tf(t.cx[i % t.N], t.cz[i % t.N]); if (i === i0) g.moveTo(x, y); else g.lineTo(x, y); }
-    g.strokeStyle = '#f5c518'; g.lineWidth = 7; g.stroke();
+    g.strokeStyle = '#f5c518'; g.lineWidth = 9; g.stroke();
   }
   const cars = sess.cars.filter(c => !c.inGarage && !c.dnf).sort((a, b) => (a === G.focus) - (b === G.focus));
   for (const c of cars) {
     const [x, y] = tf(c.x, c.z); const me = c === G.focus;
-    g.beginPath(); g.arc(x, y, me ? 10 : 7, 0, Math.PI * 2); g.fillStyle = c.team.c1 === '#141414' ? '#c9a24a' : c.team.c1; g.fill();
+    g.beginPath(); g.arc(x, y, me ? 12 : 8, 0, Math.PI * 2); g.fillStyle = c.team.c1 === '#141414' ? '#c9a24a' : c.team.c1; g.fill();
     g.lineWidth = me ? 3.5 : 2; g.strokeStyle = me ? '#fff' : 'rgba(0,0,0,.7)'; g.stroke();
   }
 }
@@ -10714,7 +10838,8 @@ function updateCarVisuals(dt) {
     }
     // Keep a compact red rain marker; halos and reflection streaks obscure cars ahead.
     m.lightMat.emissiveIntensity = wet && !car.inGarage ? 0.6 : 0;
-    const lod = dist < 90 ? 0 : dist < 220 ? 1 : 2;
+    // (a few metres of hysteresis, so a car holding station at a switching distance does not flicker its detail)
+    const h = m.lod < 0 ? 0 : 6, lod = dist < 90 + (m.lod === 0 ? h : -h) ? 0 : dist < 220 + (m.lod <= 1 ? h : -h) ? 1 : 2;
     if (lod !== m.lod) {
       m.lod = lod;
       for (const d of m.detail) d.visible = lod < 2;
@@ -10818,7 +10943,8 @@ function impactFx(e, key) {
   if (cars.includes(G.focus)) {
     const f = G.focus, dx = f.x - e.x, dz = f.z - e.z, l = Math.hypot(dx, dz) || 1;
     G.camRig.shake = Math.max(G.camRig.shake, Math.min(0.25, e.j / 30000));
-    if (fresh) { G.camRig.impulse(Math.min(1, e.j / 12000), dx / l, dz / l); G.fx.hit = Math.max(G.fx.hit, clamp((e.j - 1200) / 9000, 0.15, 1)); }
+    // (only a real hit whitens the screen: wheel-to-wheel touches and scrapes along a barrier would strobe it)
+    if (fresh) { G.camRig.impulse(Math.min(1, e.j / 12000), dx / l, dz / l); if (e.j > 4000) G.fx.hit = Math.max(G.fx.hit, clamp((e.j - 4000) / 12000, 0, 0.7)); }
     else if (e.j > 300) G.camRig.rough = Math.max(G.camRig.rough, Math.min(0.5, e.j / 6000)); // scraping along
   }
 }
@@ -10869,7 +10995,7 @@ function impactResolved(e) {
     m.smokeT = Math.max(m.smokeT || 0, 0.8 + 2.2 * sv); m.smokeAt = [e.lx * 0.7, e.ly * 0.7];
     G.flashes.push({ x: e.x, y: 0.5, z: e.z, t: 0, T: 0.18 + 0.15 * sv, size: 2 + 2.5 * sv, k: 0.8 + sv }); if (G.flashes.length > 12) G.flashes.shift();
   }
-  if (car === G.focus && sv > 0.3) { G.camRig.fovKick = Math.min(G.camRig.fovKick, -4 * sv); G.fx.hit = Math.max(G.fx.hit, 0.4 + 0.6 * sv); }
+  if (car === G.focus && sv > 0.3) { G.camRig.fovKick = Math.min(G.camRig.fovKick, -4 * sv); G.fx.hit = Math.max(G.fx.hit, 0.25 + 0.45 * sv); }
 }
 // A whole wing half or rear wing coming off (simulation event): the actual assembly, with whatever pieces it had
 // already lost, tumbles away; losing both front-wing halves in a frontal hit takes the nose cone with them.
@@ -11141,11 +11267,12 @@ function updateWeatherView(dt) {
   scene.fog.color.setHex(SKY.dry.fog).lerp(new THREE.Color(SKY.wet.fog),mix);
   // Keep local cars and the next braking zone clear, including in a storm.
   scene.fog.near=lerp(650,180,rain);scene.fog.far=lerp(12500,2200,rain);
-  if(w && w.lightning>0) {R.sun.intensity+=w.lightning*5;G.fx.hit=Math.max(G.fx.hit,w.lightning*0.35);}
+  if(w && w.lightning>0) R.sun.intensity+=w.lightning*2.5; // the scene lights up; the screen is not flashed white
   if(G.rain){G.rain.visible=rain>0.01;G.rain.material.opacity=0.04+rain*0.24;G.rain.geometry.setDrawRange(0,Math.floor(G.rainDrops.length/3*(0.12+rain*0.88))*2);}
   if(G.splash)G.splash.points.visible=rain>0.01;
   const tob=G.trackObj.objs;
-  for(const road of [tob.asphaltMat,...(tob.pitSurfaces||[]).map(p=>p.mat)]){if(!road)continue;road.roughness=lerp(0.86,0.15,water);road.envMapIntensity=lerp(0.3,1.25,water);}
+  // (a wet road still has some texture: as smooth as glass, the low sun or a floodlight makes a white blot round the car)
+  for(const road of [tob.asphaltMat,...(tob.pitSurfaces||[]).map(p=>p.mat)]){if(!road)continue;road.roughness=lerp(0.86,0.26,water);road.envMapIntensity=lerp(0.3,1.25,water);}
   for(const b of tob.boxSurfaces||[]){b.mat.roughness=lerp(.86,.15,water);b.mat.envMapIntensity=lerp(.3,1.25,water);b.mat.color.copy(b.color).multiplyScalar(1-water*.43);}
   // Recolour once a second, keeping the existing rubber and asphalt detail.
   if(sess.time>=(G.nextRoadWeather||0)) {
@@ -11265,9 +11392,31 @@ function drawAIDiag(dt) {
     `\n[green path · blue/red candidates (feasible/not) · yellow target, orange threat, dots = predicted 0.5 s steps · red bar = braking point]`;
 }
 let lastT = performance.now(), fpsAcc = 0, fpsN = 0, errShown = false;
+// Render interpolation. The simulation advances in fixed 1/240 s steps, so a frame holds a varying whole number of
+// them (3, 4 or 5 at about 60 fps); drawn as they stand, the cars would surge and hang back against the smoothly
+// following camera from frame to frame. For drawing, each car's pose is set to the point between its last two steps
+// that matches the frame's time; the true pose is put back before the simulation, input or menus touch it again
+// (unless something placed the car meanwhile, which then wins).
+const VIEW = { cars: [], saved: [], pose: { x: 0, z: 0, psi: 0 } };
+function viewPoseApply(sess) {
+  VIEW.cars.length = 0; VIEW.saved.length = 0; const P = VIEW.pose;
+  for (const c of sess.cars) {
+    if (!sess.viewPose(c, P)) continue;
+    VIEW.cars.push(c); VIEW.saved.push(c.x, c.z, c.psi, P.x, P.z, P.psi);
+    c.x = P.x; c.z = P.z; c.psi = P.psi;
+  }
+}
+function viewPoseRestore() {
+  for (let k = 0; k < VIEW.cars.length; k++) {
+    const c = VIEW.cars[k], o = k * 6;
+    if (c.x === VIEW.saved[o + 3]) c.x = VIEW.saved[o]; if (c.z === VIEW.saved[o + 4]) c.z = VIEW.saved[o + 1]; if (c.psi === VIEW.saved[o + 5]) c.psi = VIEW.saved[o + 2];
+  }
+  VIEW.cars.length = 0;
+}
 function frame(now) {
   requestAnimationFrame(frame);
   const dt = Math.min(0.05, (now - lastT) / 1000); lastT = now;
+  viewPoseRestore();
   try {
     G.pad = readPad();
     handleKeys(dt);
@@ -11280,6 +11429,7 @@ function frame(now) {
       director(dt);
     }
     if (sess) {
+      viewPoseApply(sess);
       updateLights();
       if (G.focus && (G.focus.ghost || G.focus.dnf) && G.mode !== 'race') { G.focus = (sess.order || sess.cars).find(c => !c.dnf) || G.focus; }
       updateCarVisuals(G.paused ? 0 : dt);
@@ -11340,12 +11490,14 @@ function placeSun(car) {
   R.sun.target.position.copy(_sT); R.sun.position.copy(_sT).addScaledVector(L, 320); R.sun.target.updateMatrixWorld();
 }
 // Dynamic resolution: drop the render scale when the frame rate sags, recover it slowly when there is headroom.
+// Every change reallocates the render targets (a visible hitch), so the scale may not see-saw: after a drop it is not
+// raised again for 30 s, and only after 10 s of comfortable frame rate.
 function adaptResolution() {
   if (G.fixedRes || document.hidden || G.mode === 'loading') return;
   if (G.fps < 48) { G.lowN = (G.lowN || 0) + 1; G.highN = 0; } else if (G.fps > 58) { G.highN = (G.highN || 0) + 1; G.lowN = 0; } else { G.lowN = 0; G.highN = 0; }
-  let s = G.resScale;
-  if (G.lowN >= 3 && s > 0.6) { s = Math.max(0.6, s * 0.88); G.lowN = 0; }
-  if (G.highN >= 10 && s < 1) { s = Math.min(1, s * 1.06); G.highN = 0; }
+  let s = G.resScale; const now = performance.now();
+  if (G.lowN >= 4 && s > 0.6) { s = Math.max(0.6, s * 0.88); G.lowN = 0; G.resDropT = now; }
+  if (G.highN >= 20 && s < 1 && now - (G.resDropT || -1e9) > 30000) { s = Math.min(1, s * 1.06); G.highN = 0; }
   if (s !== G.resScale) { G.resScale = s; renderer.setPixelRatio(G.basePR * s); onResize(); }
 }
 
