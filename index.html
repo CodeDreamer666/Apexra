@@ -8162,6 +8162,10 @@ function buildTrees(scene, track, inLake, opts) {
       for(const b of this.farChunks)b.node.visible=b.active>0;
       if(changed)lodTexture.needsUpdate=true;
     }};
+  // This entire branch is stationary; elevation and LOD are shader/visibility changes. Scene.updateMatrixWorld
+  // otherwise forces a recursive recomputation even for hidden cells on every frame and shadow capture.
+  group.updateMatrixWorld(true);group.matrixAutoUpdate=false;group.matrixWorldAutoUpdate=false;
+  group.updateMatrixWorld=()=>{};
   G.forest=runtime;return runtime;
 }
 
