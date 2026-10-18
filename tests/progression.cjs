@@ -186,3 +186,37 @@ test('a Career result from a real race: classification and pace from the laps dr
   const st = P.create(), out = P.recordCareer(st, { rank: 0, circuit: 'interlagos', id: 's1', pos: res.pos, dnf: !!res.dnf, pacePts: pace.points });
   assert.ok(out.ok); assert.equal(out.entry.total, P.positionPoints(res.pos) + pace.points);
 });
+
+test('Career grid: the first race of a rank starts from P20, then each race starts where the last one finished', () => {
+  const st = P.create();
+  for (let k = 0; k < 3; k++) assert.equal(P.gridPos(st, k), 20, RANKS[k].name + ' starts from the back');
+  let r = career(st, 0, 'monza', 6, 30); assert.equal(r.gridBefore, 20); assert.equal(r.gridNext, 6);
+  assert.equal(P.gridPos(st, 0), 6, 'P6 at Monza: the next race starts P6');
+  career(st, 0, 'spa', 12, 20); assert.equal(P.gridPos(st, 0), 12, 'dropping to P12 moves the next start back to P12');
+  career(st, 0, 'monza', 3, 40); assert.equal(P.gridPos(st, 0), 3, 'a replayed circuit counts as the next race too');
+  career(st, 0, 'suzuka', 9, 10); assert.equal(P.gridPos(st, 0), 9, 'a worse result than the best kept still sets the next start');
+  career(st, 0, 'bahrain', 17, 0, { dnf: true }); assert.equal(P.gridPos(st, 0), 17, 'a retirement starts from its classified place');
+  assert.equal(P.gridPos(st, 1), 20, 'every rank keeps its own grid');
+  // unclassified, invalid and duplicate races leave the grid alone
+  const used = id(); P.recordCareer(st, { rank: 0, circuit: 'spa', id: used, pos: 2, dnf: false, pacePts: 10 });
+  assert.equal(P.gridPos(st, 0), 2);
+  P.recordCareer(st, { rank: 0, circuit: 'spa', id: used, pos: 15, dnf: false, pacePts: 10 });
+  P.recordCareer(st, { rank: 0, circuit: 'spa', id: id(), pos: 0, dnf: true, pacePts: 0 });
+  assert.equal(P.gridPos(st, 0), 2);
+  // saved and loaded; a broken value falls back to the back of the grid
+  assert.equal(P.gridPos(P.load(JSON.parse(JSON.stringify(st))), 0), 2);
+  const bad = JSON.parse(JSON.stringify(st)); bad.career.grid = { rookie: 0, pro: 'x', master: 25 };
+  for (let k = 0; k < 3; k++) assert.equal(P.gridPos(P.load(bad), k), 20);
+  const old = JSON.parse(JSON.stringify(st)); delete old.career.grid;
+  assert.equal(P.gridPos(P.load(old), 0), 20, 'a save from before the grid rule starts from P20');
+});
+
+test('the starting grid puts the player on the chosen slot and everyone else on the others', () => {
+  for (const [pos, player] of [[20, 0], [6, 3], [1, 19], [12, 7]]) {
+    const order = SIM.gridWithPlayerAt(20, player, pos);
+    assert.equal(order.length, 20); assert.equal(new Set(order).size, 20);
+    assert.equal(order.indexOf(player) + 1, pos, 'player on P' + pos);
+    const S = new SIM.Session(tracks.get('monza'), { type: 'race', entries: SIM.DRIVERS.map((driver, i) => ({ driver, isPlayer: i === player })), seed: 1, gridOrder: order });
+    assert.equal(S.player.gridSlot + 1, pos, 'the session places the player on P' + pos);
+  }
+});

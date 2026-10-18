@@ -26,6 +26,7 @@ A single race, open whenever you like:
 - 20 cars
 - any of the six circuits
 - you drive for Team A against the standard (100%) field
+- you always start from the back of the grid, in P20
 
 Grand Prix races don't count towards your Career, so it's the place to learn a circuit or try a strategy.
 
@@ -37,6 +38,8 @@ The main challenge. Career has three ranks, and each rank asks you to race all s
 | Rookie | 100% | 360 / 600 |
 | Pro | 125% | 420 / 600 |
 | Master | 150% | 480 / 600 |
+
+**Where you start:** your first race in a rank starts from the back of the grid, in P20. After that, you start every race in that rank where you finished the last one. Finish P6 and your next race starts from P6; drop to P12 and the race after starts from P12. A retirement counts as the place you were classified in. Replays count as your next race too, and a race you leave before the chequered flag doesn't change your grid spot. Each rank keeps its own starting position, so every new rank begins from P20. The Career screen shows your next starting position.
 
 Completing a rank unlocks the next one. Ranks you've unlocked stay open, so you can go back and improve your results at any time.
 

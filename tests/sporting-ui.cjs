@@ -15,7 +15,7 @@ function source(name) {
   return code;
 }
 const funcs = ['sessionConfig', 'careerSessionConfig', 'buildEntries', 'raceWeatherState', 'circuitFuelPerLap', 'circuitTank', 'briefIcon', 'briefTyreArt',
-  'centreLineOf', 'drawBriefCircuit', 'startRace', 'psCard', 'psSelection', 'updatePitService', 'updateStrategyUI', 'renderCareerStrip', 'showResults', 'recordCareerRace', 'updateCareerButton'];
+  'centreLineOf', 'drawBriefCircuit', 'playerGridPos', 'startRace', 'psCard', 'psSelection', 'updatePitService', 'updateStrategyUI', 'renderCareerStrip', 'showResults', 'recordCareerRace', 'updateCareerButton'];
 const settings = html.slice(html.indexOf("const SETTINGS_KEY ="), html.indexOf('/* ---------------- audio (WebAudio synthesis)'));
 const icons = html.slice(html.indexOf('const PS_ICON ='), html.indexOf('function psCard('));
 // Career screen state used by the result screen.
@@ -65,7 +65,11 @@ const crui = html.slice(html.indexOf('const CRUI ='), html.indexOf('const teamCo
       for (const def of SIM.CIRCUITS) for (const mode of ['grandprix', 'career']) {
         G.career = mode === 'career' ? { rank: 0, team: 0, circuit: def.id } : null;
         G.session = null; G.track = new SIM.Track(def);
+        const wantGrid = mode === 'career' ? SIM.PROGRESS.gridPos(PG, 0) : 20;
         startRace();
+        const order = G.pendingRace.gridOrder, me = G.pendingRace.entries.findIndex(e => e.isPlayer);
+        check(order.length === 20 && new Set(order).size === 20 && order.indexOf(me) + 1 === wantGrid, def.id + ' ' + mode + ': player starts P' + wantGrid + ' (P' + (order.indexOf(me) + 1) + ')');
+        check($('briefGrid').textContent === 'P' + wantGrid, 'race brief shows the starting position: ' + $('briefGrid').textContent);
         check(!obsolete.test($('raceBrief').innerText), def.id + ' ' + mode + ': setup text');
         check(!/qualif|eliminat/i.test($('raceBrief').innerText), 'no qualifying or Elimination text');
         check($('briefChoices').children.length === 4, 'four compounds');
@@ -114,6 +118,7 @@ const crui = html.slice(html.indexOf('const CRUI ='), html.indexOf('const teamCo
         const acts = [...$('resActions').children].map(b => b.textContent);
         if (mode === 'career') {
           check(acts.some(a => /^Retry /.test(a)), 'a career circuit can be retried: ' + acts);
+          check(/Next start/i.test($('resCareer').innerText) && SIM.PROGRESS.gridPos(PG, 0) === sess.results.find(r => r.car.isPlayer).pos, 'the finish sets the next start: ' + $('resCareer').innerText);
           check(/Position/i.test($('resCareer').innerText) && /Lap-time pace/i.test($('resCareer').innerText) && /\/ 100/.test($('resCareer').innerText), 'circuit score shown: ' + $('resCareer').innerText);
         }
         $('results').classList.add('hidden');
