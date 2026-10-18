@@ -6790,9 +6790,27 @@ R.center = { x: 0, z: 0 }; R.env = {};
 // the desert), coloured per circuit. Close to the track a fine "verge" mesh (every 4 m along the lap, out to ~80 m)
 // replaces the coarse grid, so the ground meets the road exactly on crests and in dips (the coarse grid's chords
 // would otherwise cut through the road at Eau Rouge or Interlagos); the coarse grid is sunk a little beneath it.
+// The woods around a circuit (0..1): one pattern for both the trees (buildTrees) and the darker forest floor under them.
+let WOODS = null;
+function woodsAt(x, z) { WOODS = WOODS || makeNoise(41); return WOODS.fbm(x / 520, z / 520, 3) + (R.env.style === 'canyon' ? 0.05 : 0.15); }
+// distance from the circuit for ground colouring (the terrain's distance field once built, else far)
+function distToCircuit(x, z) { return R.distAt ? R.distAt(x, z) : 1e4; }
 function groundTint(env, n, x, z, h, slope, wet) {
   const tint = env.grass || [1, 1, 1], v = n.fbm(x / 180, z / 180, 3), v2 = n(x / 45, z / 45);
-  let r = (0.78 + v * 0.18 + v2 * 0.05) * tint[0], g = (0.92 + v * 0.14 + v2 * 0.05) * tint[1], b = (0.62 + v * 0.1) * tint[2];
+  let r = (0.56 + v * 0.14 + v2 * 0.05) * tint[0], g = (0.7 + v * 0.12 + v2 * 0.05) * tint[1], b = (0.42 + v * 0.09) * tint[2];
+  if (!env.desert) {
+    // farmland away from the circuit: a patchwork of fields (meadow, crop, stubble, ploughed earth), strongest in open
+    // country; in the woods the ground is a darker forest floor (the same woods pattern the trees are planted by)
+    const far = smooth01(110, 320, distToCircuit(x, z)), open = 1 - Math.min(1, (env.forest ?? 1) * 0.55);
+    const fa = 0.6, fx = x * Math.cos(fa) - z * Math.sin(fa), fz = x * Math.sin(fa) + z * Math.cos(fa), cw = 190, ch = 130;
+    const cell = Math.floor(fx / cw) * 7919 + Math.floor(fz / ch) * 104729, hsh = ((Math.sin(cell) * 43758.5453) % 1 + 1) % 1;
+    const edge = Math.min(Math.abs(((fx / cw) % 1 + 1) % 1 - 0.5), Math.abs(((fz / ch) % 1 + 1) % 1 - 0.5)) > 0.47 ? 0.55 : 0;
+    const field = hsh < 0.45 ? [r, g, b] : hsh < 0.7 ? [0.86 * tint[0], 0.84 * tint[1], 0.46 * tint[2]] : hsh < 0.88 ? [0.8 * tint[0], 0.72 * tint[1], 0.44 * tint[2]] : [0.56, 0.45, 0.33];
+    const wf = far * (0.25 + 0.75 * open) * (1 - edge);
+    r += (field[0] - r) * wf; g += (field[1] - g) * wf; b += (field[2] - b) * wf;
+    const woods = smooth01(0.3, 0.62, woodsAt(x, z));
+    r *= 1 - 0.38 * woods; g *= 1 - 0.3 * woods; b *= 1 - 0.32 * woods;
+  }
   // Slopes read as hillside, not as a bank of sand: the turf darkens and browns as the ground steepens, and the
   // steepest faces are bare rock (grey in the green hills, red-brown sandstone in the desert).
   const rough = smooth01(0.03, 0.14, slope), rock = smooth01(0.12, 0.3, slope), rv = 0.9 + n(x / 23, z / 23) * 0.12;
@@ -6883,6 +6901,7 @@ function buildTerrain(world, track, T, opts) {
     return u + v < 1 ? a + (b - a) * u + (c - a) * v : d + (c - d) * (1 - u) + (b - d) * (1 - v);
   };
   const distAt = (x, z) => { const k = Math.min(Rn, Math.max(0, Math.round((x - x0) / step))), j = Math.min(Rn, Math.max(0, Math.round((z - z0) / step))); return dT[j * W + k]; };
+  R.distAt = distAt; // the ground colouring below reads it
   // geometry
   const pos = new Float32Array(W * W * 3), col = new Float32Array(W * W * 3), uv = new Float32Array(W * W * 2), idx = [];
   for (let j = 0; j < W; j++) for (let k = 0; k < W; k++) {
@@ -6899,7 +6918,9 @@ function buildTerrain(world, track, T, opts) {
   }
   g.setAttribute('color', new THREE.BufferAttribute(col, 3));
   const mat = antiTile(new THREE.MeshStandardMaterial({ map: env.desert ? T.gravel : T.grass, vertexColors: true, roughness: 0.95, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 2 }), 0.17, 0.45, 0.22, true);
-  const mesh = new THREE.Mesh(g, mat); mesh.receiveShadow = true; mesh.userData.kind = 'terrain'; world.add(mesh);
+  // the open landscape has no mowing stripes (only the mown verge beside the circuit does)
+  const farMat = antiTile(new THREE.MeshStandardMaterial({ map: env.desert ? T.gravel : T.grass, vertexColors: true, roughness: 0.95, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 2 }), 0.17, 0.45, 0.26, false);
+  const mesh = new THREE.Mesh(g, farMat); mesh.receiveShadow = true; mesh.userData.kind = 'terrain'; world.add(mesh);
   // ---- the fine verge along both sides of the circuit ----
   {
     const N = track.N, P = track.pit, U = [0, 0.04, 0.1, 0.2, 0.36, 0.6, 1], pos2 = [], col2 = [], uv2 = [], idx2 = [];
@@ -6955,6 +6976,8 @@ function makeWaterMaterial(wet) {
 // The distant landscape (2.3–8.7 km out): its relief is the SRTM terrain from the shader's height field, so the
 // Ardennes valleys round Spa, the hills of São Paulo or the Suzuka foothills are where they really are. The ring
 // itself is nearly flat; it is coloured by the real height and slope (forest, fields, desert or city haze).
+// how hilly each circuit's distant landscape is (0..1)
+const HILLS = { spa: 1.0, suzuka: 0.9, interlagos: 0.6, monza: 0.45, silverstone: 0.22, bahrain: 0.12 };
 function buildMountains(world, opts, track) {
   const Q = opts.quality, wet = opts.wet, env = R.env; const n = makeNoise(5);
   const cx = R.center.x, cz = R.center.z, segA = Q === 2 ? 300 : Q === 1 ? 220 : 140, segR = Q === 2 ? 36 : Q === 1 ? 28 : 20;
@@ -6963,7 +6986,9 @@ function buildMountains(world, opts, track) {
     const r = 2350 + (j / segR) ** 1.35 * 6400;
     for (let k = 0; k <= segA; k++) {
       const a = k / segA * Math.PI * 2; const x = cx + Math.cos(a) * r, z = cz + Math.sin(a) * r;
-      pos.push(x, (r < 2950 ? -2.5 : -0.5) + n.fbm(x / 900, z / 900, 3) * 6, z);
+      // hills rise towards the horizon (the Ardennes and the Suzuka range most, the Silverstone and Sakhir plains least)
+      const hills = smooth01(3200, 7600, r) * (40 + Math.max(0, n.fbm(x / 1500 + 7, z / 1500, 3)) * 260) * (HILLS[env.style || ''] ?? 0.4);
+      pos.push(x, (r < 2950 ? -2.5 : -0.5) + n.fbm(x / 900, z / 900, 3) * 6 + hills, z);
     }
   }
   for (let j = 0; j < segR; j++) for (let k = 0; k < segA; k++) { const a = j * (segA + 1) + k, b = a + segA + 1; idx.push(a, b, a + 1, b, b + 1, a + 1); }
@@ -6996,11 +7021,12 @@ function buildLandmarks(world, track, terrain, opts) {
     const n = Q === 2 ? 1400 : Q === 1 ? 900 : 450, geo = new THREE.BoxGeometry(1, 1, 1); geo.translate(0, 0.5, 0);
     const im = new THREE.InstancedMesh(geo, new THREE.MeshStandardMaterial({ roughness: 0.85, metalness: 0.1 }), n), rng = seededRand(61); let k = 0;
     for (let t = 0; t < n * 12 && k < n; t++) {
-      const a = rng() * 6.283, r = 650 + Math.pow(rng(), 0.7) * 3400, x = R.center.x + Math.cos(a) * r, z = R.center.z + Math.sin(a) * r;
+      // most towers stand in the downtown to the north-east (central São Paulo), the rest scattered over the city
+      const core = rng() < 0.6, a = core ? -0.9 + (rng() - 0.5) * 0.9 : rng() * 6.283, r = core ? 2400 + rng() * 2200 : 650 + Math.pow(rng(), 0.7) * 1950, x = R.center.x + Math.cos(a) * r, z = R.center.z + Math.sin(a) * r;
       if (terrain.distAt(x, z) < 260 || Math.hypot(x - R.center.x, z - R.center.z) < 600) continue;
-      const tall = rng() < 0.18, h = tall ? 45 + rng() * 85 : 9 + Math.pow(rng(), 2) * 30, w = tall ? 18 + rng() * 14 : 14 + rng() * 26;
+      const tall = core ? rng() < 0.55 : rng() < 0.08, h = tall ? 45 + rng() * 95 : 9 + Math.pow(rng(), 2) * 30, w = tall ? 18 + rng() * 14 : 14 + rng() * 26;
       m4.compose(v3.set(x, terrain.heightAt(x, z) - 1, z), q4.setFromAxisAngle(up, rng() * 6.28), sc.set(w, h, w * (0.6 + rng() * 0.8)));
-      im.setMatrixAt(k, m4); im.setColorAt(k, col.setHSL(0.08 + rng() * 0.05, 0.08 + rng() * 0.12, 0.55 + rng() * 0.28)); k++;
+      im.setMatrixAt(k, m4); im.setColorAt(k, rng() < 0.4 ? col.setHSL(0.58 + rng() * 0.04, 0.12 + rng() * 0.12, 0.32 + rng() * 0.14) : col.setHSL(0.08 + rng() * 0.05, 0.05 + rng() * 0.08, 0.42 + rng() * 0.2)); k++;
     }
     im.count = k; im.castShadow = false; world.add(im);
   }
@@ -7044,6 +7070,301 @@ function buildLandmarks(world, track, terrain, opts) {
   }
 }
 
+// Circuit venues: the infrastructure and landscape that make each real circuit read as itself, beyond the barriers.
+// Shared by all six: a perimeter service road outside the run-off (never the pit lane), spectator banks with crowds at
+// the big corners, car parks. Then each circuit's identity: Monza's royal park (the old banking, the Villa Reale,
+// poplar avenues), Silverstone's airfield (hangars, campsite, hay bales, hedgerows), Spa's Ardennes (chalets with slate
+// roofs, hillside terraces), Suzuka's amusement park (roller coaster, the hotel, cherry trees), Bahrain's desert
+// (tented hospitality, sandstone buildings, oil pumpjacks), Interlagos's city (hillside houses, billboard towers).
+// Everything is merged per material or instanced, stands clear of the circuit (the distance field and sceneryClear)
+// and registers a keep-out circle so no tree is planted through it.
+function buildVenue(world, track, terrain, opts) {
+  const env = R.env, Q = opts.quality, style = env.style || '', P = track.pit, rng = seededRand(97), N = track.N, DS = SIM.DS;
+  const H = terrain.heightAt, D = terrain.distAt, keepOut = R.keepOut;
+  const keep = (x, z, r) => keepOut.push({ x, z, r });
+  const free = (x, z, r, minD = 30) => D(x, z) > minD + r && !keepOut.some(k => (k.x - x) ** 2 + (k.z - z) ** 2 < (k.r + r) ** 2) && sceneryClear(track, x, z, r);
+  // a random open site minD..maxD m from the circuit
+  const site = (minD, maxD, r, tries = 400) => {
+    for (let t = 0; t < tries; t++) {
+      const a = rng() * Math.PI * 2, rr = 200 + rng() * 2600, x = R.center.x + Math.cos(a) * rr, z = R.center.z + Math.sin(a) * rr, d = D(x, z);
+      if (d < minD || d > maxD) continue;
+      if (free(x, z, r, minD)) return { x, z };
+    }
+    return null;
+  };
+  // vertex-coloured geometry, merged into one mesh per batch at the end
+  const paint = (g, c) => { const n = g.attributes.position.count, a = new Float32Array(n * 3); for (let k = 0; k < n; k++) { a[k * 3] = c[0]; a[k * 3 + 1] = c[1]; a[k * 3 + 2] = c[2]; } g.setAttribute('color', new THREE.BufferAttribute(a, 3)); return g; };
+  // vertex colours are linear: convert from the sRGB hex value
+  const hex = (h) => [(h >> 16 & 255) / 255, (h >> 8 & 255) / 255, (h & 255) / 255].map(c => Math.pow(c, 2.2));
+  const batches = new Map();
+  const add = (key, geo) => { if (!batches.has(key)) batches.set(key, []); batches.get(key).push(geo); };
+  const mats = {
+    solid: new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.82, metalness: 0.05 }),
+    metal: new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.45, metalness: 0.6 }),
+    glass: new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.12, metalness: 0.75 }),
+    road: new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.92, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }),
+    fabric: new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.75, side: THREE.DoubleSide }),
+    leaf: new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.9, flatShading: true }),
+  };
+  // place local geometry (built around the origin) at x, ground height, z, turned by yaw
+  const at = (g, x, z, yaw = 0, dy = 0) => { g.rotateY(yaw); g.translate(x, H(x, z) + dy, z); return g; };
+  // lay already-placed flat geometry onto the local ground (each vertex at the ground height under it plus its own y)
+  const drape = (g) => { const p = g.attributes.position; for (let k = 0; k < p.count; k++) p.setY(k, p.getY(k) + H(p.getX(k), p.getZ(k))); g.computeVertexNormals(); return g; };
+  const B = (w, h, d, x, y, z, c, yaw = 0) => { const g = new THREE.BoxGeometry(w, h, d); g.translate(x, y + h / 2, z); if (yaw) g.rotateY(yaw); return paint(g, c); };
+  // ---------------------------------------------------------------- shared: perimeter service road
+  // a 6 m road 22 m beyond the barrier on both sides wherever the ground there is clear of the circuit (never
+  // beside the pit lane), in continuous pieces of at least 150 m
+  {
+    const W = 6, step = 4, off = 22, verts = [], cols = [], asph = hex(0x3f4245);
+    for (const sgn of [-1, 1]) {
+      let run = [];
+      const flush = () => {
+        if (run.length * step >= 150) for (let k = 0; k + 1 < run.length; k++) {
+          const [a, b] = [run[k], run[k + 1]];
+          verts.push(a.l[0], a.l[1], a.l[2], b.l[0], b.l[1], b.l[2], a.r[0], a.r[1], a.r[2], a.r[0], a.r[1], a.r[2], b.l[0], b.l[1], b.l[2], b.r[0], b.r[1], b.r[2]);
+          for (let q = 0; q < 6; q++) cols.push(...asph);
+        }
+        run = [];
+      };
+      for (let s = 0; s < track.length; s += step) {
+        const i = Math.floor(s / DS) % N, wall = sgn > 0 ? track.wallR[i] : track.wallL[i];
+        if (sgn === P.side && track.pitProg(s) >= 0) { flush(); continue; }
+        if (sgn === -P.side && (s > track.length - 420 || s < 300)) { flush(); continue; } // behind the main grandstand
+        const d0 = sgn * (wall + off), d1 = sgn * (wall + off + W);
+        const [x0, z0] = track.pointAt(s, d0), [x1, z1] = track.pointAt(s, d1);
+        const ok = sceneryClear(track, x0, z0, 2) && sceneryClear(track, x1, z1, 2) && D(x0, z0) > wall + off - 4 && D(x1, z1) > wall + off - 4 && !keepOut.some(k => (k.x - x0) ** 2 + (k.z - z0) ** 2 < k.r * k.r);
+        if (!ok) { flush(); continue; }
+        // a sharp bend of the offset line folds the strip over itself: cut it there
+        if (run.length && Math.hypot(x0 - run[run.length - 1].l[0], z0 - run[run.length - 1].l[2]) > step * 3) flush();
+        run.push({ l: [x0, H(x0, z0) + 0.12, z0], r: [x1, H(x1, z1) + 0.12, z1] });
+      }
+      flush();
+    }
+    if (verts.length) {
+      const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(cols, 3));
+      g.computeVertexNormals(); const m = new THREE.Mesh(g, mats.road); m.receiveShadow = true; m.userData.kind = 'service road'; world.add(m);
+    }
+  }
+  // ---------------------------------------------------------------- shared: spectator banks at the big corners
+  // standing crowd on a grass bank behind a debris fence, outside the corner after the apex
+  const crowdPts = [];
+  {
+    const fence = [], posts = [], banners = [];
+    for (const c of track.corners) {
+      if (!c.brakeZone) continue;
+      const sgn = -c.dir, s0 = c.apex * DS + 15, len = 110;
+      if (sgn === track.pitAt(s0).side && track.pitProg(s0) >= 0) continue;
+      const op = track.overpass; if (op && [op.lowS, op.highS].some(o => Math.abs(track.dS(o, s0)) < 260)) continue;
+      for (let s = s0; s < s0 + len; s += 3) {
+        const i = Math.floor(track.wrapS(s) / DS) % N, wall = sgn > 0 ? track.wallR[i] : track.wallL[i];
+        const [fx, fz, fh] = track.pointAt(track.wrapS(s), sgn * (wall + 9));
+        if (!sceneryClear(track, fx, fz, 1.5)) continue;
+        // the debris fence and its posts
+        const fyaw = -fh;
+        fence.push(at(paint(new THREE.BoxGeometry(3.1, 2.4, 0.05).translate(0, 1.2, 0), hex(0x9aa3ab)), fx, fz, fyaw));
+        if ((s - s0) % 12 < 3) posts.push(at(paint(new THREE.CylinderGeometry(0.06, 0.06, 2.6, 5).translate(0, 1.3, 0), hex(0x6b7178)), fx, fz, fyaw));
+        // people standing on the bank, 2-14 m behind the fence
+        for (let r = 0; r < 5; r++) {
+          if (rng() < 0.35) continue;
+          const dd = wall + 11 + r * 2.4 + rng() * 1.2, [px, pz] = track.pointAt(track.wrapS(s + (rng() - 0.5) * 2.6), sgn * dd);
+          if (!sceneryClear(track, px, pz, 1)) continue;
+          crowdPts.push([px, H(px, pz) + r * 0.45, pz, fh + Math.PI / 2 * sgn]);
+        }
+      }
+      // a banner on the fence
+      const [bx, bz, bh] = track.pointAt(track.wrapS(s0 + len / 2), sgn * ((sgn > 0 ? track.wallR[c.apex] : track.wallL[c.apex]) + 8.9));
+      if (sceneryClear(track, bx, bz, 1)) banners.push(at(paint(new THREE.BoxGeometry(9, 1.1, 0.06).translate(0, 1.6, 0), hex([0xe10600, 0x1e5bd8, 0xf5c518, 0x1f8f4e][(rng() * 4) | 0])), bx, bz, -bh));
+    }
+    for (const g of fence) add('fence', g); for (const g of posts) add('metal', g); for (const g of banners) add('solid', g);
+  }
+  // ---------------------------------------------------------------- shared: car parks
+  const carPark = (cx, cz, w, d, yaw, n) => {
+    { const g = paint(new THREE.PlaneGeometry(w, d, 12, 8).rotateX(-Math.PI / 2), hex(0x4a4d50)); g.rotateY(yaw); g.translate(cx, 0.1, cz); add('road', drape(g)); }
+    const cs = Math.cos(yaw), sn = Math.sin(yaw);
+    for (let k = 0; k < n; k++) {
+      const u = (rng() - 0.5) * (w - 6), v = Math.round(((rng() - 0.5) * (d - 6)) / 6) * 6, x = cx + u * cs + v * sn, z = cz - u * sn + v * cs;
+      const col = hex([0xf2f2f2, 0x202225, 0x9aa3ab, 0xb3121b, 0x14276b, 0x5b6770, 0xc9c2b0][(rng() * 7) | 0]);
+      add('solid', at(B(1.8, 0.75, 4.3, 0, 0.25, 0, col), x, z, yaw + Math.PI / 2, 0));
+      add('glass', at(B(1.6, 0.55, 2.2, 0, 1.0, -0.2, hex(0x26303a)), x, z, yaw + Math.PI / 2, 0));
+    }
+    keep(cx, cz, Math.hypot(w, d) / 2 + 4);
+  };
+  for (let k = 0; k < 3; k++) { const p = site(110, 420, 70); if (p) carPark(p.x, p.z, 120, 70, rng() * Math.PI, Q === 2 ? 160 : 90); }
+  // ---------------------------------------------------------------- per-circuit identity
+  const pine = (x, z, s, c) => { // a tall narrow tree (Lombardy poplar / Italian stone pine column)
+    add('leaf', at(paint(new THREE.CylinderGeometry(0.25 * s, 0.35 * s, 3 * s, 5).translate(0, 1.5 * s, 0), hex(0x5a4330)), x, z));
+    add('leaf', at(paint(new THREE.ConeGeometry(1.6 * s, 11 * s, 7).translate(0, 8.5 * s, 0), c || hex(0x2f5a2a)), x, z));
+  };
+  const house = (x, z, yaw, w, d, h, wall, roof, steep = 0.55) => {
+    add('solid', at(B(w, h, d, 0, 0, 0, wall), x, z, yaw));
+    const r = new THREE.CylinderGeometry(0.01, w * 0.62, w * steep, 4, 1); r.rotateY(Math.PI / 4); r.scale(1, 1, d / w); r.translate(0, h + w * steep / 2, 0);
+    add('solid', at(paint(r, roof), x, z, yaw));
+  };
+  if (style === 'monza') {
+    // the old banked oval (1955): two concrete banked curves on pillars, in the park inside the circuit
+    for (let k = 0; k < 2; k++) {
+      const p = site(160, 900, 190); if (!p) break;
+      const R0 = 150, arc = Math.PI * 0.6, a0 = rng() * Math.PI * 2, seg = 28, deck = [], pil = [];
+      for (let q = 0; q < seg; q++) {
+        const a = a0 + arc * q / seg, b = a0 + arc * (q + 1) / seg, rise = 7, width = 14;
+        const pt = (ang, r, y) => [p.x + Math.cos(ang) * r, y, p.z + Math.sin(ang) * r];
+        const A = pt(a, R0, 2), Bp = pt(b, R0, 2), C = pt(a, R0 + width, 2 + rise), Dp = pt(b, R0 + width, 2 + rise);
+        const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute([...A, ...C, ...Bp, ...Bp, ...C, ...Dp], 3)); g.computeVertexNormals();
+        g.setAttribute('uv', new THREE.Float32BufferAttribute(new Array(12).fill(0), 2)); deck.push(paint(g, hex(0xb9b4aa)));
+        if (q % 2 === 0) for (const [r, h] of [[R0 + 2, 2], [R0 + width - 2, 2 + rise - 0.6]]) { const [x, , z] = pt(a, r, 0); pil.push(at(paint(new THREE.BoxGeometry(1.2, h + 1, 1.2).translate(0, (h + 1) / 2 - 1, 0), hex(0xa29d93)), x, z)); }
+      }
+      // the deck sits on the local ground height of the arc's centre
+      for (const g of deck) add('fabric', drape(g));
+      for (const g of pil) add('solid', g);
+      keep(p.x, p.z, R0 + 30);
+    }
+    // the Villa Reale, far out in the park: a long neoclassical palace with a pediment
+    { const p = site(500, 1400, 90); if (p) { const yaw = rng() * Math.PI;
+      add('solid', at(B(150, 18, 26, 0, 0, 0, hex(0xe8d9b8)), p.x, p.z, yaw)); add('solid', at(B(40, 22, 30, 0, 0, 0, hex(0xefe3c6)), p.x, p.z, yaw));
+      add('solid', at(paint(new THREE.SphereGeometry(9, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2).translate(0, 22, 0), hex(0x8fa39a)), p.x, p.z, yaw)); // the central dome
+      for (let c = -6; c <= 6; c++) add('solid', at(B(1.2, 18, 1.2, c * 3, 0, 15.5, hex(0xf4ecd8)), p.x, p.z, yaw));
+      keep(p.x, p.z, 100); } }
+    // avenues of poplars along the service roads in the park
+    for (let k = 0; k < (Q === 2 ? 260 : 140); k++) {
+      const s = rng() * track.length, sgn = rng() < 0.5 ? -1 : 1, i = Math.floor(s / DS) % N, wall = sgn > 0 ? track.wallR[i] : track.wallL[i];
+      const [x, z] = track.pointAt(s, sgn * (wall + 31 + rng() * 3)); if (free(x, z, 3, 20) && !(sgn === P.side && track.pitProg(s) >= 0)) pine(x, z, 0.9 + rng() * 0.3);
+    }
+  } else if (style === 'silverstone') {
+    // the wartime airfield: Nissen hangars (half-cylinder roofs) and the old control tower
+    for (let k = 0; k < 6; k++) {
+      const p = site(140, 700, 40); if (!p) break; const yaw = rng() * Math.PI;
+      const g = new THREE.CylinderGeometry(11, 11, 46, 16, 1, false, 0, Math.PI); g.rotateZ(Math.PI / 2); g.rotateX(0); g.translate(0, 0, 0);
+      add('metal', at(paint(g.rotateY(0), hex(0x7d868c)), p.x, p.z, yaw));
+      add('solid', at(B(0.4, 10.5, 21, 23, 0, 0, hex(0x5d646a)), p.x, p.z, yaw)); add('solid', at(B(0.4, 10.5, 21, -23, 0, 0, hex(0x5d646a)), p.x, p.z, yaw));
+      keep(p.x, p.z, 32);
+    }
+    { const p = site(200, 600, 20); if (p) { add('solid', at(B(14, 7, 14, 0, 0, 0, hex(0xe7e2d6)), p.x, p.z)); add('solid', at(B(10, 3.5, 10, 0, 7, 0, hex(0xefeae0)), p.x, p.z)); add('glass', at(B(10.2, 1.6, 10.2, 0, 8, 0, hex(0x2c3a46)), p.x, p.z)); keep(p.x, p.z, 16); } }
+    // the campsite: rows of tents and caravans
+    for (let k = 0; k < 2; k++) {
+      const p = site(160, 600, 70); if (!p) break; const yaw = rng() * Math.PI;
+      for (let t = 0; t < (Q === 2 ? 140 : 70); t++) {
+        const u = (rng() - 0.5) * 110, v = (rng() - 0.5) * 70, x = p.x + u * Math.cos(yaw) + v * Math.sin(yaw), z = p.z - u * Math.sin(yaw) + v * Math.cos(yaw);
+        if (rng() < 0.25) add('solid', at(B(2.3, 2.4, 6, 0, 0.3, 0, hex(0xf0efe8)), x, z, yaw + rng() * 0.3));
+        else { const tent = new THREE.CylinderGeometry(0.01, 2.2, 1.8, 4, 1); tent.rotateY(Math.PI / 4); tent.scale(1, 1, 1.4); tent.translate(0, 0.9, 0); add('fabric', at(paint(tent, hex([0xe85c41, 0x2f7bff, 0x21c55d, 0xf5c518, 0x8e24aa, 0xff7a1a][(rng() * 6) | 0])), x, z, rng() * 6)); }
+      }
+      keep(p.x, p.z, 70);
+    }
+    // round hay bales in the fields and hedgerows along field edges
+    for (let k = 0; k < (Q === 2 ? 220 : 110); k++) {
+      const p = site(90, 900, 3, 40); if (!p) continue;
+      const g = new THREE.CylinderGeometry(0.8, 0.8, 1.2, 10); g.rotateZ(Math.PI / 2); g.translate(0, 0.8, 0); add('solid', at(paint(g, hex(0xc9a85a)), p.x, p.z, rng() * 6));
+    }
+    for (let k = 0; k < (Q === 2 ? 40 : 20); k++) {
+      const p = site(120, 1200, 10, 60); if (!p) continue; const yaw = rng() * Math.PI, len = 60 + rng() * 120;
+      const g = new THREE.BoxGeometry(len, 2.2, 2.4); g.translate(0, 1.1, 0); add('leaf', at(paint(g, hex(0x3d5a2a)), p.x, p.z, yaw));
+    }
+  } else if (style === 'spa') {
+    // Ardennes chalets: white or stone walls under steep dark slate roofs, in clusters on the slopes
+    for (let k = 0; k < 9; k++) {
+      const p = site(150, 1100, 50); if (!p) break;
+      for (let h = 0; h < 7; h++) {
+        const x = p.x + (rng() - 0.5) * 80, z = p.z + (rng() - 0.5) * 80; if (!free(x, z, 8, 60)) continue;
+        house(x, z, rng() * Math.PI, 9 + rng() * 5, 11 + rng() * 6, 5 + rng() * 2, hex(rng() < 0.5 ? 0xece8df : 0x9b8f80), hex(0x2f3338), 0.9);
+        keep(x, z, 10);
+      }
+    }
+    // hillside spectator terraces above the run-off (Eau Rouge, Pouhon, Blanchimont)
+    for (const c of track.corners) {
+      if (c.R > 160) continue;
+      const sgn = -c.dir;
+      for (let s = c.apex * DS - 40; s < c.apex * DS + 60; s += 4) {
+        const i = Math.floor(track.wrapS(s) / DS) % N, wall = sgn > 0 ? track.wallR[i] : track.wallL[i];
+        for (let r = 0; r < 4; r++) {
+          const [x, z, h] = track.pointAt(track.wrapS(s), sgn * (wall + 32 + r * 3)); if (!sceneryClear(track, x, z, 1.5) || sgn === P.side && track.pitProg(s) >= 0) continue;
+          add('solid', at(B(4, 0.5, 2.8, 0, 0, 0, hex(0x8a8f86)), x, z, -h, r * 0.5));
+          if (rng() < 0.7) crowdPts.push([x, H(x, z) + r * 0.5 + 0.5, z, -h + Math.PI / 2 * sgn]);
+        }
+      }
+    }
+  } else if (style === 'suzuka') {
+    // the amusement park beside the main straight: a roller coaster on lattice supports
+    { const p = site(200, 700, 120); if (p) {
+      const pts = [], n = 90, yaw = rng() * Math.PI;
+      for (let k = 0; k <= n; k++) { const a = k / n * Math.PI * 2; pts.push(new THREE.Vector3(Math.cos(a) * 90 + Math.cos(3 * a) * 20, 8 + 14 * Math.pow(Math.sin(a * 2), 2) + (k < 12 ? k * 2 : 0), Math.sin(a) * 50 + Math.sin(2 * a) * 18)); }
+      const curve = new THREE.CatmullRomCurve3(pts, true), tube = new THREE.TubeGeometry(curve, 240, 0.8, 6, true);
+      add('metal', at(paint(tube, hex(0xe53935)), p.x, p.z, yaw));
+      for (let k = 0; k < n; k += 3) { const v = pts[k]; const g = new THREE.CylinderGeometry(0.3, 0.4, v.y, 5); g.translate(v.x, v.y / 2, v.z); add('metal', at(paint(g, hex(0xf2f2f2)), p.x, p.z, yaw)); }
+      keep(p.x, p.z, 120);
+    } }
+    // the circuit hotel: a long white block under a curved Japanese roof
+    { const p = site(250, 900, 60); if (p) { const yaw = rng() * Math.PI;
+      add('solid', at(B(80, 14, 18, 0, 0, 0, hex(0xf1efe9)), p.x, p.z, yaw)); add('glass', at(B(80.4, 1.4, 18.4, 0, 6, 0, hex(0x2a3540)), p.x, p.z, yaw));
+      const roof = new THREE.CylinderGeometry(14, 14, 86, 20, 1, false, Math.PI * 0.35, Math.PI * 0.3); roof.rotateZ(Math.PI / 2); roof.translate(0, 0.6, 0);
+      add('solid', at(paint(roof, hex(0x3b4650)), p.x, p.z, yaw)); keep(p.x, p.z, 55); } }
+    // cherry trees (pink crowns) among the woods near the circuit
+    for (let k = 0; k < (Q === 2 ? 220 : 110); k++) {
+      const p = site(45, 500, 4, 40); if (!p) continue; const s = 0.8 + rng() * 0.5;
+      add('leaf', at(paint(new THREE.CylinderGeometry(0.25 * s, 0.35 * s, 2.8 * s, 5).translate(0, 1.4 * s, 0), hex(0x5a4030)), p.x, p.z));
+      add('leaf', at(paint(new THREE.IcosahedronGeometry(3 * s, 0).scale(1, 0.75, 1).translate(0, 4.2 * s, 0), hex(rng() < 0.6 ? 0xf3b6c8 : 0xe8909f)), p.x, p.z));
+    }
+  } else if (style === 'bahrain') {
+    // hospitality under white tensile tents, and sandstone buildings with shaded arcades
+    for (let k = 0; k < 6; k++) {
+      const p = site(90, 500, 35); if (!p) break;
+      for (let t = 0; t < 5; t++) { const tent = new THREE.ConeGeometry(9, 6, 4, 1, true); tent.rotateY(Math.PI / 4); tent.translate(0, 8, 0); add('fabric', at(paint(tent, hex(0xf6f4ee)), p.x + (t - 2) * 13, p.z, 0));
+        for (const [ox, oz] of [[-6, -6], [6, -6], [-6, 6], [6, 6]]) add('metal', at(B(0.3, 5, 0.3, ox, 0, oz, hex(0xd0d0d0)), p.x + (t - 2) * 13, p.z)); }
+      keep(p.x, p.z, 40);
+    }
+    for (let k = 0; k < 8; k++) {
+      const p = site(150, 1200, 30); if (!p) break; const yaw = rng() * Math.PI, w = 30 + rng() * 30;
+      add('solid', at(B(w, 9 + rng() * 6, 16, 0, 0, 0, hex(0xd8c39a)), p.x, p.z, yaw));
+      for (let a = -w / 2 + 3; a < w / 2 - 2; a += 4) add('solid', at(B(0.8, 4, 0.8, a, 0, 8.6, hex(0xcab68c)), p.x, p.z, yaw));
+      keep(p.x, p.z, w / 2 + 6);
+    }
+    // oil pumpjacks out in the desert (the Sakhir field)
+    for (let k = 0; k < (Q === 2 ? 26 : 14); k++) {
+      const p = site(600, 2400, 8, 60); if (!p) continue; const yaw = rng() * Math.PI;
+      add('metal', at(B(1.2, 5, 1.2, 0, 0, 0, hex(0x3c3f44)), p.x, p.z, yaw)); add('metal', at(B(9, 0.8, 0.8, 0, 5.2, 0, hex(0xb8892b)), p.x, p.z, yaw + 0.05));
+      add('metal', at(B(1.8, 2.2, 1.6, 4.4, 4.2, 0, hex(0x3c3f44)), p.x, p.z, yaw)); add('solid', at(B(4, 0.4, 3, 0, 0, 0, hex(0x8e8478)), p.x, p.z, yaw));
+    }
+  } else if (style === 'interlagos') {
+    // the hillside neighbourhoods of São Paulo: dense small houses in many colours, stepped up the slopes
+    const n = Q === 2 ? 6500 : Q === 1 ? 4000 : 1800, geo = new THREE.BoxGeometry(1, 1, 1); geo.translate(0, 0.5, 0);
+    const im = new THREE.InstancedMesh(geo, new THREE.MeshStandardMaterial({ roughness: 0.85 }), n), m4 = new THREE.Matrix4(), q4 = new THREE.Quaternion(), v3 = new THREE.Vector3(), sc = new THREE.Vector3(), up = new THREE.Vector3(0, 1, 0), col = new THREE.Color();
+    // neighbourhoods: blobs of the noise field, filled street block by street block on a 9 m grid turned to each
+    // neighbourhood's own orientation (houses touch along the block, streets between the blocks)
+    let k = 0; const nz = makeNoise(77), taken = new Set();
+    for (let t = 0; t < n * 30 && k < n; t++) {
+      const a = rng() * 6.283, r = 260 + Math.pow(rng(), 0.8) * 1500, x0 = R.center.x + Math.cos(a) * r, z0 = R.center.z + Math.sin(a) * r;
+      if (nz.fbm(x0 / 340, z0 / 340, 2) < 0.12) continue;
+      const ang = Math.floor(nz(x0 / 900, z0 / 900) * 8) * 0.39, ca = Math.cos(ang), sa = Math.sin(ang);
+      const gu = Math.round((x0 * ca + z0 * sa) / 9), gv = Math.round((-x0 * sa + z0 * ca) / 9);
+      if (gu % 6 === 0 || gv % 4 === 0) continue; // the streets
+      const key = gu * 100003 + gv; if (taken.has(key)) continue;
+      const x = (gu * ca - gv * sa) * 9, z = (gu * sa + gv * ca) * 9;
+      if (D(x, z) < 140 || keepOut.some(o => (o.x - x) ** 2 + (o.z - z) ** 2 < o.r * o.r)) continue;
+      taken.add(key);
+      const h = 3 + Math.floor(rng() * 3.2) * 2.8;
+      m4.compose(v3.set(x, H(x, z) - 0.5, z), q4.setFromAxisAngle(up, -ang), sc.set(8.4, h, 8.4));
+      im.setMatrixAt(k, m4); im.setColorAt(k, col.setHex([0xe8d5b5, 0xd9734a, 0xf2c14e, 0x6fa8a3, 0xe8e2d6, 0xc65a5a, 0x8fb06c, 0xb9b0a3, 0xd8d0c4, 0xa9a39a][(rng() * 10) | 0]).multiplyScalar(0.72 + rng() * 0.25)); k++;
+    }
+    im.count = k; world.add(im);
+    // billboard towers beside the approaches
+    for (let k = 0; k < 10; k++) { const p = site(60, 260, 6); if (!p) break; const yaw = rng() * Math.PI;
+      add('metal', at(B(0.8, 14, 0.8, 0, 0, 0, hex(0x777c82)), p.x, p.z, yaw)); add('solid', at(B(12, 5, 0.4, 0, 14, 0, hex([0xe10600, 0x1e5bd8, 0xf5c518, 0x1f8f4e][(rng() * 4) | 0])), p.x, p.z, yaw)); keep(p.x, p.z, 8); }
+  }
+  // ---------------------------------------------------------------- crowds on banks and terraces (one instanced mesh)
+  if (crowdPts.length) {
+    const geo = new THREE.BoxGeometry(0.45, 1.65, 0.32); geo.translate(0, 0.82, 0);
+    const n = Math.min(crowdPts.length, Q === 2 ? 9000 : Q === 1 ? 5000 : 2000);
+    const im = new THREE.InstancedMesh(geo, animateCrowd(new THREE.MeshStandardMaterial({ roughness: 0.9 })), n), m4 = new THREE.Matrix4(), q4 = new THREE.Quaternion(), up = new THREE.Vector3(0, 1, 0), v3 = new THREE.Vector3(), one = new THREE.Vector3(1, 1, 1), col = new THREE.Color();
+    for (let k = 0; k < n; k++) { const [x, y, z, yaw] = crowdPts[k]; m4.compose(v3.set(x, y, z), q4.setFromAxisAngle(up, yaw), one); im.setMatrixAt(k, m4); im.setColorAt(k, col.setHex([0xe53935, 0x1e88e5, 0xfdd835, 0xffffff, 0x222222, 0xff7043, 0x43a047, 0x8e24aa][(rng() * 8) | 0]).lerp(CROWD_GREY, 0.35)); }
+    im.count = n; world.add(im);
+  }
+  // ---------------------------------------------------------------- merge the batches
+  const matFor = { solid: mats.solid, metal: mats.metal, glass: mats.glass, road: mats.road, fabric: mats.fabric, leaf: mats.leaf, fence: new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.6, metalness: 0.5, transparent: true, opacity: 0.55, side: THREE.DoubleSide, depthWrite: false }) };
+  for (const [key, list] of batches) {
+    if (!list.length) continue;
+    const m = new THREE.Mesh(mergeGeoms(list, true), matFor[key]); m.castShadow = Q === 2 && key !== 'road' && key !== 'fence'; m.receiveShadow = true; if (key === 'road') m.userData.kind = 'service road';
+    world.add(m);
+  }
+}
+
 function buildWorld(scene, track, T, opts) {
   const world = new THREE.Group(); scene.add(world);
   const wet = opts.wet; const Q = opts.quality; const P = wet ? SKY.wet : SKY.dry, env = R.env;
@@ -7063,7 +7384,9 @@ function buildWorld(scene, track, T, opts) {
 
   // ---------- terrain ----------
   const terrain = buildTerrain(world, track, T, opts); R.heightAt = terrain.heightAt; R.distAt = terrain.distAt;
-  const inLake = (x, z) => lakeE(x, z) < 1.12 || riverDist(x, z) < 60;
+  // where no tree may stand: water, and the venue's buildings, car parks and campsites (R.keepOut, see buildVenue)
+  R.keepOut = [];
+  const inLake = (x, z) => lakeE(x, z) < 1.12 || riverDist(x, z) < 60 || R.keepOut.some(k => (k.x - x) ** 2 + (k.z - z) ** 2 < k.r * k.r);
   const wm = makeWaterMaterial(wet); R.waterMat = wm;
 
   // ---------- lake ----------
@@ -7157,6 +7480,7 @@ function buildWorld(scene, track, T, opts) {
     im.count = k2; im.castShadow = Q === 2; world.add(im);
   }
   buildLandmarks(world, track, terrain, opts);
+  buildVenue(world, track, terrain, opts);
   // ---------- clouds ----------
   {
     const rng = seededRand(3); const count = wet || env.floodlit ? 0 : Q === 0 ? 14 : 30;
@@ -7737,17 +8061,19 @@ function buildGrandstands(G, track, T, opts, objs) {
 
 function buildTrees(scene, track, inLake, opts) {
   const Q = opts.quality, env = R.env, canyon = env.style === 'canyon';
-  const count = Math.round((Q === 2 ? 7000 : Q === 1 ? 4000 : 1500) * (env.forest ?? 1));
+  // trees per circuit: dense woods at Spa, Monza and Suzuka, open country at Silverstone, a few palms in Bahrain;
+  // planted within 1.6 km of the circuit, where they are seen
+  const count = Math.round((Q === 2 ? 14000 : Q === 1 ? 8000 : 3000) * (env.forest ?? 1));
   const heightAt = R.heightAt || (() => 0), distAt = R.distAt;
   const paint = (g, c) => { const n = g.attributes.position.count; const a = new Float32Array(n * 3); const p = g.attributes.position; for (let k = 0; k < n; k++) { const shade = 0.82 + 0.25 * Math.min(1, Math.max(0, (p.getY(k) - 2) / 12)); a[k * 3] = c[0] * shade; a[k * 3 + 1] = c[1] * shade; a[k * 3 + 2] = c[2] * shade; } g.setAttribute('color', new THREE.BufferAttribute(a, 3)); return g; };
   // spruce: four tiers of drooping cones
   const trunk = new THREE.CylinderGeometry(0.28, 0.45, 3.2, 6); trunk.translate(0, 1.6, 0);
-  const tiers = [[3.4, 5.0, 4.6], [2.8, 4.4, 7.2], [2.1, 3.8, 9.6], [1.3, 3.2, 11.8]].map(([r, h, y]) => { const c = new THREE.ConeGeometry(r, h, 8, 1, true); c.translate(0, y, 0); return paint(c, [0.17, 0.32, 0.18]); });
+  const tiers = [[3.4, 5.0, 4.6], [2.8, 4.4, 7.2], [2.1, 3.8, 9.6], [1.3, 3.2, 11.8]].map(([r, h, y]) => { const c = new THREE.ConeGeometry(r, h, 8, 1, true); c.translate(0, y, 0); return paint(c, [0.11, 0.23, 0.12]); });
   const spruce = mergeGeoms([paint(trunk, [0.32, 0.22, 0.15]), ...tiers]);
   // broadleaf: lumpy icosahedron crown
   const bt = new THREE.CylinderGeometry(0.3, 0.42, 3.6, 6); bt.translate(0, 1.8, 0);
   const crown = new THREE.IcosahedronGeometry(3.6, 1); { const p = crown.attributes.position; const r2 = seededRand(8); for (let k = 0; k < p.count; k++) { const f = 0.85 + r2() * 0.3; p.setXYZ(k, p.getX(k) * f, p.getY(k) * f * 0.9, p.getZ(k) * f); } crown.translate(0, 6.3, 0); }
-  const broad = mergeGeoms([paint(bt, [0.34, 0.25, 0.17]), paint(crown.toNonIndexed(), canyon ? [0.3, 0.36, 0.2] : [0.26, 0.42, 0.18])]);
+  const broad = mergeGeoms([paint(bt, [0.34, 0.25, 0.17]), paint(crown.toNonIndexed(), canyon ? [0.3, 0.36, 0.2] : [0.17, 0.3, 0.11])]);
   // date palms in the desert: a tall bare trunk and a flat crown of fronds
   let palm = null;
   if (env.desert) {
@@ -7757,7 +8083,7 @@ function buildTrees(scene, track, inLake, opts) {
   }
   const mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .92, flatShading: true, side: env.desert ? THREE.DoubleSide : THREE.FrontSide });
   // forest density: clustered with noise so the hills get woods and clearings
-  const nz = makeNoise(41); const rng = seededRand(23);
+  const rng = seededRand(23);
   const CH = 520, chunks = new Map();
   const put = (kind, x, y, z, s, rot, colr) => {
     const key = kind + ':' + Math.floor(x / CH) + ',' + Math.floor(z / CH);
@@ -7765,13 +8091,15 @@ function buildTrees(scene, track, inLake, opts) {
     c.list.push([x, y, z, s, rot, colr]);
   };
   let n = 0, tries = 0;
-  while (n < count && tries < count * 30) {
+  while (n < count && tries < count * 40) {
     tries++;
     const x = R.center.x - 2500 + rng() * 5000, z = R.center.z - 2300 + rng() * 4600;
-    const forest = nz.fbm(x / 520, z / 520, 3) + (canyon ? 0.05 : 0.15);
-    if (rng() > forest * 1.8) continue;
+    const dT = distAt ? distAt(x, z) : 1e9; if (dT < 40 || dT > 1600) continue;
+    // woods: dense where the woods pattern is high, the odd lone tree elsewhere
+    // the more wooded the circuit's setting, the lower the woods threshold (Spa nearly all forest, Silverstone open)
+    const thr = 0.34 - 0.2 * (env.forest ?? 1), forest = woodsAt(x, z), w = smooth01(thr, thr + 0.34, forest);
+    if (rng() > 0.03 + w * w * 1.1) continue;
     if (inLake(x, z)) continue;
-    const dT = distAt ? distAt(x, z) : 1e9; if (dT < 75) continue;
     if (CASTLE && Math.hypot(x - CASTLE.x, z - CASTLE.z) < 230) continue;
     const y = heightAt(x, z); if (y > 420) continue;
     // exact clearance from the circuit for trees near it
@@ -7781,7 +8109,7 @@ function buildTrees(scene, track, inLake, opts) {
       if (track.pitProg(proj.s) >= 0 && ad < 90) continue;
       if (Math.abs(track.dS(0, proj.s)) < 420 && ad < 90) continue;
     }
-    const s = (0.75 + rng() * 0.8) * (canyon ? 0.7 : 1); const isBroad = y < 120 && rng() < (env.broadleaf ?? 0.32);
+    const s = (0.8 + rng() * 0.7 + w * 0.6) * (canyon ? 0.7 : 1); const isBroad = y < 120 && rng() < (env.broadleaf ?? 0.32);
     const tint = 0.8 + rng() * 0.35, hue = rng();
     put(isBroad ? 'b' : 's', x, y - 0.4, z, s, rng() * 6.28, [tint * (0.9 + hue * 0.25), tint, tint * (0.9 + (1 - hue) * 0.15)]);
     n++;
