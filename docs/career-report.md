@@ -189,13 +189,28 @@ by a retirement test), `movement` 42 / 42, `offtrack` 12 / 12, `ai-racecraft` 14
 `weather` 8 / 8, `intel` 6 / 6, `runoff` 10 / 10, `shortcuts` 7 / 7, `slipstream` 10 / 10, `damage-timing` 5 / 5,
 `corner-signs` 5 / 5, `no-yellow-flags` 2 / 2, `held-throttle` pass, `scenery` pass (6 circuits).
 
-**Not run in this round:** the `career-ai` benchmark's pace, duel and race modes (no assertions; its reference drivers
-and its Career mode were updated to the 40-point score). Human playtesting was not done.
+**Benchmark:** `node tests/career-ai.cjs career`. Three AI stand-in "players" at Rookie, Pro and Master skill raced
+every circuit of each rank twice (seeds 901/902 + rank × 100), from random grid slots rather than the Career's P20
+start. Mean championship total out of 240:
+
+| Rank (field) | Rookie-skill stand-in | Pro-skill | Master-skill | Threshold |
+|---|---|---|---|---|
+| Rookie (100%) | 141 | 129 | 173 | 160 |
+| Pro (125%) | 84 | 144 | 167 | 180 |
+| Master (150%) | 114 | 108 | 134 | 200 |
+
+A driver exactly as quick as the field averages about 135–145 points, so each threshold asks the player to clearly
+beat the field. Master's 200 is the hardest by a wide margin.
+
+**Not run in this round:** the `career-ai` benchmark's pace, duel and race modes (no assertions). Human playtesting was
+not done.
 
 ## I. Remaining issues and limitations
 
 - **Not playtested.** No human has played the new Career: championship difficulty against 160 / 180 / 200, how often
-  players retire, and how fast VR moves.
+  players retire, and how fast VR moves. The benchmark above suggests the thresholds are demanding: AI stand-ins at the
+  field's own skill average about 135–145 of 240, and the Master-skill stand-in managed 134 against the Master field.
+  They are the agreed values and were not changed.
 - **Interrupted races** are forfeited rather than restored with their damage, position, laps and timing.
 - **Weather re-roll.** Before the start, leaving the race brief (Back) and opening it again draws new weather and a new
   shuffle of the other cars' grid slots. Your own grid slot is fixed by the rules, and no attempt begins until you press
