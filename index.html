@@ -688,19 +688,19 @@
 <div id="controls" class="overlay hidden">
   <div class="dialog">
     <h2>Con<span>trols</span></h2>
-    <div class="sub">Super Star Car-style keyboard controls: WASD / arrows to drive. On the grid, hold W to rev to the launch rpm; launch control holds the car and releases it automatically when the red lights go out. Steer into the marked pit entry and cross the gold gate for automatic braking and control, <span id="controlsPitChoice">choose tyres and fuel</span> when you stop in one of the four shared boxes, and resume driving at pit exit. Gamepad: left stick steer, RT throttle, LT brake, Start pause.</div>
+    <div class="sub">Drive with WASD or the arrow keys. To pit, steer into the marked pit entry: the car drives itself to its box, <span id="controlsPitChoice">where you choose tyres and fuel</span>. Gamepad: left stick steers, RT throttle, LT brake, Start pauses.</div>
     <div class="keys">
       <div>Accelerate <span><kbd>W</kbd><kbd>↑</kbd></span></div>
       <div>Brake <span><kbd>S</kbd><kbd>↓</kbd></span></div>
       <div>Steer <span><kbd>A</kbd><kbd>D</kbd><kbd>←</kbd><kbd>→</kbd></span></div>
       <div>Controlled drift <span><kbd>W</kbd> + <kbd>S</kbd> + <kbd>A</kbd>/<kbd>D</kbd></span></div>
-      <div>Tyres &amp; pits panel <span><kbd>V</kbd></span></div>
+      <div>Launch (hold on the grid) <span><kbd>W</kbd></span></div>
       <div>Look back <span><kbd>B</kbd></span></div>
-      <div>Telemetry panel <span><kbd>T</kbd></span></div>
-      <div>Launch: hold before lights out <span><kbd>W</kbd></span></div>
-      <div>Respawn after launch <span><kbd>Space</kbd><kbd>R</kbd></span></div>
+      <div>Tyres &amp; pit info <span><kbd>V</kbd></span></div>
+      <div>Telemetry graph <span><kbd>T</kbd></span></div>
+      <div>Respawn on track <span><kbd>R</kbd><kbd>Space</kbd></span></div>
       <div>Mute audio <span><kbd>M</kbd></span></div>
-      <div>Pause menu <span><kbd>Esc</kbd></span></div>
+      <div>Pause <span><kbd>Esc</kbd></span></div>
     </div>
     <div class="actions"><button class="btn primary" data-act="controlsClose">Back</button></div>
   </div>
@@ -1410,6 +1410,26 @@ const SIM = (function () {
           let bp = c.apex; for (let k = 0; k < 250; k++) { const j = this.wrapI(c.apex - k); const jn = this.wrapI(j - 1); if (this.refSpeed[jn] <= this.refSpeed[j] + 0.01) { bp = j; break; } }
           c.brakePoint = bp; this.brakeBoards.push({ i: bp, side: -c.dir });
         }
+      }
+      // Route gates (shortcut prevention): the apex of every corner of a chicane (two or more corners of alternating
+      // direction within 80 m, each tighter than a 200 m radius), in the order of the lap; see Session.routeCheck. The
+      // span a gate guards runs from 40 m before the chicane (first gate) or from the previous apex (the others) to
+      // just past its own apex, so the spans of one chicane cover all of it.
+      this.routeGates = [];
+      {
+        const cs = this.corners, nc = cs.length, link = new Array(nc).fill(false);
+        for (let k = 0; k < nc; k++) {
+          const a = cs[k], b = cs[(k + 1) % nc], gap = ((b.start - a.end + N) % N) * DS;
+          link[k] = a.dir !== b.dir && gap < 80 && a.R < 200 && b.R < 200; // corner k and k+1 form a chicane
+        }
+        for (let k = 0; k < nc; k++) {
+          const inC = link[k] || link[(k - 1 + nc) % nc]; if (!inC) continue;
+          const c = cs[k], first = !link[(k - 1 + nc) % nc];
+          const s0 = first ? this.wrapS(c.start * DS - ROUTE_GATE.lead) : cs[(k - 1 + nc) % nc].apex * DS, apexS = c.apex * DS;
+          const toApex = ((apexS - s0) % L + L) % L;
+          this.routeGates.push({ corner: c.num, name: c.name, apex: c.apex, s0, apexAt: toApex, len: toApex + ROUTE_GATE.after, inside: Math.sign(this.kappa[c.apex]) || c.dir });
+        }
+        this.routeGates.sort((a, b) => a.apex - b.apex);
       }
       this.cornerAt = (i) => { for (const c of this.corners) { let a = c.start, b = c.end; if (b < a) b += this.N; let ii = i; if (ii < a) ii += this.N; if (ii >= a && ii <= b) return c; } return null; };
     }
@@ -2477,6 +2497,9 @@ const SIM = (function () {
   //  puncture/failure/fire: odds multipliers; fatal: suspension condition at which the car is out.
   // an impact closes after this long without contact, or this long after it began (s): see Session.recordContact
   const CONTACT_GAP = 0.05, CONTACT_MAX = 0.08;
+  // route gates (m): how far before a chicane its first gate's span starts, how far past an apex a span ends, and
+  // the half-width of the check window around the apex
+  const ROUTE_GATE = { lead: 40, after: 8, window: 4 };
   const DAMAGE_LEVELS = {
     reduced: { id: 'reduced', name: 'Reduced', thr: 2.3, scale: 1.9, fatigue: 0.25, puncture: 0.3, failure: 0.35, fire: 0, fatal: 1.0, chassisFatal: 0.85, reliability: 0 },
     standard: { id: 'standard', name: 'Standard', thr: 1.0, scale: 1.0, fatigue: 1.0, puncture: 1.0, failure: 1.0, fire: 0.45, fatal: 0.9, chassisFatal: 0.6, reliability: 0 },
@@ -2958,7 +2981,7 @@ const SIM = (function () {
      AI DRIVER
      ------------------------------------------------------------------ */
   /* ------------------------------------------------------------------
-     AI RACECRAFT — personality, trajectory planning, opponent prediction
+     AI RACECRAFT — the shared racing profile, trajectory planning, opponent prediction
      ------------------------------------------------------------------ */
   // The AI is organised in four layers that run at different rates:
   //   strategic (10 Hz, cheap): pit/tyre/fuel calls (RaceStrategy + strategy()), plus how much risk this race
@@ -2987,15 +3010,18 @@ const SIM = (function () {
   // consistency, fewer errors, better reading of rivals); the will to attack and defend is the same at every level.
   // It never touches power, top speed, grip, braking force, traction or fuel use: every car obeys the same physics.
   const AI_MAX_LEVEL = 1.5;
+  // the racing room every AI keeps from a car alongside: overlap length and lateral reach (m), centre-to-centre gap
+  // (m), how far ahead it looks along the track and across it (s); see AIDriver.updateRoom
+  const AI_ROOM = { len: 6.2, across: 3.6, gap: 2.7, lookS: 0.4, lookD: 0.25 };
   const aiSkillForLevel = (level) => clamp((clamp(+level || 1, 1, AI_MAX_LEVEL) - 1) / (AI_MAX_LEVEL - 1), 0, 1);
-  // A driver's skilled profile: judgement ratings move towards (never reach) perfect; personality (aggression,
-  // risk, patience) stays, so drivers keep their own character at every level.
+  // A driver's skilled profile: judgement ratings move towards (never reach) perfect; the will to race (aggression,
+  // risk, patience) is the shared AI_RACER profile and the same at every level.
   function aiSkillProfile(d, x) {
     const up = (v, k) => v + (1 - v) * k * x;
     return { ...d, pace: up(d.pace, 0.6), cons: up(d.cons, 0.9), brake: up(d.brake, 0.85), craft: up(d.craft, 0.85),
       tyre: up(d.tyre, 0.8), strat: up(d.strat, 0.9), adapt: up(d.adapt, 0.75) };
   }
-  // A driver's racing mind: the persistent personality (aggression, patience, risk tolerance, racecraft,
+  // A driver's racing mind: the shared racing profile (aggression, patience, risk tolerance, racecraft,
   // adaptability, consistency) combined with internal difficulty (0..1) and Career skill (0..1). It shapes
   // judgement only (how well rivals are read, how well paths are judged, how precisely they are executed,
   // how long a driver waits); it never touches the car.
@@ -3079,7 +3105,7 @@ const SIM = (function () {
       this.neighbors = []; this.attackTarget = null; this.defending = false;
       this.followTime = 0; this.plan = null; this.boxThisLap = false; this.lastPlanLap = -1;
       this.pressure = 0; this.pushMode = 0; this.tyreMode = 'normal'; this.smoothThrottle = 0;
-      // ---- racecraft: personality, the tactical state, the planned path, predictions and short-term memory ----
+      // ---- racecraft: the tactical state, the planned path, predictions and short-term memory ----
       this.mind = racingMind(p, diff, x);
       // how far onto green paint (m beyond the planning limit) this driver will take a move, an avoidance or an exit:
       // about two tyres for a careful driver, all four for a bold one. Whether it is worth it is judged per path.
@@ -4004,14 +4030,26 @@ const SIM = (function () {
       const W = L.win[k], e = (this.pathD(W.start) - L.off[0][W.start]) * W.dir;
       return e > 1.2 ? 1 : e < -1.2 ? -1 : 0;
     }
-    // 60 Hz: keep a car's width of room from any car alongside
+    // 60 Hz: keep a car's width of room from any car alongside, or about to be: a car closing up the side (already
+    // pulled out of the wake, at least 1.5 m across) that will overlap within 0.4 s, and a car drifting across towards
+    // this one (its lateral motion over the next 0.25 s). Leaving a car's width is racing room, not giving the place
+    // up; it keeps the AI from turning in on a car that has a wheel alongside.
     updateRoom() {
       const car = this.car, t = this.track; let lo = -99, hi = 99;
-      if (!car.pit && !this.pitting) for (const n of this.neighbors) {
-        const o = n.o; if (o.pit || o.inGarage || o.ghost) continue;
-        const ds = t.dS(car.s, o.s); if (ds < -6.2 || ds > 6.2) continue;
-        const g = o.d - car.d; if (Math.abs(g) > 3.6) continue;
-        if (g > 0) hi = Math.min(hi, o.d - 2.7); else lo = Math.max(lo, o.d + 2.7);
+      if (!car.pit && !this.pitting) {
+        const i = car.idx, vdMe = car.vx * t.rx[i] + car.vz * t.rz[i];
+        for (const n of this.neighbors) {
+          const o = n.o; if (o.pit || o.inGarage || o.ghost) continue;
+          const ds = t.dS(car.s, o.s), g = o.d - car.d;
+          const now = ds >= -AI_ROOM.len && ds <= AI_ROOM.len;
+          const dsP = ds + (o.speed - car.speed) * AI_ROOM.lookS, soon = !now && Math.abs(dsP) <= AI_ROOM.len && Math.abs(g) >= 1.5;
+          if (!now && !soon) continue;
+          const j = o.idx, vdO = o.vx * t.rx[j] + o.vz * t.rz[j], gP = g + (vdO - vdMe) * AI_ROOM.lookD;
+          if (Math.min(Math.abs(g), Math.abs(gP)) > AI_ROOM.across) continue;
+          const side = Math.abs(g) > 0.3 ? Math.sign(g) : Math.sign(gP) || Math.sign(g) || 1;
+          const dP = o.d + vdO * AI_ROOM.lookD; // where it is heading: the nearer of now and then counts
+          if (side > 0) hi = Math.min(hi, Math.min(o.d, dP) - AI_ROOM.gap); else lo = Math.max(lo, Math.max(o.d, dP) + AI_ROOM.gap);
+        }
       }
       this.roomLo = lo; this.roomHi = hi;
     }
@@ -5128,6 +5166,18 @@ const SIM = (function () {
     // The car's own consumption per lap (measured over its recent green-flag laps) and the laps its fuel lasts.
     fuelLapRate(car) { return car.fuelPerLapEst || this.fuelPerLap; }
     fuelRange(car) { return Math.max(0, car.fuel) / this.fuelLapRate(car); }
+    // The driver's estimate of laps of fuel left (HUD): the car's measured consumption per lap, with the lap in progress
+    // blended in once a quarter of it has been run (projected over a full lap, held within 60-160% of the measured
+    // figure so a burst of throttle or a lift cannot swing it), never while a pit stop is part of the lap.
+    fuelRangeLive(car) {
+      const base = this.fuelLapRate(car), t = this.track;
+      let rate = base;
+      if (!car.pit && !car.lapHadPit && car.lapFuel != null && car.crossings > 0) {
+        const frac = (car.totalDist - Math.floor(car.totalDist / t.length) * t.length) / t.length, burnt = car.lapFuel - car.fuel;
+        if (frac > 0.25 && burnt > 0) rate = lerp(base, clamp(burnt / frac, 0.6 * base, 1.6 * base), 0.4 * smooth01((frac - 0.25) / 0.75));
+      }
+      return Math.max(0, car.fuel) / Math.max(1e-3, rate);
+    }
     // Laps still to run to the flag from where the car is (fractional).
     lapsLeft(car) { const t = this.track; return Math.max(0, this.totalLaps - car.laps - t.wrapS(car.totalDist) / t.length); }
     get leader() { return this.order ? this.order[0] : this.cars[0]; }
@@ -5207,7 +5257,7 @@ const SIM = (function () {
         // track projection
         const prevS = car.s;
         t.project(car.x, car.z, car.idx, car.proj); car.idx = car.proj.i; car.s = car.proj.s; car.d = car.proj.d;
-        car.progress = this.legalProgress(car, t.dS(prevS, car.s), car.x - px, car.z - pz);
+        car.progress = this.routeCheck(car, this.legalProgress(car, t.dS(prevS, car.s), car.x - px, car.z - pz));
         car.totalDist += car.progress;
         if(this.weather)this.weather.displace(car,dt);
         collideWalls(car, t, this);
@@ -5556,6 +5606,38 @@ const SIM = (function () {
       if (car.pit || car.offN < 4 || ds <= 0) return ds;
       const t = this.track, i = car.idx, inside = clamp(1 - 3 * t.kappa[i] * car.d, 0, 1); // kappa × d > 0 on the inside
       return Math.min(ds, Math.max(0, mx * t.tx[i] + mz * t.tz[i]) * inside);
+    }
+    // Ordered route gates (Track.routeGates, one at the apex of every chicane corner). Within 4 m of the apex a car must
+    // at some moment have at least two tyres on the track or kerb (inside wheels over the kerb are fine), or be on the
+    // outside of the corner (running wide is not a shortcut). A car that passes the gate without that has skipped the
+    // corner: the progress it earned over the gate's span is taken back (routeDebt), so it must drive that distance again
+    // before its race distance, its lap and its position count it. No time penalty and no warning; the same rule for
+    // every car; the pit lane in use always counts as the route.
+    routeCheck(car, p) {
+      const t = this.track, G = t.routeGates;
+      if (!G || !G.length || this.type === 'calib' || car.inGarage) return p;
+      if (car.gateNext == null || car.gateResync) {
+        let best = 0, bd = 1e9; G.forEach((g, k) => { const d = t.dS(car.s, g.s0); const f = d < 0 ? d + t.length : d; if (f < bd) { bd = f; best = k; } });
+        car.gateNext = best; car.gateOk = false; car.gateCredit = 0; car.gateResync = false;
+      }
+      for (let guard = 0; guard < G.length; guard++) {
+        const g = G[car.gateNext], rel = t.dS(g.s0, car.s);
+        if (rel < 0) break; // not there yet
+        if (rel <= g.len) {
+          car.gateCredit += Math.max(0, p);
+          if (Math.abs(rel - g.apexAt) <= ROUTE_GATE.window && (car.offN <= 2 || g.inside * car.d <= 0 || car.pit)) car.gateOk = true;
+          break;
+        }
+        if (rel > g.len + 400) { car.gateResync = true; break; } // far past it (a reset or respawn): pick up the next gate
+        // left the gate's window: judge it, then look at the next gate (a jump can pass more than one)
+        if (!car.gateOk && car.gateCredit > 0) {
+          car.routeDebt = (car.routeDebt || 0) + car.gateCredit; this.stats.routeMisses = (this.stats.routeMisses || 0) + 1;
+          this.log(car, 'route gate missed: ' + g.name + ' (' + car.gateCredit.toFixed(0) + ' m)');
+        }
+        car.gateOk = false; car.gateCredit = 0; car.gateNext = (car.gateNext + 1) % G.length;
+      }
+      if (car.routeDebt > 0 && p > 0) { const use = Math.min(p, car.routeDebt); car.routeDebt -= use; p -= use; }
+      return p;
     }
     timing(car, prevS = car.s, dt = PHYS_DT, at = this.time) {
       const t = this.track; const L = t.length;
@@ -9777,7 +9859,7 @@ function updateHud(dt) {
   // fuel: estimated laps left at the car's own measured consumption, flagged when it will not reach the flag
   const fuelRow = $('fuelVal').closest('.srow'); fuelRow.classList.toggle('hidden', !sess.fuelEnabled);
   if (sess.fuelEnabled) {
-    const range = sess.fuelRange(p), toGo = sess.type === 'race' && !p.finished ? sess.lapsLeft(p) : 0;
+    const range = sess.fuelRangeLive(p), toGo = sess.type === 'race' && !p.finished ? sess.lapsLeft(p) : 0;
     const short = toGo > 0 && range < toGo - 0.05;
     $('fuelVal').textContent = range.toFixed(1) + ' LAPS' + (short ? ' · SHORT' : '');
     $('fuelVal').classList.toggle('short', short);
@@ -10581,7 +10663,7 @@ function updateRain(dt) {
    Switch on with ?aidebug in the URL or F9 during a session; Shift+F9 picks the next AI car. While it is off nothing
    here runs, draws or allocates, and the planner keeps no candidate geometry. The panel shows one AI driver's mind:
    its tactical state and why, the chosen path and the candidates it weighed, where it predicts the cars around it
-   will be, where it means to brake, its personality and skill, and its recent decisions (moves, aborts, mistakes). */
+   will be, where it means to brake, its racing profile and skill, and its recent decisions (moves, aborts, mistakes). */
 const AIDIAG = { on: /[?&]aidebug\b/.test(location.search), focus: null, el: null, cvs: null, txt: null, t: 0 };
 function aiDiagFocus(sess) {
   const F = AIDIAG.focus;
