@@ -1,0 +1,35 @@
+✔ monza: a 1:16 lap ends at the painted line even after a shortcut (18.174195ms)
+✔ monza: every displayed position follows the cars on the road despite different shortcut histories (220.678772ms)
+✔ monza: holding W accelerates immediately after returning from the verge (26.277425ms)
+✔ monza: marshal recovery keeps the timing coordinate at the car (3.537822ms)
+✔ silverstone: a 1:16 lap ends at the painted line even after a shortcut (4.799175ms)
+✔ silverstone: every displayed position follows the cars on the road despite different shortcut histories (171.210883ms)
+✔ silverstone: holding W accelerates immediately after returning from the verge (24.171229ms)
+✔ silverstone: marshal recovery keeps the timing coordinate at the car (4.267539ms)
+✔ spa: a 1:16 lap ends at the painted line even after a shortcut (4.561718ms)
+✔ spa: every displayed position follows the cars on the road despite different shortcut histories (127.970381ms)
+✔ spa: holding W accelerates immediately after returning from the verge (14.788474ms)
+✔ spa: marshal recovery keeps the timing coordinate at the car (1.097451ms)
+✔ suzuka: a 1:16 lap ends at the painted line even after a shortcut (1.272528ms)
+✔ suzuka: every displayed position follows the cars on the road despite different shortcut histories (131.98088ms)
+✔ suzuka: holding W accelerates immediately after returning from the verge (12.748115ms)
+✔ suzuka: marshal recovery keeps the timing coordinate at the car (1.06018ms)
+✔ bahrain: a 1:16 lap ends at the painted line even after a shortcut (1.323496ms)
+✔ bahrain: every displayed position follows the cars on the road despite different shortcut histories (147.24731ms)
+✔ bahrain: holding W accelerates immediately after returning from the verge (28.391139ms)
+✔ bahrain: marshal recovery keeps the timing coordinate at the car (1.90179ms)
+✔ interlagos: a 1:16 lap ends at the painted line even after a shortcut (2.15618ms)
+✔ interlagos: every displayed position follows the cars on the road despite different shortcut histories (101.467822ms)
+✔ interlagos: holding W accelerates immediately after returning from the verge (12.691499ms)
+✔ interlagos: marshal recovery keeps the timing coordinate at the car (1.120876ms)
+✔ backing across the line and driving forward again cannot count a second lap (1.53688ms)
+✔ pending off-track slowdown cannot brake a car back on the asphalt (13.561166ms)
+✔ a projection jump during an excursion does not leave a permanent timing offset (1.43256ms)
+ℹ tests 27
+ℹ suites 0
+ℹ pass 27
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1127.64696

@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 
-// Green painted run-off: the preserved grip loss, the new progressive rolling resistance, the surface hierarchy,
+// Sustained green runoff after its entry pulse: per-tyre grip/resistance, surface hierarchy,
 // identical physics for player and AI, the planner's use of the paint (and its limits), and real races.
 const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
 const shim = { exports: {} }; new Function('module', html.match(/<script>([\s\S]*?)<\/script>/)[1])(shim);
@@ -28,14 +28,14 @@ function straight(t) {
   }
   throw new Error('no straight on ' + t.name);
 }
-// drive 2 s from 200 km/h with `n` tyres on the paint (0, 2, 4) or all four on the grass, on a fixed pedal
+// After the entry pulse (tested in green-entry.cjs), drive 2 s from 200 km/h with `n` tyres on the paint (0, 2, 4) or all four on the grass, on a fixed pedal
 function run(t, { n = 0, grass = false, throttle = 0, brake = 0, secs = 2, isPlayer = false }) {
   // On the circuit's own straight (its grade and road), with the tyre count held exactly: the surface each wheel
   // reads is forced (n wheels on the paint, or all four on the grass), so a real straight's slight curves and
   // changes of width cannot move a tyre on or off the paint during the run.
   const { s, c } = rig(t, isPlayer), st = straight(t);
   const fake = Object.create(t); let w = 0; fake.surfaceAt = () => grass ? 3 : (w++ % 4) < n ? 2 : 0;
-  c.placeAt(t, st.s0 + 40, 0, 200 / 3.6); c.speed = c.u = 200 / 3.6; c.gear = 8;
+  c.placeAt(t, st.s0 + 40, 0, 200 / 3.6); c.speed = c.u = 200 / 3.6; c.gear = 8; c.greenEntryActive = n > 0;
   const h = new SIM.PlayerHandling(); const seen = new Set();
   for (let k = 0; k < secs / DT; k++) {
     h.step(c, DT, s, { steer: 0, throttle, brake, analog: true });
@@ -61,7 +61,7 @@ test('the green paint keeps its grip loss per tyre and adds no resistance for on
   for (let n = 0; n <= 4; n++) {
     const { c } = rig(t), fake = Object.create(t); let w = 0;
     fake.surfaceAt = () => (w++ % 4) < n ? 2 : 0;
-    c.placeAt(t, st.s0 + 40, 0, 200 / 3.6); c.speed = c.u = 200 / 3.6; c.gear = 8;
+    c.placeAt(t, st.s0 + 40, 0, 200 / 3.6); c.speed = c.u = 200 / 3.6; c.gear = 8; c.greenEntryActive = n > 0;
     for (let k = 0; k < 480; k++) { c.input.throttle = 0; c.input.brake = 0; c.input.steer = 0; SIM.stepCarPhysics(c, DT, fake, ENV); }
     out.push({ n, v: c.speed, grip: c.runoffGrip, drag: c.runoffDrag, count: c.runoffN });
   }
@@ -88,7 +88,7 @@ for (const [id, t] of tracks) {
     assert.ok(b4.v > ba.v + 2, 'braking from 200 for 1 s: ' + ba.v.toFixed(1) + ' (asphalt) vs ' + b4.v.toFixed(1) + ' (paint)');
     // cornering: the yaw ceiling of the handling falls with the grip
     const yaw = (n) => { const { s, c } = rig(t), st = straight(t), h = new SIM.PlayerHandling(); const fake = Object.create(t); let w = 0; fake.surfaceAt = () => (w++ % 4) < n ? 2 : 0;
-      c.placeAt(t, st.s0 + 40, 0, 40); c.speed = c.u = 40; let maxR = 0;
+      c.placeAt(t, st.s0 + 40, 0, 40); c.speed = c.u = 40; c.greenEntryActive = n > 0; let maxR = 0;
       for (let k = 0; k < 240; k++) { h.step(c, DT, s, { steer: 1, throttle: 0.4, brake: 0, analog: true }); SIM.stepCarPhysics(c, DT, fake, ENV); maxR = Math.max(maxR, Math.abs(c.r)); }
       return maxR; };
     assert.ok(yaw(4) < yaw(0), 'lower cornering grip on the paint');
@@ -111,7 +111,7 @@ test('the planner may use paint only where it is painted, never on the inside of
       // the furthest a path may go (planning limit + the avoidance allowance, 3.6 m) keeps the outer tyres on the paint
       assert.ok(t.surfaceAt(i, sg * (L.limA[i] + 3.6 + SIM.SPEC.tw)) <= 2, id + ' outer tyre still on paint at ' + i);
     }
-    assert.ok(used > 0.5 * N, id + ': paint usable along most of the lap (' + used + ' of ' + 2 * N + ' samples)');
+    assert.ok(used > 0, id + ': recovery allowances exist where the full car fits on paint');
     // a candidate path is clamped to the asphalt unless it is allowed onto the paint
     const s = new SIM.Session(t, { type: 'race', seed: 3, weather: 'dry', entries: SIM.DRIVERS.slice(0, 2).map(driver => ({ driver })) });
     const ai = s.cars[1].ai, c = ai.addCand('line', 'test'); ai.exeNow = { v: 0, a: 0, b: 0, c: 0 };
@@ -123,32 +123,23 @@ test('the planner may use paint only where it is painted, never on the inside of
   }
 });
 
-test('20-car races: the AI uses the paint sometimes, on purpose, briefly; rarely the grass; races still classify', () => {
-  // planned paint use is rare (a few tenths of a second to a few seconds in a 20-car, two-lap race, sometimes none
-  // on Summit), so it is asserted over both races together
-  let plannedAll = 0; const whyAll = {};
+test('20-car races: legitimate lines dominate; paint and grass excursions stay rare; races classify', () => {
   for (const [id, seed] of [['monza', 31], ['bahrain', 32]]) {
     const t = tracks.get(id);
     const s = new SIM.Session(t, { type: 'race', seed, weather: 'dry', tyreWear: 'normal', damage: 'realistic', difficulty: 1, entries: SIM.DRIVERS.map(driver => ({ driver })) });
     s.totalLaps = 2;
-    let carT = 0, paintT = 0, planned = 0, grass = 0; const why = {};
+    let carT = 0, paintT = 0, grass = 0;
     while (!s.over && s.time < 2 * 200 + 300) {
       s.fixedStep(DT);
       if (!s.lightsOut || s.step % 4) continue;
       for (const c of s.cars) {
         if (c.dnf || c.finished || c.pit) continue;
         carT += DT * 4; if (c.terrainN) grass += DT * 4;
-        if (c.runoffN && !c.terrainN) {
-          paintT += DT * 4;
-          const P = c.ai.path, meant = P.valid && P.ext > 0 && Math.abs(c.ai.pathD(c.idx)) > t.hw[c.idx] - 1.6;
-          if (meant) { planned += DT * 4; why[P.label] = (why[P.label] || 0) + 1; }
-        }
+        if (c.runoffN && !c.terrainN) paintT += DT * 4;
       }
     }
     assert.ok(s.over, id + ' classified');
-    plannedAll += planned; whyAll[id] = why;
     assert.ok(paintT / carT < 0.12, id + ': paint is not the racing line (' + (100 * paintT / carT).toFixed(1) + '% of the time)');
     assert.ok(grass / carT < 0.01, id + ': grass and gravel stay rare (' + (100 * grass / carT).toFixed(2) + '%)');
   }
-  assert.ok(plannedAll > 0, 'some paint use is planned: ' + JSON.stringify(whyAll));
 });

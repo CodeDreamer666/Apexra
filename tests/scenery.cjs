@@ -13,7 +13,67 @@ try { ({ chromium } = require('playwright')); } catch { ({ chromium } = require(
 // The game loads Three.js from a CDN. Without network access set THREE_JS=/path/to/three.module.js (three@0.160.0);
 // if Three.js cannot be loaded at all the test is skipped. CHROMIUM_PATH can select a browser.
 const ROOT = path.join(__dirname, '..');
+const { serveGame } = require('../tools/browser-game.cjs');
+let gameURL;
 const CIRCUITS = (process.env.CIRCUITS || 'monza,silverstone,spa,suzuka,bahrain,interlagos').split(',');
+const FOREST = function () {
+  const G = APEX, t = G.track, f = G.forest, cell = 40, ground = new Map();
+  if (!f || f.stats.trees < 100) throw Error('Missing procedural forest');
+  // Independently intersect the rendered terrain/verge triangles under every tree root.
+  G.world.traverse(o => {
+    if (!['terrain', 'verge'].includes(o.userData.kind)) return;
+    const p = o.geometry.attributes.position, idx = o.geometry.index, a = [];
+    for (let k = 0; k < p.count; k++) a.push([p.getX(k), p.getY(k) + t.elevAt(p.getX(k), p.getZ(k)), p.getZ(k)]);
+    for (let k = 0; k < idx.count; k += 3) {
+      const [A, B, C] = [a[idx.getX(k)], a[idx.getX(k + 1)], a[idx.getX(k + 2)]];
+      const den = (B[2] - C[2]) * (A[0] - C[0]) + (C[0] - B[0]) * (A[2] - C[2]);
+      if (Math.abs(den) < 1e-9) continue;
+      const tri = [A, B, C, den];
+      for (let x = Math.floor(Math.min(A[0], B[0], C[0]) / cell); x <= Math.floor(Math.max(A[0], B[0], C[0]) / cell); x++) {
+        for (let z = Math.floor(Math.min(A[2], B[2], C[2]) / cell); z <= Math.floor(Math.max(A[2], B[2], C[2]) / cell); z++) {
+          const key = x + ',' + z; if (!ground.has(key)) ground.set(key, []); ground.get(key).push(tri);
+        }
+      }
+    }
+  });
+  let roots = 0, worst = -Infinity, deepest = Infinity;
+  for (const c of f.cells) for (const o of c.levels[0].children) {
+    for (let k = 0; k < o.count; k++) {
+      const m = o.instanceMatrix.array, x = m[k * 16 + 12], z = m[k * 16 + 14], h = m[k * 16 + 13] + t.elevAt(x, z);
+      let floor = -Infinity;
+      for (const [A, B, C, den] of ground.get(Math.floor(x / cell) + ',' + Math.floor(z / cell)) || []) {
+        const u = ((B[2] - C[2]) * (x - C[0]) + (C[0] - B[0]) * (z - C[2])) / den;
+        const v = ((C[2] - A[2]) * (x - C[0]) + (A[0] - C[0]) * (z - C[2])) / den, w = 1 - u - v;
+        if (u >= -1e-5 && v >= -1e-5 && w >= -1e-5) floor = Math.max(floor, u * A[1] + v * B[1] + w * C[1]);
+      }
+      if (!Number.isFinite(floor)) throw Error('No ground under tree at ' + x + ',' + z);
+      const gap = h - floor; worst = Math.max(worst, gap); deepest = Math.min(deepest, gap); roots++;
+      if (gap > .01 || gap < -.3) throw Error('Floating/buried tree root: ' + gap.toFixed(3) + ' m at ' + x + ',' + z);
+    }
+  }
+  // Exercise the actual visibility controller without rendering: distance hysteresis and immutable buffers.
+  const camera = G.camera, saved = camera.clone(), c = f.cells.find(c => c.treeCount > 3) || f.cells[0];
+  f.update(camera, 0); const y = c.sphere.center.y;
+  const ids = c.levels.flatMap(g => g.children.map(o => o.geometry.uuid));
+  const check = (d, expected) => {
+    camera.position.set(c.x - d - 72 * .71, y, c.z); camera.lookAt(c.x, y, c.z); f.update(camera, 0);
+    const mask = f.lodData[c.maskIndex];
+    if (c.lod !== expected || c.levels.filter(g => g.visible).length !== 1 || (expected === 2 ? mask !== 1 || c.node.visible : mask !== 0 || !c.node.visible)) throw Error('LOD hysteresis/mask at ' + d + ' m');
+  };
+  check(25, 0); check(40, 0); check(55, 1); check(40, 1); check(30, 0);
+  check(80, 1); check(130, 1); check(155, 2); check(130, 2); check(110, 1);
+  if (JSON.stringify(ids) !== JSON.stringify(c.levels.flatMap(g => g.children.map(o => o.geometry.uuid)))) throw Error('LOD allocated geometry');
+  for (const c of f.cells) {
+    if (c.node.visible && f.lodData[c.maskIndex]) throw Error('Near trees and distant silhouettes overlap');
+    if (c.trees || c.bushes || c.rocks || c.tufts) throw Error('Generation descriptors retained during racing');
+    for (const o of c.levels[1].children) if (o.castShadow) throw Error('Middle foliage casts shadows');
+  }
+  for (const b of f.farChunks) for (const o of b.node.children) if (o.castShadow) throw Error('Distant foliage casts shadows');
+  const version = f.lodTexture.version; f.update(camera, 0);
+  if (f.lodTexture.version !== version) throw Error('Stable camera reuploaded forest mask');
+  camera.copy(saved); f.update(camera, 0);
+  return { ...f.stats, rootsChecked: roots, rootGap: [deepest, worst] };
+};
 const DETECT = function () {
   const G = APEX, t = G.track, N = t.N, DS = t.ds;
   const hfE = (x, z) => t.elevAt(x, z);
@@ -60,6 +120,16 @@ const DETECT = function () {
       mw.copy(o.matrixWorld); if (o.isInstancedMesh) { o.getMatrixAt(inst, m4); mw.multiply(m4); }
       const W = new Float32Array(pos.count * 3); let maxY = -1e9;
       for (let k = 0; k < pos.count; k++) { v.fromBufferAttribute(pos, k).applyMatrix4(mw); W[k * 3] = v.x; W[k * 3 + 1] = v.y; W[k * 3 + 2] = v.z; maxY = Math.max(maxY, v.y); }
+      if (kind && kind.startsWith('forest')) {
+        let x0 = Infinity, x1 = -Infinity, z0 = Infinity, z1 = -Infinity;
+        for (let k = 0; k < pos.count; k++) { x0 = Math.min(x0, W[k*3]); x1 = Math.max(x1, W[k*3]); z0 = Math.min(z0, W[k*3+2]); z1 = Math.max(z1, W[k*3+2]); }
+        let nearRoad = false;
+        for (let gx = Math.floor((x0-10)/cell); gx <= Math.floor((x1+10)/cell); gx++) for (let gz = Math.floor((z0-10)/cell); gz <= Math.floor((z1+10)/cell); gz++) {
+          const arr = grid.get((gx+1000)*100000+(gz+1000)); if (!arr) continue;
+          for (const j of arr) if (t.cx[j]+t.hw[j]>=x0 && t.cx[j]-t.hw[j]<=x1 && t.cz[j]+t.hw[j]>=z0 && t.cz[j]-t.hw[j]<=z1) { nearRoad=true;break; }
+        }
+        if (!nearRoad) continue;
+      }
       const flat = flatKinds.has(kind);
       if (!flat && !kind && maxY < 0.06) continue; // untagged flat markings
       let hits = 0, worst = null;
@@ -109,20 +179,27 @@ async function scan(browser, id) {
     const nativeRaf = window.requestAnimationFrame.bind(window);
     window.requestAnimationFrame = cb => { if (!/\bframe\(/.test(String(cb))) return nativeRaf(cb); (window.__rafq = window.__rafq || []).push(cb); return 1; };
   }, id);
-  if (process.env.THREE_JS) await page.route(/three(@0\.160\.0)?\/.*three\.module(\.min)?\.js$/, r => r.fulfill({ contentType: 'application/javascript', body: fs.readFileSync(process.env.THREE_JS) }));
-  await page.goto('file://' + path.join(ROOT, 'index.html'));
+  await page.route('**/*', r => {
+    if (process.env.THREE_JS && r.request().url().includes('three.module')) return r.fulfill({ contentType: 'application/javascript', body: fs.readFileSync(process.env.THREE_JS) });
+    if (r.request().url().includes('fonts.googleapis.com')) return r.fulfill({ contentType: 'text/css', body: '' });
+    return r.continue();
+  });
+  await page.goto(gameURL + '/index.html');
   await page.waitForFunction(() => document.getElementById('loading').classList.contains('hidden') || !document.getElementById('loadErr').classList.contains('hidden'), null, { polling: 300 });
   if (await page.evaluate(() => !document.getElementById('loadErr').classList.contains('hidden'))) { await page.close(); return null; }
   assert.equal(await page.evaluate(() => APEX.track.def.id), id, 'the attract race shows the chosen circuit');
   await page.evaluate(() => { let V, M; APEX.scene.traverse(o => { if (!V && o.position && o.position.isVector3) V = o.position.constructor; if (!M && o.matrixWorld) M = o.matrixWorld.constructor; }); APEX.THREE_Vector3 = V; APEX.THREE_Matrix4 = M; });
   const issues = await page.evaluate(DETECT);
+  const forest = await page.evaluate(FOREST);
+  console.log(id + ': ' + JSON.stringify(forest));
   assert.deepEqual(errors, [], 'no page errors');
   await page.close();
   return issues;
 }
 
 test('no scenery stands on the road and no ground shows through it, on every circuit', async (t) => {
-  const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined, args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
+  const server = await serveGame(ROOT); gameURL = server.url;
+  const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || '/usr/bin/chromium', args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
   try {
     for (const id of CIRCUITS) {
       const issues = await scan(browser, id);
@@ -130,5 +207,5 @@ test('no scenery stands on the road and no ground shows through it, on every cir
       const lines = issues.slice(0, 12).map(q => q.what + ' x' + q.hits + ' at s=' + Math.round(q.s) + ' m, ' + q.d.toFixed(1) + ' m from the centre line' + (q.dh != null ? ', ' + q.dh.toFixed(2) + ' m above the road' : ''));
       assert.equal(issues.length, 0, id + ':\n  ' + lines.join('\n  '));
     }
-  } finally { await browser.close(); }
+  } finally { await browser.close(); await server.close(); }
 });

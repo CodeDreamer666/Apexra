@@ -1,0 +1,21 @@
+✔ the speed-limited lane is short and every circuit has the same four shared boxes (1.514874ms)
+✔ boxes go strictly first come, first served: at most four occupied, then one FIFO queue (21.95238ms)
+✔ a car that simply steers into the pit entry, with no request, is given a free box and serviced (232.078012ms)
+✔ monza: a clean tyre-only stop loses 17–27 s against staying out, as the circuit states (5548.032549ms)
+✔ silverstone: a clean tyre-only stop loses 17–27 s against staying out, as the circuit states (4124.021276ms)
+✔ spa: a clean tyre-only stop loses 17–27 s against staying out, as the circuit states (5407.645041ms)
+✔ suzuka: a clean tyre-only stop loses 17–27 s against staying out, as the circuit states (4739.386008ms)
+✔ bahrain: a clean tyre-only stop loses 17–27 s against staying out, as the circuit states (4632.454902ms)
+✔ interlagos: a clean tyre-only stop loses 17–27 s against staying out, as the circuit states (3383.336049ms)
+✔ queueing extends lane time; fuel pumping occupies stationary service time (7784.36668ms)
+✔ service is chosen only at the box; jobs run at once; wings are replaced when their job is done (2036.741076ms)
+✔ fuel: start loads of 2–7 laps, a lighter car accelerates a little harder, the tank and range are respected (116.319262ms)
+✔ DRS no longer exists: no zones, no eligibility, no control, no drag change, no trace in the game (12.776586ms)
+ℹ tests 13
+ℹ suites 0
+ℹ pass 13
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 38074.314423

@@ -1,0 +1,137 @@
+{
+  "method": "Centre of the focus car (eighth-metre pack spacing, car 10). Minimum radius across a surrounding 80 m window; referenceKmh is the existing AI line reference, not measured vehicle speed.",
+  "circuits": {
+    "monza": [
+      {
+        "s": 1368,
+        "minRadiusOver80m": 350,
+        "referenceKmh": 309
+      },
+      {
+        "s": 3106,
+        "minRadiusOver80m": 2294,
+        "referenceKmh": 309
+      },
+      {
+        "s": 536,
+        "minRadiusOver80m": 9196,
+        "referenceKmh": 211
+      },
+      {
+        "s": 4556,
+        "minRadiusOver80m": 38490,
+        "referenceKmh": 322
+      }
+    ],
+    "silverstone": [
+      {
+        "s": 1392,
+        "minRadiusOver80m": 42516,
+        "referenceKmh": 285
+      },
+      {
+        "s": 3160,
+        "minRadiusOver80m": 919,
+        "referenceKmh": 323
+      },
+      {
+        "s": 874,
+        "minRadiusOver80m": 62,
+        "referenceKmh": 182
+      },
+      {
+        "s": 4632,
+        "minRadiusOver80m": 1440,
+        "referenceKmh": 318
+      }
+    ],
+    "spa": [
+      {
+        "s": 1672,
+        "minRadiusOver80m": 24376,
+        "referenceKmh": 327
+      },
+      {
+        "s": 3772,
+        "minRadiusOver80m": 81,
+        "referenceKmh": 312
+      },
+      {
+        "s": 184,
+        "minRadiusOver80m": 67,
+        "referenceKmh": 198
+      },
+      {
+        "s": 5524,
+        "minRadiusOver80m": 437,
+        "referenceKmh": 314
+      }
+    ],
+    "suzuka": [
+      {
+        "s": 1372,
+        "minRadiusOver80m": 70,
+        "referenceKmh": 241
+      },
+      {
+        "s": 3114,
+        "minRadiusOver80m": 319,
+        "referenceKmh": 282
+      },
+      {
+        "s": 2606,
+        "minRadiusOver80m": 96,
+        "referenceKmh": 206
+      },
+      {
+        "s": 4610,
+        "minRadiusOver80m": 1550,
+        "referenceKmh": 322
+      }
+    ],
+    "bahrain": [
+      {
+        "s": 1274,
+        "minRadiusOver80m": 13531,
+        "referenceKmh": 264
+      },
+      {
+        "s": 2896,
+        "minRadiusOver80m": 39219,
+        "referenceKmh": 268
+      },
+      {
+        "s": 488,
+        "minRadiusOver80m": 1759,
+        "referenceKmh": 208
+      },
+      {
+        "s": 4250,
+        "minRadiusOver80m": 16932,
+        "referenceKmh": 274
+      }
+    ],
+    "interlagos": [
+      {
+        "s": 998,
+        "minRadiusOver80m": 15001,
+        "referenceKmh": 303
+      },
+      {
+        "s": 2290,
+        "minRadiusOver80m": 29,
+        "referenceKmh": 126
+      },
+      {
+        "s": 2676,
+        "minRadiusOver80m": 25,
+        "referenceKmh": 169
+      },
+      {
+        "s": 3368,
+        "minRadiusOver80m": 81,
+        "referenceKmh": 224
+      }
+    ]
+  }
+}

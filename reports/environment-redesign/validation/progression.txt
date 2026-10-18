@@ -1,0 +1,21 @@
+✔ exactly three ranks: Rookie 100%, Pro 125%, Master 150%; the old tiers and ranks are gone (2.990434ms)
+✔ finishing position points for all 20 places: 50 for P1 down to 1 for P20 (0.295255ms)
+✔ lap-time pace: smooth and monotonic, every integer from 0 to 50 reachable, per circuit and weather (181.768193ms)
+✔ pace over the race: consistency counts, one fast lap cannot hide bad ones, standing starts and pit stops are normalised (0.928743ms)
+✔ Career circuit score = position (50) + pace (50), capped at 100; the rank score is the six best, capped at 600 (1.239025ms)
+✔ replays: the best score per circuit counts, never the sum; a session counts once (0.793597ms)
+✔ promotion needs all six circuits and the threshold: 360 for Pro, 420 for Master, 480 to complete (0.806308ms)
+✔ retirements keep their classified position; unclassified or abandoned races give no result (0.288957ms)
+✔ saves: round trip, broken data never crashes or grants progress (1.65079ms)
+✔ migration from the five-tier Career and eight-rank modes: access kept, no results or wins invented (0.931092ms)
+✔ a Career result from a real race: classification and pace from the laps driven (30876.992964ms)
+✔ Career grid: the first race of a rank starts from P20, then each race starts where the last one finished (0.993742ms)
+✔ the starting grid puts the player on the chosen slot and everyone else on the others (102.871842ms)
+ℹ tests 13
+ℹ suites 0
+ℹ pass 13
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 31200.246529

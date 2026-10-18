@@ -1,0 +1,1 @@
+18 held-W surface/speed/shortcut cases and asphalt rejoins pass; braking, key release, pause, text input and recovery repeat checks pass.

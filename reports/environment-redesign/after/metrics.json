@@ -1,0 +1,708 @@
+{
+  "protocol": {
+    "width": 640,
+    "height": 360,
+    "quality": "medium",
+    "samplesPerWeather": 32,
+    "seed": 741,
+    "timing": "Synchronized frame throughput (production frame plus WebGL finish and blocking pixel readback); CPU is submission time, not isolated physics time.",
+    "regions": [
+      "quarter-lap pack",
+      "middle-lap pack",
+      "tightest-corner approach",
+      "overpass / hillside approach"
+    ],
+    "gpuFrameTimeMs": null
+  },
+  "source": {
+    "indexSha256": "506bbf38eb6665b475bc7f791541c835bd42e47a619ed9d1b924808e46d0974e",
+    "commit": "b191ad6af3cac2de2c22619cb237bba094fa55fb"
+  },
+  "results": [
+    {
+      "circuit": "monza",
+      "weather": "dry",
+      "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+      "gpuTimerAvailable": true,
+      "cars": 20,
+      "quality": "medium",
+      "width": 640,
+      "height": 360,
+      "forest": {
+        "trees": 8109,
+        "bushes": 3890,
+        "rocks": 1317,
+        "tufts": 2760,
+        "cells": 799,
+        "nearCells": 5,
+        "midCells": 8,
+        "farCells": 68,
+        "visibleCells": 81,
+        "nearShadowMeshes": 10,
+        "theme": "monza",
+        "geometryVariants": 9,
+        "farBatches": 226
+      },
+      "frames": 32,
+      "avgFps": 0.4327634379809945,
+      "p95FrameMs": 2801.5999999996275,
+      "p99FrameMs": 3163.0999999996275,
+      "cpuFrameMs": 26.337499999674037,
+      "drawCalls": 971.1875,
+      "triangles": 661402.15625,
+      "geometries": 248,
+      "textures": 141,
+      "heapMB": 88.11869812011719,
+      "regions": [
+        {
+          "region": 0,
+          "avgFps": 0.45214088710043,
+          "p95FrameMs": 2347.0999999996275
+        },
+        {
+          "region": 1,
+          "avgFps": 0.3785727806170736,
+          "p95FrameMs": 3163.0999999996275
+        },
+        {
+          "region": 2,
+          "avgFps": 0.47714191989995924,
+          "p95FrameMs": 2677.0999999996275
+        },
+        {
+          "region": 3,
+          "avgFps": 0.43593641867340727,
+          "p95FrameMs": 2411.300000000745
+        }
+      ]
+    },
+    {
+      "circuit": "monza",
+      "weather": "rain",
+      "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+      "gpuTimerAvailable": true,
+      "cars": 20,
+      "quality": "medium",
+      "width": 640,
+      "height": 360,
+      "forest": {
+        "trees": 8109,
+        "bushes": 3890,
+        "rocks": 1317,
+        "tufts": 2760,
+        "cells": 799,
+        "nearCells": 5,
+        "midCells": 8,
+        "farCells": 69,
+        "visibleCells": 82,
+        "nearShadowMeshes": 10,
+        "theme": "monza",
+        "geometryVariants": 9,
+        "farBatches": 226
+      },
+      "frames": 32,
+      "avgFps": 0.45650635685105795,
+      "p95FrameMs": 2581.5999999996275,
+      "p99FrameMs": 2839.5,
+      "cpuFrameMs": 21.299999999813735,
+      "drawCalls": 973.15625,
+      "triangles": 661610.03125,
+      "geometries": 295,
+      "textures": 176,
+      "heapMB": 64.50210666656494,
+      "regions": [
+        {
+          "region": 0,
+          "avgFps": 0.490981287475726,
+          "p95FrameMs": 2081.2999999988824
+        },
+        {
+          "region": 1,
+          "avgFps": 0.3884758635090616,
+          "p95FrameMs": 2839.5
+        },
+        {
+          "region": 2,
+          "avgFps": 0.5292300364506927,
+          "p95FrameMs": 1973.0999999996275
+        },
+        {
+          "region": 3,
+          "avgFps": 0.44213307100109916,
+          "p95FrameMs": 2383.7000000011176
+        }
+      ]
+    },
+    {
+      "circuit": "silverstone",
+      "weather": "dry",
+      "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+      "gpuTimerAvailable": true,
+      "cars": 20,
+      "quality": "medium",
+      "width": 640,
+      "height": 360,
+      "forest": {
+        "trees": 6789,
+        "bushes": 3302,
+        "rocks": 1127,
+        "tufts": 2329,
+        "cells": 689,
+        "nearCells": 5,
+        "midCells": 7,
+        "farCells": 69,
+        "visibleCells": 81,
+        "nearShadowMeshes": 10,
+        "theme": "silverstone",
+        "geometryVariants": 9,
+        "farBatches": 202
+      },
+      "frames": 32,
+      "avgFps": 0.553045726511936,
+      "p95FrameMs": 2110,
+      "p99FrameMs": 2111.0999999996275,
+      "cpuFrameMs": 21.396875000209548,
+      "drawCalls": 902.03125,
+      "triangles": 605101.125,
+      "geometries": 298,
+      "textures": 182,
+      "heapMB": 116.69850158691406,
+      "regions": [
+        {
+          "region": 0,
+          "avgFps": 0.5371867529745911,
+          "p95FrameMs": 2020.699999999255
+        },
+        {
+          "region": 1,
+          "avgFps": 0.4789816849378863,
+          "p95FrameMs": 2111.0999999996275
+        },
+        {
+          "region": 2,
+          "avgFps": 0.5844748858446693,
+          "p95FrameMs": 1747.4000000003725
+        },
+        {
+          "region": 3,
+          "avgFps": 0.6359603796682337,
+          "p95FrameMs": 1599.6000000014901
+        }
+      ]
+    },
+    {
+      "circuit": "silverstone",
+      "weather": "rain",
+      "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+      "gpuTimerAvailable": true,
+      "cars": 20,
+      "quality": "medium",
+      "width": 640,
+      "height": 360,
+      "forest": {
+        "trees": 6789,
+        "bushes": 3302,
+        "rocks": 1127,
+        "tufts": 2329,
+        "cells": 689,
+        "nearCells": 5,
+        "midCells": 7,
+        "farCells": 69,
+        "visibleCells": 81,
+        "nearShadowMeshes": 10,
+        "theme": "silverstone",
+        "geometryVariants": 9,
+        "farBatches": 202
+      },
+      "frames": 32,
+      "avgFps": 0.5574009785870858,
+      "p95FrameMs": 2122.9000000003725,
+      "p99FrameMs": 2148.4000000003725,
+      "cpuFrameMs": 17.750000000174623,
+      "drawCalls": 903.96875,
+      "triangles": 606506.8125,
+      "geometries": 345,
+      "textures": 217,
+      "heapMB": 68.20940971374512,
+      "regions": [
+        {
+          "region": 0,
+          "avgFps": 0.5731767605482895,
+          "p95FrameMs": 1763.8999999985099
+        },
+        {
+          "region": 1,
+          "avgFps": 0.4756327401796387,
+          "p95FrameMs": 2148.4000000003725
+        },
+        {
+          "region": 2,
+          "avgFps": 0.5843254692863925,
+          "p95FrameMs": 1725.7999999988824
+        },
+        {
+          "region": 3,
+          "avgFps": 0.6181759174116619,
+          "p95FrameMs": 1642.5999999996275
+        }
+      ]
+    },
+    {
+      "circuit": "spa",
+      "weather": "dry",
+      "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+      "gpuTimerAvailable": true,
+      "cars": 20,
+      "quality": "medium",
+      "width": 640,
+      "height": 360,
+      "forest": {
+        "trees": 9954,
+        "bushes": 4814,
+        "rocks": 1583,
+        "tufts": 3537,
+        "cells": 835,
+        "nearCells": 4,
+        "midCells": 8,
+        "farCells": 95,
+        "visibleCells": 107,
+        "nearShadowMeshes": 8,
+        "theme": "spa",
+        "geometryVariants": 9,
+        "farBatches": 237
+      },
+      "frames": 32,
+      "avgFps": 0.4908841283355193,
+      "p95FrameMs": 2385.5,
+      "p99FrameMs": 2653.300000000745,
+      "cpuFrameMs": 23.98125000001164,
+      "drawCalls": 916.90625,
+      "triangles": 616237,
+      "geometries": 336,
+      "textures": 216,
+      "heapMB": 96.36944389343262,
+      "regions": [
+        {
+          "region": 0,
+          "avgFps": 0.46736069730225194,
+          "p95FrameMs": 2195
+        },
+        {
+          "region": 1,
+          "avgFps": 0.4347164561914315,
+          "p95FrameMs": 2329.5
+        },
+        {
+          "region": 2,
+          "avgFps": 0.7311411285161576,
+          "p95FrameMs": 1379.9000000003725
+        },
+        {
+          "region": 3,
+          "avgFps": 0.4272020932902571,
+          "p95FrameMs": 2653.300000000745
+        }
+      ]
+    },
+    {
+      "circuit": "spa",
+      "weather": "rain",
+      "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+      "gpuTimerAvailable": true,
+      "cars": 20,
+      "quality": "medium",
+      "width": 640,
+      "height": 360,
+      "forest": {
+        "trees": 9954,
+        "bushes": 4814,
+        "rocks": 1583,
+        "tufts": 3537,
+        "cells": 835,
+        "nearCells": 4,
+        "midCells": 8,
+        "farCells": 95,
+        "visibleCells": 107,
+        "nearShadowMeshes": 8,
+        "theme": "spa",
+        "geometryVariants": 9,
+        "farBatches": 237
+      },
+      "frames": 32,
+      "avgFps": 0.460864004792956,
+      "p95FrameMs": 2729,
+      "p99FrameMs": 3216.10000000149,
+      "cpuFrameMs": 21.865625000325963,
+      "drawCalls": 919.0625,
+      "triangles": 616316.5625,
+      "geometries": 383,
+      "textures": 251,
+      "heapMB": 71.21742630004883,
+      "regions": [
+        {
+          "region": 0,
+          "avgFps": 0.46934034214912995,
+          "p95FrameMs": 2153
+        },
+        {
+          "region": 1,
+          "avgFps": 0.3686686912722106,
+          "p95FrameMs": 3216.10000000149
+        },
+        {
+          "region": 2,
+          "avgFps": 0.6410461873776283,
+          "p95FrameMs": 1615.300000000745
+        },
+        {
+          "region": 3,
+          "avgFps": 0.439311818037027,
+          "p95FrameMs": 2301.4000000003725
+        }
+      ]
+    },
+    {
+      "circuit": "suzuka",
+      "weather": "dry",
+      "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+      "gpuTimerAvailable": true,
+      "cars": 20,
+      "quality": "medium",
+      "width": 640,
+      "height": 360,
+      "forest": {
+        "trees": 7382,
+        "bushes": 3438,
+        "rocks": 1166,
+        "tufts": 2532,
+        "cells": 600,
+        "nearCells": 4,
+        "midCells": 9,
+        "farCells": 92,
+        "visibleCells": 105,
+        "nearShadowMeshes": 8,
+        "theme": "suzuka",
+        "geometryVariants": 9,
+        "farBatches": 183
+      },
+      "frames": 32,
+      "avgFps": 0.4989887680746464,
+      "p95FrameMs": 2555.2999999988824,
+      "p99FrameMs": 2624.4000000003725,
+      "cpuFrameMs": 24.193750000093132,
+      "drawCalls": 933.96875,
+      "triangles": 662298.9375,
+      "geometries": 393,
+      "textures": 258,
+      "heapMB": 76.70111560821533,
+      "regions": [
+        {
+          "region": 0,
+          "avgFps": 0.47676088653685794,
+          "p95FrameMs": 2165.0999999996275
+        },
+        {
+          "region": 1,
+          "avgFps": 0.5076883047651933,
+          "p95FrameMs": 2012.2999999988824
+        },
+        {
+          "region": 2,
+          "avgFps": 0.6899525657609931,
+          "p95FrameMs": 1491.9000000003725
+        },
+        {
+          "region": 3,
+          "avgFps": 0.4000580084111898,
+          "p95FrameMs": 2624.4000000003725
+        }
+      ]
+    },
+    {
+      "circuit": "suzuka",
+      "weather": "rain",
+      "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+      "gpuTimerAvailable": true,
+      "cars": 20,
+      "quality": "medium",
+      "width": 640,
+      "height": 360,
+      "forest": {
+        "trees": 7382,
+        "bushes": 3438,
+        "rocks": 1166,
+        "tufts": 2532,
+        "cells": 600,
+        "nearCells": 4,
+        "midCells": 9,
+        "farCells": 91,
+        "visibleCells": 104,
+        "nearShadowMeshes": 8,
+        "theme": "suzuka",
+        "geometryVariants": 9,
+        "farBatches": 183
+      },
+      "frames": 32,
+      "avgFps": 0.4815708842242777,
+      "p95FrameMs": 2750.9000000003725,
+      "p99FrameMs": 2810.699999999255,
+      "cpuFrameMs": 20.584375000093132,
+      "drawCalls": 936.71875,
+      "triangles": 665094.0625,
+      "geometries": 441,
+      "textures": 294,
+      "heapMB": 68.62820816040039,
+      "regions": [
+        {
+          "region": 0,
+          "avgFps": 0.48631627578981684,
+          "p95FrameMs": 2265.4000000003725
+        },
+        {
+          "region": 1,
+          "avgFps": 0.47193742109790016,
+          "p95FrameMs": 2498
+        },
+        {
+          "region": 2,
+          "avgFps": 0.6452393434688711,
+          "p95FrameMs": 1608.800000000745
+        },
+        {
+          "region": 3,
+          "avgFps": 0.3874260863669673,
+          "p95FrameMs": 2810.699999999255
+        }
+      ]
+    },
+    {
+      "circuit": "bahrain",
+      "weather": "dry",
+      "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+      "gpuTimerAvailable": true,
+      "cars": 20,
+      "quality": "medium",
+      "width": 640,
+      "height": 360,
+      "forest": {
+        "trees": 1619,
+        "bushes": 775,
+        "rocks": 813,
+        "tufts": 602,
+        "cells": 345,
+        "nearCells": 4,
+        "midCells": 7,
+        "farCells": 64,
+        "visibleCells": 75,
+        "nearShadowMeshes": 8,
+        "theme": "bahrain",
+        "geometryVariants": 9,
+        "farBatches": 118
+      },
+      "frames": 32,
+      "avgFps": 0.6761596666533163,
+      "p95FrameMs": 1923.9000000003725,
+      "p99FrameMs": 1975.5999999996275,
+      "cpuFrameMs": 23.856249999953434,
+      "drawCalls": 921.78125,
+      "triangles": 492278.40625,
+      "geometries": 450,
+      "textures": 293,
+      "heapMB": 55.27565002441406,
+      "regions": [
+        {
+          "region": 0,
+          "avgFps": 0.6738885051470138,
+          "p95FrameMs": 1875.2999999988824
+        },
+        {
+          "region": 1,
+          "avgFps": 0.6065614787969025,
+          "p95FrameMs": 1801.800000000745
+        },
+        {
+          "region": 2,
+          "avgFps": 0.7349293549154821,
+          "p95FrameMs": 1756.300000000745
+        },
+        {
+          "region": 3,
+          "avgFps": 0.7029753431400004,
+          "p95FrameMs": 1399.699999999255
+        }
+      ]
+    },
+    {
+      "circuit": "bahrain",
+      "weather": "rain",
+      "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+      "gpuTimerAvailable": true,
+      "cars": 20,
+      "quality": "medium",
+      "width": 640,
+      "height": 360,
+      "forest": {
+        "trees": 1619,
+        "bushes": 775,
+        "rocks": 813,
+        "tufts": 602,
+        "cells": 345,
+        "nearCells": 4,
+        "midCells": 7,
+        "farCells": 64,
+        "visibleCells": 75,
+        "nearShadowMeshes": 8,
+        "theme": "bahrain",
+        "geometryVariants": 9,
+        "farBatches": 118
+      },
+      "frames": 32,
+      "avgFps": 0.6889914242098502,
+      "p95FrameMs": 1953.800000000745,
+      "p99FrameMs": 2181.199999999255,
+      "cpuFrameMs": 20.243749999906868,
+      "drawCalls": 923.90625,
+      "triangles": 492325.46875,
+      "geometries": 497,
+      "textures": 328,
+      "heapMB": 61.467844009399414,
+      "regions": [
+        {
+          "region": 0,
+          "avgFps": 0.7284912945290551,
+          "p95FrameMs": 1385.199999999255
+        },
+        {
+          "region": 1,
+          "avgFps": 0.6227037798120698,
+          "p95FrameMs": 1864.8999999985099
+        },
+        {
+          "region": 2,
+          "avgFps": 0.8259087577297675,
+          "p95FrameMs": 1244.9000000003725
+        },
+        {
+          "region": 3,
+          "avgFps": 0.618735305036434,
+          "p95FrameMs": 1513.9000000003725
+        }
+      ]
+    },
+    {
+      "circuit": "interlagos",
+      "weather": "dry",
+      "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+      "gpuTimerAvailable": true,
+      "cars": 20,
+      "quality": "medium",
+      "width": 640,
+      "height": 360,
+      "forest": {
+        "trees": 5450,
+        "bushes": 2590,
+        "rocks": 897,
+        "tufts": 1908,
+        "cells": 441,
+        "nearCells": 4,
+        "midCells": 8,
+        "farCells": 70,
+        "visibleCells": 82,
+        "nearShadowMeshes": 12,
+        "theme": "interlagos",
+        "geometryVariants": 12,
+        "farBatches": 171
+      },
+      "frames": 32,
+      "avgFps": 0.4572728532825298,
+      "p95FrameMs": 3018.5,
+      "p99FrameMs": 3076.800000000745,
+      "cpuFrameMs": 17.984375000116415,
+      "drawCalls": 913.03125,
+      "triangles": 675364.875,
+      "geometries": 486,
+      "textures": 335,
+      "heapMB": 78.20948791503906,
+      "regions": [
+        {
+          "region": 0,
+          "avgFps": 0.40429564118754235,
+          "p95FrameMs": 2490.60000000149
+        },
+        {
+          "region": 1,
+          "avgFps": 0.439802089059878,
+          "p95FrameMs": 2192.0999999996275
+        },
+        {
+          "region": 2,
+          "avgFps": 0.6151243704587402,
+          "p95FrameMs": 1547.8999999985099
+        },
+        {
+          "region": 3,
+          "avgFps": 0.42111690731735835,
+          "p95FrameMs": 2789.800000000745
+        }
+      ]
+    },
+    {
+      "circuit": "interlagos",
+      "weather": "rain",
+      "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+      "gpuTimerAvailable": true,
+      "cars": 20,
+      "quality": "medium",
+      "width": 640,
+      "height": 360,
+      "forest": {
+        "trees": 5450,
+        "bushes": 2590,
+        "rocks": 897,
+        "tufts": 1908,
+        "cells": 441,
+        "nearCells": 4,
+        "midCells": 8,
+        "farCells": 70,
+        "visibleCells": 82,
+        "nearShadowMeshes": 12,
+        "theme": "interlagos",
+        "geometryVariants": 12,
+        "farBatches": 171
+      },
+      "frames": 32,
+      "avgFps": 0.45069279933751233,
+      "p95FrameMs": 2861.5999999996275,
+      "p99FrameMs": 2888,
+      "cpuFrameMs": 20.759375000023283,
+      "drawCalls": 914.3125,
+      "triangles": 675217.8125,
+      "geometries": 534,
+      "textures": 371,
+      "heapMB": 60.86090850830078,
+      "regions": [
+        {
+          "region": 0,
+          "avgFps": 0.38969073169306717,
+          "p95FrameMs": 2888
+        },
+        {
+          "region": 1,
+          "avgFps": 0.4503794446822203,
+          "p95FrameMs": 2372.5
+        },
+        {
+          "region": 2,
+          "avgFps": 0.5511539786429248,
+          "p95FrameMs": 2396.89999999851
+        },
+        {
+          "region": 3,
+          "avgFps": 0.4396836476154866,
+          "p95FrameMs": 2847.7000000011176
+        }
+      ]
+    }
+  ],
+  "errors": []
+}

@@ -1,0 +1,27 @@
+✔ 100 km/h, 1 tyres: entry removes exactly 15% of velocity once (18.967732ms)
+✔ 100 km/h, 2 tyres: entry removes exactly 15% of velocity once (13.27803ms)
+✔ 100 km/h, 4 tyres: entry removes exactly 15% of velocity once (7.223774ms)
+✔ 200 km/h, 1 tyres: entry removes exactly 15% of velocity once (28.615602ms)
+✔ 200 km/h, 2 tyres: entry removes exactly 15% of velocity once (5.088112ms)
+✔ 200 km/h, 4 tyres: entry removes exactly 15% of velocity once (4.528706ms)
+✔ 300 km/h, 1 tyres: entry removes exactly 15% of velocity once (7.43169ms)
+✔ 300 km/h, 2 tyres: entry removes exactly 15% of velocity once (4.314714ms)
+✔ 300 km/h, 4 tyres: entry removes exactly 15% of velocity once (9.827471ms)
+✔ wheel swaps and brief seam gaps do not rearm; a real exit does (3.282583ms)
+✔ AI and player receive the same entry pulse and sustained forces, including a grass/paint mix (25.464371ms)
+✔ asphalt restores acceleration with W held after a green/grass excursion (136.513888ms)
+✔ monza: preserved geometry/pits and matching surface profile on both sides (354.281183ms)
+✔ silverstone: preserved geometry/pits and matching surface profile on both sides (288.517857ms)
+✔ spa: preserved geometry/pits and matching surface profile on both sides (201.905265ms)
+✔ suzuka: preserved geometry/pits and matching surface profile on both sides (565.855897ms)
+✔ bahrain: preserved geometry/pits and matching surface profile on both sides (194.457918ms)
+✔ interlagos: preserved geometry/pits and matching surface profile on both sides (81.890404ms)
+✔ both barriers contain a car on every circuit, with damage determined by the impact (945.855255ms)
+ℹ tests 19
+ℹ suites 0
+ℹ pass 19
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2921.459039

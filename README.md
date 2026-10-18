@@ -207,6 +207,13 @@ The weather changes during the race. Watch the rain chance and the track wetness
 ### Slipstream
 Following closely behind another car on a straight gives you a tow, which makes you faster. Use it to set up an overtake into the next braking zone.
 
+### Track edges and forests
+The road is bordered by red-and-white corner kerbs, green painted runoff, a usable grass or gravel recovery strip, and physical barriers. Entering green runoff removes 15% of your speed once; staying on it adds modest resistance and grip loss. Returning to another surface rearms the next entry. Grass and gravel slow the car more, but held throttle keeps it moving and restores acceleration when you rejoin. The AI follows the same rules.
+
+Each circuit has its own vegetation: temperate woodland at Monza, mixed countryside at Silverstone, Ardennes pines at Spa, Japanese woodland at Suzuka, dry woodland and palms at Bahrain, and subtropical greenery at Interlagos. Detailed nearby trees and undergrowth give way to simpler instanced trees and distant silhouettes. Large spectator complexes are replaced by nature; functional pits and circuit landmarks remain.
+
+The implementation, measured before/after results and verification limits are documented in [the environment report](reports/environment-redesign/README.md). The reproducible render benchmark is `node tools/environment-benchmark.cjs`; set `BENCH_ROOT` to compare a checkout and `THREE_JS` to use a local Three.js 0.160 module.
+
 ### Lap timing and race position
 Lap times are recorded when your car crosses the painted start/finish line. Positions follow completed laps and where each car is on the circuit, including the pit lane. Returning a tyre to the track clears extra shortcut braking, so held throttle accelerates the car again as grip returns. It does not move your timing line or leave your displayed position behind your car. Yellow flags and caution restrictions are removed. Reversing over the line and crossing it again cannot count an extra lap.
 
