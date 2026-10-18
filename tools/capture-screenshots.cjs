@@ -172,7 +172,10 @@ const index = [];
     if (full) {
       await H('H.ff(18)');
       // ---------- damage, respawn ----------
-      await H('H.crash(p, 32, 0.3)'); await frames(10, 1); // hard enough to damage the car, not to end its race
+      await H('H.crash(p, 32, 0.3)'); await frames(10, 1);
+      // (the barrier hit depends on the run-off in front of it; a glancing front-left impact is then staged through the
+      // game's own damage path so the status panels always show a damaged, still-running car)
+      await H('(S.damageCar(p, 60000, 0, [2.2, -0.7, 0.35]), S.afterDamage && S.afterDamage(p), p.damage.computePerf())');
       await shot(tag('damage-impact'), 'Player crash into the barrier: impact effects');
       await H('H.ff(2)'); await settle(6, 1);
       await shot(tag('damage-status'), 'Vehicle status after the crash');

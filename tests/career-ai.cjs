@@ -22,7 +22,7 @@ const html = fs.readFileSync(process.env.SIM_HTML || path.join(__dirname, '..', 
 function loadSim() { const m = { exports: {} }; new Function('module', html.match(/<script>([\s\S]*?)<\/script>/)[1])(m); return m.exports; }
 const mean = a => a.length ? a.reduce((x, y) => x + y, 0) / a.length : NaN;
 const sd = a => { const m = mean(a); return a.length > 1 ? Math.sqrt(a.reduce((x, y) => x + (y - m) ** 2, 0) / a.length) : 0; };
-const REF = ['Team E', 'Team G', 'Team O', 'Team T']; // a fast, a strong, a mid-field and a back-marker driver
+const REF = ['C1', 'D1', 'H1', 'J2']; // four baseline drivers spread over the grid (one shared driver profile)
 
 function weather(S, seed, wet) {
   const w = Object.assign(new S.DynamicWeather(seed).snapshot(), { pattern: 'dry', regime: 'sunny', rain: 0, water: 0, lineWater: 0,

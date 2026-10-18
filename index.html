@@ -2570,7 +2570,7 @@ const SIM = (function () {
   const DAMAGE_MIN = 0.05, REPAIR_MIN = DAMAGE_MIN; // fainter marks need no job (a stop with repairs clears them anyway)
   function severityOf(loss) { return loss >= 1 ? 'failed' : loss > 0.74 ? 'severe' : loss > 0.49 ? 'moderate' : loss > 0.24 ? 'minor' : loss >= DAMAGE_MIN ? 'light' : 'ok'; }
   const REPAIR_TIME = Object.fromEntries(COMPONENTS.map(c => [c.id, c.repair]));
-  const WHEEL_NAMES = ['Front-Left', 'Front-Right', 'Rear-Left', 'Rear-Right'];
+  const WHEEL_NAMES = ['Front-left', 'Front-right', 'Rear-left', 'Rear-right'];
   // Refuelling is allowed in this game (a fictional rule): the rig connects, fuel flows at a fixed rate
   // and the rig disconnects, so adding fuel takes real stationary time. Same rules for every car.
   const REFUEL = { rate: 3.0, connect: 0.5 }; // kg/s, s (connect + disconnect)

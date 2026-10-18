@@ -178,7 +178,7 @@ Tyres lose grip gradually as they wear, so you'll feel the car get slower and sl
 - **No stop:** start on Hards with enough fuel for the whole race.
 - **One stop:** start on Softs with less fuel, then stop for fresh tyres and more fuel.
 
-Both are competitive. Which one is quicker depends on the circuit and on how you drive.
+Starting light on Softs and stopping once is usually a few seconds quicker over six laps, because the car is lighter for most of the race. The no-stop avoids the pit lane and any traffic after the stop, and on some circuits it's only a few seconds slower. Which one suits you depends on the circuit, the traffic and how you drive.
 
 ### Fuel
 You choose your starting fuel before the race, measured in laps. A full car is heavier and slower, so starting light and refuelling at a stop is a real option. The status panel shows how many laps you have left, based on how you've actually been driving.
@@ -199,7 +199,7 @@ The panel also shows how long the stop will take.
 3. The crew carries out your plan straight away, with nothing to confirm. A small panel shows each job and the time left. A tyre change takes about 2–3 seconds. Refuelling and repairs can take longer; the crews work at the same time, and bigger damage takes longer to fix.
 4. A light at the box turns green when it's safe to go. The car pulls out, drives to the pit exit and gives control back to you there.
 
-A stop for tyres only costs about 15–16 seconds compared with staying out, depending on the circuit. The computer drivers use exactly the same pit lane, boxes, crews and timings as you.
+A stop for tyres only costs about 14–16 seconds compared with staying out, depending on the circuit. The computer drivers use exactly the same pit lane, boxes, crews and timings as you.
 
 ### Weather
 The weather changes during the race. Watch the rain chance and the track wetness on the status panel. Rain makes the track slippery, and it takes time for a wet track to dry out again. Getting the timing of a switch between dry and wet tyres right can gain or lose a lot of places.
