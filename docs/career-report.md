@@ -139,7 +139,58 @@ grid slot, so the back of the grid was penalised.
 
 ## H. Testing
 
-See the test results at the end of this report.
+Every file was run with `node --test tests/<file>.cjs`, using Chromium (`CHROMIUM_PATH`) and a local three.js 0.160.0
+(`THREE_JS`) for the browser tests.
+
+**New or rewritten**
+- **`progression` (23 / 23 pass)**
+  - Ranking points, and the race score's range and independence.
+  - Best-lap ranking: exact ties, full precision, drivers without a lap, survival order.
+  - Classification in a real 20-car race: finishers above retirees; retirements on different laps; two retirements
+    in the same instant; positions P1–P20 unique.
+  - The player retiring: later AI retirements rank above, and laps set afterwards count.
+  - Every driver retiring.
+  - Lap 1 timed from the line for every car.
+  - Fixed order, no skipping or replay, duplicate results rejected.
+  - Retirement counted as the race.
+  - Promotion only after six races, with 159/160, 179/180 and 199/200 checked exactly.
+  - Restart only after race 6, never re-locking a rank.
+  - Grid rule.
+  - Browser-close forfeit.
+  - Save validation and tampering.
+  - v3 and v1/v2 migration.
+  - VR formula for every score 2–40 at VR 0, 1,999, 2,000, 3,999, 4,000, 5,999, 6,000, 7,999, 8,000, 9,998 and
+    9,999, plus the reference table.
+  - Cap and floor; starting-band rule.
+  - Endless draws: all six circuits, equal shares, no repeats, no fixed cycle, kept across reloads.
+  - VR applied exactly once.
+  - A real race fed into the Career.
+  - Respawn gone; a stuck AI car retires and is not moved.
+- **`career-flow` (1 / 1 pass, new)** drives the real game in Chromium:
+  - The Career screen offers only race 1 (Monza); the race starts from P20.
+  - The running race is saved; R and Space don't move the car.
+  - Retire needs two clicks. The rest of the race is resolved in the background, then the result is classified,
+    scored and saved as `retired`. All cars still in the race rank above the player. The only next action is "Next
+    race: Silverstone".
+  - Race 2 started, then the page reloaded: forfeit (2 points), notice shown, the Career moves to race 3.
+  - The Endless circuit is unchanged across three reloads.
+- **`sporting-ui` (pass)**
+  - All 12 circuit/mode combinations.
+  - The Career is raced in order and each result is saved once.
+  - The results show position, lap and race-total points and the championship, with no retry.
+  - The next race, or after race 6 the championship verdict.
+  - Endless: VR 1,000 → 1,048 for a P1 with the top lap rank, and the next circuit drawn without repeat.
+  - No respawn on the Controls screen.
+
+**Updated:** `sporting-rules` 49 / 49, `classification` 9 / 9, `timing-position` 27 / 27 (marshal-reset test replaced
+by a retirement test), `movement` 42 / 42, `offtrack` 12 / 12, `ai-racecraft` 14 / 14.
+
+**Unchanged and passing:** `pitstops` 17 / 17, `green-entry` 19 / 19, `circuits` 15 / 15, `fuel-weight` 13 / 13,
+`weather` 8 / 8, `intel` 6 / 6, `runoff` 10 / 10, `shortcuts` 7 / 7, `slipstream` 10 / 10, `damage-timing` 5 / 5,
+`corner-signs` 5 / 5, `no-yellow-flags` 2 / 2, `held-throttle` pass, `scenery` pass (6 circuits).
+
+**Not run in this round:** the `career-ai` benchmark's pace, duel and race modes (no assertions; its reference drivers
+and its Career mode were updated to the 40-point score). Human playtesting was not done.
 
 ## I. Remaining issues and limitations
 
