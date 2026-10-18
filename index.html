@@ -1689,20 +1689,60 @@ const SIM = (function () {
     return res;
   }
 
+  // Trackside recommended-speed signs: information for the driver, never an assist. For every corner that needs real
+  // braking, the speed the game's own handling can carry through the tightest part of the corner on the racing line,
+  // for a reference car (fresh Hard tyres at working temperature on a dry track, half a race of fuel) using 88% of the
+  // steering's corner ceiling, rounded down to 5 km/h. Rain and worn tyres lower the real limit below the sign.
+  // A sign stands beside the approach, behind the barrier on the outside of the corner, about 120 m before the
+  // braking starts (never back past the previous corner), and only where at least 40 km/h has to be shed.
+  const SIGN_REF = { mu: 1.54, use: 0.88, lead: 120, minDrop: 40 / 3.6, maxKmh: 230 };
+  const SIGN_CACHE = new Map();
+  function cornerSpeedSigns(t) {
+    const key = t.def.id + ':' + t.N;
+    if (SIGN_CACHE.has(key)) return SIGN_CACHE.get(key);
+    const A = buildAILines(t), N = t.N, kap = A.kap[0], vRef = A.vRef, cs = t.corners, nc = cs.length;
+    const fuel = 3 * (t.def.fuelPerLap || 2.7), fT = Math.sqrt(SPEC.mass / (SPEC.mass + FUEL_PERF.corner * fuel));
+    const fwd = (a, b) => (b - a + N) % N, signs = [];
+    cs.forEach((c, k) => {
+      let v = 110;
+      for (let q = 0, n = fwd(c.start, c.end); q <= n; q++) v = Math.min(v, arcadeCornerSpeed(kap[(c.start + q) % N], SIGN_REF.mu, SIGN_REF.use * fT));
+      // the approach: the fastest the reference line runs in the 300 m before the corner
+      let vIn = 0; for (let q = 0; q <= 150; q++) vIn = Math.max(vIn, vRef[(c.start - q + N) % N]);
+      if (vIn - v < SIGN_REF.minDrop || v * 3.6 > SIGN_REF.maxKmh) return;
+      // where braking starts on the reference line
+      let b = c.start; for (let q = 0; q < 600 && vRef[(b - 1 + N) % N] > vRef[b] + 1e-3; q++) b = (b - 1 + N) % N;
+      const prev = cs[(k - 1 + nc) % nc], room = fwd(prev.end, b);
+      let i = (b - Math.min(Math.round(SIGN_REF.lead / DS), Math.max(0, room - 10)) + N) % N;
+      let side = -c.dir;
+      if (side === t.pitAt(i * DS).side && t.pitProg(i * DS) >= 0) side = -side; // never on the pit lane side
+      signs.push({ i, s: i * DS, side, kmh: Math.floor(v * 3.6 / 5) * 5, corner: c.num, corners: [c.num], name: c.name, dir: c.dir, brakeAt: b });
+    });
+    // one sign per corner complex: the parts of a chicane (consecutive corners with the same name) or two signs
+    // within 60 m share the first sign, which shows the lowest speed of the complex
+    signs.sort((a, b) => a.i - b.i);
+    const out = [], same = (a, b) => a.name === b.name || fwd(a.i, b.i) * DS < 60;
+    const merge = (into, g) => { into.kmh = Math.min(into.kmh, g.kmh); into.corners.push(...g.corners); };
+    for (const g of signs) { const last = out[out.length - 1]; if (last && same(last, g)) merge(last, g); else out.push(g); }
+    if (out.length > 1 && same(out[out.length - 1], out[0])) merge(out[0], out.pop());
+    SIGN_CACHE.set(key, out);
+    return out;
+  }
+
   /* ------------------------------------------------------------------
      TYRES, CAR SPECS
      ------------------------------------------------------------------ */
-  // Compressed game lifespans: `life` is the number of 6 km laps to 60% wear under reference driving
-  // (a clean, normal pace in conditions that suit the compound): Soft 12 km, Hard 24 km, Intermediate
-  // 12 km and Full Wet 24 km. 60% is not a failure or a change point: wear stays continuous and
-  // distance-based, and a worn tyre keeps running with progressively less grip.
+  // Game lifespans for the six-lap race: `life` is the number of 6 km laps to 60% wear under reference driving
+  // (a clean, normal pace in conditions that suit the compound): Soft 15 km (about 2.5 laps), Hard 42 km (six laps
+  // of Spa, the longest circuit, so a Hard can run the whole race anywhere), Intermediate 21 km and Full Wet 42 km.
+  // Wear is distance-based (so a longer lap wears more) and scaled by cornering and traction work, wetness and
+  // driving style. 60% is not a failure or a change point: grip falls progressively with wear (tyreWearGrip).
   // Four compounds: two dry (Soft, Hard) and two wet (Intermediate, Full Wet).
   const USEFUL_WEAR = 0.60;
   const COMPOUNDS = {
-    S: { id: 'S', name: 'SOFT', mu: 1.70, topt: 100, life: 2, color: '#e8212e', heat: 1.0 },
-    H: { id: 'H', name: 'HARD', mu: 1.54, topt: 95, life: 4, color: '#f2f2f2', heat: 0.94 },
-    I: { id: 'I', name: 'INTERMEDIATE', mu: 1.58, topt: 75, life: 2, color: '#2ecc71', heat: 0.86 },
-    W: { id: 'W', name: 'FULL WET', mu: 1.46, topt: 55, life: 4, color: '#1e7bff', heat: 0.80 },
+    S: { id: 'S', name: 'SOFT', mu: 1.70, topt: 100, life: 2.5, color: '#e8212e', heat: 1.0 },
+    H: { id: 'H', name: 'HARD', mu: 1.54, topt: 95, life: 7, color: '#f2f2f2', heat: 0.94 },
+    I: { id: 'I', name: 'INTERMEDIATE', mu: 1.58, topt: 75, life: 3.5, color: '#2ecc71', heat: 0.86 },
+    W: { id: 'W', name: 'FULL WET', mu: 1.46, topt: 55, life: 7, color: '#1e7bff', heat: 0.80 },
   };
   const DRY_COMPOUNDS = ['S', 'H'];
   // Average tyre work (driving-style × slip abrasion × temperature) of reference driving, measured on all
@@ -6177,7 +6217,7 @@ const SIM = (function () {
     return (neg ? '-' : plus ? '+' : '') + str;
   }
 
-  return { G, RHO, PHYS_DT, DS, GAME_MODES, RaceIntel, INTEL, PROGRESS, AI_MAX_LEVEL, aiSkillForLevel, TEAMS, DRIVERS, TRACK_DEF, CIRCUITS, circuitById, circuitCentreLine, elevationAt, COMPOUNDS, SPEC, Track, Car, Session, AIDriver, RaceStrategy, planStrategy, bestCompoundFor, lapLoss, stintCost, wearPerLap, DRY_COMPOUNDS, migrateCompound, TYRE_REF_WORK, fmtTime, clamp, lerp, makeRng, stepCarPhysics, SLIPSTREAM, slipstreamStrength, OFF_TRACK, GREEN_RUNOFF, PlayerHandling, KeyboardDriveInput, HANDLING, USEFUL_WEAR, TYRE_STYLES, drivingStyle, tyreWearGrip, tyreWeatherGrip, tyreMismatch, updateTyres, wetnessFor, weatherCompound, DynamicWeather, CarDamage, DAMAGE_LEVELS, PART_KEYS, PART_NAMES, WHEEL_NAMES, REPAIR_TIME, REFUEL, FUEL_TANK_LAPS, FUEL_RESERVE, START_FUEL_LAPS, FUEL_PERF, FUEL_LAP_COST, estimatePitLoss, chooseStartFuelLaps, normalizeDamageLevel, partExposure, torqueAt, defaultCompoundModel, setSeed: (s) => { rnd = makeRng(s); } };
+  return { cornerSpeedSigns, SIGN_REF, arcadeCornerSpeed, G, RHO, PHYS_DT, DS, GAME_MODES, RaceIntel, INTEL, PROGRESS, AI_MAX_LEVEL, aiSkillForLevel, TEAMS, DRIVERS, TRACK_DEF, CIRCUITS, circuitById, circuitCentreLine, elevationAt, COMPOUNDS, SPEC, Track, Car, Session, AIDriver, RaceStrategy, planStrategy, bestCompoundFor, lapLoss, stintCost, wearPerLap, DRY_COMPOUNDS, migrateCompound, TYRE_REF_WORK, fmtTime, clamp, lerp, makeRng, stepCarPhysics, SLIPSTREAM, slipstreamStrength, OFF_TRACK, GREEN_RUNOFF, PlayerHandling, KeyboardDriveInput, HANDLING, USEFUL_WEAR, TYRE_STYLES, drivingStyle, tyreWearGrip, tyreWeatherGrip, tyreMismatch, updateTyres, wetnessFor, weatherCompound, DynamicWeather, CarDamage, DAMAGE_LEVELS, PART_KEYS, PART_NAMES, WHEEL_NAMES, REPAIR_TIME, REFUEL, FUEL_TANK_LAPS, FUEL_RESERVE, START_FUEL_LAPS, FUEL_PERF, FUEL_LAP_COST, estimatePitLoss, chooseStartFuelLaps, normalizeDamageLevel, partExposure, torqueAt, defaultCompoundModel, setSeed: (s) => { rnd = makeRng(s); } };
 })();
 // ==SIM-END==
 if (typeof module !== 'undefined') module.exports = SIM;
@@ -7414,6 +7454,36 @@ function buildTrack(scene, track, T, opts) {
     if (frame.length) {
       G.add(new THREE.Mesh(mergeGeoms(frame), new THREE.MeshStandardMaterial({ color: 0x8c9198, roughness: .5, metalness: .5 })));
       for (const n of [100, 200, 300]) if (panels[n].length) G.add(new THREE.Mesh(mergeGeoms(panels[n]), new THREE.MeshStandardMaterial({ map: boardTex(n), roughness: .6 })));
+    }
+  }
+  // ---- recommended corner-speed signs (SIM.cornerSpeedSigns): a number in km/h and the corner's direction ----
+  {
+    const signTex = (kmh, dir) => canvasTex(256, 224, (g, w, hh) => {
+      g.fillStyle = '#0d2a5c'; g.fillRect(0, 0, w, hh);
+      g.strokeStyle = '#ffffff'; g.lineWidth = 8; g.strokeRect(6, 6, w - 12, hh - 12);
+      g.fillStyle = '#ffd21f'; g.beginPath(); // the corner's direction: a bent arrow
+      const ax = w / 2, ay = 56, sx = dir > 0 ? 1 : -1;
+      g.moveTo(ax - 50 * sx, ay + 26); g.lineTo(ax - 50 * sx, ay - 4); g.lineTo(ax + 18 * sx, ay - 4); g.lineTo(ax + 18 * sx, ay - 24);
+      g.lineTo(ax + 52 * sx, ay + 4); g.lineTo(ax + 18 * sx, ay + 32); g.lineTo(ax + 18 * sx, ay + 12); g.lineTo(ax - 32 * sx, ay + 12); g.lineTo(ax - 32 * sx, ay + 26); g.closePath(); g.fill();
+      g.fillStyle = '#ffffff'; g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.font = '900 96px Titillium Web, Arial'; g.fillText(String(kmh), w / 2, 140);
+      g.font = '700 30px Titillium Web, Arial'; g.fillText('km/h', w / 2, 196);
+    });
+    const byTex = new Map(), frame = [];
+    for (const sg of SIM.cornerSpeedSigns(track)) {
+      const s = sg.s, i = sg.i, side = sg.side, wall = side > 0 ? track.wallR[i] : track.wallL[i];
+      const dd = wall + 1.6; // behind the barrier, clear of the braking boards' line
+      const [x, z, h] = track.pointAt(s, side * dd);
+      const yaw = Math.atan2(-Math.cos(h), -Math.sin(h));
+      if (!sceneryClear(track, x, z, 0.6)) continue;
+      const key = sg.kmh + ':' + sg.dir; if (!byTex.has(key)) byTex.set(key, { kmh: sg.kmh, dir: sg.dir, list: [] });
+      byTex.get(key).list.push(xf(new THREE.PlaneGeometry(2.0, 1.75), { p: [x - Math.cos(h) * 0.06, 2.6, z - Math.sin(h) * 0.06], r: [0, yaw, 0] }));
+      frame.push(xf(new THREE.BoxGeometry(2.08, 1.83, 0.1), { p: [x, 2.6, z], r: [0, yaw, 0] }));
+      for (const o of [-0.75, 0.75]) frame.push(xf(new THREE.CylinderGeometry(0.06, 0.06, 1.8, 6), { p: [x + Math.cos(yaw) * o, 0.9, z - Math.sin(yaw) * o] }));
+    }
+    if (frame.length) {
+      G.add(new THREE.Mesh(mergeGeoms(frame), new THREE.MeshStandardMaterial({ color: 0x8c9198, roughness: .5, metalness: .5 })));
+      for (const v of byTex.values()) G.add(new THREE.Mesh(mergeGeoms(v.list), new THREE.MeshStandardMaterial({ map: signTex(v.kmh, v.dir), roughness: .55, emissive: 0x111111 })));
     }
   }
   // ---- TV camera towers (the trackside broadcast positions) ----
@@ -9052,8 +9122,8 @@ function startRace(gridOrder, entries) {
     fuelInfo();
   }
   const descriptions = {
-    S: ['Highest grip and traction; wears fast.', 'Fast opening or closing stints, one or two stops'],
-    H: ['Lower grip, but long and steady life.', 'Long stints; a careful driver can run all six laps'],
+    S: ['Highest grip and traction; wears fast.', 'Short, fast stints with one pit stop'],
+    H: ['Lower grip, but long and steady life.', 'Long stints; lasts the whole six-lap race'],
     I: ['For damp conditions.', 'Damp track / overheats on dry asphalt'],
     W: ['For heavy rain.', 'Standing water / overheats on dry asphalt'],
   };
@@ -9064,7 +9134,7 @@ function startRace(gridOrder, entries) {
     b.setAttribute('aria-pressed', String(c === G.briefCompound));
     b.innerHTML = '<span class="brief-selected" aria-hidden="true">' + briefIcon('check') + 'SELECTED</span>' + briefTyreArt(c)
       + '<span class="brief-tyre-copy"><b>' + comp.name + '</b><span>' + descriptions[c][0] + '</span></span>'
-      + '<div class="brief-tyre-facts"><p>' + briefIcon('clock') + '<span>60% worn after ~ <b>' + comp.life + ' laps</b></span></p>'
+      + '<div class="brief-tyre-facts"><p>' + briefIcon('clock') + '<span>60% worn after ~ <b>' + (comp.life * 6000 / (G.track ? G.track.length : 6000)).toFixed(1) + ' laps</b> here</span></p>'
       + '<p>' + briefIcon('bars') + '<span>Best use: ' + descriptions[c][1] + '</span></p></div>';
     b.onclick = () => {
       G.briefCompound = c;
