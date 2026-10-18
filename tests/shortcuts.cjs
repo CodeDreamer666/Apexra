@@ -57,13 +57,14 @@ test('kerbs, inside wheels over the kerb and running wide keep the full progress
   }
 });
 
-test('skipping a chicane apex (all four tyres off on the inside) takes back the progress of the skipped span', () => {
+test('skipping a chicane apex creates a physical slowdown without changing race progress', () => {
   for (const id of ['monza', 'spa', 'suzuka', 'interlagos']) {
     const S = session(id), car = S.cars[0];
     for (const g of tracks.get(id).routeGates) {
       const r = through(S, car, g, { d: g.inside * (tracks.get(id).hw[g.apex] + 8), offN: 4 });
-      // what was not credited yet plus what is still owed: at least the whole span
-      assert.ok(r.total - r.credited + r.debt >= g.len - 1, id + ' ' + g.name + ': ' + r.credited + ' of ' + r.total + ' m credited, ' + r.debt.toFixed(0) + ' m still owed');
+      // The missed span is owed as speed loss; physical progress is never withheld.
+      assert.equal(r.credited, r.total, id + ' physical progress stays aligned');
+      assert.ok(r.debt >= g.len - 1, id + ' ' + g.name + ': ' + r.credited + ' of ' + r.total + ' m credited, ' + r.debt.toFixed(0) + ' m still owed');
     }
   }
 });

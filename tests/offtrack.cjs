@@ -249,10 +249,10 @@ function cornerRun(cut) {
     S.fixedStep(dt);
     if (t0 != null) maxOff = Math.max(maxOff, car.offN);
     if (t0 != null && section == null && car.totalDist - d0 >= span + 250) section = S.time - t0;
-    if (car.laps === 1 && crossedAt == null && prevS > t.length * 0.9 && car.s < t.length * 0.1) crossedAt = S.time;
+    if (t0 != null && crossedAt == null && prevS > t.length * 0.9 && car.s < t.length * 0.1) crossedAt = S.time;
     if (car.laps === 2 && lapAt == null) lapAt = S.time;
   }
-  return { S, car, section, maxOff, deficit: t.dS(t.wrapS(car.totalDist), car.s) };
+  return { S, car, section, maxOff, crossedAt, lapAt, deficit: t.dS(t.wrapS(car.totalDist), car.s) };
 }
 
 test('cutting a corner across the inside is slower than driving it, without any penalty or message', () => {
@@ -260,15 +260,19 @@ test('cutting a corner across the inside is slower than driving it, without any 
   assert.equal(cut.maxOff, 4, 'the cut car really left the track');
   assert.ok(cut.section > legit.section, `corner section: cut ${cut.section.toFixed(2)} s vs driven ${legit.section.toFixed(2)} s`);
   assert.ok(cut.car.finishTime > legit.car.finishTime, `and over the race: cut ${cut.car.finishTime.toFixed(2)} s vs driven ${legit.car.finishTime.toFixed(2)} s`);
-  assert.ok(cut.deficit > 15, 'the skipped distance is owed: ' + cut.deficit.toFixed(1) + ' m');
+  assert.ok(Math.abs(cut.deficit) < 0.5, 'a shortcut never shifts race distance away from the car: ' + cut.deficit.toFixed(1) + ' m');
   assert.equal(Math.abs(legit.deficit) < 0.5, true);
+  for (const run of [legit, cut]) {
+    assert.ok(run.crossedAt != null, 'the car physically crossed the line after the corner');
+    assert.equal(run.lapAt, run.crossedAt, 'the lap ends in the same step as the physical crossing');
+  }
   assert.equal('penaltyLog' in cut.car, false); assert.equal('warnings' in cut.car, false);
   assert.ok(cut.car.lapTimes.every(l => l.valid), 'no lap deleted');
   assert.ok(!cut.S.messages.some(m => /TRACK LIMITS|DELETED|INVALID/i.test(m.text)), 'no notification');
   assert.equal(cut.car.laps, 3); assert.ok(cut.car.finished && !cut.car.dnf);
 });
 
-test('Grand Prix: leaving the track deletes nothing, and a lap only counts once a full lap has been earned', () => {
+test('Grand Prix: leaving the track deletes nothing, and laps count at the physical line', () => {
   const t = tracks.get('monza');
   const S = new SIM.Session(t, { type: 'race', gameMode: 'grandprix', entries: SIM.DRIVERS.slice(0, 2).map(driver => ({ driver })), seed: 4, weather: 'dynamic' });
   S.totalLaps = 2; // Shortened Grand Prix test run; playable races still use six laps.
