@@ -117,8 +117,10 @@ test('planned paths are continuous: no lateral jumps when the plan changes', () 
 
 /* ---------------- 2-8. a full field: overtaking, defending, room, personalities, mistakes ---------------- */
 let raceStats = null;
-// two 3-lap races with the full field (Monza and Spa), instrumented (three laps: mistakes are situational and rare,
-// a couple per six-lap race, so two laps can pass without one). (Bahrain was the second race: between identical cars
+// two six-lap races with the full field (Monza and Spa), instrumented: the game's race distance. (With tyres that last
+// a six-lap race the field's strategies, a Soft one-stop from the front and a Hard no-stop from the back, cross over
+// after the pit stops, which is where much of the passing between identical cars comes from: three laps end before
+// it.) (Bahrain was the second race: between identical cars
 // without DRS its long straights make trains in which a committed move almost never completes — no completions in six
 // laps on either seed of the field benchmark in the README — so a short race there cannot show moves completing.)
 function fieldRace() {
@@ -129,9 +131,9 @@ function fieldRace() {
   P.planTrajectory = function () { const t0 = process.hrtime.bigint(); plan.call(this); R.planMs += Number(process.hrtime.bigint() - t0) / 1e6; R.plans++; };
   for (const [id, seed] of [['monza', 13], ['spa', 14]]) {
     const s = new SIM.Session(tracks[id], { type: 'race', seed, difficulty: 1, weather: 'dynamic', weatherState: DRY(seed), tyreWear: 'normal', mandatory: true, damage: 'realistic', entries: SIM.DRIVERS.map(driver => ({ driver })) });
-    s.totalLaps = 3;
+    s.totalLaps = 6;
     const t = s.track, defMax = new Map();
-    while (!s.over && s.time < 3 * 200 + 120) {
+    while (!s.over && s.time < 6 * 200 + 120) {
       s.fixedStep(SIM.PHYS_DT);
       if (s.step % 24) continue;
       const cars = s.cars.filter(c => !c.pit && !c.dnf && !c.inGarage && c.speed > 15);
