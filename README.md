@@ -1,6 +1,6 @@
-# Apex Grand Prix
+# Apexra
 
-Apex Grand Prix is an arcade Formula racing game that runs in your web browser. You race against 19 computer-controlled drivers over six laps of real Formula 1 circuits. Along the way you manage your tyres, fuel and pit stops, and deal with weather that can change mid-race.
+Apexra is an arcade Formula racing game that runs in your web browser. You race against 19 computer-controlled drivers over six laps of real Formula 1 circuits. Along the way you manage your tyres, fuel and pit stops, and deal with weather that can change mid-race.
 
 It's easy to pick up and hard to master. The opponents race hard, mistakes cost time, and the right strategy can win you a race.
 
