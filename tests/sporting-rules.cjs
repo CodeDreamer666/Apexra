@@ -26,9 +26,11 @@ function prohibitPenaltyReads(car) {
 }
 function box(S, c, tyre) {
   const p = S.track.pit;
-  c.placeAt(S.track, p.boxes[0], p.side * p.boxD, 0);
-  c.pit = { phase: 'awaiting', station: p.id, box: 0, boxS: p.boxes[0], stopS: p.boxes[0], entryTime: S.time };
-  assert.ok(S.confirmPitService(c, { tyre, fuel: 0 }));
+  const k = c.teamIdx;
+  c.placeAt(S.track, p.boxes[k], p.side * p.boxD, 0);
+  c.pit = { phase: 'in', station: p.id, box: k, boxS: p.boxes[k], stopS: p.boxes[k], entryTime: S.time };
+  c.pitPlan = { tyre, fuel: 0, repair: true };
+  S.beginPitService(c); // the service starts on arrival from the plan, no confirmation
   return c.pit;
 }
 for (const track of tracks) for (const mode of modes) {
@@ -90,7 +92,8 @@ for (const track of tracks) for (const mode of modes) {
     for (const comp of ['S','S','H','H','I','W']) {
       c.tyre.wear.fill(.7); c.damage.c[0] = c.damage.c[1] = .6; c.damage.computePerf();
       const P = box(S, c, comp), before = S.time;
-      assert.ok(P.tyreT>=2);assert.ok(P.fwT>=SIM.REPAIR_TIME.fw[0]);assert.equal(P.total,Math.max(.8,P.tyreT,P.fwT,P.rwT));
+      const other = P.jobs.filter(j => !j.station.startsWith('corner')).reduce((m, j) => Math.max(m, j.end), 0);
+      assert.ok(P.tyreT>=2);assert.ok(P.fwT>=SIM.REPAIR_TIME.fw[0]);assert.equal(P.total,Math.max(.8,P.tyreT,P.fuelT,other));
       while (P.phase === 'stopped') { S.time += SIM.PHYS_DT; S.pitLogic(c, SIM.PHYS_DT); }
       assert.ok(S.time - before >= P.total);
       assert.equal(c.tyre.c, comp); assert.equal(c.damage.fw, 0);

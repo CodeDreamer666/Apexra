@@ -23,9 +23,9 @@ If the game doesn't load when you double-click the file, your browser may be blo
 A single race, open whenever you like:
 
 - six laps
-- 20 cars
+- 20 cars: ten teams of two drivers
 - any of the six circuits
-- you drive for Team A against the standard (100%) field
+- you drive car A1 for Team A, with a computer-controlled team-mate in A2, against the standard (100%) field
 - you always start from the back of the grid, in P20
 
 Grand Prix races don't count towards your Career, so it's the place to learn a circuit or try a strategy.
@@ -116,7 +116,11 @@ Using the kerbs, running a little wide, or putting two wheels over the inside ke
 | Controlled drift | `W` + `S` + `A`/`D` |
 | Launch at the start | Hold `W` on the grid |
 | Look back | `B` |
-| Tyres and pit info panel | `V` |
+| Show or hide the pit plan | `V` |
+| Pit plan: tyres Soft / Hard / Inter / Wet / keep | `1` `2` `3` `4` `5` |
+| Pit plan: less / more fuel | `−` / `+` |
+| Pit plan: repairs on or off | `0` |
+| Car Status page (pauses the race) | `C` |
 | Telemetry graph | `T` |
 | Back onto the track (after the start) | `R` or `Space` |
 | Mute sound | `M` |
@@ -145,7 +149,14 @@ Speed (km/h), gear, engine revs and the shift lights.
 - **Weather:** the chance of rain in the next few minutes, and how wet the track surface is right now.
 - **Tyres:** which tyre you're on, and how worn the set is, as one figure and a bar.
 - **Fuel:** roughly how many laps of fuel you have left. It turns red and says SHORT if you won't make the finish.
-- **Car status:** `OK` when the car is healthy. When it's damaged, it says `DAMAGED` and lists what's wrong in a few words, for example "Front wing damaged" or "Suspension damaged — pulls right". If the car can't continue, it says `RETIRING` and then `RETIRED`.
+- **Car status:** `OK` when the car is healthy. When it's damaged, it says `DAMAGED` (or `CRITICAL` when a part is close to failing) and lists the two most serious problems in a few words, for example "Front wing — Less front downforce". If the car can't continue, it says `RETIRING` and then `RETIRED`. Press `C` for the full Car Status page.
+
+**Car Status page (`C`)**
+Opening it pauses the race; press `C` or `Esc` again to carry on. It shows:
+- a top-down drawing of your car with every part marked, green when it's fine and yellow, orange or red when it's damaged
+- a list of the damaged parts with their condition and what each one does to the car
+- how the car handles right now, for example "Pulls left under braking" or "Slow gear changes"
+- how long a pit stop with repairs will take, and which crew works on what
 
 ---
 
@@ -173,11 +184,22 @@ Both are competitive. Which one is quicker depends on the circuit and on how you
 You choose your starting fuel before the race, measured in laps. A full car is heavier and slower, so starting light and refuelling at a stop is a real option. The status panel shows how many laps you have left, based on how you've actually been driving.
 
 ### Pit stops
-1. Steer into the marked pit entry at the edge of the main straight and cross the gold line.
-2. The car drives itself down the pit lane, at the 100 km/h speed limit, to a free service box.
-3. In the box, choose your tyres and how much fuel to add, then confirm.
-4. The crew works on the car. A damaged front or rear wing is replaced automatically.
-5. The car drives itself to the pit exit and hands control back to you.
+Every team has its own box in the pit lane, shared by its two drivers.
+
+**Plan the stop before you come in.** Press `V` to see your pit plan, and change it at any time while you drive:
+- **Tyres:** `1` Soft, `2` Hard, `3` Intermediate, `4` Full Wet, or `5` to keep the tyres you're on. If you don't choose, you get a fresh set of the tyres you're using.
+- **Fuel:** `−` and `+` change how many laps of fuel go in, half a lap at a time. By default the crew adds enough to reach the finish, worked out from how much fuel you've actually been using. The tank can't be overfilled.
+- **Repairs:** on by default, so the crew fixes all the damage. Press `0` to skip the repairs and save time.
+
+The panel also shows how long the stop will take.
+
+**Making the stop**
+1. Steer into the pit entry beside the main straight. From there the car drives itself.
+2. It keeps to the 120 km/h pit-lane speed limit and parks in your team's box. If your team-mate is already in the box, your car waits just behind it until the box is free.
+3. The crew carries out your plan straight away, with nothing to confirm. A small panel shows each job and the time left. A tyre change takes about 2–3 seconds. Refuelling and repairs can take longer; the crews work at the same time, and bigger damage takes longer to fix.
+4. A light at the box turns green when it's safe to go. The car pulls out, drives to the pit exit and gives control back to you there.
+
+A stop for tyres only costs about 15–16 seconds compared with staying out, depending on the circuit. The computer drivers use exactly the same pit lane, boxes, crews and timings as you.
 
 ### Weather
 The weather changes during the race. Watch the rain chance and the track wetness on the status panel. Rain makes the track slippery, and it takes time for a wet track to dry out again. Getting the timing of a switch between dry and wet tyres right can gain or lose a lot of places.
@@ -189,12 +211,17 @@ Following closely behind another car on a straight gives you a tow, which makes 
 Lap times are recorded when your car crosses the painted start/finish line. Positions follow completed laps and where each car is on the circuit, including the pit lane. Returning a tyre to the track clears extra shortcut braking, so held throttle accelerates the car again as grip returns. It does not move your timing line or leave your displayed position behind your car. Yellow flags and caution restrictions are removed. Reversing over the line and crossing it again cannot count an extra lap.
 
 ### Damage
-Contact has immediate consequences, depending on how hard the hit was:
-- **A light touch** is usually harmless.
-- **A harder hit** can break the front wing, damage the suspension or hurt the engine, and the car will handle worse straight away.
-- **A heavy crash** can end your race.
+The car is made up of more than 30 parts, and each one is tracked separately: front and rear wings, nose, floor, diffuser, sidepods, each corner's suspension, the steering, each tyre and wheel mounting, each brake, the engine, gearbox, drivetrain, cooling and air intakes, and the front and rear of the chassis.
 
-Wings can be replaced at a pit stop. Some damage, such as bent suspension, stays with you until the end of the race.
+What breaks depends on where you're hit, which way and how hard, not on luck:
+- **Hitting a car with your front wing** damages the wing and nose, and the car understeers.
+- **A hit to one wheel** can bend that corner's suspension, so the car pulls to one side, or damage the tyre, which can then lose air slowly or quickly.
+- **A heavy hit from behind** can damage the rear wing, diffuser, gearbox or engine: less grip at the rear, slower gear changes, less power.
+- **A big crash** can end your race straight away, for example if a wheel is torn off or the suspension or chassis is wrecked.
+
+Every part that's damaged changes how the car drives, and you'll feel it immediately. A short notice tells you when something important is hit.
+
+At a pit stop the crew can repair everything on a car that's still running, with repairs left on in your pit plan. Light damage takes a few seconds and heavy damage longer. A car that has retired stays out of the race. Damage never carries over to the next race.
 
 ### Your opponents
 The other 19 drivers all race the same way: hard, but fair.
@@ -205,7 +232,7 @@ The other 19 drivers all race the same way: hard, but fair.
 - They pounce immediately when a rival runs wide, spins or slows down.
 - They leave room for a car that's alongside them.
 
-They drive the same cars under the same rules as you, with no hidden boosts and no catch-up help. Higher ranks make them faster and more precise, not more reckless.
+They drive the same cars under the same rules as you, with no hidden boosts and no catch-up help. Their cars are damaged in the same way yours is, and they decide for themselves whether a repair stop is worth the time. Higher ranks make them faster and more precise, not more reckless.
 
 ---
 

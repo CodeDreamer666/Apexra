@@ -4,8 +4,9 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 
-// Shared pit boxes, the pit-lane queue, service at the box, refuelling, automatic wing repairs, and the
-// removal of DRS and ERS, exercised through the game's own Session, AI and physics.
+// Ten team boxes (two cars per team), stacking, the automatic service from the pit plan, refuelling in laps, full
+// repairs on the shared repair schedule, the time a stop costs, and the removal of DRS and ERS, exercised through the
+// game's own Session, AI, pit autopilot and physics.
 const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
 const context = { module: { exports: {} } };
 new Function('module', html.match(/<script>([\s\S]*?)<\/script>/)[1])(context.module); // (not vm.runInNewContext: a separate context runs the simulation about five times slower)
@@ -17,79 +18,185 @@ function session(id, n, extra = {}) {
   const t = tracks.get(id);
   return new SIM.Session(t, { type: 'race', laps: 8, entries: SIM.DRIVERS.slice(0, n).map(driver => ({ driver })), seed: 3, spectate: true, weather: 'dynamic', weatherState: DRY(3), ...extra });
 }
-// a car that has just crossed the pit-entry line at time `at`
-function arrive(S, car, at, q = 1) {
-  car.pit = { phase: 'queue', box: null, boxS: null, stopS: null, timer: 0, entryTime: at, queuePos: 0 };
-  S.pitArrivals.push({ car, t: at, q });
-}
 
-test('the speed-limited lane is short and every circuit has the same four shared boxes', () => {
+// a car placed on the entry route just past the commitment gate, where a car that has steered into the entry is
+function onEntry(S, car, speed = 30, ds = 20) {
+  const t = S.track, s0 = t.wrapS(t.pit.commit + ds); car.placeAt(t, s0, t.pitTargetD(s0, null), speed); car.gear = 5; car.started = true;
+}
+const lane = (S, ids, sec, each) => { for (let k = 0; k < sec / SIM.PHYS_DT; k++) { S.fixedStep(SIM.PHYS_DT); if (each) each(S); if (ids && ids.every(c => c.pitStops > 0 && !c.pit)) break; } };
+
+test('ten team boxes, one per team, in the speed-limited lane beside the main straight', () => {
+  assert.equal(SIM.TEAMS.length, 10); assert.equal(SIM.DRIVERS.length, 20);
+  for (let i = 0; i < 20; i++) assert.equal(SIM.DRIVERS[i].team, Math.floor(i / 2), 'two cars per team');
   for (const t of tracks.values()) {
     const p = t.pit, limited = p.len - p.E - p.X;
-    // a 300 m entry ramp, a ~100 m working lane limited to 100 km/h and a 60 m exit ramp
-    assert.ok(limited >= 80 && limited <= 120, t.name + ' limited lane ' + limited.toFixed(0) + ' m');
-    assert.ok(Math.abs(p.limit * 3.6 - 100) < 1e-9 && p.len < 480, t.name + ' pit lane ' + p.len.toFixed(0) + ' m');
-    assert.equal(p.boxes.length, 4);
-    for (let k = 1; k < 4; k++) assert.ok(t.dS(p.boxes[k - 1], p.boxes[k]) >= 15, 'boxes in a row along the lane');
-    // the boxes lie inside the speed-limited stretch, the queue line before them
-    for (const b of p.boxes) assert.ok(t.inLimiter(b) && t.inPitMain(b));
-    assert.ok(t.dS(p.queueS, p.boxes[0]) > 8);
-    // a measured clean-stop loss and fuel consumption for this circuit
-    assert.ok(t.def.pitLoss >= 18 && t.def.pitLoss <= 25, t.name + ' pit loss ' + t.def.pitLoss);
-    assert.ok(t.def.fuelPerLap > 2 && t.def.fuelPerLap < 3.5);
+    assert.equal(p.boxes.length, 10, t.name + ' ten boxes');
+    for (let k = 1; k < 10; k++) assert.ok(t.dS(p.boxes[k - 1], p.boxes[k]) >= 12, 'boxes in a row along the lane, one car length and a gap apart');
+    for (const b of p.boxes) assert.ok(t.inLimiter(b) && t.inPitMain(b), 'every box inside the limited stretch');
+    assert.ok(limited > 120 && limited < 170, t.name + ' limited lane ' + limited.toFixed(0) + ' m');
+    assert.ok(Math.abs(p.limit * 3.6 - 120) < 1e-9, 'pit limit 120 km/h');
+    assert.ok(p.E >= 160, 'an entry ramp long enough to brake from top speed to the limit');
   }
 });
 
-test('boxes go strictly first come, first served: at most four occupied, then one FIFO queue', () => {
-  const S = session('monza', 8); S.lightsOut = true;
-  const c = S.cars;
-  // six cars arrive; two of them in the same step at the same instant (ordered by distance into the lane, then car)
-  arrive(S, c[5], 10.0); arrive(S, c[2], 10.4); arrive(S, c[7], 10.4, 3); arrive(S, c[1], 10.4, 3); arrive(S, c[0], 11.0); arrive(S, c[3], 11.5);
-  S.allocatePitBoxes();
-  const order = [c[5], c[1], c[7], c[2], c[0], c[3]]; // by time, then furthest into the lane, then car number
-  assert.equal(S.pitBoxesInUse(), 4);
-  // (arrays from the game's sandbox are copied into this realm before comparing)
-  assert.deepEqual([...S.pitBoxes].reverse(), order.slice(0, 4), 'earliest arrival gets the furthest free box, and so on');
-  assert.deepEqual([...S.pitQueue], order.slice(4), 'the rest wait in arrival order');
-  assert.deepEqual([...S.pitQueue].map(x => x.pit.queuePos), [1, 2]);
-  for (const x of order.slice(0, 4)) assert.equal(x.pit.phase, 'in');
-  assert.equal(new Set(S.pitBoxes).size, 4, 'no car holds two boxes');
-  // a later arrival with a pit request gets no priority: it queues behind
-  c[4].boxRequest = true; arrive(S, c[4], 12.0); S.allocatePitBoxes();
-  assert.deepEqual([...S.pitQueue], [c[0], c[3], c[4]]);
-  // a box frees when its car leaves; the earliest waiting car takes it
-  const leaving = S.pitBoxes[2]; leaving.pit.phase = 'out'; S.allocatePitBoxes();
-  assert.equal(S.pitBoxes[2], c[0]); assert.equal(c[0].pit.phase, 'in'); assert.equal(c[0].pit.box, 2);
-  assert.deepEqual([...S.pitQueue], [c[3], c[4]]);
-  // a car that retires in its box leaves it to the next one
-  S.retire(S.pitBoxes[0]); S.allocatePitBoxes();
-  assert.equal(S.pitBoxes[0], c[3]); assert.deepEqual([...S.pitQueue], [c[4]]);
-  assert.ok(S.pitBoxesInUse() <= 4);
+test('each car goes to its own team box; different teams are serviced at the same time', () => {
+  const S = session('monza', 6, { spectate: false }); S.lightsOut = true; S.lightsOutTime = 0; S.time = 30;
+  const [a1, a2, b1, b2, c1, c2] = S.cars;
+  for (const c of [a2, b2, c2]) c.placeAt(S.track, 2500, 0, 40);
+  // A1 arrives with heavy damage (a long repair); B1 and C1 follow and are serviced in their own boxes meanwhile
+  a1.damage.applyImpact(70000, -2.6, 0.1, 0, S.damageLevel, 0); a1.ai.boxCompound = 'H';
+  onEntry(S, a1, 30, 40); onEntry(S, b1, 30, 22); onEntry(S, c1, 30, 4);
+  let together = 0;
+  lane(S, [a1, b1, c1], 90, (S) => { const n = S.cars.filter(c => c.pit && c.pit.phase === 'stopped').length; together = Math.max(together, n); });
+  for (const [c, k] of [[a1, 0], [b1, 1], [c1, 2]]) {
+    assert.equal(c.pitStops, 1, c.driver.short + ' serviced'); assert.equal(c.pitHistory[0].box, k + 1, c.driver.short + ' in its team box ' + (k + 1));
+  }
+  assert.ok(a1.pitHistory[0].service > 6, 'A1 under repair for ' + a1.pitHistory[0].service.toFixed(1) + ' s');
+  assert.ok(together >= 2, 'boxes of different teams work at the same time: ' + together + ' cars stationary together');
 });
 
-test('a car that simply steers into the pit entry, with no request, is given a free box and serviced', () => {
-  const t = tracks.get('silverstone'), p = t.pit;
+test('team-mates arriving together: the first is serviced, the second waits in the fast lane and then takes the box', () => {
+  const S = session('bahrain', 2, { spectate: false }); S.lightsOut = true; S.lightsOutTime = 0; S.time = 30;
+  const [a1, a2] = S.cars;
+  onEntry(S, a1, 28, 40); onEntry(S, a2, 28, 14);
+  let stacked = false, both = 0, minGap = 1e9;
+  lane(S, [a1, a2], 120, (S) => {
+    if (a2.pit && a2.pit.phase === 'stack') stacked = true;
+    if (a1.pit && a2.pit && a1.pit.phase === 'stopped' && a2.pit.phase === 'stopped') both++;
+    if (a1.pit && a2.pit) minGap = Math.min(minGap, Math.hypot(a1.x - a2.x, a1.z - a2.z));
+  });
+  assert.ok(stacked, 'the second car stacked');
+  assert.equal(both, 0, 'never two cars serviced in one box');
+  assert.ok(minGap > 2.2, 'the cars never overlap: closest ' + minGap.toFixed(2) + ' m');
+  assert.equal(a1.pitStops, 1); assert.equal(a2.pitStops, 1);
+  assert.equal(a1.pitHistory[0].box, 1); assert.equal(a2.pitHistory[0].box, 1);
+  assert.ok(a2.pitHistory[0].queued > 0.5, 'the second car waited ' + a2.pitHistory[0].queued.toFixed(1) + ' s for the box');
+});
+
+test('all ten boxes busy and both cars of every team in the lane: no overlap, no deadlock, everyone leaves', () => {
+  for (const id of ['spa', 'interlagos']) {
+    const S = session(id, 20, { spectate: false }); S.lightsOut = true; S.lightsOutTime = 0; S.time = 30;
+    // the field nose to tail on the entry route, team-mates mixed in the order
+    const order = S.cars.slice().sort((x, y) => (x.id * 7) % 20 - (y.id * 7) % 20);
+    // (the cars still short of the gate have called a stop, so they steer onto the entry route)
+    order.forEach((c, k) => { onEntry(S, c, 22, 70 - k * 9); if (c.ai) c.ai.boxThisLap = true; });
+    let maxBusy = 0, overlap = 0;
+    lane(S, S.cars, 400, (S) => {
+      maxBusy = Math.max(maxBusy, S.pitBoxes.filter(Boolean).length);
+      if (S.step % 24) return;
+      const L = S.cars.filter(c => c.pit);
+      for (let i = 0; i < L.length; i++) for (let j = i + 1; j < L.length; j++) if (Math.hypot(L[i].x - L[j].x, L[i].z - L[j].z) < 1.6) overlap++;
+    });
+    assert.ok(S.cars.every(c => c.pitStops === 1 && !c.pit), id + ': every car serviced and out of the lane (' + S.cars.filter(c => c.pit).map(c => c.driver.short + ':' + c.pit.phase).join(' ') + ')');
+    assert.ok(maxBusy >= 8, id + ': boxes busy at once ' + maxBusy);
+    assert.equal(overlap, 0, id + ': cars overlapping in the lane');
+    for (const c of S.cars) assert.equal(c.pitHistory[0].box, c.teamIdx + 1, c.driver.short + ' used its team box');
+  }
+});
+
+test('the service runs at once from the pit plan: tyres, fuel in laps of the car\'s own consumption, repairs', () => {
   const S = session('silverstone', 2, { spectate: false, entries: [{ driver: SIM.DRIVERS[0] }, { driver: SIM.DRIVERS[1], isPlayer: true }] });
   S.lightsOut = true; S.lightsOutTime = 0; S.time = 30;
-  const [other, me] = S.cars; other.placeAt(t, 3000, 0, 40);
-  assert.ok(!me.boxRequest);
-  // (on the entry route, just past the commitment gate, where a car that has steered into the entry is)
-  const s0 = t.wrapS(p.commit + 20); me.placeAt(t, s0, t.pitTargetD(s0, null), 30); me.gear = 5;
-  let box = null, awaited = false;
-  for (let k = 0; k < 240 * 40 && !awaited; k++) {
+  const [other, me] = S.cars; other.placeAt(S.track, 3000, 0, 40);
+  me.fuel = S.fuelForLaps(2);
+  me.pitPlan = { tyre: 'S', fuel: 2, repair: true };
+  me.damage.applyImpact(24000, 2.5, -0.6, 0.3, S.damageLevel, 3000);
+  const plan = me.damage.repairPlan(); assert.ok(plan.items.length >= 2, 'damaged: ' + plan.items.join(', '));
+  onEntry(S, me);
+  let P = null, fuel0 = 0;
+  lane(S, [me], 90, () => { if (!P && me.pit && me.pit.phase === 'stopped') { P = me.pit; fuel0 = P.fuelStart; } });
+  assert.ok(P, 'the car stopped in its box and the service began without any confirmation');
+  assert.equal(me.tyre.c, 'S');
+  const rate = S.fuelLapRate(me);
+  assert.ok(Math.abs(P.fuelAdd - 2 * rate) < 1e-6 && Math.abs(me.fuel - fuel0 - P.fuelAdd) < 0.2, 'two laps of fuel: ' + P.fuelAdd.toFixed(2) + ' kg at ' + rate.toFixed(2) + ' kg/lap');
+  assert.ok(me.damage.isClean(), 'repaired in full');
+  // the stationary time is the longest crew's work (tyres after the corner repairs, fuel, the other crews), as estimated
+  assert.ok(Math.abs(P.total - Math.max(P.tyreT, P.fuelT, P.jobs.reduce((m, j) => Math.max(m, j.station.startsWith('corner') ? 0 : j.end), 0), 0.8)) < 1e-9);
+  // a plan of more fuel than the tank holds fills the tank and no more
+  const T = session('monza', 1, { spectate: false, entries: [{ driver: SIM.DRIVERS[0], isPlayer: true }] }); T.lightsOut = true; T.time = 30;
+  const p2 = T.cars[0]; p2.pitPlan = { tyre: 'keep', fuel: 40, repair: false };
+  assert.ok(Math.abs(T.serviceFor(p2).fuelKg - (T.fuelCapacity - p2.fuel)) < 1e-9);
+  assert.equal(T.serviceFor(p2).tyre, 'keep');
+  // 'finish': enough to reach the flag with a small margin
+  p2.fuel = T.fuelForLaps(1); const f = T.fuelToFinish(p2);
+  assert.ok(f * 2 === Math.round(f * 2) && (p2.fuel + f * T.fuelLapRate(p2)) / T.fuelLapRate(p2) >= T.lapsLeft(p2) + 0.29, 'fuel to the flag: ' + f);
+});
+
+test('a full repair restores every component; its time is the shared schedule (Car Status estimate = actual stop)', () => {
+  const S = session('monza', 1, { spectate: false, entries: [{ driver: SIM.DRIVERS[0], isPlayer: true }] }); S.lightsOut = true; S.lightsOutTime = 0; S.time = 30;
+  const me = S.cars[0], D = me.damage, lv = S.damageLevel;
+  D.applyImpact(30000, 2.5, -0.7, 0.3, lv, 3000); D.applyImpact(26000, -2.6, 0.3, 0.1, lv, 2000); D.applyImpact(18000, 0.3, 0.9, 1, lv, 2000);
+  D.c[SIM.CI.engine] = Math.max(D.c[SIM.CI.engine], 0.5); D.c[SIM.CI.brakeFR] = 0.6; D.computePerf();
+  const damaged = SIM.COMPONENTS.filter((C, k) => C.cat !== 'tyre' && D.c[k] >= SIM.DAMAGE_MIN).length;
+  assert.ok(damaged >= 6, damaged + ' components damaged');
+  const est = D.repairPlan(), perf0 = { ...D.perf };
+  assert.ok(perf0.power < 0.95 && perf0.brake < 0.95 && perf0.clAMul < 0.95, 'the damage costs power, braking and downforce');
+  me.pitPlan = { tyre: 'H', fuel: 0, repair: true };
+  onEntry(S, me);
+  let P = null, mid = null;
+  lane(S, [me], 120, () => {
+    if (me.pit && me.pit.phase === 'stopped') { P = me.pit; const el = P.total - P.timer; if (!mid && el > 1.0 && el < P.total - 1) mid = D.isClean(); }
+  });
+  assert.ok(P && mid === false, 'still damaged during the work');
+  // the stationary time equals the estimate (the tyre change itself varies a little from stop to stop)
+  assert.ok(Math.abs(P.total - est.time) < 0.9, 'stop ' + P.total.toFixed(2) + ' s, estimate ' + est.time.toFixed(2) + ' s');
+  assert.ok(P.total > 2.4 + 2, 'repairs cost real time');
+  assert.ok(D.isClean(), 'every component back to new');
+  const H = new SIM.CarDamage().perf;
+  for (const k of ['power', 'brake', 'clAMul', 'cdAMul', 'turnLoss', 'aeroTurnLoss', 'pull', 'brakePull', 'rearStab', 'traction', 'steerResp', 'shiftMul', 'gearCap', 'coolEff']) assert.ok(Math.abs(D.perf[k] - H[k]) < 1e-9, k + ' back to healthy: ' + D.perf[k] + ' vs ' + H[k]);
+  assert.equal(D.repairPlan().items.length, 0, 'nothing left to repair: the estimate returns to zero');
+});
+
+test('a retired car cannot enter the pit lane or be repaired', () => {
+  const S = session('monza', 1, { spectate: false, entries: [{ driver: SIM.DRIVERS[0], isPlayer: true }] }); S.lightsOut = true; S.time = 30;
+  const me = S.cars[0];
+  me.damage.c[SIM.CI.gearbox] = 1; me.damage.computePerf(); S.checkFailures(me);
+  assert.ok(me.retiring, 'a broken gearbox retires the car');
+  onEntry(S, me);
+  for (let k = 0; k < 240 * 20; k++) S.fixedStep(SIM.PHYS_DT);
+  assert.ok(!me.pit && me.pitStops === 0, 'no pit stop for a retired car');
+  assert.ok(me.dnf || me.retiring);
+});
+
+test('the pit autopilot drives the car: commitment at any speed, braking to the limit, no teleport, a smooth stop', () => {
+  const S = session('suzuka', 1, { spectate: false, entries: [{ driver: SIM.DRIVERS[4], isPlayer: true }] }); S.lightsOut = true; S.lightsOutTime = 0; S.time = 30;
+  const me = S.cars[0], t = S.track;
+  onEntry(S, me, 82, 5); // nearly 300 km/h past the gate
+  let jump = 0, overLimit = 0, maxDecel = 0, prev = null, pv = me.speed;
+  lane(S, [me], 90, () => {
+    if (prev) jump = Math.max(jump, Math.hypot(me.x - prev[0], me.z - prev[1]));
+    prev = [me.x, me.z];
+    if (me.pit && t.inLimiter(me.s) && me.pit.phase !== 'out') overLimit = Math.max(overLimit, me.speed - t.pit.limit);
+    maxDecel = Math.max(maxDecel, (pv - me.speed) / SIM.PHYS_DT); pv = me.speed;
+  });
+  assert.equal(me.pitStops, 1, 'serviced');
+  assert.ok(jump < 0.5, 'moved continuously: largest step ' + jump.toFixed(3) + ' m');
+  assert.ok(overLimit < 1.5, 'held to the limit in the lane: ' + (overLimit * 3.6).toFixed(1) + ' km/h over');
+  assert.ok(maxDecel < 75, 'no sudden stop: ' + maxDecel.toFixed(1) + ' m/s² (full arcade braking from top speed is about 60)');
+  assert.ok(me.autoDrive === false, 'control handed back at the pit exit');
+});
+
+test('pitting keeps the race distance honest: no lap gained or lost, the classification follows the cars', () => {
+  const t = tracks.get('monza');
+  const S = new SIM.Session(t, { type: 'race', laps: 3, entries: SIM.DRIVERS.slice(0, 4).map(driver => ({ driver })), seed: 4, spectate: true, weather: 'dynamic', weatherState: DRY(4) });
+  S.totalLaps = 3;
+  const car = S.cars[0]; let last = car.totalDist, maxStep = 0, lapsAtEntry = null, distAtEntry = null;
+  while (!S.over && S.time < 600) {
     S.fixedStep(SIM.PHYS_DT);
-    if (me.pit && me.pit.box != null) box = me.pit.box;
-    if (me.pit && me.pit.phase === 'awaiting') awaited = true;
+    if (car.laps === 1 && !car.pitStops && !car.pit) { car.ai.boxThisLap = true; car.boxCompound = 'H'; }
+    if (car.pit && lapsAtEntry == null) { lapsAtEntry = car.laps; distAtEntry = car.totalDist; }
+    maxStep = Math.max(maxStep, car.totalDist - last); last = car.totalDist;
   }
-  assert.ok(box != null, 'a box was given at the entry');
-  assert.ok(awaited, 'and the autopilot stopped in it, waiting for the player');
-  assert.equal(S.pitBoxes[box], me);
+  assert.equal(car.pitStops, 1);
+  assert.ok(maxStep < 2, 'race distance grows smoothly through the lane: largest step ' + maxStep.toFixed(3) + ' m');
+  assert.equal(car.laps, 3, 'three laps, the stop neither added nor removed one');
+  assert.ok(S.results.every((r, k) => r.pos === k + 1));
 });
 
 // One car alone on the circuit, the same seed with and without a stop on lap 2.
-function soloRace(id, { stop = false, prep = null, fuelLaps = 8, laps = 4, onStep = null } = {}) {
+function soloRace(id, { stop = false, prep = null, fuelLaps = 8, laps = 4, onStep = null, driver = 0 } = {}) {
   const t = tracks.get(id);
-  const S = new SIM.Session(t, { type: 'race', laps, entries: [{ driver: SIM.DRIVERS[0] }], seed: 11, spectate: true, weather: 'dynamic', tyreWear: 'off', mistakes: 0, mandatory: false, weatherState: DRY(3) });
+  const S = new SIM.Session(t, { type: 'race', laps, entries: [{ driver: SIM.DRIVERS[driver] }], seed: 11, spectate: true, weather: 'dynamic', tyreWear: 'off', mistakes: 0, mandatory: false, weatherState: DRY(3) });
   S.totalLaps = laps; S.mandatory = false; const car = S.cars[0]; car.fuel = S.fuelForLaps(fuelLaps);
   // (the reference run stays out: with the pits open the AI may make a stop of its own, which hides the loss)
   if (!stop) S.pitsEnabled = false;
@@ -105,81 +212,19 @@ function soloRace(id, { stop = false, prep = null, fuelLaps = 8, laps = 4, onSte
   return { S, car, P, time: car.finishTime, visit: car.pitHistory[0] };
 }
 
+
 for (const id of SIM.CIRCUITS.map(c => c.id)) {
-  test(id + ': a clean tyre-only stop loses 17–27 s against staying out, as the circuit states', () => {
-    const base = soloRace(id), pit = soloRace(id, { stop: true });
+  test(id + ': a clean tyre-only stop costs what the circuit states (measured), far less than the old 19-27 s', () => {
+    // (measured from a box in the middle of the lane: the stated loss is the mean over the first, middle and last
+    // boxes, tools/pit-benchmark.cjs; the first box costs about a second more, the middle one about half a second less)
+    const base = soloRace(id, { driver: 10 }), pit = soloRace(id, { stop: true, driver: 10 });
     const loss = pit.time - base.time;
-    assert.ok(pit.P && pit.P.changeTyres && !pit.P.fuelAdd && !pit.P.fwT && !pit.P.rwT, 'a tyre-only stop');
-    // (each real circuit's lane is measured: 19.3 s at Interlagos to 24.4 s at Bahrain over four seeds; one seed
-    // lands within about 2 s of the mean)
-    assert.ok(loss >= 17 && loss <= 27, id + ' clean stop loss ' + loss.toFixed(2) + ' s');
+    assert.ok(pit.P && pit.P.changeTyres && !pit.P.fuelAdd && !pit.P.jobs.length, 'a tyre-only stop');
+    assert.ok(loss > 9 && loss < 18, id + ' clean stop loss ' + loss.toFixed(2) + ' s');
     assert.ok(Math.abs(loss - tracks.get(id).def.pitLoss) < 2.0, 'the stated loss matches the simulation: ' + loss.toFixed(2) + ' vs ' + tracks.get(id).def.pitLoss);
     assert.equal(pit.car.laps, 4); assert.equal(pit.car.pitStops, 1);
   });
 }
-
-test('queueing for a box and adding fuel lengthen the stop naturally', () => {
-  const clean = soloRace('bahrain', { stop: true });
-  // four parked cars hold every box for the first 12 s the car is in the lane
-  const queued = soloRace('bahrain', { stop: true, prep: (S, car) => {
-    const extra = SIM.DRIVERS.slice(1, 5).map(driver => new SIM.Car({ driver }, S));
-    extra.forEach((o, k) => {
-      S.cars.push(o); o.placeAt(S.track, S.track.pit.boxes[k], S.track.pit.side * S.track.pit.boxD, 0); o.frozen = true; o.started = true;
-      o.pit = { phase: 'stopped', box: k, timer: 1e9, total: 1e9, boxS: S.track.pit.boxes[k], stopS: S.track.pit.boxes[k] }; S.pitBoxes[k] = o;
-    });
-    S._blockers = extra; S._freeAt = S.time + 12;
-  }, onStep: (S) => { if (S._blockers && S.time >= S._freeAt) { for (const o of S._blockers) S.retire(o); S._blockers = null; } } });
-  assert.ok(queued.visit.queued > 5, 'waited in the queue ' + queued.visit.queued.toFixed(1) + ' s');
-  assert.ok(queued.visit.laneTime > clean.visit.laneTime + 5, 'longer in the lane: ' + queued.visit.laneTime.toFixed(1) + ' vs ' + clean.visit.laneTime.toFixed(1));
-  // a light car takes on fuel: the stop lasts as long as the pumping, longer than the tyre change
-  const fuel = soloRace('bahrain', { stop: true, fuelLaps: 2.2 });
-  assert.ok(fuel.P.fuelAdd > 3, 'fuel added ' + fuel.P.fuelAdd);
-  assert.ok(Math.abs(fuel.P.total - Math.max(fuel.P.tyreT, SIM.REFUEL.connect + fuel.P.fuelAdd / SIM.REFUEL.rate)) < 1e-9);
-  // (the stationary time is what refuelling adds; the light car's time moving through the lane can be a little shorter)
-  assert.ok(fuel.P.total > clean.P.total, 'refuelling took real stationary time');
-  assert.ok(!fuel.car.dnf && fuel.car.finished, 'and the car reached the flag');
-});
-
-test('service is chosen only at the box; jobs run at once; wings are replaced when their job is done', () => {
-  const t = tracks.get('monza');
-  const S = new SIM.Session(t, { type: 'race', laps: 2, entries: [{ driver: SIM.DRIVERS[0] }, { driver: SIM.DRIVERS[1], isPlayer: true }], seed: 21, damage: 'standard', weather: 'dynamic', weatherState: DRY(5), startFuelLaps: 3 });
-  S.totalLaps = 2;
-  const p = S.player; p.autoDrive = true; p.boxRequest = true;
-  assert.ok(!S.confirmPitService(p, { tyre: 'S', fuel: 0 }), 'no choice is possible before the car is in its box');
-  let P = null, mid = null, before = null, after = null, prepped = false, massBefore = 0;
-  for (let f = 0; f < 60 * 150 && !S.over; f++) {
-    p.autopilot.boxThisLap = p.boxRequest; S.update(1 / 60, 1, 1e9);
-    if (!prepped && p.pit && p.pit.phase === 'in') {
-      prepped = true; p.damage.c[0] = 0.6; p.damage.c[1] = 0.4; p.damage.c[2] = 0.5; p.damage.c[3] = 0.35; p.damage.c[5] = 0.25; p.damage.computePerf();
-    }
-    if (p.pit && p.pit.phase === 'awaiting' && !P) {
-      const room = S.fuelCapacity - p.fuel;
-      assert.ok(S.pitSelectionError(p, { tyre: 'H', fuel: room + 1 }), 'more fuel than the tank holds is refused');
-      assert.ok(S.pitSelectionError(p, { tyre: 'X', fuel: 0 }), 'only the four compounds or keep');
-      massBefore = p.mass;
-      assert.ok(S.confirmPitService(p, { tyre: 'H', fuel: 9 }));
-      P = p.pit;
-    }
-    if (P && p.pit === P && P.phase === 'stopped') {
-      const el = P.total - P.timer;
-      if (!mid && el > 1.5 && el < P.fuelT - 0.5) mid = { fuel: P.fuelAdded, mass: p.mass };
-      if (!before && el > 1 && el < P.fwT - 0.2) before = { fw: p.damage.fw, rw: p.damage.c[2], card: P.fwDone };
-      if (!after && el > P.fwT + 0.05 && el < P.rwT - 0.1) after = { fw: p.damage.fw, rw: p.damage.c[2], card: P.fwDone };
-    }
-    if (P && p.pit && p.pit.phase === 'out') break;
-  }
-  assert.ok(P, 'the player chose the service in the box');
-  // tyres ~2.5 s, fuel 0.5 + 9 / 3 = 3.5 s, front wing ~5 s, rear wing ~8 s: the stop is the longest job
-  assert.ok(Math.abs(P.total - Math.max(P.tyreT, P.fuelT, P.fwT, P.rwT)) < 1e-9 && P.total < P.tyreT + P.fuelT + P.fwT + P.rwT - 5);
-  assert.ok(P.fwT >= 4.6 && P.fwT <= 5.4 && P.rwT >= 7.4 && P.rwT <= 8.6, 'front ' + P.fwT.toFixed(2) + ' s, rear ' + P.rwT.toFixed(2) + ' s');
-  assert.ok(mid && mid.fuel > 0 && mid.fuel < 9 && mid.mass > massBefore, 'fuel flows into the tank while the rig is on');
-  assert.ok(before && before.fw > 0.3 && !before.card, 'the damaged wing stays on until its job is done');
-  assert.ok(after && after.fw === 0 && after.card && after.rw > 0.3, 'then the new front wing is on; the rear wing is still being changed');
-  assert.equal(p.damage.c[2], 0, 'new rear wing');
-  assert.ok(p.damage.c[3] >= 0.35 && p.damage.c[5] >= 0.25, 'floor and suspension damage are not repaired');
-  assert.equal(p.tyre.c, 'H');
-  assert.ok(Math.abs(p.mass - massBefore - 9) < 0.2, 'the added fuel is carried as mass');
-});
 
 test('fuel: start loads of 2–7 laps, a lighter car accelerates a little harder, the tank and range are respected', () => {
   const S = session('monza', 20);

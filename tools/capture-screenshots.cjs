@@ -75,7 +75,7 @@ const index = [];
     H.ff = (sec, cond) => { const s = APEX.session, n = Math.round(sec / SIM.PHYS_DT); for (let i = 0; i < n; i++) { if (cond && cond(s)) return true; s.fixedStep(SIM.PHYS_DT); H.trim(s); if (s.over && s.type === 'race' && !s.finishedFlag) break; } return cond ? cond(s) : true; };
     H.bot = () => {
       const p = APEX.player, s = APEX.session; if (!p) return;
-      const ai = new SIM.AIDriver(p, s, { pitOnly: true }), human = p.control;
+      const ai = H.botAI = new SIM.AIDriver(p, s, { pitOnly: true }), human = p.control;
       p.control = (dt, sess) => {
         if (!sess.lightsOut || !H.botOn) return human(dt, sess);
         if (p.autoDrive || p.pit) return;
@@ -145,31 +145,29 @@ const index = [];
       await ev(() => window.__setKey('KeyB', true)); await frames(6, 1); await shot(tag('race-lookback'), 'Look back (B)'); await ev(() => window.__setKey('KeyB', false));
       await page.keyboard.press('KeyI'); await page.keyboard.press('Tab');
       await page.keyboard.press('KeyT'); await frames(30, 1); await shot(tag('race-telemetry'), 'Telemetry overlay (T)'); await page.keyboard.press('KeyT');
-      await page.keyboard.press('KeyV'); await frames(3, 1); await shot(tag('race-strategy'), 'Tyres & pits strategy panel (V)'); await page.keyboard.press('KeyV');
 
     }
 
     // ---------- pit stop ----------
+    // the plan is made while driving (V shows it; 1 = softs, + = half a lap more fuel), then the car enters the lane
     await H('H.ff(1)'); await frames(1, 1);
-    await page.keyboard.press('KeyP'); await frames(3, 1);
-    await shot(tag('pit-requested'), 'Pit stop requested: BOX THIS LAP');
-    await H('H.ff(400, s => p.pit && p.pit.phase === "approach")'); await H('H.ff(200, s => p.pit && G.track.dS(p.s, G.track.pit.entry0) < 150)'); await settle(8, 1);
-    await shot(tag('pit-approach'), 'Pit approach: autopilot takes the car to the pit entry');
+    await page.keyboard.press('KeyV'); await page.keyboard.press('Digit1'); await page.keyboard.press('Equal'); await frames(3, 1);
+    await shot(tag('pit-plan'), 'Pit plan (V): softs, fuel in laps, repairs on; no confirmation needed');
+    await page.keyboard.press('KeyV');
+    // the driver heads for the pit entry (the player's own steering, here the bot steering for it)
+    await H('(H.botAI.boxThisLap = true)');
+    await H('H.ff(400, s => p.pit && p.pit.phase === "approach")'); await H('H.ff(1)'); await settle(8, 1);
+    await shot(tag('pit-approach'), 'Pit entry: the autopilot takes over');
     await H('H.ff(60, s => p.pit && p.pit.phase !== "approach")'); await H('H.ff(1.5)'); await settle(8, 1);
-    await shot(tag('pit-lane'), 'In the pit lane, limiter on, driving to the box');
+    await shot(tag('pit-lane'), 'In the pit lane at the limit, driving to the team box');
     if (full) { await H('H.cam("cockpit")'); await frames(6, 1); await shot(tag('pit-lane-cockpit'), 'Pit lane from the cockpit'); await H('H.cam("chase")'); }
-    await H('H.ff(60, s => p.pit && p.pit.phase === "awaiting")'); await settle(10, 0.02);
-    await shot(tag('pit-box-select'), 'Stopped in the box: choose tyres and fuel');
-    await page.click('#psTyres button[data-c="S"]').catch(() => {}); await ev(() => { const f = document.getElementById('psFuel'); f.value = String(Math.min(+f.max, 6)); f.oninput(); }); await frames(3, 0.02);
-    await shot(tag('pit-box-selected'), 'Service chosen (softs + fuel) before confirming');
-    if (full) { await H('H.cam("cockpit")'); await frames(6, 0.02); await shot(tag('pit-box-cockpit'), 'Pit box selection from the cockpit'); await H('H.cam("chase")'); }
-    await page.click('#psConfirm'); await H('H.ff(1.2)'); await settle(8, 1);
-    await shot(tag('pit-servicing'), 'Pit crew servicing the car');
-    if (full) { await H('H.ff(2)'); await H('H.cam("tcam")'); await frames(6, 1); await shot(tag('pit-servicing-tcam'), 'Servicing, T-cam'); await H('H.cam("chase")'); }
-    await H('H.ff(30, s => p.pit && (p.pit.phase === "release" || p.pit.phase === "out"))'); await settle(6, 1);
-    await shot(tag('pit-release'), 'Service complete: release / leaving the box');
+    await H('H.ff(60, s => p.pit && p.pit.phase === "stopped")'); await H('H.ff(0.8)'); await settle(10, 0.02);
+    await shot(tag('pit-servicing'), 'In the team box: the plan runs at once (red release light)');
+    if (full) { await H('H.cam("tcam")'); await frames(6, 0.02); await shot(tag('pit-servicing-tcam'), 'Servicing, T-cam'); await H('H.cam("chase")'); }
+    await H('H.ff(30, s => p.pit && (p.pit.phase === "release" || p.pit.phase === "out"))'); await H('H.ff(0.3)'); await settle(6, 1);
+    await shot(tag('pit-release'), 'Service complete: green light, leaving the box');
     await H('H.ff(60, s => !p.pit)'); await H('H.ff(0.5)'); await settle(8, 1);
-    await shot(tag('pit-exit'), 'Pit exit: control returns, stop summary');
+    await shot(tag('pit-exit'), 'Pit exit: control returns, the stop panel hides');
 
     if (full) {
       await H('H.ff(18)');
@@ -178,6 +176,9 @@ const index = [];
       await shot(tag('damage-impact'), 'Player crash into the barrier: impact effects');
       await H('H.ff(2)'); await settle(6, 1);
       await shot(tag('damage-status'), 'Vehicle status after the crash');
+      await page.keyboard.press('KeyC'); await frames(3, 1);
+      await shot(tag('car-status'), 'Car Status (C): the race is paused, every component and its effect');
+      await page.keyboard.press('KeyC'); await frames(2, 1);
       await page.keyboard.press('KeyR'); await H('H.bot()'); await frames(10, 1);
       await shot(tag('respawn'), 'Car respawned on track (R)');
       // ---------- rain ----------
