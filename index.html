@@ -9206,7 +9206,14 @@ window.addEventListener('keydown', (e) => {
   }
   if(G.player && G.player.pit && G.player.pit.phase==='awaiting' && ['Tab','Space','Enter','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','PageUp','PageDown','Home','End'].includes(k))return;
   if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(k))e.preventDefault();
-  if(e.repeat)return;
+  if(e.repeat) {
+    // A held key can resume with repeats after blur or a menu cleared its state. Restore driving input
+    // from that physical key event without repeating edge-triggered actions such as pause or recovery.
+    if(['KeyW','KeyS','KeyA','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(k)) {
+      KEYS[k] = true; DRIVE_KEYS.setKey(k, true, performance.now() / 1000);
+    }
+    return;
+  }
   if (!KEYS[k]) PRESSED[k] = true; KEYS[k] = true; DRIVE_KEYS.setKey(k, true, performance.now() / 1000);
 });
 window.addEventListener('keyup', (e) => { KEYS[e.code] = false; DRIVE_KEYS.setKey(e.code, false, performance.now() / 1000); });
