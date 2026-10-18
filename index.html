@@ -477,7 +477,7 @@
   .cr-race.locked { opacity:.45; }
   .cr-six .cr-race.next { border-color:rgba(255,255,255,.2); box-shadow:none; }
   .cr-six .cr-race.next svg.cr-map path { stroke:rgba(255,255,255,.55); filter:none; }
-  .cr-stats { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
+  .cr-stats { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; }
   .cr-stats > div { padding:9px 12px; border-radius:8px; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08); }
   .cr-stats small { display:block; font-size:11px; font-weight:700; letter-spacing:1.4px; color:var(--dim); text-transform:uppercase; }
   .cr-stats b { font-size:24px; line-height:1.2; }
@@ -666,7 +666,7 @@
     <div class="brief-meta" aria-label="Race and track conditions">
       <div class="brief-circuit"><svg id="briefCircuitMap" viewBox="0 0 88 64" aria-hidden="true"><path id="briefCircuitPath"/></svg><p><small>Circuit</small><b id="briefCircuit"></b></p></div>
       <div><svg class="brief-icon" aria-hidden="true"><use href="#bi-flag"/></svg><p><small>Race distance</small><b id="briefDistance"></b><span id="briefKm"></span></p></div>
-      <div><svg class="brief-icon" aria-hidden="true"><use href="#bi-teams"/></svg><p><small>Teams</small><b id="briefTeams"></b></p></div>
+      <div><svg class="brief-icon" aria-hidden="true"><use href="#bi-teams"/></svg><p><small>Grid</small><b id="briefGrid"></b><span id="briefTeams"></span></p></div>
       <div><svg id="briefWeatherIcon" class="brief-icon" aria-hidden="true"><use href="#bi-sun"/></svg><p><small>Weather</small><b id="briefWeather"></b></p></div>
       <div><svg class="brief-icon" aria-hidden="true"><use href="#bi-temp"/></svg><p><small>Air temp</small><b id="briefTemp"></b></p></div>
       <div><svg class="brief-icon" aria-hidden="true"><use href="#bi-road"/></svg><p><small>Track condition</small><b id="briefCondition"></b><span id="briefWet"></span></p></div>
@@ -6117,7 +6117,10 @@ const SIM = (function () {
   const CAREER_PROMOTE = [360, 420, 480];
   const intIn = (v, lo, hi) => Number.isInteger(v) && v >= lo && v <= hi;
   const careerPositionPoints = (pos) => intIn(pos, 1, CAREER_FIELD) ? CAREER_POS_POINTS[pos - 1] : 0;
-  const progressModeNew = () => ({ unlocked: 0, completed: [], complete: false, results: Object.fromEntries(RANKS.map(r => [r.id, {}])), seen: [] });
+  // grid: the player's starting position for the next race of each rank. A rank's first race starts from the back
+  // (P20); every classified race of that rank, on any circuit, sets the next start to the position it finished in.
+  const progressModeNew = () => ({ unlocked: 0, completed: [], complete: false, results: Object.fromEntries(RANKS.map(r => [r.id, {}])), seen: [], grid: Object.fromEntries(RANKS.map(r => [r.id, CAREER_FIELD])) });
+  const careerGridPos = (st, rank) => { const g = st && st.career && st.career.grid, R = RANKS[rank]; return R && g && intIn(g[R.id], 1, CAREER_FIELD) ? g[R.id] : CAREER_FIELD; };
   function progressNew() { return { v: PROGRESS_VERSION, team: null, career: progressModeNew(), legacy: null }; }
 
   // ---- Career lap-time pace (0..50) ----
@@ -6234,8 +6237,9 @@ const SIM = (function () {
     const R = RANKS[res.rank], prev = m.results[R.id][res.circuit];
     const improved = !prev || entry.total > prev.total;
     if (improved) m.results[R.id][res.circuit] = entry;
+    const gridBefore = careerGridPos(st, res.rank); m.grid[R.id] = res.pos;
     const unlockedBefore = m.unlocked, completedNow = progressRecompute(st, 'career');
-    return { ok: true, entry, best: m.results[R.id][res.circuit], improved, previous: prev || null, status: rankStatus(st, 'career', res.rank), completedNow, unlockedNow: m.unlocked > unlockedBefore };
+    return { ok: true, entry, best: m.results[R.id][res.circuit], improved, previous: prev || null, status: rankStatus(st, 'career', res.rank), completedNow, unlockedNow: m.unlocked > unlockedBefore, gridBefore, gridNext: res.pos };
   }
   // ---- loading and migration ----
   // Validate a saved state (version 3); whatever is unreadable is dropped, one mode never affects another.
@@ -6246,6 +6250,7 @@ const SIM = (function () {
       const m = raw[mode], out = st[mode]; if (!m || typeof m !== 'object') continue;
       out.unlocked = intIn(m.unlocked, 0, RANKS.length - 1) ? m.unlocked : 0;
       out.seen = Array.isArray(m.seen) ? m.seen.filter(x => typeof x === 'string').slice(-40) : [];
+      if (m.grid && typeof m.grid === 'object') for (const r of RANKS) if (intIn(m.grid[r.id], 1, CAREER_FIELD)) out.grid[r.id] = m.grid[r.id];
       if (m.results && typeof m.results === 'object') for (const r of RANKS) {
         const src = m.results[r.id]; if (!src || typeof src !== 'object') continue;
         for (const id of PROGRESS_CIRCUITS) { const e = src[id]; if (validCareerEntry(e)) out.results[r.id][id] = cleanCareerEntry(e); }
@@ -6279,8 +6284,17 @@ const SIM = (function () {
     if (raw && typeof raw === 'object' && raw.v === PROGRESS_VERSION) return progressLoadV3(raw);
     return progressMigrate(oldCareer, oldRanked);
   }
+  // A starting grid with the player's car on a chosen slot (pos 1 = pole) and the other cars shuffled into the rest.
+  // Returns entry indices in grid order, as Session's cfg.gridOrder takes them.
+  function gridWithPlayerAt(n, playerIdx, pos, rand = Math.random) {
+    const others = []; for (let i = 0; i < n; i++) if (i !== playerIdx) others.push(i);
+    for (let i = others.length - 1; i > 0; i--) { const j = Math.floor(rand() * (i + 1)); [others[i], others[j]] = [others[j], others[i]]; }
+    if (playerIdx == null || playerIdx < 0 || playerIdx >= n) return others;
+    others.splice(clamp(Math.round(pos) || n, 1, n) - 1, 0, playerIdx);
+    return others;
+  }
   const PROGRESS = { RANKS, CIRCUITS: PROGRESS_CIRCUITS, MODES: PROGRESS_MODES, VERSION: PROGRESS_VERSION, POS_POINTS: CAREER_POS_POINTS, PROMOTE: CAREER_PROMOTE,
-    PACE_REF, PACE_POINTS, paceAnchors, paceLaunch: paceLaunchAt, create: progressNew, load: progressLoad, status: rankStatus, recordCareer, positionPoints: careerPositionPoints,
+    PACE_REF, PACE_POINTS, paceAnchors, paceLaunch: paceLaunchAt, create: progressNew, load: progressLoad, status: rankStatus, recordCareer, positionPoints: careerPositionPoints, gridPos: careerGridPos,
     paceScore: careerPaceScore, pacePoints: pacePointsFor, paceRef: paceRefAt };
 
   // Strategy pace model: relative lap time for an effective tyre grip mu (fresh Soft ≈ 1.68 = 1.0), fitted to
@@ -6299,7 +6313,7 @@ const SIM = (function () {
     return (neg ? '-' : plus ? '+' : '') + str;
   }
 
-  return { cornerSpeedSigns, SIGN_REF, arcadeCornerSpeed, G, RHO, PHYS_DT, DS, GAME_MODES, RaceIntel, INTEL, PROGRESS, AI_MAX_LEVEL, aiSkillForLevel, TEAMS, DRIVERS, TRACK_DEF, CIRCUITS, circuitById, circuitCentreLine, elevationAt, COMPOUNDS, SPEC, Track, Car, Session, AIDriver, RaceStrategy, planStrategy, bestCompoundFor, lapLoss, stintCost, wearPerLap, DRY_COMPOUNDS, migrateCompound, TYRE_REF_WORK, fmtTime, clamp, lerp, makeRng, stepCarPhysics, SLIPSTREAM, slipstreamStrength, OFF_TRACK, GREEN_RUNOFF, PlayerHandling, KeyboardDriveInput, HANDLING, USEFUL_WEAR, TYRE_STYLES, drivingStyle, tyreWearGrip, tyreWeatherGrip, tyreMismatch, updateTyres, wetnessFor, weatherCompound, DynamicWeather, CarDamage, DAMAGE_LEVELS, PART_KEYS, PART_NAMES, WHEEL_NAMES, REPAIR_TIME, REFUEL, FUEL_TANK_LAPS, FUEL_RESERVE, START_FUEL_LAPS, FUEL_PERF, FUEL_LAP_COST, estimatePitLoss, chooseStartFuelLaps, normalizeDamageLevel, partExposure, torqueAt, defaultCompoundModel, setSeed: (s) => { rnd = makeRng(s); } };
+  return { gridWithPlayerAt, cornerSpeedSigns, SIGN_REF, arcadeCornerSpeed, G, RHO, PHYS_DT, DS, GAME_MODES, RaceIntel, INTEL, PROGRESS, AI_MAX_LEVEL, aiSkillForLevel, TEAMS, DRIVERS, TRACK_DEF, CIRCUITS, circuitById, circuitCentreLine, elevationAt, COMPOUNDS, SPEC, Track, Car, Session, AIDriver, RaceStrategy, planStrategy, bestCompoundFor, lapLoss, stintCost, wearPerLap, DRY_COMPOUNDS, migrateCompound, TYRE_REF_WORK, fmtTime, clamp, lerp, makeRng, stepCarPhysics, SLIPSTREAM, slipstreamStrength, OFF_TRACK, GREEN_RUNOFF, PlayerHandling, KeyboardDriveInput, HANDLING, USEFUL_WEAR, TYRE_STYLES, drivingStyle, tyreWearGrip, tyreWeatherGrip, tyreMismatch, updateTyres, wetnessFor, weatherCompound, DynamicWeather, CarDamage, DAMAGE_LEVELS, PART_KEYS, PART_NAMES, WHEEL_NAMES, REPAIR_TIME, REFUEL, FUEL_TANK_LAPS, FUEL_RESERVE, START_FUEL_LAPS, FUEL_PERF, FUEL_LAP_COST, estimatePitLoss, chooseStartFuelLaps, normalizeDamageLevel, partExposure, torqueAt, defaultCompoundModel, setSeed: (s) => { rnd = makeRng(s); } };
 })();
 // ==SIM-END==
 if (typeof module !== 'undefined') module.exports = SIM;
@@ -9498,15 +9512,21 @@ function drawBriefCircuit(def) {
   $('briefCircuitPath').setAttribute('d', pts.filter((_, i) => i % 3 === 0).map(([x,z], i) =>
     (i ? 'L' : 'M') + (ox + (x - minX) * scale).toFixed(1) + ' ' + (oy + (z - minZ) * scale).toFixed(1)).join(' ') + 'Z');
 }
+// The player's grid slot: the back of the grid (P20) in a Grand Prix; in Career, the position the last classified
+// race of the rank finished in (P20 for the rank's first race).
+function playerGridPos(n) { return G.career ? Math.min(n, SIM.PROGRESS.gridPos(PG, G.career.rank)) : n; }
 function startRace(gridOrder, entries) {
   const lapsTotal = SIM.GAME_MODES.grandprix.laps;
+  entries = entries || buildEntries();
+  const gridPos = playerGridPos(entries.length);
+  gridOrder = gridOrder || SIM.gridWithPlayerAt(entries.length, entries.findIndex(e => e.isPlayer), gridPos);
   G.pendingRace = { gridOrder, entries, weatherState: raceWeatherState() };
   const startWeather = new SIM.DynamicWeather(1, G.pendingRace.weatherState);
   const fpl = circuitFuelPerLap(G.track), tank = circuitTank(G.track);
   G.briefCompound = S.startTyre; G.briefFuel = S.startFuel;
   $('briefCircuit').textContent = G.track.name; drawBriefCircuit(G.track.def);
   $('briefDistance').textContent = lapsTotal + ' laps'; $('briefKm').textContent = '(' + (lapsTotal * G.track.length / 1000).toFixed(0) + ' km)';
-  $('briefTeams').textContent = (entries || SIM.DRIVERS).length;
+  $('briefGrid').textContent = 'P' + gridPos; $('briefTeams').textContent = ' of ' + entries.length;
   $('briefWeather').textContent = 'Now: ' + startWeather.label;
   $('briefWeatherIcon').querySelector('use').setAttribute('href', '#bi-' + (startWeather.rain > .025 ? 'rain' : startWeather.cloud > .35 ? 'cloud' : 'sun'));
   $('briefTemp').textContent = Math.round(startWeather.ambient) + '°C';
@@ -9947,7 +9967,8 @@ function renderCareerStrip(sess) {
   el.innerHTML = cell('Finish', (e.dnf ? 'DNF · ' : '') + 'P' + e.pos) + cell('Position', e.posPts + ' / 50') + cell('Lap-time pace', e.pacePts + ' / 50')
     + cell('Circuit score', e.total + ' / 100', out.improved ? 'ok' : '') + cell(out.improved ? (out.previous ? 'New best (was ' + out.previous.total + ')' : 'First result') : 'Best kept', best.total)
     + cell(RK[st.rank].name + ' score', st.score + ' / ' + st.max, st.complete ? 'ok' : st.score >= st.need ? '' : 'no')
-    + cell(st.complete ? 'Rank complete' : 'Needed', st.complete ? CR_ICON.check.replace('<svg', '<svg style="width:14px;height:14px"') : st.need + ' · ' + st.attempted + '/6 raced', st.complete ? 'ok' : '');
+    + cell(st.complete ? 'Rank complete' : 'Needed', st.complete ? CR_ICON.check.replace('<svg', '<svg style="width:14px;height:14px"') : st.need + ' · ' + st.attempted + '/6 raced', st.complete ? 'ok' : '')
+    + cell('Next start' + (out.gridBefore !== out.gridNext ? ' (was P' + out.gridBefore + ')' : ''), 'P' + out.gridNext);
 }
 function updateCareerButton() {
   const m = PG.career, st = SIM.PROGRESS.status(PG, 'career', m.unlocked);
@@ -9975,7 +9996,7 @@ function armed(btn, label, fn) {
 function renderCareer() {
   const sel = CRUI.sel, rank = RK[sel], m = PG.career, st = SIM.PROGRESS.status(PG, 'career', sel), unlocked = sel <= m.unlocked;
   $('crSub').innerHTML = (m.complete ? 'Master rank complete.<span class="cr-badge">CAREER COMPLETE</span> ' : '')
-    + 'Three ranks, six circuits each. Every six-lap Grand Prix scores up to 100: 50 for your finishing position and 50 for your lap-time pace. Replay any circuit; only your best score on each counts.'
+    + 'Three ranks, six circuits each. Every six-lap Grand Prix scores up to 100: 50 for your finishing position and 50 for your lap-time pace. Replay any circuit; only your best score on each counts. Your first race in a rank starts from P20; after that you start each race where you finished the last one.'
     + (PG.legacy && PG.legacy.note ? '<span class="cr-legacy">' + PG.legacy.note + '</span>' : '');
   const bar = $('crBar'); bar.replaceChildren();
   RK.forEach((r, k) => {
@@ -10003,7 +10024,8 @@ function renderCareer() {
   }).join('') + '</ol>';
   const ok = st.score >= st.need;
   h += '<div class="cr-stats"><div><small>Rank score</small><b class="num">' + st.score + ' / ' + st.max + '</b></div><div><small>Needed</small><b class="num">' + st.need + '</b></div>'
-    + '<div><small>Circuits raced</small><b class="num">' + st.attempted + ' / 6</b></div></div>'
+    + '<div><small>Circuits raced</small><b class="num">' + st.attempted + ' / 6</b></div>'
+    + '<div><small>Next start</small><b class="num">P' + SIM.PROGRESS.gridPos(PG, sel) + '</b></div></div>'
     + '<p class="cr-course ' + (st.attempted ? ok && st.all ? 'ok' : 'no' : '') + '">' + (st.complete ? 'Rank complete' + (sel < RK.length - 1 ? ' — ' + RK[sel + 1].name + ' unlocked.' : '. Career complete.')
       : !unlocked ? 'Complete ' + RK[sel - 1].name + ' (' + SIM.PROGRESS.PROMOTE[sel - 1] + ' points over its six circuits) to unlock.'
       : st.all ? (st.need - st.score) + ' more points needed: replay a circuit to improve its best score.'
