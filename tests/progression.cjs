@@ -3,22 +3,13 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 
-// Progression: three ranks (Rookie 100%, Pro 125%, Master 150%) in Career, Rival Duel and Pursuit, six circuits per rank,
-// the Career's 50 + 50 circuit score and 600-point rank score, the five-of-six rule, replays, saves and migration from
-// the old five-tier Career and eight-rank modes; plus the two-car Rival Duel and Pursuit sessions on every circuit,
-// all through the game's own SIM.
+// Career progression, pace scoring, best results, rank requirements and save migration.
 const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
 const shim = { exports: {} }; new Function('module', html.match(/<script>([\s\S]*?)<\/script>/)[1])(shim);
 const SIM = shim.exports, P = SIM.PROGRESS, RANKS = P.RANKS, CIRC = P.CIRCUITS;
 const tracks = new Map(SIM.CIRCUITS.map(d => [d.id, new SIM.Track(d)]));
-const two = (a = 0, b = 1) => [{ driver: SIM.DRIVERS[a], isPlayer: true }, { driver: SIM.DRIVERS[b] }];
-function session(id, gameMode, extra = {}) {
-  return new SIM.Session(tracks.get(id), Object.assign({ type: 'race', gameMode, seed: 11, aiLevel: 1, weather: 'dynamic', damage: 'realistic',
-    entries: two(), pursuit: gameMode === 'pursuit' ? { gap: 2, rivalWear: 0.25, rival: 1 } : undefined }, extra));
-}
 let uid = 0; const id = () => 'race-' + (++uid);
 const career = (st, rank, circuit, pos, pacePts, more = {}) => P.recordCareer(st, Object.assign({ rank, circuit, id: id(), pos, dnf: false, pacePts }, more));
-const ranked = (st, mode, rank, circuit, win) => P.recordRanked(st, mode, { rank, circuit, id: id(), win, time: 150 });
 
 test('exactly three ranks: Rookie 100%, Pro 125%, Master 150%; the old tiers and ranks are gone', () => {
   assert.deepEqual(RANKS.map(r => [r.id, r.name, r.level]), [['rookie', 'Rookie', 1], ['pro', 'Pro', 1.25], ['master', 'Master', 1.5]]);
@@ -28,7 +19,8 @@ test('exactly three ranks: Rookie 100%, Pro 125%, Master 150%; the old tiers and
   assert.ok(!/Initiate|Bronze|Silver|Gold|Platinum|Diamond|Ascendant|Elite|Legendary/.test(JSON.stringify(RANKS)));
   assert.deepEqual(CIRC, ['monza', 'silverstone', 'spa', 'suzuka', 'bahrain', 'interlagos'], 'all six real circuits in every rank');
   for (const mode of P.MODES) for (let k = 0; k < 3; k++) assert.equal(P.status(P.create(), mode, k).rows.length, 6);
-  assert.deepEqual([SIM.GAME_MODES.grandprix.laps, SIM.GAME_MODES.duel.laps, SIM.GAME_MODES.pursuit.laps], [6, 2, 2]);
+  assert.deepEqual(Object.keys(SIM.GAME_MODES), ['grandprix']); assert.deepEqual(P.MODES, ['career']);
+  assert.equal(SIM.GAME_MODES.grandprix.laps, 6); assert.equal(P.recordRanked, undefined);
 });
 
 test('finishing position points for all 20 places: 50 for P1 down to 1 for P20', () => {
@@ -145,35 +137,10 @@ test('retirements keep their classified position; unclassified or abandoned race
   assert.equal(P.recordCareer(st, { rank: 0, circuit: 'summit', id: id(), pos: 1, dnf: false, pacePts: 0 }).reason, 'invalid');
 });
 
-test('Rival Duel and Pursuit: all six circuits attempted and five won; wins stay won; each mode on its own', () => {
-  for (const mode of ['duel', 'pursuit']) {
-    const st = P.create();
-    for (const c of CIRC.slice(0, 5)) assert.ok(ranked(st, mode, 0, c, true).ok);
-    assert.equal(st[mode].unlocked, 0, 'five wins but one circuit never attempted');
-    const lost = ranked(st, mode, 0, 'interlagos', false);
-    assert.ok(lost.ok && !lost.win); assert.ok(lost.unlockedNow, 'six attempted, five won: Pro unlocked');
-    assert.equal(st[mode].unlocked, 1);
-    // a lost replay never removes a win; repeated wins on one circuit count once
-    ranked(st, mode, 0, 'monza', false); assert.equal(P.status(st, mode, 0).wins, 5);
-    const st2 = P.create(); for (let k = 0; k < 6; k++) ranked(st2, mode, 0, 'monza', true);
-    assert.equal(P.status(st2, mode, 0).wins, 1); assert.equal(st2[mode].results.rookie.monza.attempts, 6);
-    // four of six is not enough
-    const st3 = P.create(); CIRC.forEach((c, k) => ranked(st3, mode, 0, c, k < 4)); assert.equal(st3[mode].unlocked, 0);
-    ranked(st3, mode, 0, 'bahrain', true); assert.equal(st3[mode].unlocked, 1, 'a retry won the fifth');
-    // independent: the other modes are untouched
-    const other = mode === 'duel' ? 'pursuit' : 'duel';
-    assert.equal(st[other].unlocked, 0); assert.equal(st.career.unlocked, 0);
-    // completing Master completes the mode
-    for (const c of CIRC) ranked(st, mode, 1, c, true);
-    for (const c of CIRC) ranked(st, mode, 2, c, true);
-    assert.equal(st[mode].complete, true);
-  }
-});
-
 test('saves: round trip, broken data never crashes or grants progress', () => {
   const st = P.create(); st.team = 7;
   for (const c of CIRC) career(st, 0, c, 2, 40);
-  ranked(st, 'duel', 0, 'spa', true);
+  st.duel = { historical: 'untouched', results: { rookie: { spa: { won: true } } } };
   const back = P.load(JSON.parse(JSON.stringify(st)));
   assert.deepEqual(JSON.parse(JSON.stringify(back)), JSON.parse(JSON.stringify(st)));
   for (const bad of [null, 7, 'x', [], { v: 3, career: 'nope' }, { v: 3, career: { unlocked: 9, results: { rookie: { monza: { total: 999 } } } } }]) {
@@ -191,8 +158,7 @@ test('migration from the five-tier Career and eight-rank modes: access kept, no 
   const oldRanked = { v: 1, duel: { unlocked: 3, completed: [0, 1, 2], best: { initiate: { summit: { time: 150 } } }, seen: [] }, pursuit: { unlocked: 0, completed: [], best: {}, seen: [] } };
   const st = P.load(null, oldCareer, oldRanked);
   assert.equal(st.career.unlocked, 2, 'beaten 125% AI: Master (150%) is open');
-  assert.equal(st.duel.unlocked, 2, 'beaten 137% AI: Master open');
-  assert.equal(st.pursuit.unlocked, 0);
+  assert.equal(st.duel, undefined); assert.equal(st.pursuit, undefined);
   assert.equal(st.team, 5);
   for (const mode of P.MODES) for (let k = 0; k < 3; k++) { const s = P.status(st, mode, k); assert.equal(s.attempted, 0, 'no circuit results invented'); assert.equal(s.complete, false); }
   assert.deepEqual(st.legacy.career, oldCareer); assert.deepEqual(st.legacy.ranked, oldRanked);
@@ -219,108 +185,4 @@ test('a Career result from a real race: classification and pace from the laps dr
   assert.ok(pace.points >= 0 && pace.points <= 50);
   const st = P.create(), out = P.recordCareer(st, { rank: 0, circuit: 'interlagos', id: 's1', pos: res.pos, dnf: !!res.dnf, pacePts: pace.points });
   assert.ok(out.ok); assert.equal(out.entry.total, P.positionPoints(res.pos) + pace.points);
-});
-
-test('Rival Duel: two cars side by side on the same line, fresh Softs, the same fuel, a fixed dry track, no pits', () => {
-  for (const id of tracks.keys()) {
-    for (const duelSide of [0, 1]) {
-      const s = session(id, 'duel', { duelSide, startCompound: 'H', startFuelLaps: 7 });
-      const [a, b] = s.cars, t = s.track;
-      assert.equal(s.cars.length, 2);
-      assert.equal(t.dS(a.s, b.s), 0, id + ': the same distance from the line');
-      assert.ok(Math.abs(a.d + b.d) < 1e-6 && Math.abs(a.d - b.d) > 4, id + ': side by side, apart: ' + a.d.toFixed(2) + ' / ' + b.d.toFixed(2));
-      assert.ok(Math.hypot(a.x - b.x, a.z - b.z) > 4, 'never the same coordinates');
-      assert.equal(a.totalDist, b.totalDist);
-      for (const c of s.cars) { assert.equal(c.tyre.c, 'S'); assert.ok(c.tyre.wear.every(w => w === 0)); assert.equal(c.fuel, s.fuelForLaps(SIM.RANKED_FUEL_LAPS)); assert.equal(c.launch.active, true); }
-      assert.equal(a.mass, b.mass); assert.deepEqual(a.team.power, b.team.power); assert.equal(a.effClA(), b.effClA()); assert.equal(a.effCdA(), b.effCdA());
-      assert.equal(s.weather, null); assert.equal(s.wet, 0); assert.equal(s.pitsEnabled, false);
-      assert.equal(s.totalLaps, 2);
-    }
-    // the sides swap with duelSide (the game alternates it between attempts)
-    const s0 = session(id, 'duel', { duelSide: 0 }), s1 = session(id, 'duel', { duelSide: 1 });
-    assert.equal(s0.cars[0].d, s1.cars[1].d); assert.equal(s0.cars[1].d, s1.cars[0].d);
-  }
-  assert.throws(() => session('monza', 'duel', { entries: SIM.DRIVERS.slice(0, 3).map(driver => ({ driver })) }), /exactly two/);
-});
-
-test('Pursuit: the rival starts ahead by the calibrated head start on part-worn Softs; same lights, same timing, same fuel', () => {
-  for (const id of tracks.keys()) {
-    let prev = 0;
-    for (const r of RANKS) {
-      const k = RANKS.indexOf(r), P0 = P.pursuitSetup(k, id), s = session(id, 'pursuit', { pursuit: { ...P0, rival: 1 }, aiLevel: r.level });
-      const [me, rv] = s.cars, t = s.track;
-      assert.equal(s.pursuit.rival, rv); assert.equal(s.pursuit.chaser, me);
-      const ahead = t.dS(me.s, rv.s);
-      assert.ok(Math.abs(ahead - s.pursuit.headStart) < 0.01, id + ' ' + r.name + ': ' + ahead);
-      assert.ok(ahead >= prev, 'a head start no shorter for a larger gap'); prev = ahead;
-      // (a head start that reaches past the line puts the rival on lap 1 already; a shorter one leaves it on the grid
-      // ahead of pole, still to cross the line like the chaser)
-      const past = t.gridSlots[0].s + s.pursuit.headStart > t.length;
-      assert.ok(rv.laps === 0 && (past ? rv.totalDist > 0 && rv.crossings === 1 : rv.crossings === me.crossings), 'lap state at the start');
-      assert.ok(Math.abs(rv.d - me.d) < 0.3, 'same line: ' + rv.d.toFixed(3) + ' ' + me.d.toFixed(3));
-      // the rival stands on the fast start of the lap, not in a corner (on Silverstone's short Hamilton Straight Abbey
-      // follows soon after)
-      assert.ok(t.refSpeed[t.wrapI(Math.round(rv.s / SIM.DS))] > 0.75 * Math.max(...t.refSpeed), id + ': still on the straight');
-      assert.equal(me.tyre.c, 'S'); assert.ok(me.tyre.wear.every(w => w === 0));
-      assert.equal(rv.tyre.c, 'S'); assert.ok(rv.tyre.wear.every(w => w === P0.rivalWear));
-      assert.equal(me.fuel, rv.fuel); assert.equal(me.launch.active, true); assert.equal(rv.launch.active, true);
-    }
-  }
-  // both are held by the same lights and both clocks start at lights out; the rival's short first lap is not a lap time
-  const s = session('monza', 'pursuit');
-  const [me, rv] = s.cars;
-  while (!s.lightsOut) s.fixedStep(SIM.PHYS_DT);
-  assert.equal(me.lapStart, rv.lapStart); assert.equal(rv.sectorStart, s.lightsOutTime);
-  assert.ok(me.speed < 1 && rv.speed < 1, 'both from rest');
-  while (rv.laps < 1) s.fixedStep(SIM.PHYS_DT);
-  assert.equal(rv.lapTimes[0].valid, false, 'a shortened first lap is never a best lap');
-});
-
-test('no artificial catch-up: the rival\'s AI, tyres and physics are the shared ones throughout the race', () => {
-  const s = session('silverstone', 'pursuit', { aiLevel: 1.4, pursuit: { gap: 2, rivalWear: 0.25, rival: 1 } });
-  const rv = s.cars[1], ai = rv.ai, fixed = JSON.stringify([ai.commit, ai.brakeCommit, ai.mistakeScale, ai.skill, ai.p]);
-  const wearRate = [];
-  let lastW = rv.tyre.wear[0], lastD = rv.totalDist;
-  while (!s.over && s.time < 300) {
-    s.fixedStep(SIM.PHYS_DT);
-    if (s.step % 2400 === 0 && s.lightsOut) { wearRate.push((rv.tyre.wear[0] - lastW) / Math.max(1, rv.totalDist - lastD)); lastW = rv.tyre.wear[0]; lastD = rv.totalDist; }
-    // gap-independent: nothing about the rival's driver changes with the race situation
-    assert.equal(JSON.stringify([ai.commit, ai.brakeCommit, ai.mistakeScale, ai.skill, ai.p]), fixed);
-  }
-  assert.ok(wearRate.every(w => w >= 0), 'the worn set keeps wearing normally');
-  assert.equal(s.stats.pitstops, 0);
-});
-
-test('a race-ending crash does not neutralise the race: the other car races on at full speed', () => {
-  for (const mode of ['duel', 'pursuit']) {
-    const s = session('monza', mode, { entries: [{ driver: SIM.DRIVERS[0] }, { driver: SIM.DRIVERS[1] }] }); // both AI-driven: the survivor must race on
-    while (!s.lightsOut || s.time - s.lightsOutTime < 20) s.fixedStep(SIM.PHYS_DT);
-    s.startRetirement(s.cars[1], 'Accident damage');
-    let vmax = 0; for (let k = 0; k < 240 * 20; k++) { s.fixedStep(SIM.PHYS_DT); vmax = Math.max(vmax, s.cars[0].speed); }
-    assert.ok(vmax > 60, mode + ': racing speed after the incident ' + (vmax * 3.6).toFixed(0) + ' km/h');
-    assert.equal(s.vsc, undefined);
-  }
-});
-
-test('real races on every circuit: legitimate completion decides; Pursuit is won only by finishing ahead', () => {
-  for (const id of tracks.keys()) {
-    // Rival Duel between two AI drivers: the first to complete two laps wins, the classification follows
-    const d = session(id, 'duel', { entries: [{ driver: SIM.DRIVERS[4] }, { driver: SIM.DRIVERS[9] }], aiLevel: 1.25, seed: 21 });
-    while (!d.over && d.time < 420) d.fixedStep(SIM.PHYS_DT);
-    assert.ok(d.over, id + ' duel over');
-    const w = d.winner; assert.ok(w && w.finished && w.laps === 2);
-    assert.equal(d.results[0].car, w);
-    const loser = d.results[1].car; assert.ok(!loser.finished || loser.finishTime > w.finishTime);
-    for (const c of d.cars) assert.ok(c.totalDist >= 2 * d.track.length - 1 || !c.finished, 'the full distance');
-    // Pursuit: a stronger chaser against a weak rival with a short head start, and the reverse
-    for (const [chaser, gap] of [[1.5, 1], [1, 4]]) {
-      const s = session(id, 'pursuit', { entries: [{ driver: SIM.DRIVERS[0], aiSkill: SIM.aiSkillForLevel(chaser) }, { driver: SIM.DRIVERS[8] }], aiLevel: chaser === 1.5 ? 1 : 1.5,
-        pursuit: { gap, rivalWear: 0.25, rival: 1 }, seed: 5 });
-      while (!s.over && s.time < 420) s.fixedStep(SIM.PHYS_DT);
-      assert.ok(s.over, id + ' pursuit over');
-      const P = s.pursuit, won = s.winner === P.chaser;
-      assert.equal(won, Number.isFinite(P.finalGap) && P.finalGap < 0, id + ': the chaser wins exactly when it finishes ahead (' + P.finalGap + ')');
-      if (won) assert.ok(P.chaser.finishTime < (P.rival.finished ? P.rival.finishTime : Infinity));
-    }
-  }
 });

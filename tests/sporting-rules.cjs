@@ -65,22 +65,21 @@ for (const track of tracks) for (const mode of modes) {
     for (const car of S.cars) {
       car.laps = S.totalLaps - 1; car.totalDist = car.laps * S.track.length;
       car.tyre.wear.fill(.05); car.fuel = S.fuelCapacity;
-      const advice = car.engineer.analyse();
+      const advice = car.strategy.analyse();
       assert.equal(advice.pit, false, car.driver.short + ': no forced final-lap change');
-      car.engineer.update(true);
-      assert.ok([...car.engineer.active.values()].every(msg => !/mandatory|second dry|compound rule|penalty/i.test(msg.text)));
+      car.strategy.update(true);
       if (car.ai) { car.ai.strategy(); assert.equal(car.ai.boxThisLap, false); }
     }
     c.laps = 1; c.totalDist = S.track.length;
     c.tyre.wear.fill(.95);
-    assert.equal(c.engineer.analyse().pit, true, 'worn tyres still justify stopping');
+    assert.equal(c.strategy.analyse().pit, true, 'worn tyres still justify stopping');
     c.tyre.wear.fill(.05); c.surfaceWet = .85;
-    const rain = c.engineer.analyse();
+    const rain = c.strategy.analyse();
     assert.ok(rain.pit); assert.equal(rain.compound, 'W');
     c.surfaceWet = 0; c.damage.c[0] = c.damage.c[1] = .7; c.damage.computePerf();
-    assert.equal(c.engineer.analyse().pit, true, 'repairable damage still justifies stopping');
+    assert.equal(c.strategy.analyse().pit, true, 'repairable damage still justifies stopping');
     c.damage.c.fill(0); c.damage.punctRate[0] = .1; c.damage.computePerf();
-    assert.equal(c.engineer.analyse().reason, 'punctured tyre');
+    assert.equal(c.strategy.analyse().reason, 'punctured tyre');
     // With no wear cost, no-stop is a valid and competitive strategic plan.
     const plan = SIM.planStrategy({ ...S, tyreWearOn: false }, c, 1, 'S', 0);
     assert.deepEqual(plan.stops, []);
@@ -132,24 +131,6 @@ for (const track of tracks) for (const mode of modes) {
     // The same legal-progress gate still withholds skipped distance, regardless of sporting rules.
     const fake = { offN: 4, pit: null, s: 150, d: -t.halfW - 20, idx: 30 };
     assert.ok(S.legalProgress(fake, 40, 40, 0) < 40);
-  });
-}
-for (const track of tracks) for (const gameMode of ['duel', 'pursuit']) {
-  test(track.def.id + ' / ' + gameMode + ': the first car to complete the distance wins; no penalties, pit stops or compound rules', () => {
-    const S = new SIM.Session(track, { type: 'race', gameMode, seed: 71, weather: 'dynamic', damage: 'standard', pursuit: { gap: 3, rivalWear: .25, rival: 1 },
-      entries: SIM.DRIVERS.slice(0, 2).map((driver, i) => ({ driver, isPlayer: i === 0 })), mandatory: true });
-    const [a, b] = S.cars;
-    for (const c of S.cars) prohibitPenaltyReads(c);
-    assert.equal(S.pitsEnabled, false);
-    // the gate does nothing: no pit stop is possible
-    const p = track.pit; a.placeAt(track, track.wrapS(p.entry0 + p.commitQ + 5), p.side * (track.halfW + 1), 25);
-    S.pitLogic(a, SIM.PHYS_DT); assert.equal(a.pit, null);
-    S.lightsOut = true; S.time = 100; S.lightsOutTime = 0;
-    for (const car of S.cars) { car.tyre.wear.fill(.95); car.engineer.update(true); const adv = car.engineer.analyse(); assert.equal(adv.pit, false); }
-    a.finished = b.finished = true; a.laps = b.laps = 2; a.finishTime = 160; b.finishTime = 159; a.finishOrder = 2; b.finishOrder = 1;
-    S.finishRace();
-    assert.equal(S.winner, b); assert.equal(S.results[0].car, b);
-    if (gameMode === 'pursuit') assert.equal(S.pursuit.finalGap, 1);
   });
 }
 test('legacy saves and result payloads: obsolete fields are discarded, legitimate progress is kept', () => {

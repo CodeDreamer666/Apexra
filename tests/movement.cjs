@@ -136,7 +136,7 @@ test('physics produces the same movement with 30, 60 and 120 Hz frame grouping',
 // Allow for integer HUD rounding and the reference renderer's clock/display lag.
 // The Poki reference reached 158 km/h from 35 km/h in 1.85 s (tests/reference/poki-measurements.md). Acceleration now
 // comes from the shared drivetrain every car uses (about 10-12 m/s² through the gears, the curve the AI planner and the
-// pace, fuel and Pursuit calibrations were measured on), so W from 35 km/h reaches about 95-110 km/h in that time.
+// pace and fuel calibrations were measured on), so W from 35 km/h reaches about 95-110 km/h in that time.
 test('W acceleration from 35 km/h follows the shared drivetrain', () => {
   const r = run(rig(35 / 3.6), raw(0, 1), 1.85);
   assert.ok(r.car.speed * 3.6 > 88 && r.car.speed * 3.6 < 125, (r.car.speed * 3.6).toFixed(1) + ' km/h');

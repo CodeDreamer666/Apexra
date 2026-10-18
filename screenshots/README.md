@@ -14,12 +14,6 @@ Main menu over the attract-mode race
 
 ![Main menu over the attract-mode race](002-menu-main.jpg)
 
-### 003-menu-race-settings
-
-Race settings
-
-![Race settings](003-menu-race-settings.jpg)
-
 ### 004-menu-controls
 
 Controls reference
@@ -98,18 +92,6 @@ Look back (B)
 
 ![Look back (B)](021-summit-race-lookback.jpg)
 
-### 022-summit-race-full-board
-
-Full leaderboard (Tab)
-
-![Full leaderboard (Tab)](022-summit-race-full-board.jpg)
-
-### 023-summit-race-full-board-interval
-
-Full leaderboard, interval gaps (I)
-
-![Full leaderboard, interval gaps (I)](023-summit-race-full-board-interval.jpg)
-
 ### 024-summit-race-telemetry
 
 Telemetry overlay (T)
@@ -121,12 +103,6 @@ Telemetry overlay (T)
 Tyres & pits strategy panel (V)
 
 ![Tyres & pits strategy panel (V)](025-summit-race-strategy.jpg)
-
-### 028-summit-race-engineer-radio
-
-Race engineer radio message
-
-![Race engineer radio message](028-summit-race-engineer-radio.jpg)
 
 ### 029-summit-pit-requested
 

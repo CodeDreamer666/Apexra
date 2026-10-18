@@ -1,6 +1,6 @@
 // Strategy comparison (development tool, not part of the test suite): one AI car alone on the circuit runs a
 // forced six-lap Grand Prix strategy, always the same driver, team and seed, in dry weather. Only the pit calls
-// are forced; the driving, tyre management (the engineer's preserve/push advice), wear, fuel and pit lane are
+// are forced; the driving, tyre management (the AI strategy's preserve/push advice), wear, fuel and pit lane are
 // the game's own. Every car carries fuel for the whole race unless a light-fuel variant is asked for, so the
 // comparison isolates tyres and stops; the light-fuel run shows the real refuelling cost.
 //   node tools/strategy-compare.cjs [circuits] [styles] [seeds]

@@ -33,7 +33,7 @@ const index = [];
   page.on('pageerror', e => console.log('  [pageerror]', e.message));
   // the render loop runs only when we ask for frames
   await page.addInitScript(() => {
-    localStorage.setItem('apexgp.settings.v1', JSON.stringify({ quality: 'high', camera: 'chase', engineerVoice: 'off', volume: 0 }));
+    localStorage.setItem('apexgp.settings.v1', JSON.stringify({ quality: 'high', camera: 'chase', volume: 0 }));
     // only the game's render loop is held; other callbacks (including Playwright's own) run natively
     const nativeRaf = window.requestAnimationFrame.bind(window);
     window.__t = 0; window.requestAnimationFrame = cb => { if (!/\bframe\(/.test(String(cb))) return nativeRaf(cb); (window.__rafq = window.__rafq || []).push(cb); return 1; };
@@ -102,9 +102,6 @@ const index = [];
   // ---------- menus ----------
   await frames(8, 1);
   await shot('menu-main', 'Main menu over the attract-mode race');
-  await page.click('#menu [data-act="settings"]'); await frames(2);
-  await shot('menu-race-settings', 'Race settings');
-  await page.click('[data-act="settingsClose"]'); await frames(1);
   await page.click('#menu [data-act="controls"]'); await frames(2);
   await shot('menu-controls', 'Controls reference');
   await page.click('[data-act="controlsClose"]'); await frames(1);
@@ -146,15 +143,10 @@ const index = [];
       }
       await H('H.cam("chase")');
       await ev(() => window.__setKey('KeyB', true)); await frames(6, 1); await shot(tag('race-lookback'), 'Look back (B)'); await ev(() => window.__setKey('KeyB', false));
-      await page.keyboard.press('Tab'); await frames(3, 1); await shot(tag('race-full-board'), 'Full leaderboard (Tab)');
-      await page.keyboard.press('KeyI'); await frames(3, 1); await shot(tag('race-full-board-interval'), 'Full leaderboard, interval gaps (I)');
       await page.keyboard.press('KeyI'); await page.keyboard.press('Tab');
       await page.keyboard.press('KeyT'); await frames(30, 1); await shot(tag('race-telemetry'), 'Telemetry overlay (T)'); await page.keyboard.press('KeyT');
       await page.keyboard.press('KeyV'); await frames(3, 1); await shot(tag('race-strategy'), 'Tyres & pits strategy panel (V)'); await page.keyboard.press('KeyV');
-      // engineer radio
-      await H('H.ff(400, s => document.getElementById("engineerRadio").getAttribute("aria-hidden")==="false" || (G.radio.update(), false))');
-      await frames(3, 1);
-      if (await ev(() => document.getElementById('engineerRadio').getAttribute('aria-hidden') === 'false')) await shot(tag('race-engineer-radio'), 'Race engineer radio message');
+
     }
 
     // ---------- pit stop ----------

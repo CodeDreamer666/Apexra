@@ -3,10 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 
-// Shared race intelligence (RaceIntel) and the redesigned race engineer: observable information only, robust
-// pace trends, grounded damage, AI decisions that change with it (attack range, holding a stop for a chance on
-// track, the overcut, rain), the player's messages by priority and mode, and the removal of the VSC and blue
-// flags with the slipstream untouched.
+// Shared race intelligence and AI strategy: public estimates, pace trends, traffic and weather.
 const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
 const shim = { exports: {} }; new Function('module', html.match(/<script>([\s\S]*?)<\/script>/)[1])(shim);
 const SIM = shim.exports, DT = SIM.PHYS_DT;
@@ -27,9 +24,7 @@ test('opponent tyre wear is an estimate from public facts (compound, distance on
   I.next = 0; I.update();
   assert.equal(I.of(a).estWear, I.of(b).estWear, 'same public facts, same estimate');
   assert.ok(Math.abs(I.of(a).estWear - SIM.USEFUL_WEAR * 9000 / (SIM.COMPOUNDS.S.life * s.track.length)) < 1e-9);
-  // the Pursuit rival's announced part-worn set is public and counted
-  const p = new SIM.Session(tracks.get('monza'), { type: 'race', gameMode: 'pursuit', seed: 3, weather: 'dynamic', pursuit: { gap: 3, rivalWear: 0.3, rival: 1 }, entries: SIM.DRIVERS.slice(0, 2).map(driver => ({ driver })) });
-  assert.equal(p.intel.of(p.cars[1]).est0, 0.3); assert.equal(p.intel.of(p.cars[0]).est0, 0);
+
 });
 
 test('damage is reported only when it can be seen (wings, a puncture, a car stopping), never internal damage', () => {
@@ -77,61 +72,25 @@ test('AI strategy: a stop that can wait waits for a chance on track; an adjacent
     s.order = s.cars.slice(); car.tyre.wear.fill(0.5); car.intervalAhead = 0.9; car.fuel = s.fuelCapacity;
   };
   prep();
-  const base = car.engineer.analyse();
+  const base = car.strategy.analyse();
   assert.ok(base.pit && base.flexible, 'a flexible planned stop: ' + base.reason);
   s.intel.of(ahead).vuln = 0.9;
-  const chance = car.engineer.analyse();
+  const chance = car.strategy.analyse();
   assert.equal(chance.pit, false); assert.ok(chance.attackChance, 'held for the attack');
   s.intel.of(ahead).vuln = 0;
   // overcut: the car just ahead has just stopped (public), our tyres are healthy
   prep(); car.tyre.wear.fill(0.4); car.ai.p = { ...car.ai.p, strat: 0.9 }; car.driver = { ...car.driver, strat: 0.9 };
-  assert.equal(car.engineer.analyse().overcut, false, 'no rival stop, no overcut');
+  assert.equal(car.strategy.analyse().overcut, false, 'no rival stop, no overcut');
   ahead.pitHistory.push({ entry: s.time - 5 }); ahead.position = car.position + 1;
-  const ov = car.engineer.analyse();
+  const ov = car.strategy.analyse();
   assert.ok(ov.overcut && !ov.pit, 'stays out on the clear track: ' + JSON.stringify({ r: ov.reason, o: ov.overcut }));
   // rain: a firm public forecast of rain within minutes, dry now: a flexible dry-tyre stop is delayed
   prep(); ahead.pitHistory = [];
   const w = s.weather; w.raining = false;
-  car.engineer.forecast = () => ({ probability: 0.85, window: 'Possible rain in ~1–3 min', intensity: '' });
+  car.strategy.forecast = () => ({ probability: 0.85, window: 'Possible rain in ~1–3 min', intensity: '' });
   car.driver = { ...car.driver, strat: 0.9 };
-  const rain = car.engineer.analyse();
+  const rain = car.strategy.analyse();
   assert.ok(rain.rainWait && !rain.pit, 'stop delayed for the rain: ' + JSON.stringify({ r: rain.reason, w: rain.rainWait }));
-});
-
-test('the player\'s engineer: critical first, grounded opportunities, mode-specific advice, every message short', () => {
-  const s = running(gp('bahrain'), 2), me = s.player, I = s.intel;
-  const msgs = () => { me.engineer.active.clear(); me.engineer.compose(me.surfaceWet ?? s.wet, Math.max(...me.tyre.wear), s.fuelRange(me), s.lapsLeft(me)); return [...me.engineer.active.values()]; };
-  s.time = 200;
-  // fuel shortage comes from the car's own measured consumption
-  me.fuel = me.fuelPerLapEst * 0.6; me.laps = 3; me.totalDist = 3 * s.track.length + 100;
-  let m = msgs(); const fuel = m.find(x => x.key === 'fuel');
-  assert.ok(fuel && fuel.category === 'critical' && /Fuel/.test(fuel.say), 'fuel shortage announced');
-  me.fuel = s.fuelCapacity;
-  // a car ahead with a visible wing problem, within reach
-  const order = s.order, ahead = order[me.position - 2];
-  if (ahead) {
-    me.intervalAhead = 1.2; I.of(ahead).damage = 'front wing'; I.next = 1e9;
-    m = msgs(); const o = m.find(x => x.key === 'ahead-damage');
-    assert.ok(o && o.category === 'opportunity' && /wing damage/.test(o.say), 'damage ahead announced');
-  }
-  for (const x of msgs()) {
-    assert.ok(x.say.split(/\s+/).length <= 12, 'spoken in a few seconds: ' + x.say);
-    assert.ok(x.caption.split(/\s+/).length <= 6, 'caption of a few words: ' + x.caption);
-    assert.ok(x.expires > s.time);
-  }
-  // collect hands each situation over once; the same fingerprint is not repeated
-  const first = me.engineer.collect().map(x => x.key), again = me.engineer.collect().map(x => x.key);
-  for (const k of again) assert.ok(!first.includes(k) || k === 'pursuit-gap', 'not repeated: ' + k);
-  // Rival Duel and Pursuit: no pit, fuel or weather advice
-  for (const gameMode of ['duel', 'pursuit']) {
-    const r = new SIM.Session(tracks.get('monza'), { type: 'race', gameMode, seed: 5, weather: 'dynamic', pursuit: { gap: 3, rivalWear: 0.27, rival: 1 },
-      entries: [{ driver: SIM.DRIVERS[0], isPlayer: true }, { driver: SIM.DRIVERS[1] }] });
-    const p = r.player; p.ai = new SIM.AIDriver(p, r, {});
-    const said = [];
-    while (!r.over && r.time < 400) { r.fixedStep(DT); if (r.step % 240 === 0) said.push(...p.engineer.collect()); }
-    for (const x of said) assert.ok(!['fuel', 'box', 'traffic', 'nostop', 'rain', 'drying', 'rival-pit', 'water'].includes(x.key), gameMode + ': ' + x.key);
-    if (gameMode === 'pursuit') assert.ok(said.some(x => x.key === 'pursuit-gap'), 'Pursuit reports the gap');
-  }
 });
 
 test('no VSC and no blue flags anywhere; a big crash leaves the race running; the slipstream is unchanged', () => {

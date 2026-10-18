@@ -1,6 +1,6 @@
 # Fuel weight: five times the real-world effect
 
-Grand Prix and Career only. Elimination is unchanged.
+Grand Prix and Career.
 
 ## Target
 
@@ -18,7 +18,7 @@ In real Formula 1, an extra 10 kg of fuel costs about 0.3–0.4 s a lap. The tar
 | Braking | 11 | Lower braking deceleration, on top of the existing tyre-grip limit. |
 | Cornering | 0.9 | Lower steering yaw-rate ceiling, which lowers corner speed slightly. |
 
-Each factor is a smooth function of the fuel in the tank and equals 1 with an empty tank, so there are no steps as fuel burns. Without fuel management (Elimination, and bare test rigs) every factor is exactly 1, and the code takes the original arithmetic path. The three were calibrated together on lap time rather than each being set to "×5". The lap time comes from the physics: no timer is touched.
+Each factor is a smooth function of the fuel in the tank and equals 1 with an empty tank, so there are no steps as fuel burns. Without fuel management (bare test rigs) every factor is exactly 1, and the code takes the original arithmetic path. The three were calibrated together on lap time rather than each being set to "×5". The lap time comes from the physics: no timer is touched.
 
 ## Measured lap-time cost
 
@@ -84,7 +84,3 @@ Measured with `tools/fuel-strategy-balance.cjs`: one car over 8 laps, with the A
 - **Light** is strongest when a stop is coming anyway.
 - **Full fuel** wins when it avoids a stop.
 - **Rain** results are dominated by when each car switches to wet tyres. They are noisy.
-
-## Elimination
-
-Unchanged. The tests confirm that the factors are exactly 1, the fixed 20 kg load and the mass are unchanged, the fuel value has no effect on driving, and no starting fuel is chosen. `tests/elimination*.cjs` all pass.
