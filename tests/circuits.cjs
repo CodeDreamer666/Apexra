@@ -213,15 +213,3 @@ for (const id of tracks.keys()) {
     for (const r of res.slice(0, 5)) assert.ok(r.car.bestLap > LAP[id][0] && r.car.bestLap < LAP[id][1], id + ' lap time ' + r.car.bestLap);
   });
 }
-
-test('Rival Duel races two laps on every circuit, with no pit stops', () => {
-  for (const [id, t] of tracks) {
-    const s = new SIM.Session(t, { type: 'race', gameMode: 'duel', entries: SIM.DRIVERS.slice(0, 2).map(driver => ({ driver })), seed: 4, weather: 'dynamic', damage: 'realistic' });
-    while (!s.over && s.time < 500) s.fixedStep(SIM.PHYS_DT);
-    assert.ok(s.over, id + ' duel classified');
-    assert.equal(s.results.length, 2);
-    assert.equal(s.stats.pitstops, 0, id + ' no pit stops');
-    const w = s.winner; assert.ok(w && w.laps === 2 && w.finished, id + ' winner completed two laps');
-    for (const c of s.cars) if (c.bestLap) assert.ok(c.bestLap > LAP[id][0] && c.bestLap < LAP[id][1], id + ' lap time ' + c.bestLap);
-  }
-});

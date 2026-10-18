@@ -1,6 +1,6 @@
 // AI difficulty benchmark (slow; not part of the quick test run). It measures, with the real Session, AIDriver,
-// RaceEngineer and physics running headless, how the AI drives at each rank level (Rookie 100%, Pro 125%, Master
-// 150%: the Career, Rival Duel and Pursuit ranks) compared with the difficulty-100 baseline. Nothing here changes the
+// RaceStrategy and physics running headless, how the AI drives at each rank level (Rookie 100%, Pro 125%, Master
+// 150%: the Career ranks) compared with the difficulty-100 baseline. Nothing here changes the
 // game; the numbers come from simulated laps and races.
 //
 //   node tests/career-ai.cjs pace   solo laps: lap time, lap-to-lap spread, mistakes, time off the track, braking

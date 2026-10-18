@@ -362,7 +362,7 @@ test('higher levels judge and execute better (prediction, evaluation, execution)
   // the three ranks step up every time (nothing saturates below Master)
   prev = null;
   for (const r of SIM.PROGRESS.RANKS) {
-    const s = session('monza', SIM.DRIVERS.slice(0, 2).map(driver => ({ driver })), { gameMode: 'duel', aiLevel: r.level });
+    const s = session('monza', SIM.DRIVERS.slice(0, 2).map(driver => ({ driver })), { aiLevel: r.level });
     const a = s.cars[1].ai, now = { skill: a.skill, commit: a.commit, brake: a.brakeCommit, mistakes: a.mistakeScale, predict: a.mind.predict, apex: a.mind.apexSd };
     if (prev) assert.ok(now.skill > prev.skill && now.commit > prev.commit && now.brake >= prev.brake && now.mistakes < prev.mistakes && now.predict > prev.predict && now.apex < prev.apex, r.name + ' ' + JSON.stringify(now));
     assert.ok(now.commit <= 1 && now.brake <= 1 && now.mistakes > 0, r.name + ': within the physical limit and never infallible');
@@ -374,18 +374,4 @@ test('higher levels judge and execute better (prediction, evaluation, execution)
   for (const [s, c] of [[r, cr], [l, cl]]) { s.fitTyres(c, 'H', 90); c.fuel = 15; c.placeAt(r.track, 400, 0, 30); c.speed = c.u = 30; }
   for (let i = 0; i < 480; i++) for (const c of [cr, cl]) { c.input.throttle = 1; c.input.brake = 0; c.input.steer = 0.2; SIM.stepCarPhysics(c, SIM.PHYS_DT, r.track, { wet: 0, wearScale: 1, fuelRate: 0.04, pitLimiter: false }); }
   assert.deepEqual([cl.x, cl.z, cl.speed], [cr.x, cr.z, cr.speed]);
-});
-
-test('Rival Duel and Pursuit run with the AI; qualifying and Elimination no longer exist', () => {
-  for (const gameMode of ['duel', 'pursuit']) {
-    const e = new SIM.Session(tracks.silverstone, { type: 'race', gameMode, seed: 9, aiLevel: 1.4, weather: 'dynamic', tyreWear: 'normal', damage: 'realistic',
-      pursuit: { gap: 2, rivalWear: 0.25, rival: 1 }, entries: SIM.DRIVERS.slice(2, 4).map(driver => ({ driver })) });
-    while (!e.lightsOut || e.time - e.lightsOutTime < 60) e.fixedStep(SIM.PHYS_DT);
-    assert.ok(e.cars.every(c => c.totalDist > 1500 && !c.dnf), gameMode + ': both cars racing');
-    assert.equal(e.weather, null); assert.equal(e.wet, 0);
-  }
-  assert.deepEqual(Object.keys(SIM.GAME_MODES), ['grandprix', 'duel', 'pursuit']);
-  for (const k of ['ELIMINATION_RULES', 'eliminationEvents', 'eliminationSchedule', 'ELIMINATION_FUEL_MASS']) assert.equal(SIM[k], undefined, k);
-  const q = new SIM.Session(tracks.bahrain, { type: 'quali', seed: 4, weather: 'dynamic', entries: SIM.DRIVERS.slice(0, 3).map(driver => ({ driver })) });
-  for (const k of ['releaseFromGarage', 'qualifyingTick', 'finishQuali', 'completeQuali']) assert.equal(typeof q[k], 'undefined', k);
 });

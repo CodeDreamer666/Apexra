@@ -95,7 +95,7 @@ async function scan(browser, id) {
   page.setDefaultTimeout(900000);
   const errors = []; page.on('pageerror', e => errors.push(e.message));
   await page.addInitScript((id) => {
-    localStorage.setItem('apexgp.settings.v1', JSON.stringify({ quality: 'high', camera: 'chase', engineerVoice: 'off', volume: 0, circuit: id }));
+    localStorage.setItem('apexgp.settings.v1', JSON.stringify({ quality: 'high', camera: 'chase', volume: 0, circuit: id }));
     // the render loop only runs when asked
     const nativeRaf = window.requestAnimationFrame.bind(window);
     window.requestAnimationFrame = cb => { if (!/\bframe\(/.test(String(cb))) return nativeRaf(cb); (window.__rafq = window.__rafq || []).push(cb); return 1; };

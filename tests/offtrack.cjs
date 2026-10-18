@@ -268,9 +268,9 @@ test('cutting a corner across the inside is slower than driving it, without any 
   assert.equal(cut.car.laps, 3); assert.ok(cut.car.finished && !cut.car.dnf);
 });
 
-test('Rival Duel: leaving the track deletes nothing, and a lap only counts once a full lap has been earned', () => {
+test('Grand Prix: leaving the track deletes nothing, and a lap only counts once a full lap has been earned', () => {
   const t = tracks.get('monza');
-  const S = new SIM.Session(t, { type: 'race', gameMode: 'duel', entries: SIM.DRIVERS.slice(0, 2).map(driver => ({ driver })), seed: 4, weather: 'dynamic' });
+  const S = new SIM.Session(t, { type: 'race', gameMode: 'grandprix', entries: SIM.DRIVERS.slice(0, 2).map(driver => ({ driver })), seed: 4, weather: 'dynamic' });
   let shoved = null, off = 0;
   while (!S.over && S.time < 420) {
     S.fixedStep(dt);
