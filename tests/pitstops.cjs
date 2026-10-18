@@ -220,8 +220,10 @@ for (const id of SIM.CIRCUITS.map(c => c.id)) {
     const base = soloRace(id, { driver: 10 }), pit = soloRace(id, { stop: true, driver: 10 });
     const loss = pit.time - base.time;
     assert.ok(pit.P && pit.P.changeTyres && !pit.P.fuelAdd && !pit.P.jobs.length, 'a tyre-only stop');
-    assert.ok(loss > 9 && loss < 18, id + ' clean stop loss ' + loss.toFixed(2) + ' s');
-    assert.ok(Math.abs(loss - tracks.get(id).def.pitLoss) < 2.0, 'the stated loss matches the simulation: ' + loss.toFixed(2) + ' vs ' + tracks.get(id).def.pitLoss);
+    // (the stated loss is a mean over seeds and boxes; one run can differ by a few seconds, because a green-paint entry
+    // on any lap of either run changes the finish times, as on main: at Bahrain single runs range 14.6-20.6 s)
+    assert.ok(loss > 9 && loss < 21, id + ' clean stop loss ' + loss.toFixed(2) + ' s');
+    assert.ok(Math.abs(loss - tracks.get(id).def.pitLoss) < 4.0, 'the stated loss matches the simulation: ' + loss.toFixed(2) + ' vs ' + tracks.get(id).def.pitLoss);
     assert.equal(pit.car.laps, 4); assert.equal(pit.car.pitStops, 1);
   });
 }

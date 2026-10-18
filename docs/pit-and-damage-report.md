@@ -123,25 +123,45 @@ the same seed.
 
 | Circuit | Lane length | Same stretch on track | Lane incl. stop | Stationary | Extra driving | **Total loss** |
 |---|---|---|---|---|---|---|
-| Monza | 457 m | 5.28 s | 16.80 s | 2.21 s | 9.31 s | **15.8 s** |
-| Silverstone | 417 m | 5.54 s | 16.93 s | 2.21 s | 9.18 s | **15.4 s** |
-| Spa | 417 m | 7.30 s | 18.03 s | 2.21 s | 8.53 s | **14.3 s** |
-| Suzuka | 457 m | 5.75 s | 17.04 s | 2.21 s | 9.09 s | **16.1 s** |
-| Bahrain | 417 m | 5.47 s | 16.56 s | 2.21 s | 8.88 s | **16.2 s** |
-| Interlagos | 457 m | 5.45 s | 16.59 s | 2.21 s | 8.93 s | **14.7 s** |
+| Monza | 457 m | 5.31 s | 18.11 s | 2.21 s | 10.59 s | **16.8 s** |
+| Silverstone | 417 m | 5.54 s | 18.23 s | 2.21 s | 10.48 s | **16.9 s** |
+| Spa | 417 m | 7.30 s | 19.35 s | 2.21 s | 9.85 s | **15.6 s** |
+| Suzuka | 457 m | 5.75 s | 18.35 s | 2.21 s | 10.39 s | **16.7 s** |
+| Bahrain | 417 m | 5.49 s | 17.87 s | 2.21 s | 10.17 s | **17.0 s** |
+| Interlagos | 457 m | 5.46 s | 17.89 s | 2.21 s | 10.22 s | **16.1 s** |
 
 "Extra driving" is the lane time minus the stationary time minus the time for the same stretch on the track. "Total
-loss" is the finish-time difference over the race; it also includes the slower lap on cold tyres after the stop. The
+loss" is the finish-time difference over the race; it also includes the slower lap on cold tyres after the stop. Since
+`main`'s green-paint rule (a tyre entering the paint cuts the car's speed to 85 %), single runs of the total vary by a few
+seconds: at Bahrain, 14.6–20.6 s over the six runs, while the extra driving stayed between 9.9 and 10.7 s. The
 strategy AI uses these totals as each circuit's `pitLoss`. Before this overhaul a stop cost 19–27 s, against today's
-14.3–16.2 s.
+15.6–17.0 s.
 
-**Box position matters.** At Monza (seed 11), the stop costs 16.6 s from Team A's box, 15.1 s from Team F's and 15.6 s
+**Collision-free lane (added when merging `main`).** A contact counter over full six-lap races (seed 21, all six circuits)
+found 34 low-speed pit-lane contacts in 134 stops:
+- a car heading for one box turned in too early and touched the car in the box before it;
+- a car pulling out reached the next box before it was back in the fast lane;
+- cars followed each other too closely.
+
+The fixes:
+- turn in over the last 11 m only;
+- leave on a 9 m diagonal at walking pace (7 m/s) until back in the fast lane;
+- use the pit parking brakes on the way out too;
+- judge a car within 10 m ahead by where it really is, and keep a distance that allows for a braking car ahead;
+- give cars coming down the lane a longer release window;
+- accept a car on its marks quickly only when it is within 1.2 m of the box line.
+
+After the fixes there are zero contacts on five circuits. At Monza two pairs of cars still touch on the entry ramp: they
+reach the pit entry nose to tail at 10 m/s different speeds while still racing, before the autopilot takes over. The
+safer lane costs about 1–1.5 s per stop compared with the first version (14.3–16.2 s).
+
+**Box position matters.** Measured before the collision fixes: at Monza (seed 11), the stop costs 16.6 s from Team A's box, 15.1 s from Team F's and 15.6 s
 from Team J's. Before parking braking applied from the entry onwards, Team A's stop cost 17.7 s. The first box sits
 12 m after the limit line, so its car has to start braking on the ramp. Lengthening that run-in to 26 m did not help: it
 only added lane length for everyone (16.6 / 15.5 / 15.9 s), so the layout was kept.
 
-**Not reached: the requested ~6 s extra driving and ~8–9 s total.** Extra driving is 8.5–9.3 s and the total is
-14.3–16.2 s. The remaining cost comes from:
+**Not reached: the requested ~6 s extra driving and ~8–9 s total.** Extra driving is 9.9–10.6 s and the total is
+15.6–17.0 s. The remaining cost comes from:
 - braking from racing speed to the 120 km/h limit;
 - covering 417–457 m at the limit, where the track stretch takes 5.3–7.3 s;
 - stopping and then accelerating from rest;
@@ -176,7 +196,7 @@ pit calls, seed 11.
 | Bahrain | **554.6 s** | +10.0 s | +7.3 s | +12.3 s |
 | Interlagos | **414.8 s** | +4.9 s | +5.4 s | +10.5 s |
 
-**Finding.** With the new 14–16 s stop, a tyre-only one-stop on full fuel and the Hard no-stop are close: from 2.1 s
+**Finding.** Measured with the 14–16 s stop of the first version (the stop is now about 1–1.5 s dearer, which narrows the margins below a little): a tyre-only one-stop on full fuel and the Hard no-stop are close: from 2.1 s
 slower to 2.8 s faster. The clear winner is starting light on Softs and refuelling at the stop, which is 3.8–10 s
 quicker than the no-stop, because the car is lighter for most of the race. The AI's planner reaches the same
 conclusion:

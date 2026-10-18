@@ -199,7 +199,7 @@ The panel also shows how long the stop will take.
 3. The crew carries out your plan straight away, with nothing to confirm. A small panel shows each job and the time left. A tyre change takes about 2–3 seconds. Refuelling and repairs can take longer; the crews work at the same time, and bigger damage takes longer to fix.
 4. A light at the box turns green when it's safe to go. The car pulls out, drives to the pit exit and gives control back to you there.
 
-A stop for tyres only costs about 14–16 seconds compared with staying out, depending on the circuit. The computer drivers use exactly the same pit lane, boxes, crews and timings as you.
+A stop for tyres only costs about 16–17 seconds compared with staying out, depending on the circuit. The computer drivers use exactly the same pit lane, boxes, crews and timings as you.
 
 ### Weather
 The weather changes during the race. Watch the rain chance and the track wetness on the status panel. Rain makes the track slippery, and it takes time for a wet track to dry out again. Getting the timing of a switch between dry and wet tyres right can gain or lose a lot of places.
