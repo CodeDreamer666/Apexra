@@ -768,14 +768,10 @@ const SIM = (function () {
   // settles at about 68 km/h on full throttle. The level follows the tyre count within `rise` seconds and
   // recovers over `fall` seconds once the tyres are back on the track.
   const OFF_TRACK = { grip: 0.5, level: [0, 0.25, 0.55, 0.8, 1], drag: { k2: 0.0088, k1: 0.8, v1: 22, max: 30 }, rise: 0.05, fall: 0.5, tyreHalf: 0.2 };
-  // Green painted asphalt is drivable. The number of tyres on it sets a grip loss (`loss`: 2.5 / 6.5 / 11 / 18 %
-  // with one to four tyres) and a mild extra rolling resistance (`drag`, a deceleration of drag[n] × speed in m/s²:
-  // nothing for one tyre, about 0.2 m/s² at 200 km/h for two, 0.7 for three and 1.4 for four, so two seconds
-  // flat out on it with all four tyres cost roughly 10 km/h against the asphalt). Both follow the tyre count within
-  // `rise` seconds and recover over `fall`. It is kept separate from OFF_TRACK (grass and gravel: halved grip and
-  // up to 30 m/s² of drag), so paint never erases the drag of a tyre still on terrain, and it is the same force
-  // for every car, player or AI.
-  const GREEN_RUNOFF = { width: 3.8, loss: [0, 0.025, 0.065, 0.11, 0.18], drag: [0, 0, 0.004, 0.012, 0.025], rise: 0.12, fall: 0.3 };
+  // A tyre entering green paint reduces the whole car's velocity to 85% once per continuous excursion.
+  // An 80 ms clear interval bridges mesh/tyre seams before rearming. Sustained grip loss and mild rolling
+  // resistance vary with tyre count, ease in/out, and never replace grass/gravel resistance. Shared by all cars.
+  const GREEN_RUNOFF = { width: 3.2, entrySpeed: 0.85, exitDelay: 0.08, loss: [0, 0.025, 0.065, 0.11, 0.18], drag: [0, 0, 0.004, 0.012, 0.025], rise: 0.12, fall: 0.3 };
   const clamp = (x, a, b) => (x < a ? a : x > b ? b : x);
   const lerp = (a, b, t) => a + (b - a) * t;
   const smooth01 = (t) => { t = clamp(t, 0, 1); return t * t * (3 - 2 * t); };
@@ -1060,6 +1056,7 @@ const SIM = (function () {
       this.buildPit();
       this.buildRacingLine();
       this.buildEdges();
+      this.buildTrackside();
       this.buildTimingAndZones();
       this.buildGrid();
       this.aiLines = buildAILines(this);
@@ -1230,7 +1227,9 @@ const SIM = (function () {
           if (kk > 0) outL = Math.max(outL, sev); else outR = Math.max(outR, sev);
         }
         const ro = this.def.runoff || {}, base = ro.base ?? 9, sc = ro.scale ?? 1;
-        wl[i] = hwA[i] + base + outL * sc; wr[i] = hwA[i] + base + outR * sc;
+        const recovery = Math.max(6, Math.min(8, base * 0.7));
+        wl[i] = hwA[i] + 1.3 + GREEN_RUNOFF.width + recovery + Math.min(12, outL * sc * 0.36);
+        wr[i] = hwA[i] + 1.3 + GREEN_RUNOFF.width + recovery + Math.min(12, outR * sc * 0.36);
         if (outL > 10) this.gravelL[i] = 1; if (outR > 10) this.gravelR[i] = 1;
       }
       this.wallL = this.smoothArr(wl, 15, 3); this.wallR = this.smoothArr(wr, 15, 3);
@@ -1268,6 +1267,27 @@ const SIM = (function () {
       // The reach of each side is the largest offset that stays clear of the centre line all round the bend; a barrier
       // beyond it is open (the infield of a hairpin): the renderer draws no barrier, run-off or scenery there.
       this.reachL = this.sideReach(-1); this.reachR = this.sideReach(1);
+    }
+    // Shared section profile used by surface physics, ribbons and forest exclusions. Pit approaches and
+    // close parallel sections keep their existing collision/pit envelopes; narrower strips fit those exceptions.
+    buildTrackside() {
+      this.greenL = new Float64Array(this.N); this.greenR = new Float64Array(this.N);
+      for (let i = 0; i < this.N; i++) for (const side of [-1, 1]) {
+        const kerb = (side > 0 ? this.kerbR : this.kerbL)[i] ? 1.3 : 0;
+        const wall = (side > 0 ? this.wallR : this.wallL)[i], reach = (side > 0 ? this.reachR : this.reachL)[i];
+        const start = this.hw[i] + kerb;
+        (side > 0 ? this.greenR : this.greenL)[i] = this.hasPaintedRunoff(i, side)
+          ? Math.max(start, Math.min(start + GREEN_RUNOFF.width, wall - 2.4, reach - 1)) : start;
+      }
+    }
+    tracksideAt(i, side, out = {}) {
+      const road = this.hw[i], kerb = (side > 0 ? this.kerbR : this.kerbL)[i] ? 1.3 : 0;
+      out.road = road; out.kerbEnd = road + kerb;
+      out.greenEnd = (side > 0 ? this.greenR : this.greenL)[i];
+      out.barrier = (side > 0 ? this.wallR : this.wallL)[i]; out.recoveryEnd = out.barrier - 0.4;
+      out.forestStart = out.barrier + 6;
+      out.pit = side === this.pit.side && this.pitProg(i * DS) >= 0;
+      return out;
     }
     // whether the barrier on side sg (+1 right, -1 left) of sample i stands where it can be reached (see reachL)
     barrierAt(i, sg) { return (sg > 0 ? this.wallR[i] : this.wallL[i]) < (sg > 0 ? this.reachR[i] : this.reachL[i]) - 0.5; }
@@ -1497,9 +1517,9 @@ const SIM = (function () {
       }
       const kerb = right ? this.kerbR[i] : this.kerbL[i];
       if (kerb && ad <= hw + 1.3) return 1;
-      if (ad <= hw + GREEN_RUNOFF.width && this.hasPaintedRunoff(i, right ? 1 : -1)) return 2;
+      if (ad <= (right ? this.greenR : this.greenL)[i] && this.hasPaintedRunoff(i, right ? 1 : -1)) return 2;
       const gravel = right ? this.gravelR[i] : this.gravelL[i];
-      if (gravel && ad > hw + 5) return 4;
+      if (gravel && ad > (right ? this.greenR : this.greenL)[i]) return 4;
       return 3;
     }
     // wall distances for a car (pit-mode aware); returns [left, right] positive distances
@@ -1696,7 +1716,8 @@ const SIM = (function () {
     // edge is painted, except on the inside of a bend (within 10 samples), so a planned path never cuts a corner.
     const paint = [new Uint8Array(N), new Uint8Array(N)];
     for (const [k, sg] of [[0, -1], [1, 1]]) for (let i = 0; i < N; i++) {
-      let ok = t.hasPaintedRunoff(i, sg);
+      const end = (sg > 0 ? t.greenR : t.greenL)[i];
+      let ok = t.hasPaintedRunoff(i, sg) && end >= limA[i] + 3.6 + SPEC.tw + 0.1;
       for (let q = -10; q <= 10 && ok; q += 2) if (t.kappa[(i + q + N) % N] * sg > 1 / 900) ok = false;
       paint[k][i] = ok ? 1 : 0;
     }
@@ -1956,6 +1977,7 @@ const SIM = (function () {
       this.axL = 0; this.ayL = 0; this.gLong = 0; this.gLat = 0;
       this.load = new Float64Array(4); this.slipA = new Float64Array(4); this.lock = new Uint8Array(4); this.spin = new Uint8Array(4);
       this.slipPow = new Float64Array(4); this.surf = new Uint8Array(4); this.offN = 0; this.offLvl = 0; this.offGrip = 1; this.wheelRot = new Float64Array(4); this.util = new Float64Array(4);
+      this.greenEntryActive = false; this.greenExitTime = 0; this.greenEntries = 0;
       this.terrainN = 0; this.runoffN = 0; this.runoffLoss = 0; this.runoffGrip = 1; this.runoffDrag = 0;
       // Launch control (race starts): the automatic clutch stays open on the grid and engages after lights out.
       this.launch={active:race.type==='race',engagement:race.type==='race'?0:1,releasedAt:null}; this.surfaceWet=null;
@@ -2132,6 +2154,15 @@ const SIM = (function () {
       const surf = track.surfaceAt(iw, dw, !!car.pit); car.surf[i] = surf; if (surf >= 2) offN++;
       if (surf === 2) runoffN++; else if (surf >= 3) terrainN++;
     }
+    // Latch the physical surface entry, independent of render meshes and their seams. A brief gap under
+    // the tyres cannot compound the loss; a confirmed exit to another surface rearms the next real entry.
+    let greenEntry = false;
+    if (runoffN > 0) {
+      greenEntry = !car.greenEntryActive; car.greenEntryActive = true; car.greenExitTime = 0;
+    } else {
+      car.greenExitTime += dt;
+      if (car.greenExitTime >= GREEN_RUNOFF.exitDelay) car.greenEntryActive = false;
+    }
     const offTarget = OFF_TRACK.level[terrainN];
     car.offN = offN; car.terrainN = terrainN; car.runoffN = runoffN;
     car.offLvl += (offTarget - car.offLvl) * Math.min(1, dt / (offTarget > car.offLvl ? OFF_TRACK.rise : OFF_TRACK.fall));
@@ -2306,6 +2337,7 @@ const SIM = (function () {
     car.vx += fwx / m * dt; car.vz += fwz / m * dt;
     car.r += Mz / sp.Iz * dt;
     car.r *= (1 - 0.6 * dt);
+    if (greenEntry) { car.vx *= GREEN_RUNOFF.entrySpeed; car.vz *= GREEN_RUNOFF.entrySpeed; car.greenEntries++; }
     // standstill clamp
     const u2 = car.vx * c + car.vz * s, v2 = -car.vx * s + car.vz * c;
     if (Math.abs(u2) < 0.25 && Math.abs(v2) < 0.4 && (car.brake > 0.05 || car.throttle < 0.02) && car.gear !== -1 && !(car.throttle > 0.05 && car.brake < 0.05)) {
@@ -4293,11 +4325,15 @@ const SIM = (function () {
       for (let q = 1; q < m; q++) K[q] = curv3(PX[q - 1], PZ[q - 1], PX[q], PZ[q], PX[q + 1], PZ[q + 1]);
       K[0] = K[1]; K[m] = K[m - 1];
       for (let q = 0; q < m; q++) { const dx = PX[q + 1] - PX[q], dz = PZ[q + 1] - PZ[q]; SG[q] = Math.sqrt(dx * dx + dz * dz); }
-      // green paint along the path: tyres on it (0, 2 or 4 for a car following the path) cost grip, braking and,
-      // with more of them, a little rolling resistance (GREEN_RUNOFF, the same physics every car has)
+      // Score the same surfaces and once-per-entry speed loss the real tyre physics will encounter.
       const GP = this.evP || (this.evP = new Float64Array(AI_EVAL_M + 2)), tw = SPEC.tw;
       let paint = 0;
-      for (let q = 0; q <= m; q++) { const hwP = t.hw[(X.i0 + AI_EV_STEP * q) % N], ad = D[q] < 0 ? -D[q] : D[q], n = ad > hwP + 0.2 + tw ? 4 : ad > hwP + 0.2 - tw ? 2 : 0; GP[q] = n; if (n && q < m) paint += SG[q] * n / 4; }
+      for (let q = 0; q <= m; q++) {
+        const i = (X.i0 + AI_EV_STEP * q) % N;
+        const n = Math.abs(D[q]) + tw <= t.hw[i] + OFF_TRACK.tyreHalf ? 0
+          : (t.surfaceAt(i, D[q] - tw, false) === 2 ? 2 : 0) + (t.surfaceAt(i, D[q] + tw, false) === 2 ? 2 : 0);
+        GP[q] = n; if (n && q < m) paint += SG[q] * n / 4;
+      }
       c.paint = paint;
       // corner speed the handling allows on this curvature (arcadeCornerSpeed, inlined for an undamaged car)
       const A = clamp(X.mu / 1.6, 0.45, 1.05) * X.use, r0 = HANDLING.turnRate[0], gg = (HANDLING.turnRate[1] - r0) / 58, kMax = ARCADE_KGEOM * X.use;
@@ -4317,7 +4353,10 @@ const SIM = (function () {
       let v = X.v0, tt = 0, risk = 0, minGap = 9, blocked = 0, tow = 0, lead = -50, overlap = 99; this.evT[0] = 0; c.overlapTurn = 99;
       const opps = X.opps, no = X.nOpp, tmax = (AI_PRED_N - 1) * AI_PRED_DT;
       c.dTurn = X.qTurn >= 0 ? D[X.qTurn] : D[0]; c.dMid = D[m >> 1];
+      let onGreen = !!this.car.greenEntryActive;
       for (let q = 0; q < m; q++) {
+        if (GP[q] && !onGreen) v *= GREEN_RUNOFF.entrySpeed;
+        onGreen = GP[q] > 0;
         let vn = Math.min(VB[q + 1], Math.sqrt(Math.max(0, v * v + 2 * (aiAccel(v) * X.power + tow - (GP[q] ? GREEN_RUNOFF.drag[GP[q]] * v : 0)) * SG[q])));
         let dt = 2 * SG[q] / Math.max(0.5, v + vn);
         const tq = tt + dt, sc = (q + 1) * AI_EV_STEP * DS, f = Math.min(tq, tmax) / AI_PRED_DT, j = Math.min(AI_PRED_N - 2, f | 0), u = Math.min(1, f - j);
@@ -6678,19 +6717,7 @@ function makeTextures(quality) {
 }
 
 // Shader patch helpers (onBeforeCompile) ---------------------------------
-R.anim = { value: 0 }; // seconds, shared by animated scenery (crowd, flags)
-// The crowd bobs and cheers: each spectator (instance) jumps on its own rhythm; some stay seated.
-function animateCrowd(mat) {
-  mat.onBeforeCompile = (sh) => {
-    sh.uniforms.uAnim = R.anim;
-    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nuniform float uAnim;').replace('#include <begin_vertex>', `#include <begin_vertex>
-      #ifdef USE_INSTANCING
-      { float ph = dot(instanceMatrix[3].xyz, vec3(0.37, 0.11, 0.71)); float f = fract(ph * 1.7);
-        transformed.y += step(0.45, f) * max(0.0, sin(uAnim * (4.0 + f * 4.0) + ph * 6.0)) * 0.09 * (0.5 + 0.5 * sin(uAnim * 0.31 + ph)); }
-      #endif`);
-  };
-  mat.customProgramCacheKey = () => 'crowd'; return mat;
-}
+R.anim = { value: 0 }; // seconds, shared by animated flags
 // Flags and banners ripple in the wind (geometry needs width segments; the free edge moves most).
 function animateFlag(mat) {
   mat.onBeforeCompile = (sh) => {
@@ -6783,7 +6810,9 @@ function riverDist(x, z) {
   return best;
 }
 function setScenery(track) {
-  const env = track.def.env || {};
+  const env = { ...track.def.env };
+  if (track.def.id === 'silverstone') env.forest=1.05;
+  if (track.def.id === 'interlagos') env.forest=1.3;
   LAKE = env.lake || null; CASTLE = env.castle || null; RIVER = env.river || null;
   let minX = 1e9, maxX = -1e9, minZ = 1e9, maxZ = -1e9;
   for (let i = 0; i < track.N; i++) { minX = Math.min(minX, track.cx[i]); maxX = Math.max(maxX, track.cx[i]); minZ = Math.min(minZ, track.cz[i]); maxZ = Math.max(maxZ, track.cz[i]); }
@@ -6818,10 +6847,13 @@ function groundTint(env, n, x, z, h, slope, wet) {
     const cell = Math.floor(fx / cw) * 7919 + Math.floor(fz / ch) * 104729, hsh = ((Math.sin(cell) * 43758.5453) % 1 + 1) % 1;
     const edge = Math.min(Math.abs(((fx / cw) % 1 + 1) % 1 - 0.5), Math.abs(((fz / ch) % 1 + 1) % 1 - 0.5)) > 0.47 ? 0.55 : 0;
     const field = hsh < 0.45 ? [r, g, b] : hsh < 0.7 ? [0.86 * tint[0], 0.84 * tint[1], 0.46 * tint[2]] : hsh < 0.88 ? [0.8 * tint[0], 0.72 * tint[1], 0.44 * tint[2]] : [0.56, 0.45, 0.33];
-    const wf = far * (0.25 + 0.75 * open) * (1 - edge);
+    const wf = far * 0.22 * open * (1 - edge);
     r += (field[0] - r) * wf; g += (field[1] - g) * wf; b += (field[2] - b) * wf;
     const woods = smooth01(0.3, 0.62, woodsAt(x, z));
-    r *= 1 - 0.38 * woods; g *= 1 - 0.3 * woods; b *= 1 - 0.32 * woods;
+    r *= 1 - 0.52 * woods; g *= 1 - 0.42 * woods; b *= 1 - 0.46 * woods;
+    // Organic leaf-litter / exposed-soil patches blend into the forest floor without an extra decal layer.
+    const soil = smooth01(0.35, 0.7, n.fbm(x / 26, z / 26, 2)) * smooth01(24, 65, distToCircuit(x, z)) * .38;
+    r += (.36 - r) * soil; g += (.29 - g) * soil; b += (.19 - b) * soil;
   }
   // Slopes read as hillside, not as a bank of sand: the turf darkens and browns as the ground steepens, and the
   // steepest faces are bare rock (grey in the green hills, red-brown sandstone in the desert).
@@ -6905,12 +6937,22 @@ function buildTerrain(world, track, T, opts) {
       }
     }
   }
+  // Plant against the triangles actually rendered, including terrain sinking and the fine verge. Sampling only
+  // the unsunk noise height would leave roots hovering over a coarse triangle beside a steep valley.
+  const groundH = new Float32Array(W*W), fineGround = new Map(), GCELL = 40;
+  for(let j=0;j<W;j++)for(let k=0;k<W;k++){const i=j*W+k;groundH[i]=H[i]-sunk[i]+track.elevAt(x0+k*step,z0+j*step);}
   const heightAt = (x, z) => {
-    const fx = (x - x0) / step, fz = (z - z0) / step; if (fx < 0 || fz < 0 || fx >= Rn || fz >= Rn) return 0;
-    const k = Math.floor(fx), j = Math.floor(fz), u = fx - k, v = fz - j;
-    // match the mesh's triangle split (a, c, b / b, c, d)
-    const a = H[j * W + k], b = H[j * W + k + 1], c = H[(j + 1) * W + k], d = H[(j + 1) * W + k + 1];
-    return u + v < 1 ? a + (b - a) * u + (c - a) * v : d + (c - d) * (1 - u) + (b - d) * (1 - v);
+    const fx=(x-x0)/step,fz=(z-z0)/step;if(fx<0||fz<0||fx>=Rn||fz>=Rn)return 0;
+    const k=Math.floor(fx),j=Math.floor(fz),u=fx-k,v=fz-j;
+    const a=groundH[j*W+k],b=groundH[j*W+k+1],c=groundH[(j+1)*W+k],d=groundH[(j+1)*W+k+1];
+    let h=u+v<1?a+(b-a)*u+(c-a)*v:d+(c-d)*(1-u)+(b-d)*(1-v);
+    const list=fineGround.get(Math.floor(x/GCELL)+','+Math.floor(z/GCELL));
+    if(list)for(const t of list){
+      const l1=((t[5]-t[8])*(x-t[6])+(t[6]-t[3])*(z-t[8]))/t[9];
+      const l2=((t[8]-t[2])*(x-t[6])+(t[0]-t[6])*(z-t[8]))/t[9],l3=1-l1-l2;
+      if(l1>=-1e-6&&l2>=-1e-6&&l3>=-1e-6)h=Math.max(h,l1*t[1]+l2*t[4]+l3*t[7]);
+    }
+    return h-track.elevAt(x,z);
   };
   const distAt = (x, z) => { const k = Math.min(Rn, Math.max(0, Math.round((x - x0) / step))), j = Math.min(Rn, Math.max(0, Math.round((z - z0) / step))); return dT[j * W + k]; };
   R.distAt = distAt; // the ground colouring below reads it
@@ -6961,6 +7003,15 @@ function buildTerrain(world, track, T, opts) {
     const gv = new THREE.BufferGeometry(); gv.setAttribute('position', new THREE.Float32BufferAttribute(pos2, 3)); gv.setAttribute('uv', new THREE.Float32BufferAttribute(uv2, 2)); gv.setAttribute('color', new THREE.Float32BufferAttribute(col2, 3)); gv.setIndex(idx2);
     gv.computeVertexNormals(); for (let k = 0; k < gv.attributes.normal.count; k++) gv.attributes.normal.setXYZ(k, 0, 1, 0);
     const vm = new THREE.Mesh(gv, mat); vm.receiveShadow = true; vm.userData.kind = 'verge'; world.add(vm);
+    const ph=new Float32Array(pos2.length/3);
+    for(let i=0;i<ph.length;i++)ph[i]=pos2[i*3+1]+track.elevAt(pos2[i*3],pos2[i*3+2]);
+    for(let i=0;i<idx2.length;i+=3){
+      const a=idx2[i],b=idx2[i+1],c=idx2[i+2],t=[pos2[a*3],ph[a],pos2[a*3+2],pos2[b*3],ph[b],pos2[b*3+2],pos2[c*3],ph[c],pos2[c*3+2]];
+      t[9]=(t[5]-t[8])*(t[0]-t[6])+(t[6]-t[3])*(t[2]-t[8]);if(Math.abs(t[9])<1e-9)continue;
+      const x0=Math.floor(Math.min(t[0],t[3],t[6])/GCELL),x1=Math.floor(Math.max(t[0],t[3],t[6])/GCELL);
+      const z0=Math.floor(Math.min(t[2],t[5],t[8])/GCELL),z1=Math.floor(Math.max(t[2],t[5],t[8])/GCELL);
+      for(let x=x0;x<=x1;x++)for(let z=z0;z<=z1;z++){const key=x+','+z;let list=fineGround.get(key);if(!list){list=[];fineGround.set(key,list);}list.push(t);}
+    }
   }
   return { heightAt, distAt, mesh };
 }
@@ -7025,7 +7076,7 @@ function buildMountains(world, opts, track) {
 }
 
 // Circuit landmarks, kept light (instanced, merged): São Paulo's towers beyond Interlagos, Suzuka's Ferris wheel,
-// Bahrain's floodlight masts and its tower by the pits. Generic grandstands and pit buildings come from buildTrack.
+// Bahrain's floodlight masts and tower by the pits; the shared pit infrastructure comes from buildTrack.
 function buildLandmarks(world, track, terrain, opts) {
   const env = R.env, Q = opts.quality, P = track.pit, m4 = new THREE.Matrix4(), q4 = new THREE.Quaternion(), v3 = new THREE.Vector3(), sc = new THREE.Vector3(), up = new THREE.Vector3(0, 1, 0), col = new THREE.Color();
   const clearOfTrack = (x, z, margin) => { const pr = { i: 0, d: 0, s: 0 }; track.project(x, z, null, pr); const w = pr.d > 0 ? track.wallR[pr.i] : track.wallL[pr.i]; return Math.abs(pr.d) > w + margin; };
@@ -7083,11 +7134,9 @@ function buildLandmarks(world, track, terrain, opts) {
 }
 
 // Circuit venues: the infrastructure and landscape that make each real circuit read as itself, beyond the barriers.
-// Shared by all six: a perimeter service road outside the run-off (never the pit lane), spectator banks with crowds at
-// the big corners, car parks. Then each circuit's identity: Monza's royal park (the old banking, the Villa Reale,
-// poplar avenues), Silverstone's airfield (hangars, campsite, hay bales, hedgerows), Spa's Ardennes (chalets with slate
-// roofs, hillside terraces), Suzuka's amusement park (roller coaster, the hotel, cherry trees), Bahrain's desert
-// (tented hospitality, sandstone buildings, oil pumpjacks), Interlagos's city (hillside houses, billboard towers).
+// Shared service access stays beyond the recovery area. Preserve the historic and functional circuit landmarks:
+// Monza's banking and royal park, Silverstone's airfield, Spa's chalets, Suzuka's amusement park and hotel,
+// Bahrain's towers and sandstone architecture, and Interlagos's distant hillside neighbourhoods.
 // Everything is merged per material or instanced, stands clear of the circuit (the distance field and sceneryClear)
 // and registers a keep-out circle so no tree is planted through it.
 function buildVenue(world, track, terrain, opts) {
@@ -7141,7 +7190,7 @@ function buildVenue(world, track, terrain, opts) {
       for (let s = 0; s < track.length; s += step) {
         const i = Math.floor(s / DS) % N, wall = sgn > 0 ? track.wallR[i] : track.wallL[i];
         if (sgn === P.side && track.pitProg(s) >= 0) { flush(); continue; }
-        if (sgn === -P.side && (s > track.length - 420 || s < 300)) { flush(); continue; } // behind the main grandstand
+        if (sgn === -P.side && (s > track.length - 420 || s < 300)) { flush(); continue; } // clear service access beside the pit straight
         const d0 = sgn * (wall + off), d1 = sgn * (wall + off + W);
         const [x0, z0] = track.pointAt(s, d0), [x1, z1] = track.pointAt(s, d1);
         const ok = sceneryClear(track, x0, z0, 2) && sceneryClear(track, x1, z1, 2) && D(x0, z0) > wall + off - 4 && D(x1, z1) > wall + off - 4 && !keepOut.some(k => (k.x - x0) ** 2 + (k.z - z0) ** 2 < k.r * k.r);
@@ -7157,51 +7206,6 @@ function buildVenue(world, track, terrain, opts) {
       g.computeVertexNormals(); const m = new THREE.Mesh(g, mats.road); m.receiveShadow = true; m.userData.kind = 'service road'; world.add(m);
     }
   }
-  // ---------------------------------------------------------------- shared: spectator banks at the big corners
-  // standing crowd on a grass bank behind a debris fence, outside the corner after the apex
-  const crowdPts = [];
-  {
-    const fence = [], posts = [], banners = [];
-    for (const c of track.corners) {
-      if (!c.brakeZone) continue;
-      const sgn = -c.dir, s0 = c.apex * DS + 15, len = 110;
-      if (sgn === track.pitAt(s0).side && track.pitProg(s0) >= 0) continue;
-      const op = track.overpass; if (op && [op.lowS, op.highS].some(o => Math.abs(track.dS(o, s0)) < 260)) continue;
-      for (let s = s0; s < s0 + len; s += 3) {
-        const i = Math.floor(track.wrapS(s) / DS) % N, wall = sgn > 0 ? track.wallR[i] : track.wallL[i];
-        const [fx, fz, fh] = track.pointAt(track.wrapS(s), sgn * (wall + 9));
-        if (!sceneryClear(track, fx, fz, 1.5)) continue;
-        // the debris fence and its posts
-        const fyaw = -fh;
-        fence.push(at(paint(new THREE.BoxGeometry(3.1, 2.4, 0.05).translate(0, 1.2, 0), hex(0x9aa3ab)), fx, fz, fyaw));
-        if ((s - s0) % 12 < 3) posts.push(at(paint(new THREE.CylinderGeometry(0.06, 0.06, 2.6, 5).translate(0, 1.3, 0), hex(0x6b7178)), fx, fz, fyaw));
-        // people standing on the bank, 2-14 m behind the fence
-        for (let r = 0; r < 5; r++) {
-          if (rng() < 0.35) continue;
-          const dd = wall + 11 + r * 2.4 + rng() * 1.2, [px, pz] = track.pointAt(track.wrapS(s + (rng() - 0.5) * 2.6), sgn * dd);
-          if (!sceneryClear(track, px, pz, 1)) continue;
-          crowdPts.push([px, H(px, pz) + r * 0.45, pz, fh + Math.PI / 2 * sgn]);
-        }
-      }
-      // a banner on the fence
-      const [bx, bz, bh] = track.pointAt(track.wrapS(s0 + len / 2), sgn * ((sgn > 0 ? track.wallR[c.apex] : track.wallL[c.apex]) + 8.9));
-      if (sceneryClear(track, bx, bz, 1)) banners.push(at(paint(new THREE.BoxGeometry(9, 1.1, 0.06).translate(0, 1.6, 0), hex([0xe10600, 0x1e5bd8, 0xf5c518, 0x1f8f4e][(rng() * 4) | 0])), bx, bz, -bh));
-    }
-    for (const g of fence) add('fence', g); for (const g of posts) add('metal', g); for (const g of banners) add('solid', g);
-  }
-  // ---------------------------------------------------------------- shared: car parks
-  const carPark = (cx, cz, w, d, yaw, n) => {
-    { const g = paint(new THREE.PlaneGeometry(w, d, 12, 8).rotateX(-Math.PI / 2), hex(0x4a4d50)); g.rotateY(yaw); g.translate(cx, 0.1, cz); add('road', drape(g)); }
-    const cs = Math.cos(yaw), sn = Math.sin(yaw);
-    for (let k = 0; k < n; k++) {
-      const u = (rng() - 0.5) * (w - 6), v = Math.round(((rng() - 0.5) * (d - 6)) / 6) * 6, x = cx + u * cs + v * sn, z = cz - u * sn + v * cs;
-      const col = hex([0xf2f2f2, 0x202225, 0x9aa3ab, 0xb3121b, 0x14276b, 0x5b6770, 0xc9c2b0][(rng() * 7) | 0]);
-      add('solid', at(B(1.8, 0.75, 4.3, 0, 0.25, 0, col), x, z, yaw + Math.PI / 2, 0));
-      add('glass', at(B(1.6, 0.55, 2.2, 0, 1.0, -0.2, hex(0x26303a)), x, z, yaw + Math.PI / 2, 0));
-    }
-    keep(cx, cz, Math.hypot(w, d) / 2 + 4);
-  };
-  for (let k = 0; k < 3; k++) { const p = site(110, 420, 70); if (p) carPark(p.x, p.z, 120, 70, rng() * Math.PI, Q === 2 ? 160 : 90); }
   // ---------------------------------------------------------------- per-circuit identity
   const pine = (x, z, s, c) => { // a tall narrow tree (Lombardy poplar / Italian stone pine column)
     add('leaf', at(paint(new THREE.CylinderGeometry(0.25 * s, 0.35 * s, 3 * s, 5).translate(0, 1.5 * s, 0), hex(0x5a4330)), x, z));
@@ -7251,16 +7255,6 @@ function buildVenue(world, track, terrain, opts) {
       keep(p.x, p.z, 32);
     }
     { const p = site(200, 600, 20); if (p) { add('solid', at(B(14, 7, 14, 0, 0, 0, hex(0xe7e2d6)), p.x, p.z)); add('solid', at(B(10, 3.5, 10, 0, 7, 0, hex(0xefeae0)), p.x, p.z)); add('glass', at(B(10.2, 1.6, 10.2, 0, 8, 0, hex(0x2c3a46)), p.x, p.z)); keep(p.x, p.z, 16); } }
-    // the campsite: rows of tents and caravans
-    for (let k = 0; k < 2; k++) {
-      const p = site(160, 600, 70); if (!p) break; const yaw = rng() * Math.PI;
-      for (let t = 0; t < (Q === 2 ? 140 : 70); t++) {
-        const u = (rng() - 0.5) * 110, v = (rng() - 0.5) * 70, x = p.x + u * Math.cos(yaw) + v * Math.sin(yaw), z = p.z - u * Math.sin(yaw) + v * Math.cos(yaw);
-        if (rng() < 0.25) add('solid', at(B(2.3, 2.4, 6, 0, 0.3, 0, hex(0xf0efe8)), x, z, yaw + rng() * 0.3));
-        else { const tent = new THREE.CylinderGeometry(0.01, 2.2, 1.8, 4, 1); tent.rotateY(Math.PI / 4); tent.scale(1, 1, 1.4); tent.translate(0, 0.9, 0); add('fabric', at(paint(tent, hex([0xe85c41, 0x2f7bff, 0x21c55d, 0xf5c518, 0x8e24aa, 0xff7a1a][(rng() * 6) | 0])), x, z, rng() * 6)); }
-      }
-      keep(p.x, p.z, 70);
-    }
     // round hay bales in the fields and hedgerows along field edges
     for (let k = 0; k < (Q === 2 ? 220 : 110); k++) {
       const p = site(90, 900, 3, 40); if (!p) continue;
@@ -7278,19 +7272,6 @@ function buildVenue(world, track, terrain, opts) {
         const x = p.x + (rng() - 0.5) * 80, z = p.z + (rng() - 0.5) * 80; if (!free(x, z, 8, 60)) continue;
         house(x, z, rng() * Math.PI, 9 + rng() * 5, 11 + rng() * 6, 5 + rng() * 2, hex(rng() < 0.5 ? 0xece8df : 0x9b8f80), hex(0x2f3338), 0.9);
         keep(x, z, 10);
-      }
-    }
-    // hillside spectator terraces above the run-off (Eau Rouge, Pouhon, Blanchimont)
-    for (const c of track.corners) {
-      if (c.R > 160) continue;
-      const sgn = -c.dir;
-      for (let s = c.apex * DS - 40; s < c.apex * DS + 60; s += 4) {
-        const i = Math.floor(track.wrapS(s) / DS) % N, wall = sgn > 0 ? track.wallR[i] : track.wallL[i];
-        for (let r = 0; r < 4; r++) {
-          const [x, z, h] = track.pointAt(track.wrapS(s), sgn * (wall + 32 + r * 3)); if (!sceneryClear(track, x, z, 1.5) || sgn === P.side && track.pitProg(s) >= 0) continue;
-          add('solid', at(B(4, 0.5, 2.8, 0, 0, 0, hex(0x8a8f86)), x, z, -h, r * 0.5));
-          if (rng() < 0.7) crowdPts.push([x, H(x, z) + r * 0.5 + 0.5, z, -h + Math.PI / 2 * sgn]);
-        }
       }
     }
   } else if (style === 'suzuka') {
@@ -7359,14 +7340,6 @@ function buildVenue(world, track, terrain, opts) {
     // billboard towers beside the approaches
     for (let k = 0; k < 10; k++) { const p = site(60, 260, 6); if (!p) break; const yaw = rng() * Math.PI;
       add('metal', at(B(0.8, 14, 0.8, 0, 0, 0, hex(0x777c82)), p.x, p.z, yaw)); add('solid', at(B(12, 5, 0.4, 0, 14, 0, hex([0xe10600, 0x1e5bd8, 0xf5c518, 0x1f8f4e][(rng() * 4) | 0])), p.x, p.z, yaw)); keep(p.x, p.z, 8); }
-  }
-  // ---------------------------------------------------------------- crowds on banks and terraces (one instanced mesh)
-  if (crowdPts.length) {
-    const geo = new THREE.BoxGeometry(0.45, 1.65, 0.32); geo.translate(0, 0.82, 0);
-    const n = Math.min(crowdPts.length, Q === 2 ? 9000 : Q === 1 ? 5000 : 2000);
-    const im = new THREE.InstancedMesh(geo, animateCrowd(new THREE.MeshStandardMaterial({ roughness: 0.9 })), n), m4 = new THREE.Matrix4(), q4 = new THREE.Quaternion(), up = new THREE.Vector3(0, 1, 0), v3 = new THREE.Vector3(), one = new THREE.Vector3(1, 1, 1), col = new THREE.Color();
-    for (let k = 0; k < n; k++) { const [x, y, z, yaw] = crowdPts[k]; m4.compose(v3.set(x, y, z), q4.setFromAxisAngle(up, yaw), one); im.setMatrixAt(k, m4); im.setColorAt(k, col.setHex([0xe53935, 0x1e88e5, 0xfdd835, 0xffffff, 0x222222, 0xff7043, 0x43a047, 0x8e24aa][(rng() * 8) | 0]).lerp(CROWD_GREY, 0.35)); }
-    im.count = n; world.add(im);
   }
   // ---------------------------------------------------------------- merge the batches
   const matFor = { solid: mats.solid, metal: mats.metal, glass: mats.glass, road: mats.road, fabric: mats.fabric, leaf: mats.leaf, fence: new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.6, metalness: 0.5, transparent: true, opacity: 0.55, side: THREE.DoubleSide, depthWrite: false }) };
@@ -7604,14 +7577,14 @@ function buildTrack(scene, track, T, opts) {
     const g = ribbon(track, 0, N, 2, (i) => {
       if (!track.hasPaintedRunoff(i, sgn)) return null;
       // (the paint stops short of the barrier on the inside of a tight bend)
-      const reach = Math.min(sgn > 0 ? track.wallR[i] : track.wallL[i], sgn > 0 ? track.reachR[i] : track.reachL[i]) - 0.3, d0 = track.hw[i] + (arr[i] ? 1.3 : 0), d1 = Math.min(track.hw[i] + SIM.GREEN_RUNOFF.width, reach);
+      const reach = Math.min(sgn > 0 ? track.wallR[i] : track.wallL[i], sgn > 0 ? track.reachR[i] : track.reachL[i]) - 0.3, d0 = track.hw[i] + (arr[i] ? 1.3 : 0), d1 = Math.min((sgn > 0 ? track.greenR : track.greenL)[i], reach);
       return d1 > d0 + 0.2 ? [sgn * d0, sgn * d1, 0.006] : null;
     }, { flat: true, vScale: 6 });
     G.add(Object.assign(new THREE.Mesh(g, paintMat), { receiveShadow: true, userData: { kind: 'paint' } }));
     const gr = sgn > 0 ? track.gravelR : track.gravelL; const wall = sgn > 0 ? track.wallR : track.wallL;
     T.gravel.repeat.set(1, 1);
     const reachA = sgn > 0 ? track.reachR : track.reachL, gEnd = (i) => Math.min(wall[i] - 0.4, reachA[i] - 1);
-    const g2 = ribbon(track, 0, N, 2, (i) => gr[i] && gEnd(i) > track.hw[i] + 6 && !(sgn === track.pitAt(i*SIM.DS).side && track.pitProg(i * SIM.DS) >= 0) ? [sgn * (track.hw[i] + 5), sgn * gEnd(i), 0.01] : null, { flat: true, vScale: 8 });
+    const g2 = ribbon(track, 0, N, 2, (i) => gr[i] && gEnd(i) > (sgn > 0 ? track.greenR : track.greenL)[i] + 0.5 && !(sgn === track.pitAt(i*SIM.DS).side && track.pitProg(i * SIM.DS) >= 0) ? [sgn * ((sgn > 0 ? track.greenR : track.greenL)[i] + 0.05), sgn * gEnd(i), 0.01] : null, { flat: true, vScale: 8 });
     G.add(Object.assign(new THREE.Mesh(g2, gravelMat), { receiveShadow: true, userData: { kind: 'gravel' } }));
   }
   // ---- pit lane surfaces ----
@@ -7714,11 +7687,23 @@ function buildTrack(scene, track, T, opts) {
   const concrete = new THREE.MeshStandardMaterial({ color: 0xbfc3c8, roughness: .9 });
   const fenceMat = new THREE.MeshStandardMaterial({ map: T.fence, transparent: true, alphaTest: 0.35, side: THREE.DoubleSide, roughness: .6, metalness: .4, depthWrite: true });
   T.ads.repeat.set(1, 1); T.fence.repeat.set(1, 1);
+  const railTex = canvasTex(256,128,(g,w,h)=>{
+    g.fillStyle='#7b8184';g.fillRect(0,0,w,h);
+    for(const y of [25,76]){const grad=g.createLinearGradient(0,y,0,y+31);grad.addColorStop(0,'#d7dde0');grad.addColorStop(.35,'#adb6bc');grad.addColorStop(.65,'#727e87');grad.addColorStop(1,'#c1c8cc');g.fillStyle=grad;g.fillRect(0,y,w,31);}
+    g.fillStyle='#505a60';for(const x of [18,142])for(const y of [40,91]){g.beginPath();g.arc(x,y,3,0,Math.PI*2);g.fill();}
+  });
+  const tyreTex = canvasTex(256,128,(g,w,h)=>{
+    g.fillStyle='#17191a';g.fillRect(0,0,w,h);
+    for(let r=0;r<3;r++)for(let c=-1;c<8;c++){const x=c*40+(r%2)*20,y=20+r*43;g.fillStyle='#313638';g.beginPath();g.ellipse(x,y,22,19,0,0,Math.PI*2);g.fill();g.strokeStyle='#101314';g.lineWidth=5;g.stroke();g.strokeStyle='#555b5c';g.lineWidth=2;g.beginPath();g.ellipse(x,y,13,10,0,0,Math.PI*2);g.stroke();}
+  });
+  for(const tex of [railTex,tyreTex]){tex.wrapS=THREE.RepeatWrapping;tex.repeat.x=32;}
+  const railMat=new THREE.MeshStandardMaterial({map:railTex,metalness:.65,roughness:.52,side:THREE.DoubleSide});
+  const tyreMat=new THREE.MeshStandardMaterial({map:tyreTex,roughness:.96,side:THREE.DoubleSide});
   const postPts = [];
-  const wallStrip = (getD, i0, i1, height, fence) => {
+  const wallStrip = (getD, i0, i1, height, fence, roadside = false) => {
     // getD(i) -> lateral offset of the wall face (signed); builds inner face, top and fence
     const posF = [], uvF = [], posT = [], posFe = [], uvFe = [], posO = [], uvO = [];
-    let s = 0, prev = null; const idxF = [], idxT = [], idxFe = [];
+    let s = 0, prev = null; const idxT = [], idxFe = [], faces=[[],[],[]];
     let n = 0;
     for (let k = i0; k <= i1; k += 2) {
       const i = ((k % N) + N) % N; const d = getD(i); if (d == null) { prev = null; continue; }
@@ -7730,11 +7715,21 @@ function buildTrack(scene, track, T, opts) {
       posO.push(x2, l2, z2, x2, height + l2, z2); uvO.push(-uu, 0, -uu, 1);
       posT.push(x, height + l1, z, x2, height + l2, z2);
       if (fence) { posFe.push(x2, height + l2, z2, x2, height + 3.4 + l2, z2); uvFe.push(s / 3, 0, s / 3, 3.4 / 3); if (n % 3 === 0) postPts.push([x2, z2, l2]); }
-      if (prev) { const a = (n - 1) * 2; idxF.push(a, a + 2, a + 1, a + 1, a + 2, a + 3); idxT.push(a, a + 2, a + 1, a + 1, a + 2, a + 3); if (fence) idxFe.push(a, a + 2, a + 1, a + 1, a + 2, a + 3); }
+      if (prev) {
+        const a=(n-1)*2, ix=[a,a+2,a+1,a+1,a+2,a+3];idxT.push(...ix);if(fence)idxFe.push(...ix);
+        // Outside tight corners: tyre-faced protection; open straights: corrugated metal. Keep concrete advertising
+        // panels at intervals and the functional pit/bridge walls. All finishes share the same collision face.
+        const type=roadside&&Math.abs(d)>track.hw[i]+5?(track.kappa[i]*sg < -1/220?2:Math.abs(track.kappa[i])<1/500&&Math.floor(i*SIM.DS/160)%4?1:0):0;
+        faces[type].push(...ix);
+      }
       prev = [x, z]; n++;
     }
     const mk = (pos, uv, idx, mat) => { const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); if (uv) g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx); g.computeVertexNormals(); const m = new THREE.Mesh(g, mat); m.castShadow = Q === 2; m.receiveShadow = true; G.add(m); return m; };
-    mk(posF, uvF, idxF, wallMat); mk(posO, uvO, idxF, wallMat);
+    const skin=(pos,uv)=>{
+      const all=faces[0].concat(faces[1],faces[2]), mesh=mk(pos,uv,all,[wallMat,railMat,tyreMat]);
+      let offset=0;for(let k=0;k<3;k++){if(faces[k].length)mesh.geometry.addGroup(offset,faces[k].length,k);offset+=faces[k].length;}
+    };
+    skin(posF,uvF);skin(posO,uvO);
     mk(posT, null, idxT, concrete);
     if (fence && posFe.length) mk(posFe, uvFe, idxFe, fenceMat).castShadow = false;
   };
@@ -7742,8 +7737,8 @@ function buildTrack(scene, track, T, opts) {
   const inPitI = (i) => track.pitProg(i * SIM.DS) >= 0;
   // left/right walls (skip pit side within pit region)
   // (none on the open inside of a hairpin, where a barrier at that offset would fold back across the road)
-  wallStrip((i) => (track.pitAt(i*SIM.DS).side < 0 && inPitI(i)) || !track.barrierAt(i, -1) ? null : -track.wallL[i], 0, N, 1.05, true);
-  wallStrip((i) => (track.pitAt(i*SIM.DS).side > 0 && inPitI(i)) || !track.barrierAt(i, 1) ? null : track.wallR[i], 0, N, 1.05, true);
+  wallStrip((i) => (track.pitAt(i*SIM.DS).side < 0 && inPitI(i)) || !track.barrierAt(i, -1) ? null : -track.wallL[i], 0, N, 1.05, true, true);
+  wallStrip((i) => (track.pitAt(i*SIM.DS).side > 0 && inPitI(i)) || !track.barrierAt(i, 1) ? null : track.wallR[i], 0, N, 1.05, true, true);
   // The pit-lane barriers; entry and exit stay open.
   for(const P of [track.pit]) {
     const side=P.side, i0=Math.floor(P.entry0/SIM.DS),i1=i0+Math.ceil(P.len/SIM.DS);
@@ -7909,85 +7904,13 @@ function buildTrack(scene, track, T, opts) {
     G.add(new THREE.Mesh(mergeGeoms(metal), new THREE.MeshStandardMaterial({ color: 0x9aa1a8, roughness: .5, metalness: .5 })));
     G.add(new THREE.Mesh(mergeGeoms(kit), new THREE.MeshStandardMaterial({ color: 0x23262b, roughness: .6 })));
   }
-  // ---- grandstands, pit building ----
-  buildGrandstands(G, track, T, opts, objs);
+  // ---- essential pit buildings ----
+  buildPitInfrastructure(G, track, T, opts, objs);
   return { group: G, objs };
 }
 
-const CROWD_GREY = new THREE.Color(0x6b6e72);
-function buildGrandstands(G, track, T, opts, objs) {
-  const hw = track.halfW, P = track.pit, side = P.side, Q = opts.quality;
-  const crowdMax = Q === 2 ? 16000 : Q === 1 ? 9000 : 3500;
-  const crowdGeo = new THREE.BoxGeometry(0.45, 0.75, 0.35); crowdGeo.translate(0, 0.38, 0);
-  const crowd = new THREE.InstancedMesh(crowdGeo, animateCrowd(new THREE.MeshStandardMaterial({ roughness: .9 })), crowdMax);
-  let crowdN = 0; const m4 = new THREE.Matrix4(); const colr = new THREE.Color(); const rng = seededRand(19);
-  const palette = [0xe53935, 0x1e88e5, 0xfdd835, 0xffffff, 0x222222, 0xff7043, 0x43a047, 0x8e24aa, 0xc9a24a, 0x90a4ae];
-  const standMat = new THREE.MeshStandardMaterial({ color: 0x8d949c, roughness: .9 });
-  const seatMat = new THREE.MeshStandardMaterial({ color: 0x2a4f8a, roughness: .7 });
-  const roofMat = new THREE.MeshStandardMaterial({ color: 0xe9ecef, roughness: .5, metalness: .2 });
-  let fasciaMat = null; const seatMats = {};
-  // A stand from s0 to s1 at lateral offset dOff (signed, away from the track) follows the circuit in short straight
-  // pieces; a piece whose footprint (seats, back wall and roof) would reach the road, a barrier or the pit lane is
-  // left out, so a stand never cuts across a corner the way one long straight block would.
-  const stand = (s0, s1, dOff, rows, roof, seatColor) => {
-    const span = track.wrapS(s1 - s0), n = Math.max(1, Math.ceil(span / 22)), sgn = Math.sign(dOff), depth = rows * 0.9;
-    for (let k = 0; k < n; k++) {
-      const [x0, z0] = track.pointAt(s0 + span * k / n, dOff), [x1, z1] = track.pointAt(s0 + span * (k + 1) / n, dOff);
-      const len = Math.hypot(x1 - x0, z1 - z0); if (len < 4) continue;
-      const ux = (x1 - x0) / len, uz = (z1 - z0) / len; let ok = true;
-      for (let a = 0; a <= 1.0001 && ok; a += 1 / Math.ceil(len / 3)) for (const v of [-1.5, depth / 2, depth + 2]) {
-        const x = x0 + (x1 - x0) * a - uz * sgn * v, z = z0 + (z1 - z0) * a + ux * sgn * v;
-        if (!sceneryClear(track, x, z, 1)) { ok = false; break; }
-      }
-      if (ok) standPiece(x0, z0, x1, z1, sgn, rows, roof, seatColor);
-    }
-  };
-  const standPiece = (x0, z0, x1, z1, sgn, rows, roof, seatColor) => {
-    const len = Math.hypot(x1 - x0, z1 - z0); const ang = Math.atan2(z1 - z0, x1 - x0);
-    const g = new THREE.Group(); g.position.set((x0 + x1) / 2, 0, (z0 + z1) / 2); g.rotation.y = -ang;
-    // local frame: +x along track, +z = right of track direction; away from track = sgn*z
-    const depth = rows * 0.9; const stepsA = [], stepsB = [];
-    for (let r = 0; r < rows; r++) {
-      (r % 2 ? stepsA : stepsB).push(xf(new THREE.BoxGeometry(len, 0.55 * (r + 1), 0.9), { p: [0, 0.55 * (r + 1) / 2, sgn * (r * 0.9 + 0.45)] }));
-      // crowd on each row
-      const per = Math.floor(len / 0.62);
-      for (let k = 0; k < per && crowdN < crowdMax; k++) {
-        if (rng() < 0.12) continue;
-        const lx = -len / 2 + (k + 0.5) * len / per + (rng() - .5) * .15;
-        const v = new THREE.Vector3(lx, 0.55 * (r + 1), sgn * (r * 0.9 + 0.45));
-        v.applyAxisAngle(new THREE.Vector3(0, 1, 0), -ang); v.add(g.position);
-        m4.compose(v, new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), -ang + (rng() - .5) * .4), new THREE.Vector3(1, 0.85 + rng() * .3, 1));
-        crowd.setMatrixAt(crowdN, m4); crowd.setColorAt(crowdN, colr.setHex(palette[(rng() * palette.length) | 0]).lerp(CROWD_GREY, 0.38).multiplyScalar(0.62 + rng() * .3)); crowdN++;
-      }
-    }
-    const mA = new THREE.Mesh(mergeGeoms(stepsA), standMat); mA.receiveShadow = true; g.add(mA);
-    const mB = new THREE.Mesh(mergeGeoms(stepsB), seatColor ? (seatMats[seatColor] || (seatMats[seatColor] = new THREE.MeshStandardMaterial({ color: seatColor, roughness: .7 }))) : seatMat); mB.receiveShadow = true; g.add(mB);
-    const back = new THREE.Mesh(new THREE.BoxGeometry(len, 0.55 * rows + 3, 0.4), standMat); back.position.set(0, (0.55 * rows + 3) / 2, sgn * (depth + 0.2)); g.add(back);
-    if (roof) {
-      const rf = new THREE.Mesh(new THREE.BoxGeometry(len, 0.3, depth + 3), roofMat); rf.position.set(0, 0.55 * rows + 5, sgn * (depth / 2 + 0.5)); rf.rotation.x = sgn * 0.08; rf.castShadow = true; g.add(rf);
-      const cols = []; for (let k = 0; k <= len; k += 18) cols.push(xf(new THREE.BoxGeometry(0.3, 0.55 * rows + 5, 0.3), { p: [-len / 2 + k, (0.55 * rows + 5) / 2, sgn * (depth + 0.3)] }));
-      g.add(new THREE.Mesh(mergeGeoms(cols), roofMat));
-      // sponsor fascia
-      const fas = new THREE.Mesh(new THREE.PlaneGeometry(len, 1.6), fasciaMat || (fasciaMat = new THREE.MeshStandardMaterial({ map: T.banner('PANORAMIC SYSTEMS', '#ffffff', '#2c3036', 2048, 160), roughness: .6 })));
-      fas.position.set(0, 0.55 * rows + 4.2, sgn * -1.0); if (sgn > 0) fas.rotation.y = Math.PI; g.add(fas);
-    }
-    G.add(g);
-  };
-  const L = track.length;
-  // main grandstand opposite the pits
-  const wl = (s) => { const i = Math.floor(track.wrapS(s) / SIM.DS); return -side > 0 ? track.wallR[i] : track.wallL[i]; };
-  stand(L - 380, L - 60, -side * (wl(L - 200) + 4), 26, true);
-  stand(L - 40, 260, -side * (wl(100) + 4), 26, true, 0x8a1f2a);
-  // grandstands at major corners (outside)
-  for (const c of track.corners) {
-    if (!c.brakeZone) continue;
-    const sgn = -c.dir; const i = c.apex; const s = i * SIM.DS;
-    const wall = sgn > 0 ? track.wallR[i] : track.wallL[i];
-    if (sgn === track.pitAt(s).side && track.pitProg(s) >= 0) continue;
-    // never on the approaches to an overpass (the stand would stand on the bridge or in the cutting)
-    const op = track.overpass; if (op && [op.lowS, op.highS].some(o => Math.abs(track.dS(o, s - 90)) < 240)) continue;
-    stand(s - 140, s - 40, sgn * (wall + 5), 16, rng() < 0.6, rng() < .5 ? 0x2a4f8a : 0x2f6b3a);
-  }
+function buildPitInfrastructure(G, track, T, opts, objs) {
+  const P=track.pit, side=P.side;
   // The shared garages behind the pit lane.
   for(const P of [track.pit]) {
     const side=P.side;
@@ -8032,19 +7955,7 @@ function buildGrandstands(G, track, T, opts, objs) {
       const back = new THREE.Mesh(new THREE.BoxGeometry(Math.min(70, span * 0.55) + 0.6, 3.8, 0.4), new THREE.MeshStandardMaterial({ color: 0x1a1d22, roughness: .6, metalness: .4 }));
       const [bx, bz] = track.pointAt(sm, side * (P.outerWall + 1.65)); back.position.set(bx, 11.6, bz); back.rotation.y = -h; G.add(back);
     }
-    // roof terrace crowd
-    const [xa, za] = track.pointAt(s0 + 10, side * (P.outerWall + 3)), [xb, zb] = track.pointAt(s1 - 10, side * (P.outerWall + 3));
-    const len = Math.hypot(xb - xa, zb - za); const ang = Math.atan2(zb - za, xb - xa);
-    for (let k = 0; k < len / 0.7 && crowdN < crowdMax; k++) for (let r = 0; r < 3; r++) {
-      if (rng() < .3) continue;
-      const t = k * 0.7 / len; const ox = Math.sin(ang) * r * 0.8 * -side, oz = -Math.cos(ang) * r * 0.8 * -side;
-      m4.compose(new THREE.Vector3(xa + (xb - xa) * t + ox * 0, 9, za + (zb - za) * t + oz * 0 + 0), new THREE.Quaternion(), new THREE.Vector3(1, 1, 1));
-      const v = new THREE.Vector3(xa + (xb - xa) * t, 9, za + (zb - za) * t); const nrm = new THREE.Vector3(-Math.sin(ang), 0, Math.cos(ang)).multiplyScalar(side * (r * 0.8 + 0.5)); v.add(nrm);
-      m4.makeTranslation(v.x, v.y, v.z); crowd.setMatrixAt(crowdN, m4); crowd.setColorAt(crowdN, colr.setHex(palette[(rng() * palette.length) | 0]).lerp(CROWD_GREY, 0.38).multiplyScalar(0.75)); crowdN++;
-    }
   }
-  crowd.count = crowdN; crowd.instanceMatrix.needsUpdate = true; if (crowd.instanceColor) crowd.instanceColor.needsUpdate = true;
-  G.add(crowd);
   // flag poles with team banners near the main straight
   {
     const L = track.length;
@@ -8061,70 +7972,201 @@ function buildGrandstands(G, track, T, opts, objs) {
   }
 }
 
+// One deterministic forest system for all circuits. Geometry/materials are shared; cells own immutable instance
+// buffers for three representations. Camera movement only changes visibility/LOD, never allocates tree meshes.
 function buildTrees(scene, track, inLake, opts) {
-  const Q = opts.quality, env = R.env, canyon = env.style === 'canyon';
-  // trees per circuit: dense woods at Spa, Monza and Suzuka, open country at Silverstone, a few palms in Bahrain;
-  // planted within 1.6 km of the circuit, where they are seen
-  const count = Math.round((Q === 2 ? 14000 : Q === 1 ? 8000 : 3000) * (env.forest ?? 1));
-  const heightAt = R.heightAt || (() => 0), distAt = R.distAt;
-  const paint = (g, c) => { const n = g.attributes.position.count; const a = new Float32Array(n * 3); const p = g.attributes.position; for (let k = 0; k < n; k++) { const shade = 0.82 + 0.25 * Math.min(1, Math.max(0, (p.getY(k) - 2) / 12)); a[k * 3] = c[0] * shade; a[k * 3 + 1] = c[1] * shade; a[k * 3 + 2] = c[2] * shade; } g.setAttribute('color', new THREE.BufferAttribute(a, 3)); return g; };
-  // spruce: four tiers of drooping cones
-  const trunk = new THREE.CylinderGeometry(0.28, 0.45, 3.2, 6); trunk.translate(0, 1.6, 0);
-  const tiers = [[3.4, 5.0, 4.6], [2.8, 4.4, 7.2], [2.1, 3.8, 9.6], [1.3, 3.2, 11.8]].map(([r, h, y]) => { const c = new THREE.ConeGeometry(r, h, 8, 1, true); c.translate(0, y, 0); return paint(c, [0.11, 0.23, 0.12]); });
-  const spruce = mergeGeoms([paint(trunk, [0.32, 0.22, 0.15]), ...tiers]);
-  // broadleaf: lumpy icosahedron crown
-  const bt = new THREE.CylinderGeometry(0.3, 0.42, 3.6, 6); bt.translate(0, 1.8, 0);
-  const crown = new THREE.IcosahedronGeometry(3.6, 1); { const p = crown.attributes.position; const r2 = seededRand(8); for (let k = 0; k < p.count; k++) { const f = 0.85 + r2() * 0.3; p.setXYZ(k, p.getX(k) * f, p.getY(k) * f * 0.9, p.getZ(k) * f); } crown.translate(0, 6.3, 0); }
-  const broad = mergeGeoms([paint(bt, [0.34, 0.25, 0.17]), paint(crown.toNonIndexed(), canyon ? [0.3, 0.36, 0.2] : [0.17, 0.3, 0.11])]);
-  // date palms in the desert: a tall bare trunk and a flat crown of fronds
-  let palm = null;
-  if (env.desert) {
-    const pt = new THREE.CylinderGeometry(0.22, 0.34, 9, 6); pt.translate(0, 4.5, 0);
-    const fr = new THREE.ConeGeometry(3.6, 1.6, 9, 1, true); fr.rotateX(Math.PI); fr.translate(0, 9.4, 0);
-    palm = mergeGeoms([paint(pt, [0.45, 0.36, 0.25]), paint(fr.toNonIndexed(), [0.3, 0.4, 0.16])]);
-  }
-  const mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .92, flatShading: true, side: env.desert ? THREE.DoubleSide : THREE.FrontSide });
-  // forest density: clustered with noise so the hills get woods and clearings
-  const rng = seededRand(23);
-  const CH = 520, chunks = new Map();
-  const put = (kind, x, y, z, s, rot, colr) => {
-    const key = kind + ':' + Math.floor(x / CH) + ',' + Math.floor(z / CH);
-    let c = chunks.get(key); if (!c) { c = { kind, list: [] }; chunks.set(key, c); }
-    c.list.push([x, y, z, s, rot, colr]);
+  const Q = opts.quality, style = track.def.id, env = R.env, desert = !!env.desert;
+  const themes = {
+    monza: { density: 1, broad: .82, color: 0x54743b, height: 1.12 },
+    silverstone: { density: .86, broad: .72, color: 0x627d42, height: .95 },
+    spa: { density: 1.08, broad: .28, color: 0x3d6448, height: 1.2 },
+    suzuka: { density: 1, broad: .56, color: 0x55754b, height: 1.04 },
+    bahrain: { density: .23, broad: .7, color: 0x7c8050, height: .75 },
+    interlagos: { density: 1.04, broad: .92, color: 0x497943, height: 1.12 }
   };
-  let n = 0, tries = 0;
-  while (n < count && tries < count * 40) {
-    tries++;
-    const x = R.center.x - 2500 + rng() * 5000, z = R.center.z - 2300 + rng() * 4600;
-    const dT = distAt ? distAt(x, z) : 1e9; if (dT < 40 || dT > 1600) continue;
-    // woods: dense where the woods pattern is high, the odd lone tree elsewhere
-    // the more wooded the circuit's setting, the lower the woods threshold (Spa nearly all forest, Silverstone open)
-    const thr = 0.34 - 0.2 * (env.forest ?? 1), forest = woodsAt(x, z), w = smooth01(thr, thr + 0.34, forest);
-    if (rng() > 0.03 + w * w * 1.1) continue;
-    if (inLake(x, z)) continue;
-    if (CASTLE && Math.hypot(x - CASTLE.x, z - CASTLE.z) < 230) continue;
-    const y = heightAt(x, z); if (y > 420) continue;
-    // exact clearance from the circuit for trees near it
-    if (dT < 140) {
-      const proj = { i: 0, d: 0, s: 0 }; track.project(x, z, null, proj); const ad = Math.abs(proj.d); const wall = proj.d > 0 ? track.wallR[proj.i] : track.wallL[proj.i];
-      if (ad < wall + 30) continue;
-      if (track.pitProg(proj.s) >= 0 && ad < 90) continue;
-      if (Math.abs(track.dS(0, proj.s)) < 420 && ad < 90) continue;
+  const theme = themes[style] || themes.monza, rng = seededRand(930 + SIM.CIRCUITS.indexOf(track.def));
+  const group = new THREE.Group(); group.name = 'Layered procedural forest'; scene.add(group);
+  const colorize = (geo, hex, shade = true) => {
+    const p = geo.attributes.position, color = new THREE.Color(hex), a = new Float32Array(p.count * 3);
+    for (let i = 0; i < p.count; i++) { const k = shade ? .68 + .34 * Math.min(1, Math.max(0, p.getY(i) / 14)) : 1; a[i*3]=color.r*k;a[i*3+1]=color.g*k;a[i*3+2]=color.b*k; }
+    geo.setAttribute('color',new THREE.BufferAttribute(a,3)); return geo;
+  };
+  const merge = parts => { const g = mergeGeoms(parts); parts.forEach(p=>p.dispose()); return g; };
+  const shapes = new Map();
+  function treeGeometry(kind, detail) {
+    const key = kind + ':' + detail; if(shapes.has(key))return shapes.get(key);
+    const parts=[], wood=desert?0x746044:0x65503c, leaf=kind===1?0x42674b:theme.color;
+    const trunk=(h,r=.24,x=0,z=0)=>{const g=new THREE.CylinderGeometry(r*.7,r,h,detail?8:5);g.translate(x,h/2,z);parts.push(colorize(g,wood));};
+    const crown=(x,y,z,r,sx=1,sy=1,sz=1)=>{const g=new THREE.IcosahedronGeometry(r,detail?1:0);const p=g.attributes.position;
+      for(let i=0;i<p.count;i++){const v=.92+.12*Math.sin(p.getX(i)*2.3+p.getZ(i)*1.7+kind);p.setXYZ(i,p.getX(i)*v*sx,p.getY(i)*sy,p.getZ(i)*v*sz);}g.translate(x,y,z);g.computeVertexNormals();parts.push(colorize(g,leaf));};
+    if(kind===1){
+      trunk(11,.3); const n=detail?6:3;
+      for(let i=0;i<n;i++){const u=i/(n-1),r=3.7*(1-u)+1.0;const g=new THREE.ConeGeometry(r,detail?5:6,detail?9:6,1,true);g.translate(.2*Math.sin(i*2),4+u*9,.18*Math.cos(i));parts.push(colorize(g,leaf));}
+    } else if(kind===4){
+      trunk(10,.3); const n=detail?9:6;
+      for(let i=0;i<n;i++){const a=i/n*Math.PI*2,g=new THREE.BufferGeometry();const c=Math.cos(a),s=Math.sin(a);
+        g.setAttribute('position',new THREE.Float32BufferAttribute([0,10.5,0,c*2-s*.8,11.4,s*2+c*.8,c*4.5,9.4,s*4.5,0,10.5,0,c*4.5,9.4,s*4.5,c*2+s*.8,11.4,s*2-c*.8],3));g.computeVertexNormals();parts.push(colorize(g,leaf));}
+    } else if(kind===3){
+      trunk(4,.3); crown(0,5.2,0,3.4,1.4,.45,1.25); if(detail){crown(-2.8,5,-.5,2,1,.5,1);crown(2.5,5.6,.5,2.3,1,.5,1);}
+    } else {
+      trunk(kind===2?7:8,.32);
+      const n=detail?7:3;
+      for(let i=0;i<n;i++){const a=i*2.399,r=(i%3)*1.25;const y=kind===2?6+(i%3)*1.7:7.8+(i%3)*1.6;
+        crown(Math.cos(a)*r,y,Math.sin(a)*r,detail?2.7:3.3,1,kind===2?.72:1,1);}
+      if(detail)for(let i=0;i<4;i++){const a=i*1.7,g=new THREE.CylinderGeometry(.07,.13,3.4,5);g.rotateZ(.65);g.rotateY(a);g.translate(Math.cos(a)*.8,5.6,Math.sin(a)*.8);parts.push(colorize(g,wood));}
     }
-    const s = (0.8 + rng() * 0.7 + w * 0.6) * (canyon ? 0.7 : 1); const isBroad = y < 120 && rng() < (env.broadleaf ?? 0.32);
-    const tint = 0.8 + rng() * 0.35, hue = rng();
-    put(isBroad ? 'b' : 's', x, y - 0.4, z, s, rng() * 6.28, [tint * (0.9 + hue * 0.25), tint, tint * (0.9 + (1 - hue) * 0.15)]);
-    n++;
+    const geo=merge(parts);shapes.set(key,geo);return geo;
   }
-  const group = new THREE.Group(); const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), up = new THREE.Vector3(0, 1, 0), v3 = new THREE.Vector3(), sc = new THREE.Vector3(), cc = new THREE.Color();
-  for (const c of chunks.values()) {
-    const im = new THREE.InstancedMesh(palm || (c.kind === 'b' ? broad : spruce), mat, c.list.length);
-    c.list.forEach(([x, y, z, s, rot, col], k) => { m4.compose(v3.set(x, y, z), q.setFromAxisAngle(up, rot), sc.set(s, s * (0.85 + (rot % 1) * 0.4), s)); im.setMatrixAt(k, m4); im.setColorAt(k, cc.setRGB(col[0], col[1], col[2])); });
-    im.instanceMatrix.needsUpdate = true; im.computeBoundingSphere(); im.castShadow = Q === 2; im.receiveShadow = false;
-    group.add(im);
+  const nearMat = new THREE.MeshStandardMaterial({ vertexColors:true, roughness:.94, side:THREE.DoubleSide });
+  const midMat = new THREE.MeshLambertMaterial({ vertexColors:true, side:THREE.DoubleSide });
+  const farShapes = new Map();
+  function farTree(kind) {
+    if (farShapes.has(kind)) return farShapes.get(kind);
+    const dims = [[10.8,14],[7.6,15.5],[11,12],[10.5,6.8],[9.2,11.5]][kind];
+    const atlas = canvasTex(256,512,(g,w,h)=>{
+      g.clearRect(0,0,w,h); const r=seededRand(327+kind), leaf=new THREE.Color(kind===1?0x42674b:theme.color);
+      g.strokeStyle=desert?'#66513a':'#564332'; g.lineWidth=w*.042;
+      g.beginPath();g.moveTo(w*.5,h);g.lineTo(w*.5,h*(kind===4?.12:kind===3?.35:.42));g.stroke();
+      if(kind===4){
+        // Bent fronds match the palm's 3D silhouette; arid distance trees never become tall broadleaf trees.
+        for(let i=0;i<9;i++){const a=i/9*Math.PI*2,x=.5+Math.cos(a)*.46,y=.16+Math.sin(a)*.12;
+          g.strokeStyle='#'+leaf.clone().multiplyScalar(.8+r()*.4).getHexString();g.lineWidth=7;
+          g.beginPath();g.moveTo(w*.5,h*.13);g.quadraticCurveTo(w*(.5+Math.cos(a)*.3),h*.005,x*w,(y+.05)*h);g.stroke();}
+      } else for(let i=0;i<700;i++){
+        let y,span;
+        if(kind===1){y=r()*.79+.025;span=.46*(y/.82);}
+        else if(kind===3){y=.13+r()*.33;span=.46*Math.sqrt(Math.max(0,1-((y-.30)/.18)**2));}
+        else {y=r()*.72+.035;span=.43*Math.sqrt(Math.max(0,1-((y-.38)/.35)**2));}
+        const x=.5+(r()*2-1)*span;
+        g.fillStyle='#'+leaf.clone().multiplyScalar(.66+r()*.45).getHexString();
+        g.beginPath();g.ellipse(x*w,y*h,5+r()*8,5+r()*10,r()*Math.PI,0,Math.PI*2);g.fill();
+      }
+    });
+    const parts=[];
+    for(let k=0;k<3;k++){const p=new THREE.PlaneGeometry(dims[0],dims[1]);p.translate(0,dims[1]/2,0);p.rotateY(k*Math.PI/3);parts.push(p);}
+    const item={geo:merge(parts),mat:new THREE.MeshLambertMaterial({map:atlas,alphaTest:.5,side:THREE.DoubleSide,depthWrite:true})};
+    item.mat.onBeforeCompile=sh=>{
+      sh.uniforms.apexForestLOD={value:lodTexture};sh.uniforms.apexForestGrid={value:lodGrid};
+      sh.vertexShader=sh.vertexShader.replace('#include <common>','#include <common>\nuniform sampler2D apexForestLOD; uniform vec4 apexForestGrid;')
+        .replace('#include <project_vertex>',`#include <project_vertex>
+          #ifdef USE_INSTANCING
+          vec2 forestCell=floor((instanceMatrix[3].xz-apexForestGrid.xy)/72.0);
+          if(texture2D(apexForestLOD,(forestCell+0.5)/apexForestGrid.zw).r<0.5)gl_Position=vec4(2.0,2.0,2.0,1.0);
+          #endif`);
+    };
+    item.mat.customProgramCacheKey=()=> 'forest-cell-mask';
+    farShapes.set(kind,item);return item;
   }
-  scene.add(group);
-  return group;
+  const bushGeo=colorize(new THREE.IcosahedronGeometry(1,1).scale(1,.65,1).translate(0,.6,0),desert?0x7a7950:0x526f36);
+  const rockGeo=colorize(new THREE.IcosahedronGeometry(1,0).scale(1,.6,.8).translate(0,.45,0),desert?0x95816a:0x72766a);
+  const tuftParts=[];for(let k=0;k<3;k++){const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute([-.45,0,0,.05,.85,0,.35,0,.05],3));g.rotateY(k*2.1);g.computeVertexNormals();tuftParts.push(colorize(g,desert?0x938453:0x5e773e));}const tuftGeo=merge(tuftParts);
+  const cells=new Map(),CH=72,profile={},p={i:0,s:0,d:0}, v=new THREE.Vector3(),scale=new THREE.Vector3(),q=new THREE.Quaternion(),m=new THREE.Matrix4(),up=new THREE.Vector3(0,1,0),tint=new THREE.Color();
+  const stats={trees:0,bushes:0,rocks:0,tufts:0,cells:0,nearCells:0,midCells:0,farCells:0,visibleCells:0,nearShadowMeshes:0,theme:style,geometryVariants:0};
+  const getCell=(x,z)=>{const gx=Math.floor(x/CH),gz=Math.floor(z/CH),key=gx+','+gz;let c=cells.get(key);if(!c){c={x:(gx+.5)*CH,z:(gz+.5)*CH,trees:[],bushes:[],rocks:[],tufts:[],lod:2,node:new THREE.Group(),levels:[],extras:null};cells.set(key,c);}return c;};
+  function addTree(x,z,kind,size,rot) {
+    x=Math.fround(x);z=Math.fround(z);
+    const radius=(kind===1?4.0:kind===4?4.6:5.4)*size;
+    if(inLake(x,z)||!sceneryClear(track,x,z,radius+1))return;
+    track.project(x,z,null,p);
+    // Essential pit buildings, service bays and sight lines are deliberately kept open.
+    if(track.pitProg(p.s)>=0 && Math.abs(p.d)<track.pit.outerWall+35)return;
+    const ground=(x,z)=>(R.heightAt?R.heightAt(x,z):0)-.14, y=ground(x,z);
+    const col=.84+rng()*.28;
+    getCell(x,z).trees.push({x,y,z,kind,size,rot,col,stretch:.9+rng()*.2});stats.trees++;
+    if(rng()<.48){getCell(x,z).bushes.push({x:x+radius*.35,y:ground(x+radius*.35,z-radius*.3),z:z-radius*.3,kind:0,size:.8+rng()*1.25,rot,col});stats.bushes++;}
+    if(rng()<(desert?.5:.16)){getCell(x,z).rocks.push({x:x-radius*.2,y:ground(x-radius*.2,z+radius*.3),z:z+radius*.3,kind:0,size:.45+rng()*1.2,rot,col});stats.rocks++;}
+    if(rng()<.35){getCell(x,z).tufts.push({x:x+1.2,y:ground(x+1.2,z+.7),z:z+.7,kind:0,size:1+rng(),rot,col});stats.tufts++;}
+  }
+  const rings=[8,19,34,58,94,148,222,325,450],step=Q===0?11:Q===1?7:5;
+  for(let i=0;i<track.N;i+=step)for(const side of [-1,1]){
+    for(let ring=0;ring<rings.length;ring++)for(let j=0;j<(ring<5?2:1);j++){
+      if(rng()>theme.density*(ring<2?.84:.96))continue;
+      const along=(rng()-.5)*step*SIM.DS*2.2, s=track.wrapS(i*SIM.DS+along);
+      const ii=track.wrapI(Math.round(s/SIM.DS));track.tracksideAt(ii,side,profile);const wall=profile.barrier;
+      const d=side*(wall+rings[ring]*(.75+rng()*.5));const pt=track.pointAt(s,d);
+      const cluster=woodsAt(pt[0]*2,pt[1]*2);if(ring>1&&rng()>Math.max(.28,.62+cluster*.6))continue;
+      let kind=desert?(rng()<.65?3:4):rng()<theme.broad?(style==='suzuka'||style==='interlagos'?2:0):1;
+      if(style==='interlagos'&&rng()<.08)kind=4;
+      const size=(.78+rng()*.42)*theme.height;
+      addTree(pt[0],pt[1],kind,size,rng()*Math.PI*2);
+    }
+  }
+  function instanced(geo,mat,list,kind,shadows) {
+    if(!list.length)return null;
+    const im=new THREE.InstancedMesh(geo,mat,list.length);im.userData.kind=kind;im.frustumCulled=false;
+    list.forEach((a,i)=>{m.compose(v.set(a.x,a.y,a.z),q.setFromAxisAngle(up,a.rot),scale.set(a.size,a.size*(a.stretch||1),a.size));im.setMatrixAt(i,m);im.setColorAt(i,tint.setRGB(a.col,a.col,a.col));});
+    im.instanceMatrix.needsUpdate=true;im.castShadow=shadows;im.receiveShadow=false;return im;
+  }
+  const allCells=[...cells.values()], minX=Math.min(...allCells.map(c=>Math.floor(c.x/CH))), minZ=Math.min(...allCells.map(c=>Math.floor(c.z/CH)));
+  const gridW=Math.max(...allCells.map(c=>Math.floor(c.x/CH)))-minX+1, gridH=Math.max(...allCells.map(c=>Math.floor(c.z/CH)))-minZ+1;
+  const lodData=new Float32Array(gridW*gridH), lodTexture=new THREE.DataTexture(lodData,gridW,gridH,THREE.RedFormat,THREE.FloatType);
+  lodTexture.minFilter=lodTexture.magFilter=THREE.NearestFilter;lodTexture.generateMipmaps=false;lodTexture.needsUpdate=true;
+  const lodGrid=new THREE.Vector4(minX*CH,minZ*CH,gridW,gridH), chunks=new Map(), FAR_CH=CH*3;
+  for(const c of allCells){
+    c.treeCount=c.trees.length;c.maskIndex=Math.floor(c.x/CH)-minX+(Math.floor(c.z/CH)-minZ)*gridW;
+    for(let level=0;level<3;level++){
+      const g=new THREE.Group();g.name=['Near trees','Mid trees','Forest impostor mask'][level];
+      if(level<2)for(const kind of new Set(c.trees.map(a=>a.kind))){
+        const im=instanced(treeGeometry(kind,level===0?1:0),level===0?nearMat:midMat,c.trees.filter(a=>a.kind===kind),'forest tree',level===0&&Q>0);
+        if(im)g.add(im);
+      }
+      c.levels.push(g);c.node.add(g);
+    }
+    const extra=new THREE.Group();
+    for(const [geo,list,name] of [[bushGeo,c.bushes,'forest undergrowth'],[rockGeo,c.rocks,'forest rocks'],[tuftGeo,c.tufts,'forest tufts']]){const im=instanced(geo,midMat,list,name,false);if(im)extra.add(im);}
+    c.extras=extra;c.node.add(extra);c.node.visible=false;group.add(c.node);
+    c.ground=(R.heightAt?R.heightAt(c.x,c.z):0)+track.elevAt(c.x,c.z);c.sphere=new THREE.Sphere(new THREE.Vector3(c.x,0,c.z),CH*.85+35);
+    const gx=Math.floor(c.x/FAR_CH),gz=Math.floor(c.z/FAR_CH),key=gx+','+gz;
+    let b=chunks.get(key);if(!b){b={x:(gx+.5)*FAR_CH,z:(gz+.5)*FAR_CH,trees:[],node:new THREE.Group(),active:0};chunks.set(key,b);}
+    b.trees.push(...c.trees);c.farChunk=b;
+  }
+  // Distant cells share much larger batches. The small visibility texture masks individual cells on the GPU,
+  // so switching to 3D trees never draws a duplicate impostor and never rewrites instance buffers.
+  const farChunks=[...chunks.values()];
+  for(const b of farChunks){
+    b.node.name='Batched distant forest';group.add(b.node);
+    for(const kind of new Set(b.trees.map(a=>a.kind))){const f=farTree(kind),im=instanced(f.geo,f.mat,b.trees.filter(a=>a.kind===kind),'forest impostor',false);if(im)b.node.add(im);}
+    b.trees=null;
+  }
+  for(const c of allCells){c.trees=c.bushes=c.rocks=c.tufts=null;}cells.clear();chunks.clear();
+  stats.cells=allCells.length;stats.farBatches=farChunks.reduce((n,b)=>n+b.node.children.length,0);stats.geometryVariants=shapes.size+farShapes.size+3;
+  const frustum=new THREE.Frustum(),vp=new THREE.Matrix4();
+  const runtime={group,stats,cells:allCells,farChunks,lodData,lodTexture,materials:[nearMat,midMat,...[...farShapes.values()].map(f=>f.mat)],wet:-1,
+    prepareCapture(position){
+      lodData.fill(1);lodTexture.needsUpdate=true;
+      for(const c of this.cells)c.node.visible=false;
+      for(const b of this.farChunks)b.node.visible=Math.hypot(b.x-position.x,b.z-position.z)<700;
+    },
+    update(camera,wet=0){
+      if(Math.abs(wet-this.wet)>.025){nearMat.color.setScalar(1-wet*.18);midMat.color.setScalar(1-wet*.16);for(const f of farShapes.values())f.mat.color.setScalar(1-wet*.12);this.wet=wet;}
+      camera.updateMatrixWorld();vp.multiplyMatrices(camera.projectionMatrix,camera.matrixWorldInverse);frustum.setFromProjectionMatrix(vp);
+      stats.nearCells=stats.midCells=stats.farCells=stats.visibleCells=stats.nearShadowMeshes=0;
+      const far=Q===0?440:Q===1?650:850;let changed=false;
+      for(const b of this.farChunks)b.active=0;
+      for(const c of this.cells){
+        const distance=Math.max(0,Math.hypot(c.x-camera.position.x,c.z-camera.position.z)-CH*.71);
+        c.sphere.center.y=c.ground-ELEV[0].z+9;
+        const visible=distance<far&&frustum.intersectsSphere(c.sphere);let level=c.lod;
+        if(visible){
+          if(level===0&&distance>49)level=1;else if(level===1&&distance<34)level=0;
+          if(level===1&&distance>145)level=2;else if(level===2&&distance<121)level=1;
+          if(distance<34)level=0;
+          c.lod=level;for(let k=0;k<3;k++)c.levels[k].visible=k===level;
+          stats.visibleCells++;if(level===0){stats.nearCells++;if(Q>0)stats.nearShadowMeshes+=c.levels[0].children.length;}else if(level===1)stats.midCells++;else stats.farCells++;
+        }
+        c.node.visible=visible&&level<2;c.extras.visible=visible&&distance<62;
+        const flag=visible&&level===2?1:0;
+        if(lodData[c.maskIndex]!==flag){lodData[c.maskIndex]=flag;changed=true;}
+        if(flag)c.farChunk.active++;
+      }
+      for(const b of this.farChunks)b.node.visible=b.active>0;
+      if(changed)lodTexture.needsUpdate=true;
+    }};
+  // This entire branch is stationary; elevation and LOD are shader/visibility changes. Scene.updateMatrixWorld
+  // otherwise forces a recursive recomputation even for hidden cells on every frame and shadow capture.
+  group.updateMatrixWorld(true);group.matrixAutoUpdate=false;group.matrixWorldAutoUpdate=false;
+  group.updateMatrixWorld=()=>{};
+  G.forest=runtime;return runtime;
 }
 
 /* ---------------------------------------------------------------
@@ -9140,8 +9182,7 @@ class AudioEngine {
     let kerb = 0; for (let i = 0; i < 4; i++) if (focus.surf[i] === 1) kerb += 0.25; if (focus.surf.some(s => s >= 3)) kerb += 0.3;
     this.rumble.g.gain.setTargetAtTime(kerb * clamp(focus.speed / 30, 0, 1) * 0.9 * menuFactor, t, 0.03);
     this.rain.g.gain.setTargetAtTime((sess.weather?sess.weather.rain:sess.wet)*0.12*menuFactor, t, 0.3);
-    const nearStand = Math.abs(G.track.dS(0, focus.s)) < 450 ? 1 : 0.25;
-    this.crowd.g.gain.setTargetAtTime(0.045 * nearStand * menuFactor, t, 0.5);
+    this.crowd.g.gain.setTargetAtTime(0, t, 0.5);
   }
   oneShot(type, strength = 1) {
     if (!this.ctx || this.ctx.state !== 'running') return;
@@ -9353,6 +9394,7 @@ function ensureWorld() {
   if(G.world && G.worldQ===q && G.worldTrack===G.track)return;
   // rebuild the whole scene (circuit or quality changed), releasing the old one's GPU resources
   if (scene) {
+    if(G.forest?.lodTexture)G.forest.lodTexture.dispose();
     const mats = new Set(), texs = new Set();
     scene.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) for (const m of [].concat(o.material)) mats.add(m); });
     for (const m of mats) { for (const v of Object.values(m)) if (v && v.isTexture) texs.add(v); if (m.uniforms) for (const u of Object.values(m.uniforms)) if (u && u.value && u.value.isTexture) texs.add(u.value); m.dispose(); }
@@ -9368,11 +9410,12 @@ function ensureWorld() {
   const { world, inLake } = buildWorld(scene, G.track, textures, { wet, quality: q });
   const trackObj = buildTrack(scene, G.track, textures, { wet, quality: q, broadcastTowers: G.broadcastTowers });
   buildTrees(scene, G.track, inLake, { quality: q });
-  // environment map for reflections: capture the real scenery (mountains, stands, sky, sun) once from above the infield
+  // environment map for reflections: capture the landscape, forest silhouettes, sky and sun once from above the infield
   renderer.shadowMap.enabled = q > 0;
   {
     const cubeRT = new THREE.WebGLCubeRenderTarget(q === 2 ? 256 : 128, { type: THREE.HalfFloatType });
     const cubeCam = new THREE.CubeCamera(1, 12000, cubeRT); cubeCam.position.set(R.center.x, 14, R.center.z + 380); cubeCam.updateMatrixWorld(); setElevationCamera(cubeCam.position.x, cubeCam.position.z);
+    if(G.forest)G.forest.prepareCapture(cubeCam.position);
     cubeCam.update(renderer, scene);
     const pm = new THREE.PMREMGenerator(renderer);
     scene.environment = pm.fromCubemap(cubeRT.texture).texture; pm.dispose(); cubeRT.dispose();
@@ -11122,6 +11165,7 @@ function frame(now) {
     R.anim.value = (now / 1000) % 3600;
     renderer.info.reset();
     setElevationCamera(camera.position.x, camera.position.z, G.focus && G.track ? G.focus.idx : null);
+    if (G.forest) G.forest.update(camera, G.worldWet);
     // screen effects decay; particle sizes follow the viewport height and field of view
     const fx = G.fx; fx.hit = Math.max(0, fx.hit - dt * 3.2); fx.dmg = Math.max(0, fx.dmg - dt * 1.3); fx.cut = Math.max(0, fx.cut - dt * 2.8);
     const pScale = renderer.domElement.height / (2 * Math.tan(camera.fov * Math.PI / 360));

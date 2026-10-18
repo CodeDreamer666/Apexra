@@ -1,0 +1,16 @@
+✔ fresh events start dry or wet with equal probability, with matching track water (38.882599ms)
+✔ repeated races change in both directions, plausibly and without bias toward sunshine (798.436605ms)
+✔ rain intensity varies, storms occur, and a drying track dries progressively (253.745807ms)
+✔ a weather snapshot continues the same conditions without resetting to sunshine (384.141642ms)
+✔ fresh seeds give different conditions; the game rolls new seeds per event (4.845051ms)
+✔ the forecast shows rain chances and uncertain windows only (75.393399ms)
+✔ a wet start puts the field on rain tyres on a wet track; a dry start on slicks (578.393685ms)
+✔ weather changes grip, tyre temperature and the AI pit strategy (24594.933932ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 8
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 26739.968184

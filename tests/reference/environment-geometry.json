@@ -1,0 +1,230 @@
+{
+  "monza": {
+    "length": 5794,
+    "fields": {
+      "cx": "01f523580010617f4c21217b2b5eac5f557b92783f976d8c1fe07fe9472bcc6e",
+      "cz": "8b318a79f43b8acedbec96fd448ccf9edf520c727953ce63d3be5d2bc562ab52",
+      "hw": "43c6613e4a766f19d4d9c11f7fa33b31e9ec0787e17f41330221f04e88ceac99",
+      "heading": "65d0affd0f3fc7eaeb0dab184bf6ec8416ea951105c71f5e3c5bf59643ed89e6",
+      "kappa": "e35b193e639d2bb981b5c6a4a9f97c5411a48ef2ef3971b2d5fb103987f9d9f3",
+      "elev": "dc4e8cb163e71f93579af3aa1a483c8a05624521d88f4074a1201f13eca31540",
+      "grade": "385d8a2dd92f8a9fda986aa89fa97016923378f030f2d1f86f493a8687167fa9"
+    },
+    "pit": {
+      "side": 1,
+      "fastD": 12.15,
+      "boxD": 16.15,
+      "innerWall": 9.65,
+      "outerWall": 19.65,
+      "trackWall": 8.65,
+      "limit": 27.77777777777778,
+      "boxes": [
+        5577,
+        5593,
+        5609,
+        5625
+      ],
+      "boxSpacing": 16,
+      "queueS": 5565,
+      "entry0": 5235,
+      "entry1": 5535,
+      "exit0": 5634,
+      "exit1": 5694,
+      "len": 459,
+      "commitQ": 90,
+      "commit": 5325,
+      "E": 300,
+      "X": 60
+    }
+  },
+  "silverstone": {
+    "length": 5890,
+    "fields": {
+      "cx": "ad535c53ec0f5ca0973a76d2382c034f7c03c9b07fef5d4ae47ea3a753faac2e",
+      "cz": "92c098c9fa084a2037667c2234d2e7993a9c3115664c074049d5660b223f6efb",
+      "hw": "b6ba3300d481ae9334d6095f0e37693b4f511f78deefb772a3f88d3659e43723",
+      "heading": "ac418aafc20eb07940b391502a89c336c62cd4d4247acf95b9357bf7b0f3b6c2",
+      "kappa": "d640f1e26ed2350956a0d635a4b5c9c3689cf278028098b36d535a2b5dd8f7a9",
+      "elev": "d15f6374cb7d807e7b82a09ea7592e5f6695376cd3e22a765d3e90cf5a80a4ec",
+      "grade": "864abb812cf097cdbe30e443d8e459165edcde7f5a60057881e2a3e293cef01b"
+    },
+    "pit": {
+      "side": 1,
+      "fastD": 13.05,
+      "boxD": 17.05,
+      "innerWall": 10.55,
+      "outerWall": 20.55,
+      "trackWall": 9.55,
+      "limit": 27.77777777777778,
+      "boxes": [
+        102,
+        118,
+        134,
+        150
+      ],
+      "boxSpacing": 16,
+      "queueS": 90,
+      "entry0": 5770,
+      "entry1": 60,
+      "exit0": 159,
+      "exit1": 209,
+      "len": 329,
+      "commitQ": 90,
+      "commit": 5860,
+      "E": 180,
+      "X": 50
+    }
+  },
+  "spa": {
+    "length": 7004,
+    "fields": {
+      "cx": "c06851f54f9120c56ff1f9db59448c00c2392ae33da6e019f3d6172a471d106c",
+      "cz": "78401d211504d72ca064e12e542edc0c3ec1e15251b6da90ee3eb89fa219ebec",
+      "hw": "e8304c45b1062b99e90e9162cfcea64b87ec2c786f9661adf082b5ee5e0f8313",
+      "heading": "a05125d9c2a7bebe62c7f274bdd223672b2a7b224b548adfef574129d9eed47e",
+      "kappa": "6b0b13e5df0ae6ae9d8b8246a931fed84569eb459ce8b0cab04af6c7f011d9fa",
+      "elev": "5b8e3d6e0a13c40f354c79d7e5003aa887a91a30199c5153981554fa758a267c",
+      "grade": "3f91abf4cae007c433f10b05027bc537bf266cfce9f098d981b7225590641b16"
+    },
+    "pit": {
+      "side": 1,
+      "fastD": 13.3,
+      "boxD": 17.3,
+      "innerWall": 10.8,
+      "outerWall": 20.8,
+      "trackWall": 9.8,
+      "limit": 27.77777777777778,
+      "boxes": [
+        6982,
+        6998,
+        10,
+        26
+      ],
+      "boxSpacing": 16,
+      "queueS": 6970,
+      "entry0": 6760,
+      "entry1": 6940,
+      "exit0": 35,
+      "exit1": 85,
+      "len": 329,
+      "commitQ": 90,
+      "commit": 6850,
+      "E": 180,
+      "X": 50
+    }
+  },
+  "suzuka": {
+    "length": 5806,
+    "fields": {
+      "cx": "313007eeeefa506850258b1df43926630437071e003f7134048f29b1a469227d",
+      "cz": "cee7f184e5df16ba1ebfab38bc124b593145875ccefd55dab0b66eabaabfb6b2",
+      "hw": "dc7f9b9f5f16d186a732b601bda608408b87cab8915bb1270e08652fe605c075",
+      "heading": "9028b46ad5c0e1090bca7aa904d0aa156b190cc5d32a63b346526a0849d1153f",
+      "kappa": "83393122f5382547d40df0e13c1bf35fa3a513e31ac364400c33f57451efa8b6",
+      "elev": "7489a8c32f808efd99dc8a31e7124661f09f2ac5ac84ce4ed85fe3496b0b965d",
+      "grade": "a29b45576359f37f49187bc6e8d2003e6a558553fd2375078a561f3ea612fe57"
+    },
+    "pit": {
+      "side": 1,
+      "fastD": 13.85,
+      "boxD": 17.85,
+      "innerWall": 11.35,
+      "outerWall": 21.35,
+      "trackWall": 10.35,
+      "limit": 27.77777777777778,
+      "boxes": [
+        46,
+        62,
+        78,
+        94
+      ],
+      "boxSpacing": 16,
+      "queueS": 34,
+      "entry0": 5510,
+      "entry1": 4,
+      "exit0": 103,
+      "exit1": 163,
+      "len": 459,
+      "commitQ": 90,
+      "commit": 5600,
+      "E": 300,
+      "X": 60
+    }
+  },
+  "bahrain": {
+    "length": 5412,
+    "fields": {
+      "cx": "6202d6afe6199f66b67da604487ccaf11452c56421c74a81dfb7a4911a397a85",
+      "cz": "d54f9d53123c5aa268672c3ae1c53f517e4d365bfa08b16a594a848fd1d6c301",
+      "hw": "c16f41e5c5bf89d503b99653485e8c87db5e769d64c77eee7d2fb41ae046ea55",
+      "heading": "1206e8a425094e87a769e975a0568e6c84d71a2c5f9f12c87b42aae1fc2238d8",
+      "kappa": "c13c2ab0090ec4aa78b4051e517bffa06e1d2c8c28851fa8ed10e3871588a7d4",
+      "elev": "287781be44c8aef582f92089ab4ebb6bcab9ffbaf0d23425f7f4b5de005e6a51",
+      "grade": "6cde05ff7d0224027fd1b9d2d6fc17f2502185b3723fda73a37bf343f29c202b"
+    },
+    "pit": {
+      "side": 1,
+      "fastD": 12.75,
+      "boxD": 16.75,
+      "innerWall": 10.25,
+      "outerWall": 20.25,
+      "trackWall": 9.25,
+      "limit": 27.77777777777778,
+      "boxes": [
+        5242,
+        5258,
+        5274,
+        5290
+      ],
+      "boxSpacing": 16,
+      "queueS": 5230,
+      "entry0": 4900,
+      "entry1": 5200,
+      "exit0": 5299,
+      "exit1": 5359,
+      "len": 459,
+      "commitQ": 90,
+      "commit": 4990,
+      "E": 300,
+      "X": 60
+    }
+  },
+  "interlagos": {
+    "length": 4310,
+    "fields": {
+      "cx": "73b1684a5f60d510d086fb579b337a0c5f3ce5ae0a9a47a86fe219dd13de8181",
+      "cz": "d23fffe1a526a129985cdaea093a19d7c282a528c922f781d446ffc67b6dd3ea",
+      "hw": "3f53ac9898d21ccad00db484108630fb70042e2017aa5931d66be6a6bfe92daa",
+      "heading": "bebcf947129d0f209adb5ae72f90e1b3a9e1c92bdf2095412b0d60865a621865",
+      "kappa": "c60b4f016934a5574d7569e491182366085daf71d87fb203c646fc9c7ea52b15",
+      "elev": "8ee7152cc68472ac6bdee6cd8e9a8a880e9123018c8b7446c29f68f6f3991214",
+      "grade": "9bd7e4a695780d34e08a111596f71022f3117dba5268fd7a67602456fd99794c"
+    },
+    "pit": {
+      "side": -1,
+      "fastD": 13.4,
+      "boxD": 17.4,
+      "innerWall": 10.9,
+      "outerWall": 20.9,
+      "trackWall": 9.9,
+      "limit": 27.77777777777778,
+      "boxes": [
+        4072,
+        4088,
+        4104,
+        4120
+      ],
+      "boxSpacing": 16,
+      "queueS": 4060,
+      "entry0": 3730,
+      "entry1": 4030,
+      "exit0": 4129,
+      "exit1": 4189,
+      "len": 459,
+      "commitQ": 90,
+      "commit": 3820,
+      "E": 300,
+      "X": 60
+    }
+  }
+}
