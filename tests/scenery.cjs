@@ -7,7 +7,7 @@ try { ({ chromium } = require('playwright')); } catch { ({ chromium } = require(
 
 // The built 3D world of every circuit, checked against the circuit it dresses: nothing solid (barriers, fences,
 // grandstands, crowd, boards, towers, the bridge, trees, buildings) stands on the road where a car simply drives
-// through it, and no ground (terrain, the verge, gravel, paint, water) shows through the road surface. Faces are
+// through it, and no ground (terrain, the verge, gravel, paint, water) shows through the road surface or the pit lane. Faces are
 // checked as the renderer draws them: every vertex lifted by the circuit's height field, planar in between.
 //
 // The game loads Three.js from a CDN. Without network access set THREE_JS=/path/to/three.module.js (three@0.160.0);
@@ -96,6 +96,15 @@ const DETECT = function () {
   const v = new APEX.THREE_Vector3(), m4 = new APEX.THREE_Matrix4(), mw = new APEX.THREE_Matrix4();
   // road sample points for surface checks
   const pts = []; for (let i = 0; i < N; i++) for (let d = -t.hw[i] + 0.6; d <= t.hw[i] - 0.6; d += 1.0) { const x = t.cx[i] + t.rx[i] * d, z = t.cz[i] + t.rz[i] * d; pts.push([x, z, upper(i) ? t.elev[i] : hfE(x, z), i, d]); }
+  // and the pit lane, entry ramp to exit ramp: the driven lanes and the boxes (no ground may show through it either)
+  const P = t.pit;
+  if (P) for (let q = 0; q <= P.len; q += 1.0) {
+    const s = t.wrapS(P.entry0 + q), i = t.wrapI(Math.round(s / DS)), lane = t.pitTargetD(s, null) * P.side;
+    const a0 = t.inPitMain(s) ? P.fastD - 1.6 : lane - 1.5, a1 = t.inPitMain(s) ? P.boxD + 1.4 : lane + 1.5;
+    for (let a = Math.max(a0, t.hw[i] + 0.6); a <= a1; a += 1.0) {
+      const d = P.side * a, x = t.cx[i] + t.rx[i] * d, z = t.cz[i] + t.rz[i] * d; pts.push([x, z, hfE(x, z), i, d]);
+    }
+  }
   const PC = 8, pgrid = new Map(); pts.forEach((p, k) => { const key = Math.floor(p[0] / PC) * 100000 + Math.floor(p[1] / PC); if (!pgrid.has(key)) pgrid.set(key, []); pgrid.get(key).push(k); });
   const meshes = []; G.scene.traverse(o => { if (o.isMesh && o.geometry && o.geometry.attributes.position && o.visible !== false) meshes.push(o); });
   const carMeshes = new Set(); for (const m of G.models.values()) m.group.traverse(o => carMeshes.add(o));

@@ -133,7 +133,7 @@ test('start grid, pit lane, timing and minimap data come from each circuit', () 
     // the lane leaves and rejoins the racing line on the main straight, before the first corner
     assert.ok(t.dS(t.pit.exit1, t.corners[0].start * 2) > 20, t.name + ' pit exit before turn 1');
     assert.equal(t.pit.side, t.def.pit.side, t.name + ' pit lane on the real side');
-    assert.equal(t.pit.boxes.length, 4, 'four shared boxes, not one per team');
+    assert.equal(t.pit.boxes.length, SIM.TEAMS.length, 'one box per team');
     assert.ok(t.sector1 > 0 && t.sector2 > t.sector1 && t.sector2 < t.length);
     const line = SIM.circuitCentreLine(t.def);
     assert.equal(line.length, t.N);
@@ -174,15 +174,13 @@ function race(id, laps, seed) {
   const s = new SIM.Session(t, { type: 'race', laps: 8, entries: SIM.DRIVERS.map(driver => ({ driver })), seed, spectate: true, weather: 'dynamic',
     weatherState: Object.assign(new SIM.DynamicWeather(seed).snapshot(), { pattern: 'dry', regime: 'sunny', rain: 0, water: 0, lineWater: 0, cloud: 0.2, targetCloud: 0.2, targetRain: 0, patternEnds: 1e9, regimeEnds: 1e9 }) });
   s.totalLaps = laps;
-  const last = new Map(), pits = { maxBoxes: 0, assigned: [], fifo: true };
+  const last = new Map(), pits = { maxBoxes: 0, ownBox: true, shared: 0 };
   for (let step = 0; !s.over && s.time < laps * 170 + 220; step++) {
     s.fixedStep(SIM.PHYS_DT);
     const held = s.pitBoxes.filter(Boolean); pits.maxBoxes = Math.max(pits.maxBoxes, held.length);
     assert.equal(new Set(held).size, held.length, id + ': a car in two boxes');
-    for (const c of held) if (c.pit.assignedAt === s.time && !pits.assigned.includes(c.pit)) {
-      pits.assigned.push(c.pit);
-      for (const w of s.pitQueue) if (w.pit.entryTime < c.pit.entryTime) pits.fifo = false;
-    }
+    s.pitBoxes.forEach((c, k) => { if (c && c.teamIdx !== k) pits.ownBox = false; });
+    if (step % 24 === 0) for (let k = 0; k < s.pitBoxes.length; k++) if (s.cars.filter(c => c.pit && c.pit.box === k && ['stopped', 'release'].includes(c.pit.phase)).length > 1) pits.shared++;
     for (const c of s.cars) if (c.pit && c.pit.entryTime != null) assert.ok(s.time - c.pit.entryTime < 150, id + ': ' + c.driver.short + ' stuck in the pit lane');
     if (step % 2400 === 0) for (const c of s.cars) {
       if (c.dnf || c.finished || c.pit || !s.lightsOut) continue;
@@ -199,8 +197,8 @@ const LAP = { monza: [70, 100], silverstone: [75, 105], spa: [92, 125], suzuka: 
 for (const id of tracks.keys()) {
   test(id + ': the full 20-car field starts, races six laps, pits and is classified', () => {
     const { s, pits } = race(id, SIM.GAME_MODES.grandprix.laps, 21);
-    assert.ok(pits.maxBoxes <= 4, id + ' boxes in use ' + pits.maxBoxes);
-    assert.ok(pits.fifo, id + ': a box went to a car that arrived after one still waiting');
+    assert.ok(pits.ownBox, id + ': a car held another team\'s box');
+    assert.equal(pits.shared, 0, id + ': two cars serviced in one box at once');
     for (const c of s.cars) assert.notEqual(c.dnfReason, 'Out of fuel', id + ': ' + c.driver.short + ' ran out of fuel');
     for (const c of s.cars) for (const h of c.pitHistory) assert.ok(h.fuel <= s.fuelCapacity + 1e-9);
     assert.ok(s.over, 'race finished');
