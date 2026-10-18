@@ -1,0 +1,709 @@
+[
+  {
+    "file": "001-loading.png",
+    "desc": "Loading screen while the 3D engine downloads",
+    "state": {
+      "phase": null,
+      "status": "WAITING FOR BOX"
+    }
+  },
+  {
+    "file": "002-menu-main.png",
+    "desc": "Main menu over the attract-mode race",
+    "state": {
+      "phase": null,
+      "status": "WAITING FOR BOX"
+    }
+  },
+  {
+    "file": "003-menu-race-settings.png",
+    "desc": "Race settings",
+    "state": {
+      "phase": null,
+      "status": "WAITING FOR BOX"
+    }
+  },
+  {
+    "file": "004-menu-controls.png",
+    "desc": "Controls reference",
+    "state": {
+      "phase": null,
+      "status": "WAITING FOR BOX"
+    }
+  },
+  {
+    "file": "005-menu-circuit-select.png",
+    "desc": "Circuit selection",
+    "state": {
+      "phase": null,
+      "status": "WAITING FOR BOX"
+    }
+  },
+  {
+    "file": "006-summit-race-brief.png",
+    "desc": "Race start brief: starting tyre and fuel",
+    "state": {
+      "phase": null,
+      "status": "WAITING FOR BOX"
+    }
+  },
+  {
+    "file": "007-summit-grid.png",
+    "desc": "On the grid before the start sequence",
+    "state": {
+      "phase": null,
+      "status": "WAITING FOR BOX",
+      "lap": 0,
+      "tyre": "H",
+      "fuel": 18.67
+    }
+  },
+  {
+    "file": "008-summit-lights-1.png",
+    "desc": "1 red light, launch control armed (holding W)",
+    "state": {
+      "phase": null,
+      "status": "WAITING FOR BOX",
+      "lap": 0,
+      "tyre": "H",
+      "fuel": 18.67
+    }
+  },
+  {
+    "file": "009-summit-lights-3.png",
+    "desc": "3 red lights, launch control armed (holding W)",
+    "state": {
+      "phase": null,
+      "status": "WAITING FOR BOX",
+      "lap": 0,
+      "tyre": "H",
+      "fuel": 18.67
+    }
+  },
+  {
+    "file": "010-summit-lights-5.png",
+    "desc": "5 red lights, launch control armed (holding W)",
+    "state": {
+      "phase": null,
+      "status": "WAITING FOR BOX",
+      "lap": 0,
+      "tyre": "H",
+      "fuel": 18.67
+    }
+  },
+  {
+    "file": "011-summit-lights-out.png",
+    "desc": "Lights out and away we go",
+    "state": {
+      "phase": null,
+      "status": "WAITING FOR BOX",
+      "lap": 0,
+      "tyre": "H",
+      "fuel": 18.669558188003975
+    }
+  },
+  {
+    "file": "012-summit-race-chase.png",
+    "desc": "Racing, chase camera",
+    "state": {
+      "phase": null,
+      "status": "WAITING FOR BOX",
+      "lap": 0,
+      "tyre": "H",
+      "fuel": 18.097512859388367
+    }
+  },
+  {
+    "file": "013-summit-race-strategy.png",
+    "desc": "Tyres & pits strategy panel before requesting a stop",
+    "state": {
+      "phase": null,
+      "status": "WAITING FOR BOX",
+      "lap": 0,
+      "tyre": "H",
+      "fuel": 18.09678325308525
+    }
+  },
+  {
+    "file": "014-summit-racing-hud.png",
+    "desc": "Normal racing HUD before heading toward the pit entry",
+    "state": {
+      "phase": null,
+      "status": "WAITING FOR BOX",
+      "lap": 0,
+      "tyre": "H",
+      "fuel": 18.09678325308525
+    }
+  },
+  {
+    "file": "016-summit-before-pit-entry.png",
+    "desc": "Normal racing HUD before steering into the pit entry",
+    "state": {
+      "phase": null,
+      "status": "WAITING FOR BOX",
+      "lap": 0,
+      "tyre": "H",
+      "fuel": 17.640535451633685
+    }
+  },
+  {
+    "file": "017-summit-pit-approach.png",
+    "desc": "Before the gold entry gate: steering onto the pit-entry route",
+    "state": {
+      "phase": null,
+      "status": "WAITING FOR BOX",
+      "lap": 0,
+      "tyre": "H",
+      "fuel": 16.05208547796507
+    }
+  },
+  {
+    "file": "018-summit-pit-lane.png",
+    "desc": "Past the gold commitment gate: automatic pit driving to an assigned service box",
+    "state": {
+      "phase": "in",
+      "status": "TO BOX 4",
+      "lap": 0,
+      "tyre": "H",
+      "fuel": 15.911852384744298
+    }
+  },
+  {
+    "file": "019-summit-pit-box-select.png",
+    "desc": "Stopped in the box: choose tyres and fuel",
+    "state": {
+      "phase": "awaiting",
+      "status": "SELECT SERVICE",
+      "lap": 1,
+      "tyre": "H",
+      "fuel": 15.8742758225927
+    }
+  },
+  {
+    "file": "020-summit-pit-choice-hard.png",
+    "desc": "Pit service selection: hard tyres",
+    "state": {
+      "phase": "awaiting",
+      "status": "SELECT SERVICE",
+      "lap": 1,
+      "tyre": "H",
+      "fuel": 15.8742758225927
+    }
+  },
+  {
+    "file": "021-summit-pit-choice-intermediate.png",
+    "desc": "Pit service selection: intermediate tyres",
+    "state": {
+      "phase": "awaiting",
+      "status": "SELECT SERVICE",
+      "lap": 1,
+      "tyre": "H",
+      "fuel": 15.8742758225927
+    }
+  },
+  {
+    "file": "022-summit-pit-choice-wet.png",
+    "desc": "Pit service selection: wet tyres",
+    "state": {
+      "phase": "awaiting",
+      "status": "SELECT SERVICE",
+      "lap": 1,
+      "tyre": "H",
+      "fuel": 15.8742758225927
+    }
+  },
+  {
+    "file": "023-summit-pit-choice-keep-current.png",
+    "desc": "Pit service selection: keep-current tyres",
+    "state": {
+      "phase": "awaiting",
+      "status": "SELECT SERVICE",
+      "lap": 1,
+      "tyre": "H",
+      "fuel": 15.8742758225927
+    }
+  },
+  {
+    "file": "024-summit-pit-box-selected.png",
+    "desc": "Service chosen (softs + fuel) before confirming",
+    "state": {
+      "phase": "awaiting",
+      "status": "SELECT SERVICE",
+      "lap": 1,
+      "tyre": "H",
+      "fuel": 15.8742758225927
+    }
+  },
+  {
+    "file": "025-summit-pit-wheels-off.png",
+    "desc": "Tyre change begins: wheels off and refuelling starts",
+    "state": {
+      "phase": "stopped",
+      "status": "SERVICING",
+      "lap": 1,
+      "tyre": "H",
+      "fuel": 16.174275822592755
+    }
+  },
+  {
+    "file": "026-summit-pit-servicing.png",
+    "desc": "Pit crew servicing the car",
+    "state": {
+      "phase": "stopped",
+      "status": "SERVICING",
+      "lap": 1,
+      "tyre": "H",
+      "fuel": 18.586775822592777
+    }
+  },
+  {
+    "file": "027-summit-pit-securing.png",
+    "desc": "Tyre change: securing wheels; refuelling progress",
+    "state": {
+      "phase": "stopped",
+      "status": "SERVICING",
+      "lap": 1,
+      "tyre": "S",
+      "fuel": 21.286775822592766
+    }
+  },
+  {
+    "file": "028-summit-pit-release.png",
+    "desc": "Service complete: release / leaving the box",
+    "state": {
+      "phase": "release",
+      "status": "WAITING FOR SAFE RELEASE",
+      "lap": 1,
+      "tyre": "S",
+      "fuel": 21.8742758225927
+    }
+  },
+  {
+    "file": "029-summit-pit-exit-lane.png",
+    "desc": "Leaving the box: automatic pit exit before control returns",
+    "state": {
+      "phase": "out",
+      "status": "PIT EXIT",
+      "lap": 1,
+      "tyre": "S",
+      "fuel": 21.87426667609627
+    }
+  },
+  {
+    "file": "030-summit-pit-exit.png",
+    "desc": "After the pit exit: control returns, stop summary",
+    "state": {
+      "phase": null,
+      "status": "PIT EXIT",
+      "lap": 1,
+      "tyre": "S",
+      "fuel": 21.73001275444563
+    }
+  },
+  {
+    "file": "031-summit-back-on-track.png",
+    "desc": "Normal racing HUD restored after leaving the pit lane",
+    "state": {
+      "phase": null,
+      "status": "PIT EXIT",
+      "lap": 1,
+      "tyre": "S",
+      "fuel": 21.471771488914335
+    }
+  },
+  {
+    "file": "032-summit-pause-race.png",
+    "desc": "Pause menu after returning to the track",
+    "state": {
+      "phase": null,
+      "status": "PIT EXIT",
+      "lap": 1,
+      "tyre": "S",
+      "fuel": 21.471771488914335
+    }
+  },
+  {
+    "file": "033-rivermere-circuit-select.png",
+    "desc": "Circuit selection: rivermere",
+    "state": {
+      "phase": null,
+      "status": "PIT EXIT"
+    }
+  },
+  {
+    "file": "034-rivermere-race-brief.png",
+    "desc": "Race start brief: starting tyre and fuel",
+    "state": {
+      "phase": null,
+      "status": "PIT EXIT"
+    }
+  },
+  {
+    "file": "035-rivermere-before-pit-entry.png",
+    "desc": "Normal racing HUD before steering into the pit entry",
+    "state": {
+      "phase": null,
+      "status": "PIT EXIT",
+      "lap": 0,
+      "tyre": "H",
+      "fuel": 17.902408060840457
+    }
+  },
+  {
+    "file": "036-rivermere-pit-approach.png",
+    "desc": "Before the gold entry gate: steering onto the pit-entry route",
+    "state": {
+      "phase": null,
+      "status": "PIT EXIT",
+      "lap": 0,
+      "tyre": "H",
+      "fuel": 15.94340207842047
+    }
+  },
+  {
+    "file": "037-rivermere-pit-lane.png",
+    "desc": "Past the gold commitment gate: automatic pit driving to an assigned service box",
+    "state": {
+      "phase": "queue",
+      "status": "WAITING FOR BOX",
+      "lap": 0,
+      "tyre": "H",
+      "fuel": 15.840976387488357
+    }
+  },
+  {
+    "file": "038-rivermere-pit-box-select.png",
+    "desc": "Stopped in the box: choose tyres and fuel",
+    "state": {
+      "phase": "awaiting",
+      "status": "SELECT SERVICE",
+      "lap": 0,
+      "tyre": "H",
+      "fuel": 15.721334278255638
+    }
+  },
+  {
+    "file": "039-rivermere-pit-box-selected.png",
+    "desc": "Service chosen (softs + fuel) before confirming",
+    "state": {
+      "phase": "awaiting",
+      "status": "SELECT SERVICE",
+      "lap": 0,
+      "tyre": "H",
+      "fuel": 15.721334278255638
+    }
+  },
+  {
+    "file": "040-rivermere-pit-wheels-off.png",
+    "desc": "Tyre change begins: wheels off and refuelling starts",
+    "state": {
+      "phase": "stopped",
+      "status": "SERVICING",
+      "lap": 0,
+      "tyre": "H",
+      "fuel": 16.0213342782557
+    }
+  },
+  {
+    "file": "041-rivermere-pit-servicing.png",
+    "desc": "Pit crew servicing the car",
+    "state": {
+      "phase": "stopped",
+      "status": "SERVICING",
+      "lap": 0,
+      "tyre": "H",
+      "fuel": 18.421334278255735
+    }
+  },
+  {
+    "file": "042-rivermere-pit-securing.png",
+    "desc": "Tyre change: securing wheels; refuelling progress",
+    "state": {
+      "phase": "stopped",
+      "status": "SERVICING",
+      "lap": 0,
+      "tyre": "H",
+      "fuel": 21.133834278255723
+    }
+  },
+  {
+    "file": "043-rivermere-pit-release.png",
+    "desc": "Service complete: release / leaving the box",
+    "state": {
+      "phase": "release",
+      "status": "WAITING FOR SAFE RELEASE",
+      "lap": 0,
+      "tyre": "S",
+      "fuel": 21.721334278255647
+    }
+  },
+  {
+    "file": "044-rivermere-pit-exit-lane.png",
+    "desc": "Leaving the box: automatic pit exit before control returns",
+    "state": {
+      "phase": "out",
+      "status": "PIT EXIT",
+      "lap": 0,
+      "tyre": "S",
+      "fuel": 21.721334278255647
+    }
+  },
+  {
+    "file": "045-rivermere-pit-exit.png",
+    "desc": "After the pit exit: control returns, stop summary",
+    "state": {
+      "phase": null,
+      "status": "PIT EXIT",
+      "lap": 1,
+      "tyre": "S",
+      "fuel": 21.550215389535218
+    }
+  },
+  {
+    "file": "046-rivermere-back-on-track.png",
+    "desc": "Normal racing HUD restored after leaving the pit lane",
+    "state": {
+      "phase": null,
+      "status": "PIT EXIT",
+      "lap": 1,
+      "tyre": "S",
+      "fuel": 21.29183001765459
+    }
+  },
+  {
+    "file": "047-redridge-circuit-select.png",
+    "desc": "Circuit selection: redridge",
+    "state": {
+      "phase": null,
+      "status": "PIT EXIT"
+    }
+  },
+  {
+    "file": "048-redridge-race-brief.png",
+    "desc": "Race start brief: starting tyre and fuel",
+    "state": {
+      "phase": null,
+      "status": "PIT EXIT"
+    }
+  },
+  {
+    "file": "049-redridge-before-pit-entry.png",
+    "desc": "Normal racing HUD before steering into the pit entry",
+    "state": {
+      "phase": null,
+      "status": "PIT EXIT",
+      "lap": 0,
+      "tyre": "H",
+      "fuel": 17.156238471966052
+    }
+  },
+  {
+    "file": "050-redridge-pit-approach.png",
+    "desc": "Before the gold entry gate: steering onto the pit-entry route",
+    "state": {
+      "phase": null,
+      "status": "PIT EXIT",
+      "lap": 0,
+      "tyre": "H",
+      "fuel": 15.460408301198292
+    }
+  },
+  {
+    "file": "051-redridge-pit-lane.png",
+    "desc": "Past the gold commitment gate: automatic pit driving to an assigned service box",
+    "state": {
+      "phase": "in",
+      "status": "TO BOX 4",
+      "lap": 0,
+      "tyre": "H",
+      "fuel": 15.306898982752752
+    }
+  },
+  {
+    "file": "052-redridge-pit-box-select.png",
+    "desc": "Stopped in the box: choose tyres and fuel",
+    "state": {
+      "phase": "awaiting",
+      "status": "SELECT SERVICE",
+      "lap": 1,
+      "tyre": "H",
+      "fuel": 15.267851369706362
+    }
+  },
+  {
+    "file": "053-redridge-pit-box-selected.png",
+    "desc": "Service chosen (softs + fuel) before confirming",
+    "state": {
+      "phase": "awaiting",
+      "status": "SELECT SERVICE",
+      "lap": 1,
+      "tyre": "H",
+      "fuel": 15.267851369706362
+    }
+  },
+  {
+    "file": "054-redridge-pit-wheels-off.png",
+    "desc": "Tyre change begins: wheels off and refuelling starts",
+    "state": {
+      "phase": "stopped",
+      "status": "SERVICING",
+      "lap": 1,
+      "tyre": "H",
+      "fuel": 15.567851369706416
+    }
+  },
+  {
+    "file": "055-redridge-pit-servicing.png",
+    "desc": "Pit crew servicing the car",
+    "state": {
+      "phase": "stopped",
+      "status": "SERVICING",
+      "lap": 1,
+      "tyre": "H",
+      "fuel": 17.96785136970646
+    }
+  },
+  {
+    "file": "056-redridge-pit-securing.png",
+    "desc": "Tyre change: securing wheels; refuelling progress",
+    "state": {
+      "phase": "stopped",
+      "status": "SERVICING",
+      "lap": 1,
+      "tyre": "S",
+      "fuel": 20.68035136970645
+    }
+  },
+  {
+    "file": "057-redridge-pit-release.png",
+    "desc": "Service complete: release / leaving the box",
+    "state": {
+      "phase": "release",
+      "status": "WAITING FOR SAFE RELEASE",
+      "lap": 1,
+      "tyre": "S",
+      "fuel": 21.267851369706385
+    }
+  },
+  {
+    "file": "058-redridge-pit-exit-lane.png",
+    "desc": "Leaving the box: automatic pit exit before control returns",
+    "state": {
+      "phase": "out",
+      "status": "PIT EXIT",
+      "lap": 1,
+      "tyre": "S",
+      "fuel": 21.267851369706385
+    }
+  },
+  {
+    "file": "059-redridge-pit-exit.png",
+    "desc": "After the pit exit: control returns, stop summary",
+    "state": {
+      "phase": null,
+      "status": "PIT EXIT",
+      "lap": 1,
+      "tyre": "S",
+      "fuel": 21.12350420659269
+    }
+  },
+  {
+    "file": "060-redridge-back-on-track.png",
+    "desc": "Normal racing HUD restored after leaving the pit lane",
+    "state": {
+      "phase": null,
+      "status": "PIT EXIT",
+      "lap": 1,
+      "tyre": "S",
+      "fuel": 20.865265113724305
+    }
+  },
+  {
+    "file": "102-extra-pit-queue-busy.png",
+    "desc": "Staged busy-lane scenario: all four boxes occupied; player waits in the real FIFO queue",
+    "state": {
+      "phase": "queue",
+      "status": "WAITING FOR BOX",
+      "lap": 0,
+      "tyre": "H",
+      "fuel": 15.90738593848144
+    }
+  },
+  {
+    "file": "103-extra-pit-queue-box-assigned.png",
+    "desc": "Automatic pit driving toward the assigned service box",
+    "state": {
+      "phase": "in",
+      "status": "TO BOX 4",
+      "lap": 0,
+      "tyre": "H",
+      "fuel": 15.784323162752944
+    }
+  },
+  {
+    "file": "104-extra-pit-puncture-and-repairs.png",
+    "desc": "Staged damage: punctured tyre cannot be kept; automatic front and rear wing repairs are listed",
+    "state": {
+      "phase": "awaiting",
+      "status": "SELECT SERVICE",
+      "lap": 1,
+      "tyre": "H",
+      "fuel": 15.719975240488683
+    }
+  },
+  {
+    "file": "105-extra-pit-repairs-selected.png",
+    "desc": "Hard tyres and fuel selected alongside automatic wing repairs",
+    "state": {
+      "phase": "awaiting",
+      "status": "SELECT SERVICE",
+      "lap": 1,
+      "tyre": "H",
+      "fuel": 15.719975240488683
+    }
+  },
+  {
+    "file": "106-extra-pit-repairs-active.png",
+    "desc": "Tyres, fuel, front wing and rear wing being serviced together",
+    "state": {
+      "phase": "stopped",
+      "status": "SERVICING",
+      "lap": 1,
+      "tyre": "H",
+      "fuel": 17.969975240488512
+    }
+  },
+  {
+    "file": "107-extra-pit-front-wing-complete.png",
+    "desc": "Tyres and fuel complete; front wing fitted while rear wing repair continues",
+    "state": {
+      "phase": "stopped",
+      "status": "SERVICING",
+      "lap": 1,
+      "tyre": "H",
+      "fuel": 21.719975240488683
+    }
+  },
+  {
+    "file": "108-extra-pit-repairs-complete.png",
+    "desc": "All repair jobs complete: automatic departure into the fast lane",
+    "state": {
+      "phase": "out",
+      "status": "PIT EXIT",
+      "lap": 1,
+      "tyre": "H",
+      "fuel": 21.719975240488683
+    }
+  },
+  {
+    "file": "109-extra-pit-repair-exit-summary.png",
+    "desc": "After the staged repair stop: exit summary and completed service cards",
+    "state": {
+      "phase": null,
+      "status": "PIT EXIT",
+      "lap": 1,
+      "tyre": "H",
+      "fuel": 21.589200604525303
+    }
+  }
+]
