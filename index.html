@@ -407,7 +407,7 @@
   .cr-head .sub { margin:0; }
   .cr-head .btn { width:auto; margin:0; padding:10px 22px; }
   .cr-badge { display:inline-block; margin-left:10px; padding:1px 9px; border-radius:4px; font-size:12px; font-weight:700; letter-spacing:1.4px; color:#111; background:var(--gold); vertical-align:middle; }
-  .cr-bar { list-style:none; margin:0; padding:0; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; }
+  .cr-bar { list-style:none; margin:0; padding:0; display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:6px; }
   .cr-seg { position:relative; width:100%; display:flex; flex-direction:column; align-items:flex-start; gap:2px; padding:12px 10px 9px; text-align:left; color:#fff; cursor:pointer;
     font:700 15px var(--font); letter-spacing:.3px; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.10); border-radius:6px; transition:background .15s, border-color .15s, box-shadow .2s, opacity .15s; }
   .cr-seg::before { content:''; position:absolute; left:0; right:0; top:0; height:4px; border-radius:6px 6px 0 0; background:rgba(255,255,255,.16); transition:background .2s; }
@@ -502,6 +502,13 @@
   .res-career small { display:block; font-size:11px; font-weight:700; letter-spacing:1.4px; color:var(--dim); text-transform:uppercase; }
   .res-career b { font-size:24px; line-height:1.2; }
   .res-career .ok b { color:#4be38a; } .res-career .no b { color:#ff7a72; }
+  .rs-text { margin:16px 0 8px; font-size:15px; font-weight:600; }
+  .rs-track { height:6px; border-radius:3px; background:rgba(255,255,255,.1); overflow:hidden; } .rs-track i { display:block; height:100%; width:0; background:var(--accent); }
+  .cr-vr { display:flex; align-items:baseline; gap:12px; flex-wrap:wrap; } .cr-vr > b { font-size:56px; line-height:1; font-weight:900; font-style:italic; }
+  .cr-vr span { font-size:18px; font-weight:700; } .cr-vr span small { display:block; font-size:13px; color:var(--dim); font-weight:600; }
+  .cr-vr em { font-style:normal; font-weight:700; font-size:16px; padding:2px 10px; border-radius:4px; background:rgba(255,255,255,.07); }
+  .cr-vr em.up, .vr-up { color:#4be38a; } .cr-vr em.down, .vr-down { color:#ff7a72; }
+  .sum-hero.no > b { color:#ff7a72; }
   #results .res-scroll { max-height:52vh; overflow-y:auto; scrollbar-width:none; }
   #results .res-scroll::-webkit-scrollbar { display:none; }
   /* championship summary */
@@ -515,7 +522,7 @@
   .sum-hero.no > b { color:#ff7a72; }
   .sum-hero.champ { border-color:var(--gold); background:linear-gradient(90deg,rgba(201,162,74,.18),rgba(201,162,74,.04)); } .sum-hero.champ > b { color:var(--gold); }
   @keyframes sumIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
-  @media (max-width:980px) { .cr-body { grid-template-columns:1fr; } .cr-scroll { flex:none; max-height:50vh; } .cr-bar { grid-template-columns:repeat(3,minmax(0,1fr)); } .res-career { grid-template-columns:repeat(3,minmax(0,1fr)); } }
+  @media (max-width:980px) { .cr-body { grid-template-columns:1fr; } .cr-scroll { flex:none; max-height:50vh; } .cr-bar { grid-template-columns:repeat(4,minmax(0,1fr)); } .res-career { grid-template-columns:repeat(3,minmax(0,1fr)); } }
   @media (max-width:560px) { .cr-bar { grid-template-columns:repeat(2,minmax(0,1fr)); } .cr-races, .cr-stats { grid-template-columns:1fr; } .cr-race + .cr-race::before { display:none; } }
   @media (prefers-reduced-motion: reduce) { .cr-seg, .cr-seg::before, .cr-race { transition:none; } .cr-seg.unlocked-now, .sum-hero { animation:none; } }
 </style>
@@ -602,7 +609,7 @@
     <h1 class="logo">Apex<span>ra</span></h1>
     <div class="mode-picker"><fieldset><legend>Game Mode</legend><div class="mode-options">
       <button type="button" class="mode-option" data-mode="grandprix" aria-pressed="true"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M4 30V3m1 0c8-6 13 6 23 0v16c-10 6-15-6-23 0"/><path d="M8 5h5v5H8zm10 5h5v5h-5z" fill="currentColor"/></svg><span><b>Grand Prix — 6 Laps</b>20 drivers from the grid. Master your tyre, fuel and pit strategy.</span></button>
-      <button type="button" class="mode-option mode-career" data-act="career" id="btnCareer"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M3 27h6v-6H3zm10 0h6V15h-6zm10 0h6V6h-6z"/><path d="m4 15 8-7 6 4 10-9" /></svg><span><b>Career — 3 Ranks <small id="careerTierLabel"></small></b>Six circuits per rank, each scored out of 100. Rookie to Master (150% AI).</span></button>
+      <button type="button" class="mode-option mode-career" data-act="career" id="btnCareer"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M3 27h6v-6H3zm10 0h6V15h-6zm10 0h6V6h-6z"/><path d="m4 15 8-7 6 4 10-9" /></svg><span><b>Career <small id="careerTierLabel"></small></b>Rookie, Pro and Master: six races each, in order, 40 points a race. Then Endless Career and your VR rating.</span></button>
     </div></fieldset></div>
     <button id="menuStart" class="btn primary" data-act="play">Start Grand Prix</button>
     <button class="btn" data-act="controls">Controls</button>
@@ -680,7 +687,6 @@
       <div>Pit plan repairs on / off <span><kbd>0</kbd></span></div>
       <div>Car status (pauses the race) <span><kbd>C</kbd></span></div>
       <div>Telemetry graph <span><kbd>T</kbd></span></div>
-      <div>Respawn on track <span><kbd>R</kbd><kbd>Space</kbd></span></div>
       <div>Mute audio <span><kbd>M</kbd></span></div>
       <div>Pause <span><kbd>Esc</kbd></span></div>
     </div>
@@ -710,7 +716,17 @@
     <div class="sub" id="pauseSub"></div>
     <button class="btn primary" data-act="resume">Resume</button>
     <button class="btn" data-act="controls">Controls</button>
+    <button class="btn hidden" data-act="skip" id="btnSkip">Skip to the result</button>
     <button class="btn" data-act="exit" id="btnExit">Exit to main menu</button>
+  </div>
+</div>
+
+<div id="resolving" class="overlay hidden" role="status" aria-live="polite">
+  <div class="dialog" style="width:min(460px,92vw)">
+    <h2>Race <span>continues</span></h2>
+    <div class="sub">Your race is over. The rest of the field is racing to the flag; the classification and your score follow from the finished race.</div>
+    <div class="rs-text" id="rsText">Resolving the race</div>
+    <div class="rs-track"><i id="rsBar"></i></div>
   </div>
 </div>
 
@@ -727,10 +743,10 @@
 <div id="career" class="overlay hidden">
   <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="crTitle">
     <div class="cr-head">
-      <div><h2 id="crTitle">Ca<span>reer</span></h2><div class="sub" id="crSub">Five championships, three Grand Prix each. Finish high enough in the standings to unlock the next tier.</div></div>
+      <div><h2 id="crTitle">Ca<span>reer</span></h2><div class="sub" id="crSub"></div></div>
       <button class="btn" id="crBack" type="button">Back</button>
     </div>
-    <ol class="cr-bar" id="crBar" role="listbox" aria-label="Career tiers" aria-orientation="horizontal"></ol>
+    <ol class="cr-bar" id="crBar" role="listbox" aria-label="Career stages" aria-orientation="horizontal"></ol>
     <div class="cr-body">
       <section class="cr-tier" id="crTier" aria-live="polite"></section>
       <section class="cr-table" aria-labelledby="crTableTitle">
@@ -3809,9 +3825,9 @@ const SIM = (function () {
       if (speed < vTarget) { inp.throttle = clamp((vTarget - speed) * 0.12, 0.12, 0.38); inp.brake = 0; }
       else { inp.throttle = 0; inp.brake = 0.5; }
       if (blocked) this.waitT += dt;
-      // stuck detection (against wall etc.)
-      // The arcade car never reverses and cannot turn on the spot, so like the player the bot respawns.
-      if (speed < 0.6 && inp.throttle > 0.1) { this.stuckT += dt; if (this.stuckT > 1.4) { this.respawn(); this.stuckT = 0; } }
+      // stuck detection (against a wall, say): the arcade car never reverses and cannot turn on the spot, and nobody is
+      // put back on the circuit, so a car that cannot move retires, as a player's would (the same rule for every car)
+      if (speed < 0.6 && inp.throttle > 0.1) { this.stuckT += dt; if (this.stuckT > 5) { race.abandonRace(car, 'Stuck'); return; } }
       else this.stuckT = Math.max(0, this.stuckT - dt);
       // done?
       const rejoined = Math.abs(car.d) < t.hw[car.idx] + 0.5 || (car.runoffN > 0 && car.terrainN === 0);
@@ -3822,15 +3838,8 @@ const SIM = (function () {
         this.rejoinT = lerp(5, 2.5, this.mind.adapt); this.note('rejoined the track');
         this.planTrajectory();
       }
-      if (this.recoverT > 22 + this.waitT * 0.5 && this.waitT < 30) { // marshal assistance
-        this.respawn(); this.mode = 'race'; this.recoverT = 0; this.waitT = 0;
-      }
-    }
-    // same respawn as the player's R / Space key
-    respawn() {
-      const car = this.car; this.race.marshalReset(car);
-      car.u = car.v = car.speed = car.steer = car.throttle = car.brake = car.slideAngle = 0; car.axL = car.ayL = 0;
-      this.handling.reset(); this.cmd.steer = this.cmd.throttle = this.cmd.brake = 0;
+      // a car that has not found its way back after a long time (not counting time spent waiting for traffic) is out
+      if (this.recoverT > 45 + this.waitT && this.waitT < 60) race.abandonRace(car, 'Unable to rejoin');
     }
     tactical(dtT = 0.1) {
       const car = this.car, race = this.race, t = this.track, L = t.aiLines;
@@ -5797,9 +5806,6 @@ const SIM = (function () {
         this.crossLine(car, at - over * dt);
       } else if (lapBase < car.lastLapBase) { car.lapValid = false; } // backing over a line cannot earn it again
       if (car.crossings > 0) {
-        // the lap's pace record (Career scoring): the track water the car drove on, and time and distance in the pit lane
-        const A = car.lapAcc || (car.lapAcc = { t: 0, water: 0, laneT: 0, laneD: 0 });
-        A.t += dt; A.water += (car.surfaceWet ?? this.wet) * dt; if (car.pit) { A.laneT += dt; A.laneD += Math.max(0, car.progress || 0); }
         if (car.sectorIdx === 0 && within >= t.sector1 && car.lastWithin < t.sector1) this.crossSector(car, 0);
         else if (car.sectorIdx === 1 && within >= t.sector2 && car.lastWithin < t.sector2) this.crossSector(car, 1);
       }
@@ -5828,7 +5834,9 @@ const SIM = (function () {
     crossLine(car, at = this.time) {
       const t = this.track;
       car.crossings++;
-      if (car.crossings === 1 && this.type === 'race') { car.sectorIdx = 0; car.sectorStart = this.lightsOutTime; car.curSectors = [0, 0, 0]; car.started = true; if (this.fuelEnabled) car.lapFuel = car.fuel; car.lapHadPit = !!car.pit; car.lineAt = at; car.lapAcc = { t: 0, water: 0, laneT: 0, laneD: 0 }; return; }
+      // Lap 1 is timed from the start line (the run-up from each grid slot differs), so every driver's lap 1 covers the
+      // same distance as every other lap and is timed the same way.
+      if (car.crossings === 1 && this.type === 'race') { car.sectorIdx = 0; car.sectorStart = at; car.lapStart = at; car.curSectors = [0, 0, 0]; car.started = true; if (this.fuelEnabled) car.lapFuel = car.fuel; car.lapHadPit = !!car.pit; return; }
       if (this.type === 'race' && car.finished) return;
       const lapTime = at - car.lapStart;
       // final sector
@@ -5839,11 +5847,7 @@ const SIM = (function () {
       const fullLap = car.sectorIdx === 2;
       car.lastSectors = car.curSectors.slice(); car.curSectors = [0, 0, 0]; car.sectorIdx = 0; car.sectorStart = at;
       if (this.type === 'race' || this.type === 'calib') car.laps = car.laps + 1;
-      car.lastLap = lapTime; car.lapTimes.push({ t: lapTime, valid: car.lapValid && fullLap, c: car.tyre.c });
-      // pace record: lap 1 is timed from the start line (the run-up from the grid slot is not part of it)
-      { const A = car.lapAcc || { t: lapTime, water: 0, laneT: 0, laneD: 0 }, first = car.laps === 1 && this.type === 'race';
-        (car.paceLaps || (car.paceLaps = [])).push({ t: first && car.lineAt != null ? at - car.lineAt : lapTime, water: A.t > 0 ? A.water / A.t : this.wet, laneT: A.laneT, laneD: A.laneD, first });
-        car.lapAcc = { t: 0, water: 0, laneT: 0, laneD: 0 }; }
+      car.lastLap = lapTime; car.lapTimes.push({ t: lapTime, valid: car.lapValid && fullLap, c: car.tyre.c, at });
       // the car's own fuel consumption, from complete laps without a pit stop (the range estimate uses it)
       if (this.fuelEnabled) {
         const burnt = (car.lapFuel ?? car.fuel) - car.fuel;
@@ -5852,7 +5856,7 @@ const SIM = (function () {
       }
       // Tyre age is continuous distance, not line crossings (including partial stints).
       if (car.lapValid && fullLap) {
-        if (!car.bestLap || lapTime < car.bestLap) car.bestLap = lapTime;
+        if (!car.bestLap || lapTime < car.bestLap) { car.bestLap = lapTime; car.bestLapAt = at; }
         if (!this.bestLap.time || lapTime < this.bestLap.time) {
           this.bestLap = { time: lapTime, car };
           if (this.type !== 'calib' && car.laps > 1) this.msg('FASTEST LAP  ' + car.driver.short + '  ' + fmtTime(lapTime), 'purple', car, 3);
@@ -6066,8 +6070,14 @@ const SIM = (function () {
       this.startRetirement(car, reason);
     }
     // The driver pulls off the racing line and stops; marshals then recover the car.
+    // the moment a car's race ended (race time, so a paused game changes nothing) and how far it had got: retired cars
+    // are classified by it, later retirements ahead of earlier ones
+    markRetired(car) {
+      if (car.retiredAt == null && !this.over) { car.retiredAt = this.time; car.retiredDist = car.totalDist; }
+    }
     startRetirement(car, reason) {
       if (car.retiring || car.dnf || car.finished) return;
+      this.markRetired(car);
       car.retiring = { reason, t0: this.time, stopT: 0, phase: 'stopping' };
       car.autoDrive = false;
       if (car.ai) { car.ai.boxThisLap = false; car.ai.pitting = false; car.ai.pitEntryBlend = 0; }
@@ -6117,26 +6127,29 @@ const SIM = (function () {
     }
     retire(car) {
       const was = car.dnf;
+      this.markRetired(car);
       car.dnf = true; car.inGarage = true; car.frozen = true; car.ghost = true;
       if (!was) { this.msg(car.driver.short + ' RETIRES — ' + car.dnfReason, 'critical', car, 4); this.log(car, 'DNF'); }
     }
-    marshalReset(car) {
-      const t = this.track; const side = car.d >= 0 ? 1 : -1;
-      // Recover beside the same circuit coordinate: moving the pose forward without its race distance shifts
-      // the timing line on every reset. Resynchronise the gates after moving laterally back to the track edge.
-      const s = car.s;
-      car.placeAt(t, s, side * (t.hw[t.wrapI(Math.round(s / DS))] + 2), 0);
-      car.totalDist += t.dS(s, car.s); car.gateResync = true;
-      car.vx = car.vz = car.r = 0; car.gear = 1;
-      this.log(car, 'marshal reset');
+    // A driver leaving the race before the flag (the player's Retire, or a car that can no longer move): a retirement
+    // at this moment, classified with the others. There is no way back onto the circuit.
+    abandonRace(car, reason = 'Retired') {
+      if (car.finished || car.dnf || this.over) return false;
+      this.markRetired(car);
+      car.dnfReason = car.retiring ? car.retiring.reason : reason; car.retiring = null; car.pit = null; car.pitPark = false;
+      this.retire(car);
+      return true;
     }
     // The one classification of the race (live positions, the finish, the results, Career): running cars by the
     // physical race distance (cumulative, never reset at the line); a car that has taken the flag keeps the distance
     // at which it crossed the line, so a lapped car that finishes behind the leader stays behind every car still
-    // running on the lead lap; cars that finished on the same lap by their finishing time; retirements last, by
-    // distance covered.
+    // running on the lead lap; cars that finished on the same lap by their finishing time. Retired cars come after
+    // every car still in the race: the later a car retired (race time), the higher it ranks; at the same moment, the
+    // one that had got further; then the fixed driver order. Every car gets its own place.
     raceCompare(a, b) {
-      if (a.dnf !== b.dnf) return a.dnf ? 1 : -1;
+      const outA = a.dnf || !!a.retiring, outB = b.dnf || !!b.retiring;
+      if (outA !== outB) return outA ? 1 : -1;
+      if (outA) return ((b.retiredAt ?? 0) - (a.retiredAt ?? 0)) || ((b.retiredDist ?? b.totalDist) - (a.retiredDist ?? a.totalDist)) || (a.id - b.id);
       const da = a.finished ? a.finishDist : a.totalDist, db = b.finished ? b.finishDist : b.totalDist;
       if (a.finished && b.finished && Math.abs(da - db) < 1) return (a.finishTime - b.finishTime) || (a.finishOrder - b.finishOrder);
       if (da !== db) return db - da;
@@ -6219,7 +6232,11 @@ const SIM = (function () {
       if (this.over) return;
       this.over = true;
       // the results are the race classification itself (standings), never a separate ordering
-      const res = this.standings().map(c => ({ car: c, laps: c.laps, time: c.finished ? c.finishTime : null, dnf: c.dnf, best: c.bestLap, pits: c.pitStops, dist: c.finished ? c.finishDist : c.totalDist, pos: c.position }));
+      // (a car still stopping after a retirement when the race ends is classified as retired)
+      for (const c of this.cars) if (c.retiring && !c.dnf) { c.dnf = true; c.dnfReason = c.retiring.reason; }
+      const res = this.standings().map(c => ({ car: c, laps: c.laps, time: c.finished ? c.finishTime : null, dnf: c.dnf, best: c.bestLap, bestAt: c.bestLapAt ?? null, pits: c.pitStops,
+        dist: c.finished ? c.finishDist : c.totalDist, pos: c.position, retiredAt: c.dnf ? (c.retiredAt ?? 0) : null, key: c.id }));
+      scoreRace(res);
       const pts = [25, 18, 15, 12, 10, 8, 6, 4, 2, 1]; // the Grand Prix results table's points column
       for (const r of res) r.points = r.dnf ? 0 : (pts[r.pos - 1] || 0);
       // the winner is the first car to complete the race distance; a race nobody finished (all cars retired) has none
@@ -6229,14 +6246,43 @@ const SIM = (function () {
   }
 
   /* ------------------------------------------------------------------
-     PROGRESSION — three Career ranks (Rookie 100%, Pro 125%, Master 150% AI),
-     each holding the six circuits as separate challenges. Pure functions
-     over a plain, JSON-serialisable state, so the game saves it and the tests drive it.
-       Career: a six-lap, 20-car Grand Prix per circuit, scored out of 100 = finishing position (50) + lap-time pace
-         (50, see careerPaceScore). The rank score is the sum of the best total on each circuit (max 600); a rank is
-         completed with all six circuits raced and at least CAREER_PROMOTE[rank] points.
-     A completed rank unlocks the next; any unlocked rank, and any circuit in it, can be raced again. A replay only
-     ever replaces a circuit's saved result with a better one, and a session id is counted once.
+     RACE SCORE — one rule for all 20 drivers, Career and Endless alike.
+       Finishing position: every car still in the race at the end (it took the flag, or was running when the race
+         was closed) ahead of every retired car; retired cars by how late they retired (see Session.raceCompare).
+       Best lap: each driver's fastest valid completed lap. Drivers with a lap, fastest first (an exactly equal time:
+         the one set earlier, then the fixed driver order); then drivers without one, the one that stayed in the race
+         longer first, then the one that got further, then the driver order.
+       Points per category: 21 − rank (P1 20 … P20 1); race score = position points + lap points (2…40).
+     ------------------------------------------------------------------ */
+  const RACE_FIELD = 20, RACE_SCORE_MAX = 40, RACE_SCORE_MIN = 2;
+  const rankPoints = (rank) => Number.isInteger(rank) && rank >= 1 && rank <= RACE_FIELD ? RACE_FIELD + 1 - rank : 0;
+  // rows: { key (stable driver id), best (s, 0 or null without a valid lap), bestAt (race time of that lap), retiredAt
+  // (race time, null if still in the race at the end), dist (race distance covered) }. Returns the rows, best first.
+  function rankBestLaps(rows) {
+    const has = (r) => r.best > 0;
+    return rows.slice().sort((a, b) => {
+      if (has(a) !== has(b)) return has(a) ? -1 : 1;
+      if (has(a)) return (a.best - b.best) || ((a.bestAt ?? 0) - (b.bestAt ?? 0)) || (a.key - b.key);
+      const sa = a.retiredAt == null ? Infinity : a.retiredAt, sb = b.retiredAt == null ? Infinity : b.retiredAt;
+      return (sb === sa ? 0 : sb > sa ? 1 : -1) || ((b.dist || 0) - (a.dist || 0)) || (a.key - b.key);
+    });
+  }
+  // Adds lapRank, posPts, lapPts and score to every result row (pos: its unique finishing position).
+  function scoreRace(res) {
+    rankBestLaps(res).forEach((r, k) => { r.lapRank = k + 1; });
+    for (const r of res) { r.posPts = rankPoints(r.pos); r.lapPts = rankPoints(r.lapRank); r.score = r.posPts + r.lapPts; }
+    return res;
+  }
+
+  /* ------------------------------------------------------------------
+     CAREER — three six-race championships (Rookie 100%, Pro 125%, Master 150% AI), then Endless Career.
+       Each rank is raced in a fixed order (Monza, Silverstone, Spa, Suzuka, Bahrain, Interlagos), one attempt per race:
+       the result of every race counts, a retirement included, and is saved before the next race opens. After the
+       sixth race the championship total (max 240) is judged: Rookie 160, Pro 180, Master 200. A pass unlocks the next
+       rank for good (Master unlocks Endless Career); a fail, or a new attempt at a passed rank, starts again at race 1.
+       Endless Career: 150% AI, a random circuit for every race (never the same one twice in a row), and a VR rating
+       (0…9,999, from 1,000) that the race score moves up or down.
+     Pure functions over a plain, JSON-serialisable state, so the game saves it and the tests drive it.
      ------------------------------------------------------------------ */
   // level: AI driving competence, never vehicle physics.
   const RANKS = [
@@ -6244,162 +6290,205 @@ const SIM = (function () {
     { id: 'pro', name: 'Pro', level: 1.25 },
     { id: 'master', name: 'Master', level: 1.50 },
   ];
-  const PROGRESS_CIRCUITS = CIRCUITS.map(c => c.id);
-  const PROGRESS_MODES = ['career'], PROGRESS_VERSION = 3, CAREER_FIELD = 20;
-  // finishing position points, P1..P20
-  const CAREER_POS_POINTS = [50, 44, 39, 35, 32, 29, 26, 23, 20, 18, 16, 14, 12, 10, 8, 6, 5, 4, 2, 1];
-  const CAREER_PROMOTE = [360, 420, 480];
+  const CAREER_ORDER = ['monza', 'silverstone', 'spa', 'suzuka', 'bahrain', 'interlagos'];
+  const PROGRESS_CIRCUITS = CAREER_ORDER.filter(id => CIRCUITS.some(c => c.id === id));
+  const PROGRESS_VERSION = 4, CAREER_FIELD = RACE_FIELD, RANK_RACES = 6, RANK_MAX = RANK_RACES * RACE_SCORE_MAX;
+  const CAREER_PROMOTE = [160, 180, 200];
+  const ENDLESS_LEVEL = 1.50;
+  // VR: the Endless Career rating
+  const VR_START = 1000, VR_MIN = 0, VR_MAX = 9999, VR_NEUTRAL = 21;
+  const VR_BANDS = [
+    { min: 0, max: 1999, gain: 48, loss: 20 },
+    { min: 2000, max: 3999, gain: 38, loss: 28 },
+    { min: 4000, max: 5999, gain: 29, loss: 38 },
+    { min: 6000, max: 7999, gain: 19, loss: 48 },
+    { min: 8000, max: 9999, gain: 10, loss: 60 },
+  ];
   const intIn = (v, lo, hi) => Number.isInteger(v) && v >= lo && v <= hi;
-  const careerPositionPoints = (pos) => intIn(pos, 1, CAREER_FIELD) ? CAREER_POS_POINTS[pos - 1] : 0;
-  // grid: the player's starting position for the next race of each rank. A rank's first race starts from the back
-  // (P20); every classified race of that rank, on any circuit, sets the next start to the position it finished in.
-  const progressModeNew = () => ({ unlocked: 0, completed: [], complete: false, results: Object.fromEntries(RANKS.map(r => [r.id, {}])), seen: [], grid: Object.fromEntries(RANKS.map(r => [r.id, CAREER_FIELD])) });
-  const careerGridPos = (st, rank) => { const g = st && st.career && st.career.grid, R = RANKS[rank]; return R && g && intIn(g[R.id], 1, CAREER_FIELD) ? g[R.id] : CAREER_FIELD; };
-  function progressNew() { return { v: PROGRESS_VERSION, team: null, career: progressModeNew(), legacy: null }; }
-
-  // ---- Career lap-time pace (0..50) ----
-  // Measured with the game's own handling, physics and AI (tools/pace-calibration.cjs; README "Career"): one car alone,
-  // fresh tyres of the quickest compound for the conditions, a mid-race fuel load, track water held at 0, 0.3, 0.6
-  // and 0.9, four seeds, median of the flying laps. Per circuit and wetness:
-  //   ref     the Master (150%) AI's lap (s): the 50-point pace
-  //   launch  the standing start's extra time on lap 1 from the line, against that lap (no lap-1 traffic caution)
-  //   rookie  the Rookie (100%) AI's lap / ref: 26 points
-  //   slow    the calibration baseline at 0% / ref: 12 points
-  //   pro     the Pro (125%) AI's lap / ref, for reference only: its gap to Master is the smallest and least repeatable
-  //           (Monza dry: 0.17% and 0.63% in two calibration runs), too uncertain to anchor points on
-  // 0 points at the slow anchor plus 12/14 of the Rookie-to-slow spread beyond it. Between the anchors the points
-  // follow a monotone cubic (Fritsch-Carlson), so every lap-time change moves the score smoothly and a slower lap
-  // never scores more.
-  const PACE_REF = {
-    monza: { water: [0, 0.3, 0.6, 0.9], ref: [77.28, 81.09, 84.79, 81.73], launch: [10.0, 10.4, 8.8, 10.4],
-      rookie: [1.0168, 1.0210, 1.0350, 1.0234], slow: [1.0630, 1.0731, 1.1035, 1.0799], pro: [1.0063, 1.0081, 1.0159, 1.0088] },
-    silverstone: { water: [0, 0.3, 0.6, 0.9], ref: [79.39, 83.58, 87.26, 84.15], launch: [9.8, 9.7, 7.8, 9.9],
-      rookie: [1.0230, 1.0326, 1.0413, 1.0315], slow: [1.0877, 1.0985, 1.1280, 1.1061], pro: [1.0119, 1.0173, 1.0233, 1.0149] },
-    spa: { water: [0, 0.3, 0.6, 0.9], ref: [97.18, 102.96, 107.31, 103.47], launch: [7.3, 6.4, 4.8, 6.5],
-      rookie: [1.0161, 1.0221, 1.0351, 1.0225], slow: [1.0784, 1.0812, 1.1205, 1.0868], pro: [1.0065, 1.0083, 1.0188, 1.0073] },
-    suzuka: { water: [0, 0.3, 0.6, 0.9], ref: [79.84, 85.49, 89.98, 86.03], launch: [9.5, 10.1, 7.4, 9.4],
-      rookie: [1.0209, 1.0210, 1.0232, 1.0175], slow: [1.0798, 1.0825, 1.1023, 1.0868], pro: [1.0079, 1.0130, 1.0114, 1.0084] },
-    bahrain: { water: [0, 0.3, 0.6, 0.9], ref: [84.09, 89.42, 95.61, 90.59], launch: [11.0, 11.8, 8.6, 11.4],
-      rookie: [1.0360, 1.0407, 1.0524, 1.0405], slow: [1.1100, 1.1163, 1.1577, 1.1161], pro: [1.0187, 1.0228, 1.0305, 1.0197] },
-    interlagos: { water: [0, 0.3, 0.6, 0.9], ref: [62.50, 66.53, 69.40, 66.71], launch: [7.4, 8.1, 6.8, 8.4],
-      rookie: [1.0318, 1.0385, 1.0479, 1.0413], slow: [1.0937, 1.1009, 1.1357, 1.1100], pro: [1.0157, 1.0201, 1.0269, 1.0226] },
-  };
-  const PACE_POINTS = { master: 50, rookie: 26, slow: 12 };
-  // a value of a per-wetness table at track water w (linear between the measured wetness, held beyond them)
-  function paceTable(R, key, water) {
-    const w = clamp(+water || 0, 0, 1), W = R.water, F = R[key];
-    if (w <= W[0]) return F[0];
-    for (let k = 1; k < W.length; k++) if (w <= W[k]) return lerp(F[k - 1], F[k], (w - W[k - 1]) / (W[k] - W[k - 1]));
-    return F[W.length - 1];
+  const vrBand = (vr) => VR_BANDS.findIndex(t => vr >= t.min && vr <= t.max);
+  // The VR change for a race score (2…40) from the VR held at the start of the race (its band decides the scale)
+  function calculateVrChange(raceScore, startingVr) {
+    const tier = VR_BANDS[vrBand(startingVr)];
+    if (!tier || !Number.isInteger(startingVr)) throw new Error('Invalid starting VR');
+    if (!Number.isInteger(raceScore) || raceScore < RACE_SCORE_MIN || raceScore > RACE_SCORE_MAX) throw new Error('Invalid race score');
+    if (raceScore === VR_NEUTRAL) return 0;
+    if (raceScore > VR_NEUTRAL) return Math.round((raceScore - VR_NEUTRAL) / 19 * tier.gain);
+    return -Math.round((VR_NEUTRAL - raceScore) / 19 * tier.loss);
   }
-  function paceRefAt(circuit, water) { const R = PACE_REF[circuit]; return R ? paceTable(R, 'ref', water) : null; }
-  function paceLaunchAt(circuit, water) { const R = PACE_REF[circuit]; return R ? paceTable(R, 'launch', water) : 0; }
-  // [lap time / reference, points] for a circuit and wetness
-  function paceAnchors(circuit, water) {
-    const R = PACE_REF[circuit]; if (!R) return null;
-    const rk = paceTable(R, 'rookie', water), sl = paceTable(R, 'slow', water);
-    return [[1, PACE_POINTS.master], [rk, PACE_POINTS.rookie], [sl, PACE_POINTS.slow], [sl + (sl - rk) * PACE_POINTS.slow / (PACE_POINTS.rookie - PACE_POINTS.slow), 0]];
+  function calculateNewVr(startingVr, raceScore) {
+    return Math.max(VR_MIN, Math.min(VR_MAX, startingVr + calculateVrChange(raceScore, startingVr)));
   }
-  // points (unrounded) for a lap time ratio on a circuit at a wetness: 50 at or under the reference, 0 at the far
-  // anchor and beyond, a monotone cubic through the anchors between
-  function pacePointsFor(circuit, water, ratio) {
-    const A = paceAnchors(circuit, water);
-    if (!A || !(ratio > 0)) return 0;
-    if (ratio <= A[0][0]) return A[0][1];
-    const n = A.length; if (ratio >= A[n - 1][0]) return 0;
-    const h = [], d = [], m = [];
-    for (let k = 0; k < n - 1; k++) { h[k] = A[k + 1][0] - A[k][0]; d[k] = (A[k + 1][1] - A[k][1]) / h[k]; }
-    m[0] = d[0]; m[n - 1] = d[n - 2];
-    for (let k = 1; k < n - 1; k++) m[k] = d[k - 1] * d[k] <= 0 ? 0 : 3 * (h[k - 1] + h[k]) / ((2 * h[k] + h[k - 1]) / d[k - 1] + (h[k] + 2 * h[k - 1]) / d[k]);
-    let k = 0; while (ratio > A[k + 1][0]) k++;
-    const u = (ratio - A[k][0]) / h[k], u2 = u * u, u3 = u2 * u;
-    return clamp((2 * u3 - 3 * u2 + 1) * A[k][1] + (u3 - 2 * u2 + u) * h[k] * m[k] + (-2 * u3 + 3 * u2) * A[k + 1][1] + (u3 - u2) * h[k] * m[k + 1], 0, 50);
+  const newRankState = () => ({ attempt: 1, races: [], grid: CAREER_FIELD });
+  const newEndless = () => ({ unlocked: false, vr: VR_START, best: VR_START, races: 0, last: null, history: [], next: null, lastCircuit: null, grid: CAREER_FIELD });
+  function progressNew() {
+    return { v: PROGRESS_VERSION, team: null,
+      career: { unlocked: 0, completed: [], legacyCompleted: [], ranks: Object.fromEntries(RANKS.map(r => [r.id, newRankState()])), endless: newEndless(), active: null, seen: [] },
+      legacy: null };
   }
-  // The race's pace score (integer 0..50). laps: the player's laps as the session logs them (car.paceLaps:
-  // { t, water, laneT, laneD, first }). Each lap is compared with the reference for its own average track water;
-  // the standing start's measured extra time is allowed on lap 1 (timed from the line), and time inside the pit lane
-  // (entry to exit, including the stop) is replaced by the reference pace over the same distance. Everything else a
-  // lap costs counts: mistakes, time off the track, contact, damage, worn tyres, fuel weight. The score is the mean
-  // of the per-lap points over the race distance; a car that retired scores 0 for every lap it did not complete.
-  function careerPaceScore(circuit, length, laps, totalLaps, retired) {
-    const R = PACE_REF[circuit]; if (!R || !Array.isArray(laps)) return { points: 0, laps: [] };
-    const per = [];
-    for (const l of laps) {
-      if (!l || !(l.t > 0)) continue;
-      const ref = paceRefAt(circuit, l.water), adj = l.t - (l.laneT || 0) + (l.laneD || 0) * ref / length;
-      const launch = l.first ? paceLaunchAt(circuit, l.water) : 0, ratio = (adj - launch) / ref;
-      per.push({ t: l.t, adj, ref: ref + launch, ratio, points: pacePointsFor(circuit, l.water, ratio) });
+  // ---- what the Career shows: derived from the saved results, never trusted from the save ----
+  function rankStatus(st, rank) {
+    const R = RANKS[rank]; if (!R) return null;
+    const m = st.career, rs = m.ranks[R.id], races = rs.races;
+    const total = races.reduce((a, r) => a + r.total, 0), need = CAREER_PROMOTE[rank], done = races.length >= RANK_RACES;
+    return { rank, id: R.id, name: R.name, level: R.level, attempt: rs.attempt, races: races.slice(), index: races.length, total, max: RANK_MAX, need,
+      done, passed: done && total >= need, failed: done && total < need, next: done ? null : PROGRESS_CIRCUITS[races.length],
+      unlocked: rank <= m.unlocked, completed: m.completed.includes(rank), schedule: PROGRESS_CIRCUITS.slice() };
+  }
+  const endlessStatus = (st) => { const e = st.career.endless; return { ...e, history: e.history.slice(), band: vrBand(e.vr), max: VR_MAX }; };
+  // the player's starting slot for the next race: P20 for the first race of a championship (and the first Endless
+  // race), then where the previous race of it finished
+  function careerGridPos(st, kind, rank) {
+    const m = st && st.career; if (!m) return CAREER_FIELD;
+    if (kind === 'endless') return intIn(m.endless.grid, 1, CAREER_FIELD) ? m.endless.grid : CAREER_FIELD;
+    const R = RANKS[rank], rs = R && m.ranks[R.id];
+    return rs && rs.races.length && intIn(rs.grid, 1, CAREER_FIELD) ? rs.grid : CAREER_FIELD;
+  }
+  const makeId = (prefix, rng) => prefix + '-' + Math.floor(rng() * 2176782336).toString(36) + Math.floor(rng() * 2176782336).toString(36);
+  // Endless Career: draw the next circuit (equal chances, never the previous one) and keep it until it is raced
+  function ensureEndlessNext(st, rng = Math.random) {
+    const e = st.career.endless;
+    if (!e.unlocked || e.next) return e.next;
+    const pool = PROGRESS_CIRCUITS.filter(id => id !== e.lastCircuit);
+    const circuit = pool[Math.min(pool.length - 1, Math.floor(rng() * pool.length))];
+    e.next = { circuit, id: makeId('endless-' + (e.races + 1), rng) };
+    return e.next;
+  }
+  // Start a Career race: the next scheduled race of a rank, or the drawn Endless race. It becomes the active attempt
+  // (saved by the caller before the race starts): only its result, or a forfeit, can end it.
+  function beginRace(st, kind, rank, rng = Math.random, now = 0) {
+    const m = st && st.career; if (!m) return { ok: false, reason: 'invalid' };
+    if (m.active) return { ok: false, reason: 'active', active: m.active };
+    if (kind === 'endless') {
+      if (!m.endless.unlocked) return { ok: false, reason: 'locked' };
+      const next = ensureEndlessNext(st, rng);
+      m.active = { kind, rank: null, index: m.endless.races, circuit: next.circuit, id: next.id, at: now };
+    } else {
+      const S = rankStatus(st, rank); if (!S) return { ok: false, reason: 'invalid' };
+      if (!S.unlocked) return { ok: false, reason: 'locked' };
+      if (S.done) return { ok: false, reason: 'done' };
+      m.active = { kind: 'rank', rank, index: S.index, circuit: S.next, id: makeId(S.id + '-' + S.attempt + '-' + (S.index + 1), rng), at: now };
     }
-    const n = retired ? Math.max(totalLaps, per.length) : Math.max(1, per.length);
-    const sum = per.reduce((a, b) => a + b.points, 0);
-    return { points: clamp(Math.round(sum / n), 0, 50), mean: sum / n, laps: per };
+    return { ok: true, active: { ...m.active } };
   }
-
-  // ---- results ----
-  const validCareerEntry = (e) => e && typeof e === 'object' && intIn(e.pos, 1, CAREER_FIELD) && intIn(e.pacePts, 0, 50) && typeof e.dnf === 'boolean'
-    && e.posPts === careerPositionPoints(e.pos) && e.total === e.posPts + e.pacePts;
-  const cleanCareerEntry = (e) => ({ total: e.total, pos: e.pos, posPts: e.posPts, pacePts: e.pacePts, dnf: e.dnf, id: String(e.id || ''), water: Number.isFinite(e.water) ? +e.water : 0, at: Number.isFinite(e.at) ? e.at : 0 });
-  // the state of one rank in a mode, derived from its saved results (never trusted from the save)
-  function rankStatus(st, mode, rank) {
-    if (mode !== 'career') return null;
-    const m = st.career, r = RANKS[rank], res = (m && m.results[r.id]) || {};
-    const rows = PROGRESS_CIRCUITS.map(id => ({ circuit: id, entry: res[id] || null }));
-    const attempted = rows.filter(x => x.entry).length, all = attempted === PROGRESS_CIRCUITS.length;
-    if (mode === 'career') {
-      const score = rows.reduce((a, x) => a + (x.entry ? x.entry.total : 0), 0), need = CAREER_PROMOTE[rank];
-      return { mode, rank, rows, attempted, all, score, max: 100 * PROGRESS_CIRCUITS.length, need, complete: all && score >= need, unlocked: rank <= m.unlocked };
-    }
-  }
-  // completed ranks and the unlocked rank follow from the results (a completed rank unlocks the next)
-  function progressRecompute(st, mode) {
-    const m = st[mode]; const before = m.completed.slice();
-    m.completed = []; for (let k = 0; k < RANKS.length; k++) if (rankStatus(st, mode, k).complete) m.completed.push(k);
-    // carry over unlocks earned elsewhere (migration) but never lock what is open
-    let u = m.unlocked; for (const k of m.completed) u = Math.max(u, Math.min(RANKS.length - 1, k + 1));
-    m.unlocked = u;
-    m.complete = m.completed.includes(RANKS.length - 1);
-    return m.completed.filter(k => !before.includes(k));
-  }
-  // Record a classified Career race once. res: { rank, circuit, id, pos (classified position), dnf, pacePts, water }.
-  function recordCareer(st, res) {
+  // Record the result of the active race, once. res: { id, pos, lapRank, best, dnf, reason }. The same id can never
+  // score twice (a reloaded results screen, a double click, a second tab).
+  function recordRace(st, res, rng = Math.random) {
     const m = st && st.career;
-    if (!m || !res || !intIn(res.rank, 0, RANKS.length - 1) || res.rank > m.unlocked || !PROGRESS_CIRCUITS.includes(res.circuit) || typeof res.id !== 'string' || !res.id) return { ok: false, reason: 'invalid' };
-    if (!intIn(res.pos, 1, CAREER_FIELD) || !intIn(res.pacePts, 0, 50)) return { ok: false, reason: 'unclassified' };
+    if (!m || !res || typeof res.id !== 'string') return { ok: false, reason: 'invalid' };
     if (m.seen.includes(res.id)) return { ok: false, reason: 'duplicate' };
-    m.seen.push(res.id); if (m.seen.length > 40) m.seen.shift();
-    const posPts = careerPositionPoints(res.pos), entry = cleanCareerEntry({ total: posPts + res.pacePts, pos: res.pos, posPts, pacePts: res.pacePts, dnf: !!res.dnf, id: res.id, water: res.water, at: res.at });
-    const R = RANKS[res.rank], prev = m.results[R.id][res.circuit];
-    const improved = !prev || entry.total > prev.total;
-    if (improved) m.results[R.id][res.circuit] = entry;
-    const gridBefore = careerGridPos(st, res.rank); m.grid[R.id] = res.pos;
-    const unlockedBefore = m.unlocked, completedNow = progressRecompute(st, 'career');
-    return { ok: true, entry, best: m.results[R.id][res.circuit], improved, previous: prev || null, status: rankStatus(st, 'career', res.rank), completedNow, unlockedNow: m.unlocked > unlockedBefore, gridBefore, gridNext: res.pos };
+    const a = m.active;
+    if (!a || a.id !== res.id) return { ok: false, reason: 'not-active' };
+    if (!intIn(res.pos, 1, CAREER_FIELD) || !intIn(res.lapRank, 1, CAREER_FIELD)) return { ok: false, reason: 'unclassified' };
+    const posPts = rankPoints(res.pos), lapPts = rankPoints(res.lapRank);
+    const entry = { id: res.id, circuit: a.circuit, index: a.index, pos: res.pos, lapRank: res.lapRank, best: res.best > 0 ? +res.best : null,
+      posPts, lapPts, total: posPts + lapPts, dnf: !!res.dnf, reason: ['finished', 'retired', 'forfeit'].includes(res.reason) ? res.reason : res.dnf ? 'retired' : 'finished', at: Number.isFinite(res.at) ? res.at : 0 };
+    m.seen.push(res.id); if (m.seen.length > 60) m.seen.shift();
+    m.active = null;
+    const out = { ok: true, kind: a.kind, entry };
+    if (a.kind === 'endless') {
+      const e = m.endless, startVr = e.vr, band = vrBand(startVr), change = calculateVrChange(entry.total, startVr), newVr = calculateNewVr(startVr, entry.total);
+      Object.assign(entry, { startVr, change: newVr - startVr, rawChange: change, newVr, band });
+      e.vr = newVr; e.best = Math.max(e.best, newVr); e.races++; e.last = entry; e.lastCircuit = a.circuit; e.next = null; e.grid = entry.pos;
+      e.history.push(entry); if (e.history.length > 50) e.history.shift();
+      out.next = ensureEndlessNext(st, rng); out.endless = endlessStatus(st);
+      return out;
+    }
+    const R = RANKS[a.rank], rs = m.ranks[R.id];
+    rs.races.push(entry); rs.grid = entry.pos;
+    const S = rankStatus(st, a.rank);
+    out.status = S; out.rank = a.rank;
+    if (S.done) {
+      out.final = { passed: S.passed, total: S.total, need: S.need, max: S.max };
+      if (S.passed) {
+        const firstTime = !m.completed.includes(a.rank);
+        if (firstTime) m.completed.push(a.rank);
+        const before = m.unlocked; m.unlocked = Math.max(m.unlocked, Math.min(RANKS.length - 1, a.rank + 1));
+        out.unlockedNow = m.unlocked > before ? m.unlocked : null;
+        if (a.rank === RANKS.length - 1 && !m.endless.unlocked) { m.endless.unlocked = true; out.endlessUnlocked = true; ensureEndlessNext(st, rng); }
+      }
+    }
+    return out;
+  }
+  // A race that was left without a result (the browser closed during it): it counts as a retirement before the first
+  // lap, last in both categories (2 points), and the Career moves on.
+  function forfeitActive(st, now = 0) {
+    const a = st && st.career && st.career.active; if (!a) return null;
+    return recordRace(st, { id: a.id, pos: CAREER_FIELD, lapRank: CAREER_FIELD, best: null, dnf: true, reason: 'forfeit', at: now });
+  }
+  // A new championship attempt at a rank: only once all six races are resolved (never as a retry of one race).
+  function restartRank(st, rank) {
+    const S = rankStatus(st, rank); if (!S || !S.unlocked || !S.done || st.career.active) return false;
+    const rs = st.career.ranks[S.id]; rs.attempt++; rs.races = []; rs.grid = CAREER_FIELD;
+    return true;
   }
   // ---- loading and migration ----
-  // Validate a saved state (version 3); whatever is unreadable is dropped, one mode never affects another.
-  function progressLoadV3(raw) {
-    const st = progressNew();
+  const validEntry = (e) => e && typeof e === 'object' && intIn(e.pos, 1, CAREER_FIELD) && intIn(e.lapRank, 1, CAREER_FIELD) && e.posPts === rankPoints(e.pos)
+    && e.lapPts === rankPoints(e.lapRank) && e.total === e.posPts + e.lapPts && typeof e.id === 'string';
+  const cleanEntry = (e) => ({ id: e.id, circuit: String(e.circuit), index: e.index | 0, pos: e.pos, lapRank: e.lapRank, best: Number.isFinite(e.best) && e.best > 0 ? +e.best : null,
+    posPts: e.posPts, lapPts: e.lapPts, total: e.total, dnf: !!e.dnf, reason: ['finished', 'retired', 'forfeit'].includes(e.reason) ? e.reason : e.dnf ? 'retired' : 'finished', at: Number.isFinite(e.at) ? e.at : 0,
+    ...(Number.isInteger(e.startVr) ? { startVr: e.startVr, change: e.change | 0, rawChange: e.rawChange | 0, newVr: e.newVr | 0, band: e.band | 0 } : {}) });
+  function progressLoadV4(raw) {
+    const st = progressNew(), m = st.career, src = raw.career || {};
     st.team = intIn(raw.team, 0, CAREER_FIELD - 1) ? raw.team : null;
-    for (const mode of PROGRESS_MODES) {
-      const m = raw[mode], out = st[mode]; if (!m || typeof m !== 'object') continue;
-      out.unlocked = intIn(m.unlocked, 0, RANKS.length - 1) ? m.unlocked : 0;
-      out.seen = Array.isArray(m.seen) ? m.seen.filter(x => typeof x === 'string').slice(-40) : [];
-      if (m.grid && typeof m.grid === 'object') for (const r of RANKS) if (intIn(m.grid[r.id], 1, CAREER_FIELD)) out.grid[r.id] = m.grid[r.id];
-      if (m.results && typeof m.results === 'object') for (const r of RANKS) {
-        const src = m.results[r.id]; if (!src || typeof src !== 'object') continue;
-        for (const id of PROGRESS_CIRCUITS) { const e = src[id]; if (validCareerEntry(e)) out.results[r.id][id] = cleanCareerEntry(e); }
-      }
-      progressRecompute(st, mode);
+    m.unlocked = intIn(src.unlocked, 0, RANKS.length - 1) ? src.unlocked : 0;
+    m.completed = Array.isArray(src.completed) ? [...new Set(src.completed.filter(k => intIn(k, 0, RANKS.length - 1)))] : [];
+    m.legacyCompleted = Array.isArray(src.legacyCompleted) ? [...new Set(src.legacyCompleted.filter(k => intIn(k, 0, RANKS.length - 1)))] : [];
+    for (const k of m.completed) m.unlocked = Math.max(m.unlocked, Math.min(RANKS.length - 1, k + 1));
+    m.seen = Array.isArray(src.seen) ? src.seen.filter(x => typeof x === 'string').slice(-60) : [];
+    for (const R of RANKS) {
+      const r = src.ranks && src.ranks[R.id], out = m.ranks[R.id]; if (!r || typeof r !== 'object') continue;
+      out.attempt = intIn(r.attempt, 1, 1e6) ? r.attempt : 1;
+      // the results must be the schedule in order: the first race that breaks it ends the list
+      const list = Array.isArray(r.races) ? r.races : [];
+      for (let k = 0; k < Math.min(list.length, RANK_RACES); k++) { const e = list[k]; if (!validEntry(e) || e.circuit !== PROGRESS_CIRCUITS[k]) break; out.races.push(cleanEntry({ ...e, index: k })); }
+      out.grid = intIn(r.grid, 1, CAREER_FIELD) ? r.grid : CAREER_FIELD;
     }
-    for (const key of ['duel', 'pursuit']) if (raw[key] != null) st[key] = JSON.parse(JSON.stringify(raw[key]));
-    if (raw.legacy && typeof raw.legacy === 'object') { try { st.legacy = JSON.parse(JSON.stringify(raw.legacy)); } catch (e) { st.legacy = null; } }
+    const e = src.endless, E = m.endless;
+    if (e && typeof e === 'object') {
+      E.unlocked = !!e.unlocked || m.completed.includes(RANKS.length - 1);
+      E.vr = intIn(e.vr, VR_MIN, VR_MAX) ? e.vr : VR_START; E.best = intIn(e.best, VR_MIN, VR_MAX) ? Math.max(e.best, E.vr) : E.vr;
+      E.races = intIn(e.races, 0, 1e9) ? e.races : 0;
+      E.history = Array.isArray(e.history) ? e.history.filter(validEntry).slice(-50).map(cleanEntry) : [];
+      E.last = E.history.length ? E.history[E.history.length - 1] : null;
+      E.lastCircuit = PROGRESS_CIRCUITS.includes(e.lastCircuit) ? e.lastCircuit : null;
+      E.next = e.next && PROGRESS_CIRCUITS.includes(e.next.circuit) && typeof e.next.id === 'string' && e.next.circuit !== E.lastCircuit ? { circuit: e.next.circuit, id: e.next.id } : null;
+      E.grid = intIn(e.grid, 1, CAREER_FIELD) ? e.grid : CAREER_FIELD;
+    } else E.unlocked = m.completed.includes(RANKS.length - 1);
+    const a = src.active;
+    if (a && typeof a === 'object' && typeof a.id === 'string' && PROGRESS_CIRCUITS.includes(a.circuit) && !m.seen.includes(a.id)
+      && (a.kind === 'endless' ? E.unlocked : (intIn(a.rank, 0, RANKS.length - 1) && a.rank <= m.unlocked && m.ranks[RANKS[a.rank].id].races.length < RANK_RACES
+        && a.circuit === PROGRESS_CIRCUITS[m.ranks[RANKS[a.rank].id].races.length])))
+      m.active = { kind: a.kind === 'endless' ? 'endless' : 'rank', rank: a.kind === 'endless' ? null : a.rank, index: a.kind === 'endless' ? E.races : m.ranks[RANKS[a.rank].id].races.length,
+        circuit: a.circuit, id: a.id, at: Number.isFinite(a.at) ? a.at : 0 };
+    if (raw.legacy && typeof raw.legacy === 'object') { try { st.legacy = JSON.parse(JSON.stringify(raw.legacy)); } catch (err) { st.legacy = null; } }
     return st;
   }
-  // Earlier saves: the five-tier Career (v2, or the eight-tier v1) and the eight Career ranks, all raced
-  // on the removed fictional circuits. None of their results can stand for a race on a real circuit, so no circuit
-  // result, win or score is carried over. What is kept is access: a new rank is opened when the old save had already
-  // completed an old tier or rank at least as hard as the new rank below it (the AI level the player had beaten), and
-  // the player's Career team. The old saves themselves are kept, untouched, in `legacy` (and in their own storage keys).
+  // The v3 Career (100 points a race: 50 position + 50 lap-time pace, best result per circuit, 600 a rank): its race
+  // results cannot be turned into 40-point results, so none is carried over; they are kept, untouched, in legacy.v3.
+  // Its access is kept: the ranks it had opened stay open, and a rank it had completed (all six circuits and the old
+  // threshold) counts as completed, marked as legacy (so a v3 Master completion opens Endless Career).
+  const V3_PROMOTE = [360, 420, 480];
+  function progressFromV3(raw) {
+    const st = progressNew(), m = st.career, c = raw.career || {};
+    st.team = intIn(raw.team, 0, CAREER_FIELD - 1) ? raw.team : null;
+    m.unlocked = intIn(c.unlocked, 0, RANKS.length - 1) ? c.unlocked : 0;
+    RANKS.forEach((R, k) => {
+      const res = c.results && c.results[R.id]; if (!res || typeof res !== 'object') return;
+      const rows = PROGRESS_CIRCUITS.map(id => res[id]).filter(e => e && intIn(e.total, 0, 100));
+      if (rows.length === PROGRESS_CIRCUITS.length && rows.reduce((a, e) => a + e.total, 0) >= V3_PROMOTE[k]) { m.completed.push(k); m.legacyCompleted.push(k); }
+    });
+    for (const k of m.completed) m.unlocked = Math.max(m.unlocked, Math.min(RANKS.length - 1, k + 1));
+    if (m.completed.includes(RANKS.length - 1)) m.endless.unlocked = true;
+    let v3 = null; try { v3 = JSON.parse(JSON.stringify({ career: c })); } catch (err) { v3 = null; }
+    const prior = raw.legacy && typeof raw.legacy === 'object' ? raw.legacy : null;
+    st.legacy = { v3, career: prior ? prior.career || null : null, ranked: prior ? prior.ranked || null : null,
+      note: 'Results from the previous 100-point Career are kept as history and do not count in the new 40-point championships.'
+        + (m.completed.length ? ' Your completed ranks stay completed.' : '') };
+    return st;
+  }
+  // Earlier saves (v1/v2): the five- and eight-tier Career raced on removed fictional circuits. Only access is kept: a
+  // rank opens when the old save had completed a tier at least as hard as the rank below it; the old saves are kept in
+  // legacy (and in their own storage keys).
   const OLD_CAREER_LEVELS = { 1: [1.00, 1.10, 1.20, 1.30, 1.40, 1.50, 1.60, 1.75], 2: [1.00, 1.25, 1.60, 2.20, 3.00] };
   const unlockFromLevels = (levels) => { let u = 0; for (let k = 1; k < RANKS.length; k++) if (levels.some(L => L >= RANKS[k - 1].level - 1e-9)) u = k; return u; };
   function progressMigrate(oldCareer, oldRanked) {
@@ -6410,12 +6499,12 @@ const SIM = (function () {
       const team = oldCareer.active && intIn(oldCareer.active.team, 0, CAREER_FIELD - 1) ? oldCareer.active.team : null; if (team != null) st.team = team;
       if (done.length || oldCareer.active) notes.push('Career results from the previous circuits are kept as history; ' + (st.career.unlocked ? RANKS[st.career.unlocked].name + ' is open from your earlier tiers.' : 'the new ranks start at Rookie.'));
     }
-    for (const mode of PROGRESS_MODES) progressRecompute(st, mode);
     if (oldCareer || oldRanked) { try { st.legacy = { career: oldCareer ? JSON.parse(JSON.stringify(oldCareer)) : null, ranked: oldRanked ? JSON.parse(JSON.stringify(oldRanked)) : null, note: notes.join(' ') }; } catch (e) { st.legacy = null; } }
     return st;
   }
   function progressLoad(raw, oldCareer, oldRanked) {
-    if (raw && typeof raw === 'object' && raw.v === PROGRESS_VERSION) return progressLoadV3(raw);
+    if (raw && typeof raw === 'object' && raw.v === PROGRESS_VERSION) return progressLoadV4(raw);
+    if (raw && typeof raw === 'object' && raw.v === 3) return progressFromV3(raw);
     return progressMigrate(oldCareer, oldRanked);
   }
   // A starting grid with the player's car on a chosen slot (pos 1 = pole) and the other cars shuffled into the rest.
@@ -6427,9 +6516,10 @@ const SIM = (function () {
     others.splice(clamp(Math.round(pos) || n, 1, n) - 1, 0, playerIdx);
     return others;
   }
-  const PROGRESS = { RANKS, CIRCUITS: PROGRESS_CIRCUITS, MODES: PROGRESS_MODES, VERSION: PROGRESS_VERSION, POS_POINTS: CAREER_POS_POINTS, PROMOTE: CAREER_PROMOTE,
-    PACE_REF, PACE_POINTS, paceAnchors, paceLaunch: paceLaunchAt, create: progressNew, load: progressLoad, status: rankStatus, recordCareer, positionPoints: careerPositionPoints, gridPos: careerGridPos,
-    paceScore: careerPaceScore, pacePoints: pacePointsFor, paceRef: paceRefAt };
+  const PROGRESS = { RANKS, CIRCUITS: PROGRESS_CIRCUITS, ORDER: CAREER_ORDER, VERSION: PROGRESS_VERSION, PROMOTE: CAREER_PROMOTE, RANK_RACES, RANK_MAX, RACE_MAX: RACE_SCORE_MAX,
+    ENDLESS_LEVEL, VR_START, VR_MIN, VR_MAX, VR_NEUTRAL, VR_BANDS, vrBand, calculateVrChange, calculateNewVr,
+    create: progressNew, load: progressLoad, status: rankStatus, endless: endlessStatus, gridPos: careerGridPos,
+    beginRace, recordRace, forfeitActive, restartRank, ensureEndlessNext, rankPoints, rankBestLaps, scoreRace };
 
   // Strategy pace model: relative lap time for an effective tyre grip mu (fresh Soft ≈ 1.68 = 1.0), fitted to
   // solo laps with frozen wear on all three circuits; lapTime (s per 6 km) is the circuit's grip sensitivity
@@ -9219,15 +9309,21 @@ S.startFuel = clamp(Math.round((+S.startFuel || 6.5) * 2) / 2, ...SIM.START_FUEL
 if (!SIM.CIRCUITS.some(c => c.id === S.circuit)) S.circuit = SIM.CIRCUITS[0].id;
 const saveSettings = () => { try { localStorage.setItem(SETTINGS_KEY, JSON.stringify({ startTyre:S.startTyre, startFuel:S.startFuel, circuit:S.circuit })); } catch(e) { /* ignore */ } };
 /* ---------------- Career progression ----------------
-   Three ranks, six circuits per rank, best result per circuit. Legacy storage keys remain untouched. */
-const PROGRESS_KEY = 'apexgp.progress.v3', CAREER_KEY = 'apexgp.career.v1', RANKED_KEY = 'apexgp.ranked.v1';
+   Three six-race championships and Endless Career (SIM.PROGRESS). The v4 save has its own key; the earlier saves
+   (v3 and older) stay untouched in theirs. */
+const PROGRESS_KEY = 'apexgp.progress.v4', PROGRESS_V3_KEY = 'apexgp.progress.v3', CAREER_KEY = 'apexgp.career.v1', RANKED_KEY = 'apexgp.ranked.v1';
 const RK = SIM.PROGRESS.RANKS;
 function loadProgress() {
   const read = (k) => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } };
-  try { return SIM.PROGRESS.load(read(PROGRESS_KEY), read(CAREER_KEY), read(RANKED_KEY)); } catch (e) { return SIM.PROGRESS.create(); }
+  try { return SIM.PROGRESS.load(read(PROGRESS_KEY) || read(PROGRESS_V3_KEY), read(CAREER_KEY), read(RANKED_KEY)); } catch (e) { return SIM.PROGRESS.create(); }
 }
 function saveProgress() { try { localStorage.setItem(PROGRESS_KEY, JSON.stringify(PG)); } catch (e) { /* storage unavailable */ } }
 let PG = loadProgress();
+// A Career race still marked as running when the game opens was left without a result (the browser was closed
+// during it): it is counted as a retirement before the first lap (P20 and the last lap rank, 2 points), so leaving a
+// race can never be a free retry. The notice is shown once the game has loaded.
+let careerForfeit = null;
+if (PG.career.active) { const a = PG.career.active; careerForfeit = { out: SIM.PROGRESS.forfeitActive(PG, Date.now()), active: a }; saveProgress(); }
 try { if (!localStorage.getItem(PROGRESS_KEY)) saveProgress(); } catch (e) { /* storage unavailable */ }
 const pct = (level) => Math.round(level * 100) + '%';
 /* ---------------- audio (WebAudio synthesis) ---------------- */
@@ -9486,13 +9582,13 @@ function buildEntries(background = false) {
   const team = G.career ? G.career.team : 0;
   return SIM.DRIVERS.map((driver,i)=>({ driver, isPlayer:!background && i === team }));
 }
-// A Career weekend is always a six-lap Grand Prix and takes its AI level from the tier (difficulty 100 is the
-// Rookie baseline), independent of Grand Prix defaults; each race session carries a fresh id so its
-// result can only be counted once. It is applied last so nothing passed in can turn it into another mode.
+// A Career race is always a six-lap Grand Prix with the rank's AI level (Endless Career: 150%), independent of
+// Grand Prix defaults; it carries the id of the attempt the Career started for it, so its result counts once. It is
+// applied last so nothing passed in can turn it into another mode.
 function careerSessionConfig(type) {
   if (!G.career || G.attract) return {};
-  const rank = RK[G.career.rank];
-  return { gameMode: 'grandprix', laps: SIM.GAME_MODES.grandprix.laps, difficulty: 1, aiLevel: rank.level, career: type === 'race' ? { ...G.career, id: Date.now().toString(36) + Math.random().toString(36).slice(2, 8) } : null };
+  const level = G.career.kind === 'endless' ? SIM.PROGRESS.ENDLESS_LEVEL : RK[G.career.rank].level;
+  return { gameMode: 'grandprix', laps: SIM.GAME_MODES.grandprix.laps, difficulty: 1, aiLevel: level, career: type === 'race' && G.career.id ? { ...G.career } : null };
 }
 function sessionConfig(type, extra = {}) {
   return Object.assign({ type, gameMode:'grandprix', laps:SIM.GAME_MODES.grandprix.laps, difficulty:1, weather:'dynamic',
@@ -9679,7 +9775,7 @@ function drawBriefCircuit(def) {
 }
 // The player's grid slot: the back of the grid (P20) in a Grand Prix; in Career, the position the last classified
 // race of the rank finished in (P20 for the rank's first race).
-function playerGridPos(n) { return G.career ? Math.min(n, SIM.PROGRESS.gridPos(PG, G.career.rank)) : n; }
+function playerGridPos(n) { return G.career ? Math.min(n, SIM.PROGRESS.gridPos(PG, G.career.kind, G.career.rank)) : n; }
 function startRace(gridOrder, entries) {
   const lapsTotal = SIM.GAME_MODES.grandprix.laps;
   entries = entries || buildEntries();
@@ -9742,12 +9838,21 @@ function startRace(gridOrder, entries) {
 }
 $('briefStart').onclick = () => {
   const pending = G.pendingRace; if (!pending) return;
+  if (G.career) {
+    // the Career race begins now: it is saved as the active attempt before the lights, so leaving it any way at all
+    // (Retire, closing the browser) still ends in a result
+    PG = loadProgress();
+    const b = SIM.PROGRESS.beginRace(PG, G.career.kind, G.career.rank, Math.random, Date.now());
+    if (!b.ok || b.active.circuit !== G.career.circuit) { if (b.ok) { PG.career.active = null; } $('briefCancel').click(); return; }
+    G.career.id = b.active.id; G.career.index = b.active.index; saveProgress();
+  }
   S.startTyre = G.briefCompound; S.startFuel = G.briefFuel; saveSettings();
   G.pendingRace = null; $('raceBrief').classList.add('hidden'); G.paused = false;
   launchRace(pending.gridOrder, pending.entries, pending.weatherState);
 };
 $('briefCancel').onclick = () => {
   G.pendingRace = null; $('raceBrief').classList.add('hidden'); G.paused = false;
+  if (G.career) { exitToMenu(); return; }
   if (G.session && G.session.over) { showResults(); $('resActions').lastElementChild.focus({ preventScroll: true }); }
   else { const play = document.querySelector('#menu [data-act="play"]'); if (play) play.focus({ preventScroll: true }); }
 };
@@ -10035,18 +10140,17 @@ function circuitSvg(def) {
   return '<svg class="cr-map" viewBox="0 0 120 58" aria-hidden="true"><path d="' + d + '"/></svg>';
 }
 const careerTeam = () => PG.team != null ? PG.team : 0;
-// Record the finished Career race: finishing position from the official classification (a retired car keeps its
-// classified place), pace from every lap it drove. An abandoned race (exit before the flag) never gets here.
+const fmtVr = (v) => Math.round(v).toLocaleString('en-US');
+const circuitShort = (id) => SIM.circuitById(id).short;
+const careerLabel = (info) => info.kind === 'endless' ? 'Endless Career' : RK[info.rank].name + ' — race ' + ((info.index ?? 0) + 1) + '/6';
+// Record a Career race from the official results, once (any ending: the flag, a retirement, the player's Retire).
 function recordCareerRace(sess) {
   const info = sess.cfg.career;
   if (!info || sess.careerOutcome || !sess.results) return;
   const me = sess.results.find(r => r.car.isPlayer); if (!me) return;
-  const pace = SIM.PROGRESS.paceScore(info.circuit, sess.track.length, me.car.paceLaps || [], sess.totalLaps, !!me.dnf);
-  const water = (me.car.paceLaps || []).reduce((a, l) => a + (l.water || 0), 0) / Math.max(1, (me.car.paceLaps || []).length);
   PG = loadProgress();
-  sess.careerPace = pace;
-  sess.careerOutcome = SIM.PROGRESS.recordCareer(PG, { rank: info.rank, circuit: info.circuit, id: info.id, pos: me.pos, dnf: !!me.dnf, pacePts: pace.points, water, at: Date.now() });
-  if (sess.careerOutcome.ok) { saveProgress(); if (sess.careerOutcome.unlockedNow) CRUI.flash = PG.career.unlocked; }
+  sess.careerOutcome = SIM.PROGRESS.recordRace(PG, { id: info.id, pos: me.pos, lapRank: me.lapRank, best: me.best, dnf: !!me.dnf, reason: me.dnf ? 'retired' : 'finished', at: Date.now() });
+  if (sess.careerOutcome.ok) { saveProgress(); if (sess.careerOutcome.unlockedNow != null) CRUI.flash = sess.careerOutcome.unlockedNow; if (sess.careerOutcome.endlessUnlocked) CRUI.flash = 3; }
   updateCareerButton();
 }
 function renderCareerStrip(sess) {
@@ -10054,21 +10158,35 @@ function renderCareerStrip(sess) {
   el.className = 'res-career' + (out ? '' : ' hidden'); if (!out) return;
   const cell = (label, value, cls = '') => '<div class="' + cls + '"><small>' + label + '</small><b class="num">' + value + '</b></div>';
   if (!out.ok) { el.innerHTML = cell('Result', out.reason === 'duplicate' ? 'Already counted' : 'Not counted', 'no'); return; }
-  const e = out.entry, st = out.status, best = out.best;
-  el.innerHTML = cell('Finish', (e.dnf ? 'DNF · ' : '') + 'P' + e.pos) + cell('Position', e.posPts + ' / 50') + cell('Lap-time pace', e.pacePts + ' / 50')
-    + cell('Circuit score', e.total + ' / 100', out.improved ? 'ok' : '') + cell(out.improved ? (out.previous ? 'New best (was ' + out.previous.total + ')' : 'First result') : 'Best kept', best.total)
-    + cell(RK[st.rank].name + ' score', st.score + ' / ' + st.max, st.complete ? 'ok' : st.score >= st.need ? '' : 'no')
-    + cell(st.complete ? 'Rank complete' : 'Needed', st.complete ? CR_ICON.check.replace('<svg', '<svg style="width:14px;height:14px"') : st.need + ' · ' + st.attempted + '/6 raced', st.complete ? 'ok' : '')
-    + cell('Next start' + (out.gridBefore !== out.gridNext ? ' (was P' + out.gridBefore + ')' : ''), 'P' + out.gridNext);
+  const e = out.entry;
+  let h = cell(e.dnf ? 'Retired' : 'Race complete', (e.dnf ? 'DNF · ' : '') + 'P' + e.pos, e.dnf ? 'no' : '')
+    + cell('Best lap · rank', (e.best ? fmt(e.best) : 'No lap') + ' · P' + e.lapRank)
+    + cell('Position points', '+' + e.posPts) + cell('Lap points', '+' + e.lapPts)
+    + cell('Race total', e.total + ' / 40');
+  if (out.kind === 'endless') {
+    h += cell('Starting VR', fmtVr(e.startVr)) + cell('VR change', (e.change > 0 ? '+' : e.change < 0 ? '−' : '±') + Math.abs(e.change), e.change > 0 ? 'ok' : e.change < 0 ? 'no' : '')
+      + cell('New VR', fmtVr(e.newVr) + ' / ' + fmtVr(SIM.PROGRESS.VR_MAX)) + cell('Next race', circuitShort(out.next.circuit));
+  } else {
+    const st = out.status;
+    h += cell('Championship', st.total + ' / ' + st.max, st.done ? (st.passed ? 'ok' : 'no') : '')
+      + (st.done ? cell(st.passed ? 'Passed' : 'Not passed', 'Needed ' + st.need, st.passed ? 'ok' : 'no') : cell('Next race', (st.index + 1) + '/6 · ' + circuitShort(st.next)));
+  }
+  el.innerHTML = h;
 }
 function updateCareerButton() {
-  const m = PG.career, st = SIM.PROGRESS.status(PG, 'career', m.unlocked);
-  $('careerTierLabel').textContent = m.complete ? 'Complete' : RK[m.unlocked].name + ' · ' + st.score + '/' + st.max;
+  const m = PG.career, e = m.endless;
+  if (e.unlocked) { $('careerTierLabel').textContent = 'Endless · VR ' + fmtVr(e.vr); return; }
+  const st = SIM.PROGRESS.status(PG, m.unlocked);
+  $('careerTierLabel').textContent = RK[m.unlocked].name + ' · ' + (st.done ? 'race 6/6' : 'race ' + (st.index + 1) + '/6') + ' · ' + st.total + '/' + st.max;
 }
+// the Career screen's four stages: Rookie, Pro, Master and Endless Career (index 3)
+const ENDLESS_TAB = 3;
 function openCareer(sel) {
   PG = loadProgress();
   CRUI.open = true;
-  CRUI.sel = sel != null ? clamp(sel, 0, PG.career.unlocked) : PG.career.unlocked;
+  const m = PG.career, maxSel = m.endless.unlocked ? ENDLESS_TAB : m.unlocked;
+  CRUI.sel = sel != null ? clamp(sel, 0, ENDLESS_TAB) : (m.endless.unlocked ? ENDLESS_TAB : m.unlocked);
+  if (CRUI.sel > maxSel && CRUI.sel !== ENDLESS_TAB) CRUI.sel = maxSel;
   $('career').classList.remove('hidden');
   renderCareer();
   const seg = $('crBar').querySelector('[aria-selected="true"]'); if (seg) seg.focus({ preventScroll: true });
@@ -10077,7 +10195,7 @@ function closeCareer() {
   CRUI.open = false; $('career').classList.add('hidden');
   const b = $('btnCareer'); if (b && G.mode === 'menu') b.focus({ preventScroll: true });
 }
-function selectTier(k) { CRUI.sel = clamp(k, 0, RK.length - 1); renderCareer(); const seg = $('crBar').children[CRUI.sel]; if (seg) seg.firstChild.focus({ preventScroll: true }); }
+function selectTier(k) { CRUI.sel = clamp(k, 0, ENDLESS_TAB); renderCareer(); const seg = $('crBar').children[CRUI.sel]; if (seg) seg.firstChild.focus({ preventScroll: true }); }
 // Two clicks for anything that throws away progress: the first arms the button for a few seconds.
 function armed(btn, label, fn) {
   if (btn.dataset.armed) { fn(); return; }
@@ -10085,114 +10203,182 @@ function armed(btn, label, fn) {
   setTimeout(() => { if (btn.isConnected && btn.dataset.armed) { delete btn.dataset.armed; btn.classList.remove('armed'); btn.textContent = old; } }, 4000);
 }
 function renderCareer() {
-  const sel = CRUI.sel, rank = RK[sel], m = PG.career, st = SIM.PROGRESS.status(PG, 'career', sel), unlocked = sel <= m.unlocked;
-  $('crSub').innerHTML = (m.complete ? 'Master rank complete.<span class="cr-badge">CAREER COMPLETE</span> ' : '')
-    + 'Three ranks, six circuits each. Every six-lap Grand Prix scores up to 100: 50 for your finishing position and 50 for your lap-time pace. Replay any circuit; only your best score on each counts. Your first race in a rank starts from P20; after that you start each race where you finished the last one.'
+  const sel = CRUI.sel, m = PG.career, e = m.endless;
+  $('crSub').innerHTML = (e.unlocked ? 'Master complete.<span class="cr-badge">ENDLESS CAREER</span> ' : '')
+    + 'Three six-race championships, raced in order: Monza, Silverstone, Spa, Suzuka, Bahrain, Interlagos. Each race scores up to 40: 20 for your finishing position and 20 for the rank of your best lap. Every result counts — a retirement too — and there are no retries. After race 6: Rookie needs 160 / 240, Pro 180, Master 200. Completing Master opens Endless Career.'
     + (PG.legacy && PG.legacy.note ? '<span class="cr-legacy">' + PG.legacy.note + '</span>' : '');
   const bar = $('crBar'); bar.replaceChildren();
-  RK.forEach((r, k) => {
-    const li = document.createElement('li'), b = document.createElement('button'), s2 = SIM.PROGRESS.status(PG, 'career', k);
-    const isDone = s2.complete, locked = k > m.unlocked, champ = isDone && k === RK.length - 1, live = !isDone && !locked && s2.attempted > 0;
-    b.type = 'button'; b.className = 'cr-seg' + (locked ? ' locked' : '') + (isDone ? ' done' : '') + (champ ? ' champ' : '') + (live ? ' live' : '') + (CRUI.flash === k ? ' unlocked-now' : '');
+  const tabs = RK.map((r, k) => {
+    const st = SIM.PROGRESS.status(PG, k), locked = k > m.unlocked, done = m.completed.includes(k);
+    return { title: r.name, small: 'Rank ' + (k + 1) + ' · AI ' + pct(r.level), locked, cls: (done ? ' done' : '') + (done && k === RK.length - 1 ? ' champ' : '') + (!locked && st.index > 0 && !st.done ? ' live' : ''),
+      state: locked ? CR_ICON.lock + 'Locked' : !st.done && st.index > 0 ? 'Race ' + (st.index + 1) + '/6 · ' + st.total : done ? CR_ICON.check + 'Completed' : st.done ? st.total + ' / 240 · not passed' : 'Race 1/6' };
+  });
+  tabs.push({ title: 'Endless', small: 'After Master · AI 150%', locked: !e.unlocked, cls: e.unlocked ? ' champ' : '', state: e.unlocked ? 'VR ' + fmtVr(e.vr) : CR_ICON.lock + 'Locked' });
+  tabs.forEach((t, k) => {
+    const li = document.createElement('li'), b = document.createElement('button');
+    b.type = 'button'; b.className = 'cr-seg' + (t.locked ? ' locked' : '') + t.cls + (CRUI.flash === k ? ' unlocked-now' : '');
     b.setAttribute('role', 'option'); b.setAttribute('aria-selected', String(k === sel)); b.tabIndex = k === sel ? 0 : -1;
-    const state = champ ? CR_ICON.star + 'Complete' : isDone ? CR_ICON.check + 'Completed' : locked ? CR_ICON.lock + 'Locked' : s2.score + ' / ' + s2.max;
-    b.innerHTML = '<small>Rank ' + (k + 1) + ' · AI ' + pct(r.level) + '</small>' + r.name + '<span class="cr-state">' + state + '</span>';
-    b.setAttribute('aria-label', 'Rank ' + (k + 1) + ', ' + r.name + ', AI ' + pct(r.level) + ', ' + (isDone ? 'completed' : locked ? 'locked' : s2.score + ' of ' + s2.max + ' points'));
+    b.innerHTML = '<small>' + t.small + '</small>' + t.title + '<span class="cr-state">' + t.state + '</span>';
+    b.setAttribute('aria-label', t.title + ', ' + t.state.replace(/<[^>]+>/g, ''));
     b.onclick = () => selectTier(k);
     li.appendChild(b); bar.appendChild(li);
   });
   CRUI.flash = -1;
-  const box = $('crTier');
-  const chip = !unlocked ? ['Locked', ''] : st.complete ? [sel === RK.length - 1 ? 'Complete' : 'Completed', sel === RK.length - 1 ? 'champ' : 'done'] : st.attempted ? ['In progress', 'live'] : ['Unlocked', ''];
-  let h = '<div class="cr-tierhead"><div><small>Rank ' + (sel + 1) + ' of ' + RK.length + ' · AI difficulty ' + pct(rank.level) + '</small><h3>' + rank.name + '</h3></div>'
+  if (sel === ENDLESS_TAB) renderEndless(); else renderRank(sel);
+  updateCareerButton();
+}
+function renderRank(sel) {
+  const rank = RK[sel], m = PG.career, st = SIM.PROGRESS.status(PG, sel), unlocked = st.unlocked, box = $('crTier');
+  const chip = !unlocked ? ['Locked', ''] : st.done ? (st.passed ? ['Passed', sel === RK.length - 1 ? 'champ' : 'done'] : ['Not passed', 'live']) : st.index ? ['Race ' + (st.index + 1) + ' of 6', 'live'] : st.completed ? ['Completed earlier', 'done'] : ['Ready', ''];
+  let h = '<div class="cr-tierhead"><div><small>Rank ' + (sel + 1) + ' of ' + RK.length + ' · AI difficulty ' + pct(rank.level) + (st.attempt > 1 ? ' · attempt ' + st.attempt : '') + '</small><h3>' + rank.name + '</h3></div>'
     + '<span class="cr-chip ' + chip[1] + '">' + chip[0] + '</span></div>'
-    + '<div class="cr-req"><b>' + st.need + ' / ' + st.max + '</b><span>over all six circuits' + (sel < RK.length - 1 ? ' to unlock ' + RK[sel + 1].name : ' to complete the Career') + '</span></div>';
-  h += '<ol class="cr-races cr-six">' + st.rows.map(({ circuit, entry }) => {
-    const def = SIM.circuitById(circuit), cls = entry ? 'done' : unlocked ? 'next' : 'locked';
-    const state = entry ? '<b class="num">' + entry.total + '</b> · P' + entry.pos + (entry.dnf ? ' DNF' : '') + ' · ' + entry.posPts + ' + ' + entry.pacePts : unlocked ? 'Not raced' : CR_ICON.lock.replace('<svg', '<svg style="width:11px;height:11px;vertical-align:-1px"') + ' Locked';
-    return '<li class="cr-race ' + cls + '"><button type="button" class="cr-go" data-circuit="' + circuit + '"' + (unlocked ? '' : ' disabled') + ' aria-label="' + def.name + ', ' + (entry ? 'best ' + entry.total + ' of 100' : 'not raced') + (unlocked ? ', race' : ', locked') + '">'
-      + '<small>' + def.country + '</small><b>' + def.short + '</b>' + circuitSvg(def) + '<span class="cr-rstate">' + state + '</span></button></li>';
+    + '<div class="cr-req"><b>' + st.need + ' / ' + st.max + '</b><span>after all six races' + (sel < RK.length - 1 ? ' to unlock ' + RK[sel + 1].name : ' to complete Master and open Endless Career') + '</span></div>';
+  h += '<ol class="cr-races cr-six">' + st.schedule.map((circuit, k) => {
+    const def = SIM.circuitById(circuit), e = st.races[k], current = unlocked && !st.done && k === st.index;
+    const cls = e ? 'done' : current ? 'next' : 'locked';
+    const state = e ? '<b class="num">' + e.total + '</b> · ' + (e.dnf ? 'DNF ' : '') + 'P' + e.pos + ' · lap P' + e.lapRank : current ? 'Next race' : 'Race ' + (k + 1);
+    return '<li class="cr-race ' + cls + '"><button type="button" class="cr-go"' + (current ? '' : ' disabled') + ' aria-label="Race ' + (k + 1) + ', ' + def.name + ', ' + (e ? e.total + ' of 40' : current ? 'next race' : 'not yet') + '">'
+      + '<small>' + (k + 1) + ' · ' + def.country + '</small><b>' + def.short + '</b>' + circuitSvg(def) + '<span class="cr-rstate">' + state + '</span></button></li>';
   }).join('') + '</ol>';
-  const ok = st.score >= st.need;
-  h += '<div class="cr-stats"><div><small>Rank score</small><b class="num">' + st.score + ' / ' + st.max + '</b></div><div><small>Needed</small><b class="num">' + st.need + '</b></div>'
-    + '<div><small>Circuits raced</small><b class="num">' + st.attempted + ' / 6</b></div>'
-    + '<div><small>Next start</small><b class="num">P' + SIM.PROGRESS.gridPos(PG, sel) + '</b></div></div>'
-    + '<p class="cr-course ' + (st.attempted ? ok && st.all ? 'ok' : 'no' : '') + '">' + (st.complete ? 'Rank complete' + (sel < RK.length - 1 ? ' — ' + RK[sel + 1].name + ' unlocked.' : '. Career complete.')
-      : !unlocked ? 'Complete ' + RK[sel - 1].name + ' (' + SIM.PROGRESS.PROMOTE[sel - 1] + ' points over its six circuits) to unlock.'
-      : st.all ? (st.need - st.score) + ' more points needed: replay a circuit to improve its best score.'
-      : (6 - st.attempted) + ' circuit' + (6 - st.attempted === 1 ? '' : 's') + ' still to race' + (ok ? ' (the points are already there).' : '.')) + '</p>';
+  h += '<div class="cr-stats"><div><small>Championship</small><b class="num">' + st.total + ' / ' + st.max + '</b></div><div><small>Needed</small><b class="num">' + st.need + '</b></div>'
+    + '<div><small>Race</small><b class="num">' + (st.done ? '6 / 6' : (st.index + 1) + ' / 6') + '</b></div>'
+    + '<div><small>Next start</small><b class="num">' + (st.done ? '—' : 'P' + SIM.PROGRESS.gridPos(PG, 'rank', sel)) + '</b></div></div>'
+    + '<p class="cr-course ' + (st.done ? (st.passed ? 'ok' : 'no') : '') + '">' + (!unlocked ? 'Pass ' + RK[sel - 1].name + ' (' + SIM.PROGRESS.PROMOTE[sel - 1] + ' / 240 after six races) to unlock.'
+      : st.done ? (st.passed ? 'Championship passed with ' + st.total + ' points.' + (sel < RK.length - 1 ? ' ' + RK[sel + 1].name + ' is unlocked.' : ' Endless Career is open.') : 'Championship not passed: ' + st.total + ' of ' + st.need + ' needed. Start a new ' + rank.name + ' championship from race 1.')
+      : 'Next: race ' + (st.index + 1) + ' at ' + circuitShort(st.next) + '. ' + (st.index ? Math.max(0, st.need - st.total) + ' more points needed over the remaining ' + (6 - st.index) + ' race' + (6 - st.index === 1 ? '' : 's') + '.' : 'Your first race starts from P20; after that you start where you finished the race before.')) + '</p>';
   const cur = careerTeam();
   h += '<div class="cr-team"><label for="crTeam">Your team</label><select id="crTeam">' + SIM.TEAMS.map((t, k) => '<option value="' + k + '"' + (k === cur ? ' selected' : '') + '>' + t.name + '</option>').join('') + '</select></div>';
   h += '<div class="cr-actions" id="crActions"></div>';
   box.innerHTML = h;
-  $('crTeam').onchange = (e) => { PG.team = +e.target.value; saveProgress(); };
-  for (const b of box.querySelectorAll('.cr-go')) b.onclick = () => careerRace(sel, b.dataset.circuit);
+  $('crTeam').onchange = (ev) => { PG.team = +ev.target.value; saveProgress(); };
+  for (const b of box.querySelectorAll('.cr-go:not([disabled])')) b.onclick = () => careerStart('rank', sel);
   const acts = $('crActions');
   const mk = (txt, fn, cls = '') => { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn ' + cls; b.textContent = txt; b.onclick = () => fn(b); acts.appendChild(b); return b; };
-  const next = st.rows.find(x => !x.entry) || st.rows.slice().sort((a, b) => a.entry.total - b.entry.total)[0];
   if (!unlocked) mk('Locked', () => {}, 'primary').disabled = true;
-  else if (st.complete && sel < RK.length - 1) mk('Next rank: ' + RK[sel + 1].name + ' ▸', () => selectTier(sel + 1), 'primary');
-  else mk((next.entry ? 'Improve: ' : 'Race: ') + SIM.circuitById(next.circuit).short + ' ▸', () => careerRace(sel, next.circuit), 'primary');
-  renderStandings(sel, st);
-  updateCareerButton();
-}
-// The right-hand table: the rank's six circuits, the best result on each and the running total.
-function renderStandings(sel, st) {
-  $('crCut').textContent = st.need + ' points to ' + (sel < RK.length - 1 ? 'unlock ' + RK[sel + 1].name : 'complete');
-  $('crTableTitle').textContent = RK[sel].name + ' · best results';
-  let h = '<tr><th>Circuit</th><th class="r">Finish</th><th class="r">Pos</th><th class="r">Pace</th><th class="r">Total</th></tr>', run = 0;
-  for (const { circuit, entry } of st.rows) {
-    const def = SIM.circuitById(circuit); run += entry ? entry.total : 0;
-    h += '<tr class="' + (entry ? '' : 'dim') + '"><td>' + def.short + ' <span style="color:var(--dim)">' + (def.length / 1000).toFixed(3) + ' km</span></td>'
-      + (entry ? '<td class="r num">' + (entry.dnf ? 'DNF ' : '') + 'P' + entry.pos + '</td><td class="r num">' + entry.posPts + '</td><td class="r num">' + entry.pacePts + '</td><td class="r num"><b>' + entry.total + '</b></td>'
-        : '<td class="r dim">—</td><td class="r dim">—</td><td class="r dim">—</td><td class="r dim">—</td>') + '</tr>';
+  else if (!st.done) mk('Start race ' + (st.index + 1) + ': ' + circuitShort(st.next) + ' ▸', () => careerStart('rank', sel), 'primary');
+  else {
+    if (st.passed && sel < RK.length - 1) mk('Next rank: ' + RK[sel + 1].name + ' ▸', () => selectTier(sel + 1), 'primary');
+    if (st.passed && sel === RK.length - 1) mk('Endless Career ▸', () => selectTier(ENDLESS_TAB), 'primary');
+    mk(st.passed ? 'New ' + rank.name + ' championship' : 'Restart ' + rank.name + ' from race 1', (b) => armed(b, 'Click again: this clears the six results above', () => {
+      PG = loadProgress(); if (SIM.PROGRESS.restartRank(PG, sel)) saveProgress(); renderCareer();
+    }), st.passed ? '' : 'primary');
   }
-  h += '<tr class="me"><td><b>Rank score</b></td><td></td><td></td><td></td><td class="r num"><b>' + run + ' / ' + st.max + '</b></td></tr>';
-  $('crStand').innerHTML = h;
+  // the right-hand table: this championship, race by race
+  $('crCut').textContent = st.need + ' / 240 to ' + (sel < RK.length - 1 ? 'unlock ' + RK[sel + 1].name : 'open Endless Career');
+  $('crTableTitle').textContent = rank.name + ' championship' + (st.attempt > 1 ? ' · attempt ' + st.attempt : '');
+  let t = '<tr><th>#</th><th>Circuit</th><th class="r">Finish</th><th class="r">Best lap</th><th class="r">Pos</th><th class="r">Lap</th><th class="r">Total</th></tr>';
+  st.schedule.forEach((circuit, k) => {
+    const e = st.races[k];
+    t += '<tr class="' + (e ? '' : 'dim') + '"><td>' + (k + 1) + '</td><td>' + circuitShort(circuit) + '</td>'
+      + (e ? '<td class="r num">' + (e.dnf ? 'DNF ' : '') + 'P' + e.pos + '</td><td class="r num">' + (e.best ? fmt(e.best) : '—') + ' (P' + e.lapRank + ')</td><td class="r num">' + e.posPts + '</td><td class="r num">' + e.lapPts + '</td><td class="r num"><b>' + e.total + '</b></td>'
+        : '<td class="r dim">—</td><td class="r dim">—</td><td class="r dim">—</td><td class="r dim">—</td><td class="r dim">—</td>') + '</tr>';
+  });
+  t += '<tr class="me"><td></td><td><b>Championship</b></td><td></td><td></td><td></td><td></td><td class="r num"><b>' + st.total + ' / ' + st.max + '</b></td></tr>';
+  $('crStand').innerHTML = t;
 }
-// Race one circuit of a rank: a six-lap Grand Prix with the rank's AI and the Career team.
-async function careerRace(rank, circuit) {
-  if (rank > PG.career.unlocked || !SIM.PROGRESS.CIRCUITS.includes(circuit)) return;
-  G.career = { rank, team: careerTeam(), circuit };
+function renderEndless() {
+  const e = SIM.PROGRESS.endless(PG), box = $('crTier');
+  let h = '<div class="cr-tierhead"><div><small>After Master · AI difficulty 150% · a random circuit every race</small><h3>Endless Career</h3></div>'
+    + '<span class="cr-chip ' + (e.unlocked ? 'champ' : '') + '">' + (e.unlocked ? 'VR ' + fmtVr(e.vr) : 'Locked') + '</span></div>';
+  if (!e.unlocked) {
+    h += '<p class="cr-course">Complete Master with at least 200 / 240 points to open Endless Career: six-lap races against 150% AI on a randomly drawn circuit, building a VR rating from 1,000 up to 9,999.</p>';
+    box.innerHTML = h;
+    $('crCut').textContent = ''; $('crTableTitle').textContent = 'Endless Career'; $('crStand').innerHTML = '<tr><td class="dim">Locked</td></tr>';
+    return;
+  }
+  const band = SIM.PROGRESS.VR_BANDS[e.band], last = e.last;
+  if (!e.next) { SIM.PROGRESS.ensureEndlessNext(PG); saveProgress(); }
+  const next = PG.career.endless.next, def = SIM.circuitById(next.circuit);
+  h += '<div class="cr-vr"><b class="num">' + fmtVr(e.vr) + '</b><span>VR<small>of ' + fmtVr(e.max) + ' · best ' + fmtVr(e.best) + '</small></span>'
+    + (last ? '<em class="' + (last.change > 0 ? 'up' : last.change < 0 ? 'down' : '') + '">' + (last.change > 0 ? '+' : last.change < 0 ? '−' : '±') + Math.abs(last.change) + ' last race</em>' : '') + '</div>'
+    + '<div class="cr-stats"><div><small>Races</small><b class="num">' + e.races + '</b></div><div><small>This band</small><b class="num">+' + band.gain + ' / −' + band.loss + '</b></div>'
+    + '<div><small>Neutral score</small><b class="num">21 / 40</b></div><div><small>Next start</small><b class="num">P' + SIM.PROGRESS.gridPos(PG, 'endless') + '</b></div></div>'
+    + '<ol class="cr-races cr-six"><li class="cr-race next"><button type="button" class="cr-go" id="crEndlessGo" aria-label="Next Endless race: ' + def.name + '"><small>Next race · ' + def.country + '</small><b>' + def.short + '</b>' + circuitSvg(def) + '<span class="cr-rstate">Drawn at random</span></button></li></ol>'
+    + '<p class="cr-course">A race score above 21 raises your VR, below 21 lowers it. The higher your VR, the smaller the gains and the larger the losses. Every result counts, a retirement too.</p>';
+  const cur = careerTeam();
+  h += '<div class="cr-team"><label for="crTeam">Your team</label><select id="crTeam">' + SIM.TEAMS.map((t, k) => '<option value="' + k + '"' + (k === cur ? ' selected' : '') + '>' + t.name + '</option>').join('') + '</select></div>';
+  h += '<div class="cr-actions" id="crActions"><button type="button" class="btn primary" id="crEndlessStart">Start race: ' + def.short + ' ▸</button></div>';
+  box.innerHTML = h;
+  $('crTeam').onchange = (ev) => { PG.team = +ev.target.value; saveProgress(); };
+  $('crEndlessStart').onclick = $('crEndlessGo').onclick = () => careerStart('endless');
+  $('crCut').textContent = 'VR ' + fmtVr(e.vr);
+  $('crTableTitle').textContent = 'Endless Career · recent races';
+  let t = '<tr><th>#</th><th>Circuit</th><th class="r">Finish</th><th class="r">Lap</th><th class="r">Score</th><th class="r">VR</th><th class="r">Change</th></tr>';
+  const hist = e.history.slice().reverse().slice(0, 12);
+  hist.forEach((r, k) => {
+    t += '<tr><td>' + (e.races - k) + '</td><td>' + circuitShort(r.circuit) + '</td><td class="r num">' + (r.dnf ? 'DNF ' : '') + 'P' + r.pos + '</td><td class="r num">P' + r.lapRank + '</td><td class="r num"><b>' + r.total + '</b></td><td class="r num">' + fmtVr(r.newVr) + '</td>'
+      + '<td class="r num ' + (r.change > 0 ? 'vr-up' : r.change < 0 ? 'vr-down' : '') + '">' + (r.change > 0 ? '+' : r.change < 0 ? '−' : '±') + Math.abs(r.change) + '</td></tr>';
+  });
+  if (!hist.length) t += '<tr><td colspan="7" class="dim">No Endless races yet. Your VR starts at 1,000.</td></tr>';
+  $('crStand').innerHTML = t;
+}
+// Start the next Career race: the scheduled race of a rank, or the drawn Endless race. Nothing is counted until the
+// race starts (the brief can still be left); from the start, the race must end in a result.
+async function careerStart(kind, rank) {
+  PG = loadProgress();
+  if (PG.career.active) return;
+  let circuit;
+  if (kind === 'endless') { if (!PG.career.endless.unlocked) return; const n = SIM.PROGRESS.ensureEndlessNext(PG); saveProgress(); circuit = n.circuit; }
+  else { const st = SIM.PROGRESS.status(PG, rank); if (!st || !st.unlocked || st.done) return; circuit = st.next; }
+  G.career = { kind, rank: kind === 'endless' ? null : rank, team: careerTeam(), circuit };
   hideAllOverlays();
   await ensureCircuit(SIM.circuitById(circuit));
   startRace();
 }
-// Shown when a race completes a rank.
+// The end of a championship: passed or not.
 function openSummary(rank) {
   PG = loadProgress();
-  const st = SIM.PROGRESS.status(PG, 'career', rank), last = rank === RK.length - 1;
+  const st = SIM.PROGRESS.status(PG, rank), last = rank === RK.length - 1;
   $('career').classList.add('hidden'); CRUI.open = false;
-  $('sumKicker').textContent = RK[rank].name + ' rank · six circuits';
-  $('sumTitle').innerHTML = last ? 'Career <span>Complete</span>' : 'Rank <span>complete</span>';
-  $('sumHero').className = 'sum-hero ' + (last ? 'champ' : 'ok');
-  $('sumPos').textContent = st.score;
-  $('sumVerdict').textContent = last ? 'Master rank complete. Career complete.' : RK[rank + 1].name + ' unlocked';
-  $('sumDetail').textContent = st.score + ' of ' + st.max + ' points · ' + st.need + ' needed';
-  let h = '<tr><th>Circuit</th><th class="r">Finish</th><th class="r">Pos</th><th class="r">Pace</th><th class="r">Total</th></tr>';
-  for (const { circuit, entry } of st.rows) h += '<tr><td>' + SIM.circuitById(circuit).short + '</td><td class="r num">' + (entry.dnf ? 'DNF ' : '') + 'P' + entry.pos + '</td><td class="r num">' + entry.posPts + '</td><td class="r num">' + entry.pacePts + '</td><td class="r num"><b>' + entry.total + '</b></td></tr>';
+  $('sumKicker').textContent = RK[rank].name + ' championship · six races';
+  $('sumTitle').innerHTML = st.passed ? (last ? 'Master <span>complete</span>' : 'Championship <span>passed</span>') : 'Championship <span>not passed</span>';
+  $('sumHero').className = 'sum-hero ' + (st.passed ? (last ? 'champ' : 'ok') : 'no');
+  $('sumPos').textContent = st.total;
+  $('sumVerdict').textContent = st.passed ? (last ? 'Endless Career unlocked' : RK[rank + 1].name + ' unlocked') : 'Restart ' + RK[rank].name + ' from race 1';
+  $('sumDetail').textContent = st.total + ' of ' + st.max + ' points · ' + st.need + ' needed';
+  let h = '<tr><th>#</th><th>Circuit</th><th class="r">Finish</th><th class="r">Lap rank</th><th class="r">Pos</th><th class="r">Lap</th><th class="r">Total</th></tr>';
+  st.races.forEach((e, k) => { h += '<tr><td>' + (k + 1) + '</td><td>' + circuitShort(e.circuit) + '</td><td class="r num">' + (e.dnf ? 'DNF ' : '') + 'P' + e.pos + '</td><td class="r num">P' + e.lapRank + '</td><td class="r num">' + e.posPts + '</td><td class="r num">' + e.lapPts + '</td><td class="r num"><b>' + e.total + '</b></td></tr>'; });
   $('sumTable').innerHTML = h;
   const acts = $('sumActions'); acts.innerHTML = '';
   const mk = (txt, fn, primary) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn' + (primary ? ' primary' : ''); b.textContent = txt; b.onclick = fn; acts.appendChild(b); return b; };
-  mk('Career', () => { $('careerSummary').classList.add('hidden'); openCareer(rank); }, last);
-  if (!last) mk('Next rank: ' + RK[rank + 1].name + ' ▸', () => { $('careerSummary').classList.add('hidden'); openCareer(rank + 1); }, true);
+  const close = (k) => { $('careerSummary').classList.add('hidden'); openCareer(k); };
+  mk('Career', () => close(rank), false);
+  if (st.passed) mk(last ? 'Endless Career ▸' : 'Next rank: ' + RK[rank + 1].name + ' ▸', () => close(last ? ENDLESS_TAB : rank + 1), true);
+  else mk('Restart ' + RK[rank].name + ' ▸', () => { PG = loadProgress(); if (SIM.PROGRESS.restartRank(PG, rank)) saveProgress(); close(rank); }, true);
   $('careerSummary').classList.remove('hidden');
   acts.lastElementChild.focus({ preventScroll: true });
 }
-$('crBack').onclick = () => closeCareer();
-$('crReset').onclick = () => armed($('crReset'), 'Click again to erase all Career progress', () => {
-  PG = loadProgress(); const fresh = SIM.PROGRESS.create(); PG.career = fresh.career; saveProgress(); CRUI.sel = 0; renderCareer();
-  const b = $('crReset'); delete b.dataset.armed; b.classList.remove('armed'); b.textContent = 'Reset career progress';
-});
-window.addEventListener('keydown', (e) => {
-  if (!$('careerSummary').classList.contains('hidden') && e.code === 'Escape') { e.preventDefault(); e.stopPropagation(); $('careerSummary').classList.add('hidden'); openCareer(); return; }
-  if (!CRUI.open || $('career').classList.contains('hidden')) return;
-  if (e.code === 'Escape') { e.preventDefault(); e.stopPropagation(); closeCareer(); return; }
-  if (!e.target.closest || !e.target.closest('#crBar')) return;
-  if (e.code === 'ArrowLeft') { e.preventDefault(); selectTier(CRUI.sel - 1); }
-  else if (e.code === 'ArrowRight') { e.preventDefault(); selectTier(CRUI.sel + 1); }
-}, true);
-window.addEventListener('storage', (e) => { if (e.key === PROGRESS_KEY) { PG = loadProgress(); updateCareerButton(); if (CRUI.open) renderCareer(); } });
+// After the player's race has ended (retired, or Retire chosen, or finished early), the rest of the field still
+// races: the race is run on to its end without drawing it, and only then classified and scored.
+function resolveRace() {
+  const sess = G.session; if (!sess || sess.type !== 'race' || G.resolving) return;
+  if (sess.over) { finishResolved(sess); return; }
+  hideAllOverlays(); clearKeys(); G.paused = true; G.resolving = true; $('resolving').classList.remove('hidden');
+  const total = sess.totalLaps;
+  const step = () => {
+    if (G.session !== sess) { G.resolving = false; $('resolving').classList.add('hidden'); return; }
+    const t0 = performance.now();
+    while (performance.now() - t0 < 60 && !sess.over && sess.time < 3600) sess.fixedStep(SIM.PHYS_DT);
+    sess.events.length = 0;
+    const lead = Math.min(total, sess.cars.reduce((a, c) => Math.max(a, c.laps), 0));
+    $('rsText').textContent = sess.finishedFlag ? 'Chequered flag — the last cars are finishing' : 'Leader on lap ' + Math.min(total, lead + 1) + ' of ' + total;
+    $('rsBar').style.width = (100 * Math.min(1, sess.cars.reduce((a, c) => Math.max(a, c.totalDist), 0) / (total * sess.track.length))).toFixed(1) + '%';
+    if (sess.over || sess.time >= 3600) { if (!sess.over) sess.finishRace(); sess.events.length = 0; G.resolving = false; $('resolving').classList.add('hidden'); finishResolved(sess); }
+    else setTimeout(step, 0);
+  };
+  step();
+}
+function finishResolved(sess) { recordCareerRace(sess); G.paused = false; showResults(); }
+// Leave a race from the pause menu. Career: before the flag this is retiring (the race is then resolved and the
+// result counts); Grand Prix: back to the menu.
+function leaveRace() {
+  const sess = G.session, p = G.player;
+  if (G.career && sess && sess.type === 'race' && !G.attract && sess.cfg.career) {
+    if (!sess.over && p && !p.finished && !p.dnf) sess.abandonRace(p, 'Retired');
+    resolveRace(); return;
+  }
+  exitToMenu();
+}
 updateCareerButton();
 function drawMinimap() {
   const { g, tf } = G.mmT; const t = G.track, sess = G.session; const W = G.mm.cvs.width, H = G.mm.cvs.height;
@@ -10357,7 +10543,7 @@ function renderCarStatus() {
   $('csCrews').innerHTML = st.length ? st.map(([k, t]) => '<li><b>' + (CREW_NAMES[k] || k) + '</b> ' + t.toFixed(1) + ' s — ' + plan.jobs.filter(j => j.station === k).map(j => SIM.COMPONENTS[j.k].name.toLowerCase()).join(', ') + '</li>').join('') + '<li>The crews work at the same time; each works through its own jobs in turn.</li>' : '<li>No repair work needed.</li>';
 }
 function openCarStatus() {
-  const sess = G.session; if (!sess || G.attract || G.mode !== 'race' || !(G.player || G.focus)) return;
+  const sess = G.session; if (!sess || G.attract || G.resolving || G.mode !== 'race' || !(G.player || G.focus)) return;
   G.csOpen = true; G.csKey = null;
   // a live race pauses while the page is open, so opening it at speed never costs a crash
   G.csPaused = !G.paused && !sess.over; if (G.csPaused) { clearKeys(); G.paused = true; }
@@ -11055,23 +11241,13 @@ function handleKeys(dt) {
   // after retiring, the driver can watch the rest of the race
   if (p.dnf && sess.type === 'race') {
     const order = sess.order || sess.cars, live = order.filter(c => !c.inGarage);
-    if (G.focus === p && p.inGarage && live.length) { G.focus = live[0]; G.camRig.init = false; pushMsg('Retired — watching the race. ←/→ change car · 1/2/4 speed · Esc menu', 'info', 5); }
+    if (G.focus === p && p.inGarage && live.length) { G.focus = live[0]; G.camRig.init = false; pushMsg('Retired — watching the race. Enter: skip to the result · ←/→ change car · 1/2/4 speed', 'info', 6); }
+    if (takePress('Enter') || takePress('NumpadEnter')) { resolveRace(); return; }
     let pos = live.indexOf(G.focus);
     if (live.length && (takePress('ArrowRight') || takePress('BracketRight'))) { G.focus = live[(pos + 1) % live.length]; G.camRig.init = false; }
     if (live.length && (takePress('ArrowLeft') || takePress('BracketLeft'))) { G.focus = live[(Math.max(0, pos) - 1 + live.length) % live.length]; G.camRig.init = false; }
     if (takePress('Digit1')) G.timeScale = 1; if (takePress('Digit2')) G.timeScale = 2; if (takePress('Digit4')) G.timeScale = 4;
     return;
-  }
-  const space=takePress('Space');
-  const respawn=space && !p.launch.active; // Restore the existing respawn control after launch.
-  const reset = takePress('KeyR');
-  if ((respawn || reset) && !p.pit && sess.lightsOut && !p.inGarage && !p.finished && !p.dnf && !p.retiring) {
-    sess.marshalReset(p);
-    p.u = p.v = p.speed = p.steer = p.throttle = p.brake = p.slideAngle = 0;
-    p.axL = p.ayL = 0;
-    G.pc = new PlayerControl(p);
-    p.input.throttle = 0; p.input.brake = 0; p.input.steer = 0; clearPlayerAssists(p); DRIVE_KEYS.clearPending();
-    G.camRig.init = false; pushMsg('Car respawned on track', 'warn', 2);
   }
   G.lookBack = !!KEYS.KeyB;
 }
@@ -11100,17 +11276,20 @@ function director(dt) {
 }
 
 /* ---------------- menus & overlays ---------------- */
-function hideAllOverlays() { for (const id of ['controls', 'pause', 'results', 'raceBrief','pitSvc','career','careerSummary','carStatus']) $(id).classList.add('hidden'); CRUI.open = false; G.csOpen = false; G.csPaused = false; }
+function hideAllOverlays() { for (const id of ['controls', 'pause', 'results', 'raceBrief','pitSvc','career','careerSummary','carStatus']) $(id).classList.add('hidden'); CRUI.open = false; G.csOpen = false; G.csPaused = false; delete $('btnExit').dataset.armed; $('btnExit').classList.remove('armed'); }
 function togglePause() {
+  if (G.resolving) return; // the rest of the race is being run to its end
   if (!$('controls').classList.contains('hidden')) { $('controls').classList.add('hidden'); if (G.paused) $('pause').classList.remove('hidden'); return; }
   if (!$('raceBrief').classList.contains('hidden')) { $('briefCancel').click(); return; }
   if (G.mode === 'menu') return;
   clearKeys();
   G.paused = !G.paused; $('pause').classList.toggle('hidden', !G.paused);
   const sess = G.session;
-  $('pauseSub').textContent = sess ? (G.career ? 'Career · ' + RK[G.career.rank].name + ' · ' : '')
+  $('pauseSub').textContent = sess ? (G.career ? (G.career.id ? careerLabel(G.career) : 'Career') + ' · ' : '')
     + 'Grand Prix' + ' · ' + G.track.name : '';
-  $('btnExit').textContent = G.career ? 'Exit to Career (race not counted)' : 'Exit to main menu';
+  const p = G.player, live = sess && sess.type === 'race' && !sess.over && p && !p.finished && !p.dnf;
+  $('btnExit').textContent = G.career && sess && sess.cfg.career && !sess.over ? (live ? 'Retire from the race (the result counts)' : 'Skip to the result') : G.career ? 'Exit to Career' : 'Exit to main menu';
+  $('btnSkip').classList.toggle('hidden', !!G.career || !(sess && sess.type === 'race' && !sess.over && p && (p.finished || p.dnf)));
 }
 function showResults() {
   const sess = G.session; if (!sess || !sess.results) return;
@@ -11118,28 +11297,28 @@ function showResults() {
   const tbl = $('resTable');
   $('resTitle').innerHTML = 'Race <span>Results</span>';
   $('resSub').classList.remove('hidden');
-  $('resSub').textContent = G.track.name + ' · ' + sess.totalLaps + ' laps · ' + (sess.track.length * sess.totalLaps / 1000).toFixed(3) + ' km · ' + (sess.weather?sess.weather.label:sess.wet?'wet':'dry')+' · AI ' + (sess.aiLevel ? (sess.cfg.career ? RK[sess.cfg.career.rank].name + ' ' : '') + '(' + Math.round(sess.aiLevel * 100) + '%)' : Math.round(sess.difficulty * 100) + '%') + ' · ' + sess.damageLevel.name + ' damage';
-  // Career: the circuit score (position + pace) and what it did to the rank
+  $('resSub').textContent = G.track.name + ' · ' + sess.totalLaps + ' laps · ' + (sess.track.length * sess.totalLaps / 1000).toFixed(3) + ' km · ' + (sess.weather?sess.weather.label:sess.wet?'wet':'dry')+' · AI ' + (sess.aiLevel ? (sess.cfg.career ? (sess.cfg.career.kind === 'endless' ? 'Endless ' : RK[sess.cfg.career.rank].name + ' ') : '') + '(' + Math.round(sess.aiLevel * 100) + '%)' : Math.round(sess.difficulty * 100) + '%') + ' · ' + sess.damageLevel.name + ' damage';
+  // Career: the race score (position + best lap) and what it did to the championship or the VR
   const career = sess.cfg.career, out = career ? sess.careerOutcome : null;
-  if (career) $('resTitle').innerHTML = 'Career · ' + RK[career.rank].name + ' · ' + SIM.circuitById(career.circuit).short + ' <span>Results</span>';
+  if (career) $('resTitle').innerHTML = careerLabel(career).toUpperCase() + ' · ' + SIM.circuitById(career.circuit).short + ' <span>' + (out && out.ok && out.entry.dnf ? 'Retired' : 'Results') + '</span>';
   renderCareerStrip(sess);
-  let h = '<tr><th>Pos</th><th>Team</th><th>Laps</th><th>Time / Gap</th><th>Best lap</th><th>Stops</th>' + (career ? '<th>Pos pts</th>' : '<th>Pts</th>') + '</tr>';
+  let h = '<tr><th>Pos</th><th>Team</th><th>Laps</th><th>Time / Gap</th><th>Best lap</th><th>Stops</th>' + (career ? '<th>Lap rank</th><th>Pos pts</th><th>Lap pts</th><th>Total</th>' : '<th>Pts</th>') + '</tr>';
   const win = sess.results[0];
   const fastest = sess.bestLap.car;
   for (const r of sess.results) {
     const c = r.car; let tm;
     if (r.dnf) tm = 'DNF (' + c.dnfReason + ')'; else if (r.pos === 1) tm = fmt(r.time); else if (r.time != null && r.laps === win.laps) tm = '+' + (r.time - win.time).toFixed(3); else if (r.laps < win.laps) tm = '+' + (win.laps - r.laps) + ' lap' + (win.laps - r.laps > 1 ? 's' : ''); else tm = '—';
-    h += `<tr class="${c.isPlayer ? 'me' : ''}"><td>${r.pos}</td><td><span class="tb" style="background:${c.team.c1 === '#141414' ? '#c9a24a' : c.team.c1}"></span>${c.team.name}${c === fastest ? ' <span class="pill" style="background:#7b1fa2">FL</span>' : ''}</td><td>${r.laps}</td><td class="num">${tm}</td><td class="num">${r.best ? fmt(r.best) : '-'}</td><td>${r.pits}</td>${career ? `<td class="cpts">${SIM.PROGRESS.positionPoints(r.pos)}</td>` : `<td>${r.points || ''}</td>`}</tr>`;
+    h += `<tr class="${c.isPlayer ? 'me' : ''}"><td>${r.pos}</td><td><span class="tb" style="background:${c.team.c1 === '#141414' ? '#c9a24a' : c.team.c1}"></span>${c.team.name}${c === fastest ? ' <span class="pill" style="background:#7b1fa2">FL</span>' : ''}</td><td>${r.laps}</td><td class="num">${tm}</td><td class="num">${r.best ? fmt(r.best) : '-'}</td><td>${r.pits}</td>${career ? `<td class="num">P${r.lapRank}</td><td class="cpts">${r.posPts}</td><td class="cpts">${r.lapPts}</td><td class="cpts"><b>${r.score}</b></td>` : `<td>${r.points || ''}</td>`}</tr>`;
   }
   tbl.innerHTML = h;
   const acts = $('resActions'); acts.innerHTML = '';
   const mk = (txt, fn, primary) => { const b = document.createElement('button'); b.className = 'btn' + (primary ? ' primary' : ''); b.textContent = txt; b.onclick = fn; acts.appendChild(b); return b; };
   if (career) {
-    const st = SIM.PROGRESS.status(PG, 'career', career.rank), next = st.rows.find(x => !x.entry);
+    // no retry: the next action is the next scheduled race (or the championship verdict)
     mk('Career', () => exitToMenu());
-    mk('Retry ' + SIM.circuitById(career.circuit).short, () => careerRace(career.rank, career.circuit), !next && !(out && out.completedNow && out.completedNow.length));
-    if (out && out.ok && out.completedNow && out.completedNow.includes(career.rank)) mk('Rank complete ▸', () => { hideAllOverlays(); G.career = null; startAttract(); openSummary(career.rank); }, true);
-    else if (next) mk('Next circuit: ' + SIM.circuitById(next.circuit).short + ' ▸', () => careerRace(career.rank, next.circuit), true);
+    if (out && out.ok && out.kind === 'endless') mk('Next Endless race: ' + circuitShort(out.next.circuit) + ' ▸', () => careerStart('endless'), true);
+    else if (out && out.ok && out.final) mk('Championship result ▸', () => { hideAllOverlays(); G.career = null; startAttract(); openSummary(career.rank); }, true);
+    else if (out && out.ok && out.status && out.status.next) mk('Next race: ' + circuitShort(out.status.next) + ' ▸', () => careerStart('rank', career.rank), true);
   } else {
     mk('Main menu', () => exitToMenu());
     mk('Race again ▸', () => { hideAllOverlays(); startRace(); }, true);
@@ -11154,7 +11333,14 @@ function onAction(act) {
     case 'controls': $('controls').classList.remove('hidden'); $('pause').classList.add('hidden'); break;
     case 'controlsClose': $('controls').classList.add('hidden'); if (G.paused) $('pause').classList.remove('hidden'); break;
     case 'resume': togglePause(); break;
-    case 'exit': exitToMenu(); break;
+    case 'exit': {
+      // retiring from a Career race is final: the first click arms the button
+      const sess = G.session, p = G.player, b = $('btnExit');
+      if (G.career && sess && sess.cfg.career && !sess.over && p && !p.finished && !p.dnf) armed(b, 'Click again to retire (the result counts)', () => leaveRace());
+      else leaveRace();
+      break;
+    }
+    case 'skip': resolveRace(); break;
   }
 }
 document.addEventListener('click', (e) => { const b = e.target.closest('[data-act]'); if (b) onAction(b.dataset.act); });
@@ -11326,6 +11512,9 @@ function viewPoseRestore() {
 function frame(now) {
   requestAnimationFrame(frame);
   const dt = Math.min(0.05, (now - lastT) / 1000); lastT = now;
+  // while the rest of a race is being run to its end (hidden behind its progress panel), nothing is drawn: the
+  // simulation gets the whole thread
+  if (G.resolving) return;
   viewPoseRestore();
   try {
     G.pad = readPad();
@@ -11434,6 +11623,11 @@ async function boot() {
   startAttract();
   setLoad(1); await new Promise(r => setTimeout(r, 120));
   $('loading').classList.add('hidden');
+  if (careerForfeit && careerForfeit.out && careerForfeit.out.ok) {
+    const t = $('toast'), a = careerForfeit.active;
+    t.textContent = 'Your unfinished Career race at ' + circuitShort(a.circuit) + ' (' + (a.kind === 'endless' ? 'Endless Career' : RK[a.rank].name) + ') was counted as a retirement: P20, 2 points.';
+    t.classList.remove('hidden'); setTimeout(() => t.classList.add('hidden'), 9000);
+  }
   requestAnimationFrame((t) => { lastT = t; frame(t); });
 }
 boot().catch((err) => {

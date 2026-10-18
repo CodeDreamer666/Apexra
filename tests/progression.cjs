@@ -3,212 +3,381 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 
-// Career progression, pace scoring, best results, rank requirements and save migration.
+// Career: the 40-point race score (position + best-lap rank), the classification of finishers and retirements, the
+// fixed six-race championships with no retries, promotion, Endless Career with random circuits and the VR rating,
+// saves (one result per race, forfeits, migration) and the removal of respawning.
 const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
 const shim = { exports: {} }; new Function('module', html.match(/<script>([\s\S]*?)<\/script>/)[1])(shim);
-const SIM = shim.exports, P = SIM.PROGRESS, RANKS = P.RANKS, CIRC = P.CIRCUITS;
+const SIM = shim.exports, P = SIM.PROGRESS, RANKS = P.RANKS;
 const tracks = new Map(SIM.CIRCUITS.map(d => [d.id, new SIM.Track(d)]));
-let uid = 0; const id = () => 'race-' + (++uid);
-const career = (st, rank, circuit, pos, pacePts, more = {}) => P.recordCareer(st, Object.assign({ rank, circuit, id: id(), pos, dnf: false, pacePts }, more));
+const ORDER = ['monza', 'silverstone', 'spa', 'suzuka', 'bahrain', 'interlagos'];
+const seq = (seed = 1) => { let x = seed; return () => { x = (x * 16807) % 2147483647; return (x - 1) / 2147483646; }; };
+// play one Career race through the save API: begin it, then record a result for it
+function race(st, kind, rank, pos, lapRank, more = {}) {
+  const b = P.beginRace(st, kind, rank, seq(st.career.seen.length + 7));
+  assert.ok(b.ok, 'race begins: ' + b.reason);
+  const out = P.recordRace(st, Object.assign({ id: b.active.id, pos, lapRank, best: 80, dnf: false }, more), seq(99 + st.career.seen.length));
+  assert.ok(out.ok, 'race recorded: ' + out.reason);
+  return { begin: b.active, out };
+}
+// a whole championship with a fixed result per race
+const championship = (st, rank, results) => results.map(([pos, lap, more]) => race(st, 'rank', rank, pos, lap, more));
 
-test('exactly three ranks: Rookie 100%, Pro 125%, Master 150%; the old tiers and ranks are gone', () => {
+/* ---------------- the race score ---------------- */
+test('three ranks and their thresholds: Rookie 160, Pro 180, Master 200 of 240; six circuits in a fixed order', () => {
   assert.deepEqual(RANKS.map(r => [r.id, r.name, r.level]), [['rookie', 'Rookie', 1], ['pro', 'Pro', 1.25], ['master', 'Master', 1.5]]);
-  assert.equal(SIM.AI_MAX_LEVEL, 1.5);
-  assert.deepEqual(RANKS.map(r => SIM.aiSkillForLevel(r.level)), [0, 0.5, 1]);
-  assert.equal(SIM.CAREER, undefined); assert.equal(SIM.RANKED, undefined);
-  assert.ok(!/Initiate|Bronze|Silver|Gold|Platinum|Diamond|Ascendant|Elite|Legendary/.test(JSON.stringify(RANKS)));
-  assert.deepEqual(CIRC, ['monza', 'silverstone', 'spa', 'suzuka', 'bahrain', 'interlagos'], 'all six real circuits in every rank');
-  for (const mode of P.MODES) for (let k = 0; k < 3; k++) assert.equal(P.status(P.create(), mode, k).rows.length, 6);
-  assert.deepEqual(Object.keys(SIM.GAME_MODES), ['grandprix']); assert.deepEqual(P.MODES, ['career']);
-  assert.equal(SIM.GAME_MODES.grandprix.laps, 6); assert.equal(P.recordRanked, undefined);
+  assert.deepEqual(P.PROMOTE, [160, 180, 200]);
+  assert.equal(P.RANK_MAX, 240); assert.equal(P.RACE_MAX, 40); assert.equal(P.RANK_RACES, 6);
+  assert.deepEqual(P.CIRCUITS, ORDER); assert.equal(P.ENDLESS_LEVEL, 1.5);
+  assert.deepEqual(Object.keys(SIM.GAME_MODES), ['grandprix']); assert.equal(SIM.GAME_MODES.grandprix.laps, 6);
+  for (const gone of ['recordCareer', 'paceScore', 'pacePoints', 'positionPoints', 'PACE_REF', 'MODES']) assert.equal(P[gone], undefined, gone + ' removed');
 });
 
-test('finishing position points for all 20 places: 50 for P1 down to 1 for P20', () => {
-  const want = [50, 44, 39, 35, 32, 29, 26, 23, 20, 18, 16, 14, 12, 10, 8, 6, 5, 4, 2, 1];
-  for (let p = 1; p <= 20; p++) assert.equal(P.positionPoints(p), want[p - 1], 'P' + p);
-  for (let p = 2; p <= 20; p++) assert.ok(P.positionPoints(p) < P.positionPoints(p - 1));
-  assert.equal(P.positionPoints(0), 0); assert.equal(P.positionPoints(21), 0);
+test('ranking points: 20 for 1st down to 1 for 20th, the same table for position and best lap', () => {
+  for (let k = 1; k <= 20; k++) assert.equal(P.rankPoints(k), 21 - k);
+  assert.equal(P.rankPoints(0), 0); assert.equal(P.rankPoints(21), 0); assert.equal(P.rankPoints(1.5), 0);
 });
 
-test('lap-time pace: smooth and monotonic, every integer from 0 to 50 reachable, per circuit and weather', () => {
-  for (const c of CIRC) for (const w of [0, 0.3, 0.45, 0.6, 0.9, 1]) {
-    // per-lap points against the reference ratio: never more for a slower lap, no jumps
-    let prev = Infinity; for (let r = 0.98; r < 1.3; r += 0.0002) { const p = P.pacePoints(c, w, r); assert.ok(p <= prev + 1e-9, c + ' ' + w + ' ' + r); prev = p; }
-    // continuous: a thousandth of a percent of lap time never moves the score by more than a tenth of a point
-    for (let r = 0.999; r < 1.3; r += 0.0005) assert.ok(Math.abs(P.pacePoints(c, w, r) - P.pacePoints(c, w, r + 1e-5)) < 0.1, 'jump ' + c + ' ' + w + ' ' + r);
-    assert.equal(P.pacePoints(c, w, 1), 50); assert.equal(P.pacePoints(c, w, 0.95), 50); assert.equal(P.pacePoints(c, w, 1.3), 0);
-    // the anchors are the measured laps of the game's own drivers
-    const A = P.paceAnchors(c, w);
-    assert.deepEqual(A.map(a => a[1]), [50, 26, 12, 0]);
-    for (let k = 0; k < A.length; k++) assert.ok(Math.abs(P.pacePoints(c, w, A[k][0]) - A[k][1]) < 1e-9);
-    for (let k = 1; k < A.length; k++) assert.ok(A[k][0] > A[k - 1][0]);
+test('race score = position points + best-lap points: 2 to 40, integers, the two rankings independent', () => {
+  const rows = Array.from({ length: 20 }, (_, k) => ({ key: k, pos: k + 1, best: 90 - k * 0.1, bestAt: 100, retiredAt: null, dist: 1e4 }));
+  P.scoreRace(rows);
+  // P1 has the slowest lap (rank 20), P20 the fastest (rank 1): both score 21
+  assert.equal(rows[0].posPts, 20); assert.equal(rows[0].lapRank, 20); assert.equal(rows[0].lapPts, 1); assert.equal(rows[0].score, 21);
+  assert.equal(rows[19].posPts, 1); assert.equal(rows[19].lapRank, 1); assert.equal(rows[19].lapPts, 20); assert.equal(rows[19].score, 21);
+  for (const r of rows) assert.ok(Number.isInteger(r.score) && r.score >= 2 && r.score <= 40);
+  assert.deepEqual(rows.map(r => r.lapRank).sort((a, b) => a - b), Array.from({ length: 20 }, (_, k) => k + 1), 'unique best-lap ranks');
+  // winner with the fastest lap: 40; last with the slowest (or no) lap: 2
+  const two = [{ key: 0, pos: 1, best: 80, bestAt: 1 }, ...Array.from({ length: 18 }, (_, k) => ({ key: k + 1, pos: k + 2, best: 81 + k, bestAt: 1 })), { key: 19, pos: 20, best: 0, retiredAt: 5, dist: 10 }];
+  P.scoreRace(two); assert.equal(two[0].score, 40); assert.equal(two[19].score, 2);
+});
+
+test('best-lap ranking: fastest valid lap first; equal times by who set it first, then the driver order; no lap below every lap', () => {
+  const r = (key, best, bestAt, retiredAt = null, dist = 0) => ({ key, best, bestAt, retiredAt, dist });
+  const order = (rows) => P.rankBestLaps(rows).map(x => x.key);
+  assert.deepEqual(order([r(0, 95.2, 300), r(1, 94.8, 200), r(2, 95.1, 400)]), [1, 2, 0]);
+  // exactly equal (full precision): the earlier lap ranks higher, then the lower driver id
+  assert.deepEqual(order([r(3, 94.8125, 300), r(4, 94.8125, 250), r(5, 94.8125, 250)]), [4, 5, 3]);
+  // full precision, not the rounded display value
+  assert.deepEqual(order([r(6, 94.80049, 1), r(7, 94.8001, 9)]), [7, 6]);
+  // a retired car keeps its best completed lap; drivers without one rank below all drivers with one
+  assert.deepEqual(order([r(8, 0, null, 50, 900), r(9, 97.4, 120, 160, 7000), r(10, 96.0, 400)]), [10, 9, 8]);
+  // several without a lap: the one still in the race longest first (still running at the end counts as longest),
+  // then the further one, then the driver order
+  assert.deepEqual(order([r(11, 0, null, 30, 500), r(12, 0, null, 60, 100), r(13, 0, null, null, 50), r(14, 0, null, 30, 800), r(15, 0, null, 30, 800)]), [13, 12, 14, 15, 11]);
+});
+
+/* ---------------- the race classification (a real Session) ---------------- */
+function liveRace(id = 'interlagos', laps = 3, seed = 5) {
+  const t = tracks.get(id);
+  const s = new SIM.Session(t, { type: 'race', laps, entries: SIM.DRIVERS.map((driver, k) => ({ driver, isPlayer: k === 0 })), seed, spectate: true, weather: 'dynamic',
+    weatherState: Object.assign(new SIM.DynamicWeather(seed).snapshot(), { pattern: 'dry', regime: 'sunny', rain: 0, water: 0, lineWater: 0, cloud: 0.2, targetCloud: 0.2, targetRain: 0, patternEnds: 1e9, regimeEnds: 1e9 }) });
+  s.totalLaps = laps;
+  const me = s.player; me.ai = new SIM.AIDriver(me, s); // the player's car driven by the AI for the test
+  return s;
+}
+const runUntil = (s, cond, cap = 1600) => { while (!s.over && s.time < cap && !cond(s)) s.fixedStep(SIM.PHYS_DT); };
+const runOut = (s) => runUntil(s, () => false);
+
+test('classification: finishers above retirees, later retirements above earlier ones, simultaneous ones by progress, P1-P20 unique', () => {
+  const s = liveRace('interlagos', 3, 5), C = s.cars, by = (k) => C[k];
+  runUntil(s, x => x.lightsOut && x.time - x.lightsOutTime > 20);
+  s.abandonRace(by(3), 'Retired');                             // retires on lap 1, no lap
+  runUntil(s, () => by(7).laps >= 1 && by(7).crossings >= 2);
+  s.abandonRace(by(7), 'Retired');                             // retires right after its first lap
+  runUntil(s, () => by(11).laps >= 2);
+  // two cars out in the same instant (a shared collision): the one further round ranks higher
+  const [a, b] = by(11).totalDist >= by(12).totalDist ? [by(11), by(12)] : [by(12), by(11)];
+  s.abandonRace(by(11), 'Accident damage'); s.abandonRace(by(12), 'Accident damage');
+  runOut(s);
+  assert.ok(s.over); const res = s.results;
+  assert.equal(res.length, 20); assert.deepEqual(res.map(r => r.pos), Array.from({ length: 20 }, (_, k) => k + 1));
+  const out = res.filter(r => r.dnf), inn = res.filter(r => !r.dnf);
+  assert.ok(out.length >= 4);
+  assert.ok(Math.max(...inn.map(r => r.pos)) < Math.min(...out.map(r => r.pos)), 'every car still in the race ahead of every retired car');
+  for (let k = 1; k < out.length; k++) assert.ok(out[k - 1].retiredAt >= out[k].retiredAt, 'later retirement ranks higher');
+  const pa = res.find(r => r.car === a).pos, pb = res.find(r => r.car === b).pos;
+  assert.ok(pa < pb, 'same moment: further round ranks higher');
+  assert.equal(res[res.length - 1].car, by(3), 'the earliest retirement is last');
+  // best laps: the car out on lap 1 has none and is below every car with a lap; the one out after a lap keeps it
+  const r3 = res.find(r => r.car === by(3)), r7 = res.find(r => r.car === by(7));
+  assert.ok(!(r3.best > 0)); assert.ok(r7.best > 0);
+  for (const r of res) if (r.best > 0) assert.ok(r.lapRank < r3.lapRank);
+  assert.deepEqual(res.map(r => r.lapRank).sort((x, y) => x - y), Array.from({ length: 20 }, (_, k) => k + 1));
+  for (const r of res) assert.equal(r.score, r.posPts + r.lapPts);
+});
+
+test('the player retires: the race runs on; an AI retiring later ranks above, faster AI laps afterwards still count', () => {
+  const s = liveRace('interlagos', 3, 8), me = s.player;
+  runUntil(s, () => me.laps >= 1 && me.crossings >= 2);
+  const myBest = me.bestLap; assert.ok(myBest > 0);
+  s.abandonRace(me, 'Retired');
+  const atRetire = s.time;
+  // laps set after the player's retirement
+  const later = s.cars.find(c => c !== me && !c.dnf);
+  runUntil(s, () => s.time > atRetire + 30);
+  s.abandonRace(later, 'Engine failure');
+  runOut(s);
+  const R = (c) => s.results.find(r => r.car === c);
+  assert.ok(R(later).pos < R(me).pos, 'an AI retiring after the player ranks above the player');
+  const faster = s.results.filter(r => r.best > 0 && r.best < myBest && r.bestAt > atRetire);
+  assert.equal(R(me).lapRank, 1 + s.results.filter(r => r.best > 0 && (r.best < myBest || (r.best === myBest && r.bestAt < me.bestLapAt))).length, 'the player\'s lap rank counts every faster lap, also those set after the retirement');
+  assert.ok(faster.length >= 0);
+  assert.equal(R(me).best, myBest, 'the retired player keeps the best completed lap');
+});
+
+test('every driver retires: the order is the order of retirement, there is no winner', () => {
+  const s = liveRace('interlagos', 3, 9);
+  runUntil(s, x => x.lightsOut && x.time - x.lightsOutTime > 5);
+  const order = s.cars.slice();
+  for (const c of order) { s.abandonRace(c, 'Retired'); s.fixedStep(SIM.PHYS_DT); }
+  runOut(s);
+  assert.ok(s.over); assert.equal(s.winner, null);
+  assert.deepEqual(s.results.map(r => r.car), order.slice().reverse(), 'the last to retire is classified first');
+  assert.deepEqual(s.results.map(r => r.pos), Array.from({ length: 20 }, (_, k) => k + 1));
+});
+
+test('lap 1 is timed from the start line for every driver, the same way as every other lap', () => {
+  const s = liveRace('interlagos', 2, 4), cross = new Map(), orig = s.crossLine.bind(s);
+  s.crossLine = (car, at = s.time) => { (cross.get(car) || cross.set(car, []).get(car)).push(at); return orig(car, at); };
+  runOut(s);
+  for (const c of s.cars) {
+    if (!c.lapTimes.length) continue;
+    const x = cross.get(c);
+    assert.ok(Math.abs(c.lapTimes[0].t - (x[1] - x[0])) < 1e-9, c.driver.short + ': lap 1 from the line');
+    if (c.lapTimes[1]) assert.ok(Math.abs(c.lapTimes[1].t - (x[2] - x[1])) < 1e-9);
   }
-  for (const c of CIRC) {
-    const L = tracks.get(c).length, R = P.paceRef(c, 0), seen = new Set();
-    for (let k = 0; k <= 3000; k++) {
-      const t = R * (1 + k * 0.0001), laps = [];
-      for (let q = 0; q < 6; q++) laps.push({ t: q === 0 ? t + P.paceLaunch(c, 0) : t, water: 0, laneT: 0, laneD: 0, first: q === 0 });
-      seen.add(P.paceScore(c, L, laps, 6, false).points);
-    }
-    for (let n = 0; n <= 50; n++) assert.ok(seen.has(n), c + ': ' + n + ' points reachable');
-    // each circuit has its own reference, and every wet reference is slower than the dry one
-    for (const w of [0.3, 0.6, 0.9]) assert.ok(P.paceRef(c, w) > P.paceRef(c, 0), c + ' wet ' + w);
+  // the grid slot no longer decides lap 1: the back of the grid is not penalised by its run-up to the line
+  const l1 = s.results.filter(r => r.car.lapTimes[0]).map(r => r.car.lapTimes[0].t);
+  assert.ok(Math.max(...l1) - Math.min(...l1) < 25, 'lap 1 times are comparable across the grid');
+});
+
+/* ---------------- championships ---------------- */
+test('a championship is raced in the fixed order from Monza; nothing can be skipped, reordered or replayed', () => {
+  const st = P.create();
+  const seen = [];
+  for (let k = 0; k < 6; k++) {
+    const S = P.status(st, 0); assert.equal(S.next, ORDER[k]); assert.equal(S.index, k);
+    const b = P.beginRace(st, 'rank', 0, seq(k + 1)); assert.equal(b.active.circuit, ORDER[k]);
+    assert.equal(P.beginRace(st, 'rank', 0).reason, 'active', 'one race at a time');
+    assert.equal(P.recordRace(st, { id: 'not-this-race', pos: 1, lapRank: 1 }).reason, 'not-active');
+    const out = P.recordRace(st, { id: b.active.id, pos: 10, lapRank: 10, best: 90 });
+    assert.ok(out.ok); assert.equal(out.entry.circuit, ORDER[k]); seen.push(b.active.id);
+    // the same result can never be recorded twice (double click, reloaded results screen)
+    assert.equal(P.recordRace(st, { id: b.active.id, pos: 1, lapRank: 1 }).reason, 'duplicate');
   }
-  const refs = CIRC.map(c => P.paceRef(c, 0)); assert.equal(new Set(refs).size, 6, 'no shared benchmark');
+  assert.equal(P.status(st, 0).races.length, 6);
+  assert.equal(P.beginRace(st, 'rank', 0).reason, 'done', 'no seventh race, no replay');
+  assert.equal(P.beginRace(st, 'rank', 1).reason, 'locked', 'Pro stays locked: 6 × 21 = 126 < 160');
 });
 
-test('pace over the race: consistency counts, one fast lap cannot hide bad ones, standing starts and pit stops are normalised', () => {
-  const c = 'silverstone', L = tracks.get(c).length, R = P.paceRef(c, 0), launch = P.paceLaunch(c, 0);
-  const lap = (f, extra = {}) => Object.assign({ t: R * f, water: 0, laneT: 0, laneD: 0, first: false }, extra);
-  const score = (laps, retired = false) => P.paceScore(c, L, laps, 6, retired).points;
-  const clean = [lap(1.02, { t: R * 1.02 + launch, first: true }), ...[1, 2, 3, 4, 5].map(() => lap(1.02))];
-  const base = score(clean);
-  // standing start: lap 1 with the measured launch time scores like the flying laps
-  assert.equal(score([lap(1.02, { t: R * 1.02 + launch, first: true })]), score([lap(1.02)]));
-  // one exceptional lap among five slow ones does not reach a consistent driver's score
-  const oneFast = [lap(1.0, { t: R + launch, first: true }), ...[1, 2, 3, 4, 5].map(() => lap(1.06))];
-  assert.ok(score(oneFast) < base, 'one fast lap ' + score(oneFast) + ' vs consistent ' + base);
-  // a mistake (4 s lost recovering) lowers the score; it is not excluded
-  const mistake = clean.slice(); mistake[3] = lap(1.02, { t: R * 1.02 + 4 }); assert.ok(score(mistake) < base);
-  // a pit lap: time in the lane is replaced by reference pace over its distance (the stop itself is not a driving error)
-  const laneD = 420, laneT = 24, pitLap = lap(1.02, { t: R * 1.02 - laneD * R / L + laneT, laneT, laneD });
-  const pitted = clean.slice(); pitted[3] = pitLap; assert.equal(score(pitted), base, 'a legitimate stop costs no pace points');
-  // a slower lap is a slower lap: the comparison is like for like
-  assert.ok(score([lap(1.03)]) < score([lap(1.02)]));
-  // wet laps are measured against the wet reference and the wet anchors: matching the Rookie AI's measured lap in
-  // the conditions scores the same in the dry and in the wet
-  const rk = (w) => P.paceAnchors(c, w)[1][0], wet = (w) => ({ t: P.paceRef(c, w) * rk(w), water: w, laneT: 0, laneD: 0, first: false });
-  assert.equal(score([wet(0.6)]), 26); assert.equal(score([wet(0)]), 26);
-  assert.ok(score([lap(1.0, { water: 0.6 })]) === 50, 'a dry-pace lap in the wet is excellent');
-  // retired: every lap not completed scores 0
-  assert.ok(score(clean.slice(0, 3), true) < score(clean.slice(0, 3)) && Math.abs(score(clean.slice(0, 3), true) - Math.round(base / 2)) <= 1);
-});
-
-test('Career circuit score = position (50) + pace (50), capped at 100; the rank score is the six best, capped at 600', () => {
+test('a retirement counts as the race: its points stand and the championship moves on', () => {
   const st = P.create();
-  const r = career(st, 0, 'monza', 1, 50);
-  assert.ok(r.ok); assert.equal(r.entry.total, 100); assert.equal(r.entry.posPts, 50);
-  assert.equal(career(st, 0, 'monza', 20, 0).entry.total, 1);
-  assert.equal(P.recordCareer(st, { rank: 0, circuit: 'monza', id: id(), pos: 1, dnf: false, pacePts: 51 }).ok, false, 'pace above 50 is invalid');
-  for (const c of CIRC) career(st, 0, c, 1, 50);
-  const s = P.status(st, 'career', 0); assert.equal(s.score, 600); assert.equal(s.max, 600);
+  const { out } = race(st, 'rank', 0, 18, 4, { dnf: true, reason: 'retired' });
+  assert.equal(out.entry.posPts, 3); assert.equal(out.entry.lapPts, 17); assert.equal(out.entry.total, 20); assert.ok(out.entry.dnf);
+  assert.equal(P.status(st, 0).next, 'silverstone');
+  assert.equal(P.status(st, 0).total, 20);
 });
 
-test('replays: the best score per circuit counts, never the sum; a session counts once', () => {
+test('promotion only after all six races: Rookie 160, Pro 180, Master 200; a failed rank restarts from race 1', () => {
   const st = P.create();
-  const a = career(st, 0, 'spa', 5, 30); assert.equal(a.entry.total, 62);
-  const lower = career(st, 0, 'spa', 10, 20); assert.ok(lower.ok && !lower.improved);
-  assert.equal(P.status(st, 'career', 0).score, 62, 'a lower replay does not overwrite');
-  const better = career(st, 0, 'spa', 2, 40); assert.ok(better.improved); assert.equal(better.previous.total, 62);
-  assert.equal(P.status(st, 'career', 0).score, 84, 'replaced, not added');
-  const rid = 'same-session'; assert.ok(P.recordCareer(st, { rank: 0, circuit: 'suzuka', id: rid, pos: 1, dnf: false, pacePts: 10 }).ok);
-  assert.equal(P.recordCareer(st, { rank: 0, circuit: 'suzuka', id: rid, pos: 1, dnf: false, pacePts: 50 }).reason, 'duplicate');
-  // farming one easy circuit cannot add up to a promotion
-  for (let k = 0; k < 20; k++) career(st, 0, 'monza', 1, 50);
-  assert.equal(P.status(st, 'career', 0).complete, false);
+  // Rookie: 40 points in each of the first four races (160) is not a promotion yet
+  championship(st, 0, [[1, 1], [1, 1], [1, 1], [1, 1]]);
+  assert.equal(st.career.unlocked, 0); assert.equal(P.status(st, 0).total, 160); assert.ok(!P.status(st, 0).done);
+  assert.equal(P.restartRank(st, 0), false, 'no restart in the middle of a championship');
+  // two retirements before a lap (2 points each): 164 ≥ 160
+  championship(st, 0, [[20, 20, { dnf: true }], [20, 20, { dnf: true }]]);
+  let S = P.status(st, 0); assert.ok(S.done && S.passed); assert.equal(S.total, 164);
+  assert.equal(st.career.unlocked, 1); assert.deepEqual(st.career.completed, [0]);
+  // Pro: 179 fails (5 × 30 + 29 = 179), 180 passes
+  championship(st, 1, [[6, 6], [6, 6], [6, 6], [6, 6], [6, 6], [6, 7]]);
+  S = P.status(st, 1); assert.equal(S.total, 179); assert.ok(S.failed); assert.equal(st.career.unlocked, 1);
+  assert.equal(P.beginRace(st, 'rank', 1).reason, 'done');
+  assert.ok(P.restartRank(st, 1)); S = P.status(st, 1);
+  assert.equal(S.index, 0); assert.equal(S.next, 'monza'); assert.equal(S.attempt, 2); assert.equal(S.total, 0);
+  assert.deepEqual(st.career.completed, [0], 'restarting Pro never touches Rookie');
+  championship(st, 1, [[6, 6], [6, 6], [6, 6], [6, 6], [6, 6], [6, 6]]);
+  assert.ok(P.status(st, 1).passed); assert.equal(st.career.unlocked, 2);
+  // Master: 199 fails, 200 completes and opens Endless Career with VR 1,000
+  // (P4 with lap rank 5: 17 + 16 = 33; five of those and a 34 is 199, and a 35 is 200)
+  championship(st, 2, [[4, 5], [4, 5], [4, 5], [4, 5], [4, 5], [4, 4]]);
+  assert.equal(P.status(st, 2).total, 199); assert.ok(P.status(st, 2).failed); assert.equal(st.career.endless.unlocked, false);
+  P.restartRank(st, 2);
+  const last = championship(st, 2, [[4, 5], [4, 5], [4, 5], [4, 5], [4, 5], [4, 3]]).pop().out;
+  assert.equal(P.status(st, 2).total, 200);
+  assert.ok(last.final.passed && last.endlessUnlocked);
+  assert.equal(st.career.endless.unlocked, true); assert.equal(st.career.endless.vr, 1000);
+  // a new attempt at a completed rank keeps everything unlocked
+  P.restartRank(st, 0); championship(st, 0, [[20, 20], [20, 20], [20, 20], [20, 20], [20, 20], [20, 20]]);
+  assert.ok(P.status(st, 0).failed); assert.equal(st.career.unlocked, 2); assert.ok(st.career.completed.includes(0)); assert.ok(st.career.endless.unlocked);
 });
 
-test('promotion needs all six circuits and the threshold: 360 for Pro, 420 for Master, 480 to complete', () => {
-  assert.deepEqual(P.PROMOTE, [360, 420, 480]);
+test('Career grid: P20 for the first race of a championship, then where the previous race finished; a restart starts at P20', () => {
   const st = P.create();
-  for (const c of CIRC.slice(0, 5)) career(st, 0, c, 1, 50);
-  assert.equal(st.career.unlocked, 0, 'five perfect circuits are not enough (500 points, one circuit missing)');
-  assert.equal(P.recordCareer(st, { rank: 1, circuit: 'monza', id: id(), pos: 1, dnf: false, pacePts: 50 }).reason, 'invalid', 'Pro is still locked');
-  // all six at 59 = 354: below 360
-  const st2 = P.create(); for (const c of CIRC) career(st2, 0, c, 5, 27);
-  assert.equal(P.status(st2, 'career', 0).score, 354); assert.equal(st2.career.unlocked, 0);
-  const up = career(st2, 0, 'monza', 4, 30); // 65 replaces 59: 360
-  assert.equal(P.status(st2, 'career', 0).score, 360); assert.ok(up.unlockedNow); assert.equal(st2.career.unlocked, 1);
-  for (const c of CIRC) career(st2, 1, c, 3, 31); // 70 each = 420
-  assert.equal(st2.career.unlocked, 2);
-  for (const c of CIRC.slice(0, 5)) career(st2, 2, c, 1, 50);
-  assert.equal(st2.career.complete, false);
-  career(st2, 2, 'interlagos', 20, 0); assert.equal(P.status(st2, 'career', 2).score, 501);
-  assert.equal(st2.career.complete, true, 'Master complete');
-  // completed ranks stay open to replay
-  assert.ok(career(st2, 0, 'spa', 1, 50).ok);
+  assert.equal(P.gridPos(st, 'rank', 0), 20);
+  race(st, 'rank', 0, 6, 9); assert.equal(P.gridPos(st, 'rank', 0), 6);
+  race(st, 'rank', 0, 12, 9); assert.equal(P.gridPos(st, 'rank', 0), 12);
+  race(st, 'rank', 0, 17, 9, { dnf: true }); assert.equal(P.gridPos(st, 'rank', 0), 17, 'a retirement starts from its classified place');
+  assert.equal(P.gridPos(st, 'rank', 1), 20, 'each rank has its own grid');
+  championship(st, 0, [[3, 3], [3, 3], [3, 3]]);
+  P.restartRank(st, 0); assert.equal(P.gridPos(st, 'rank', 0), 20);
+  assert.equal(P.gridPos(P.load(JSON.parse(JSON.stringify(st))), 'rank', 0), 20);
 });
 
-test('retirements keep their classified position; unclassified or abandoned races give no result', () => {
+/* ---------------- interrupted races and saves ---------------- */
+test('a race left without a result (browser closed) is a forfeit: P20, last lap rank, 2 points; it is never a free retry', () => {
   const st = P.create();
-  const r = P.recordCareer(st, { rank: 0, circuit: 'bahrain', id: id(), pos: 17, dnf: true, pacePts: 12 });
-  assert.ok(r.ok); assert.equal(r.entry.posPts, 5); assert.equal(r.entry.dnf, true);
-  assert.equal(P.recordCareer(st, { rank: 0, circuit: 'bahrain', id: id(), pos: null, dnf: true, pacePts: 0 }).reason, 'unclassified');
-  assert.equal(P.recordCareer(st, { rank: 0, circuit: 'summit', id: id(), pos: 1, dnf: false, pacePts: 0 }).reason, 'invalid');
+  race(st, 'rank', 0, 4, 2);
+  const b = P.beginRace(st, 'rank', 0, seq(3)); assert.equal(b.active.circuit, 'silverstone');
+  const saved = JSON.parse(JSON.stringify(st));
+  const loaded = P.load(saved); assert.ok(loaded.career.active && loaded.career.active.id === b.active.id, 'the running race is in the save');
+  const out = P.forfeitActive(loaded, 123);
+  assert.ok(out.ok); assert.equal(out.entry.total, 2); assert.equal(out.entry.reason, 'forfeit'); assert.ok(out.entry.dnf);
+  assert.equal(P.status(loaded, 0).next, 'spa', 'the Career moves on');
+  assert.equal(P.forfeitActive(loaded), null, 'nothing left to forfeit');
+  // the original result arriving late cannot replace the forfeit
+  assert.equal(P.recordRace(loaded, { id: b.active.id, pos: 1, lapRank: 1 }).reason, 'duplicate');
 });
 
-test('saves: round trip, broken data never crashes or grants progress', () => {
-  const st = P.create(); st.team = 7;
-  for (const c of CIRC) career(st, 0, c, 2, 40);
-  st.duel = { historical: 'untouched', results: { rookie: { spa: { won: true } } } };
+test('saves: round trip; broken or tampered data never crashes, grants progress or breaks the order', () => {
+  const st = P.create(); championship(st, 0, [[2, 3], [4, 1], [9, 9]]);
   const back = P.load(JSON.parse(JSON.stringify(st)));
-  assert.deepEqual(JSON.parse(JSON.stringify(back)), JSON.parse(JSON.stringify(st)));
-  for (const bad of [null, 7, 'x', [], { v: 3, career: 'nope' }, { v: 3, career: { unlocked: 9, results: { rookie: { monza: { total: 999 } } } } }]) {
-    const s = P.load(bad); assert.equal(s.career.unlocked, 0); assert.equal(P.status(s, 'career', 0).score, 0);
+  assert.deepEqual(P.status(back, 0).races, P.status(st, 0).races); assert.equal(back.v, 4);
+  for (const junk of [null, 'x', 42, [], { v: 4 }, { v: 4, career: 'x' }, { v: 4, career: { ranks: { rookie: { races: 'x' } }, endless: 7 } }]) {
+    const s = P.load(junk); assert.equal(s.career.unlocked, 0); assert.equal(P.status(s, 0).races.length, 0); assert.equal(s.career.endless.unlocked, false);
   }
-  // a tampered entry (total not matching its parts) is dropped, and unlocks follow from the results
-  const t = JSON.parse(JSON.stringify(st)); t.career.results.rookie.monza.total = 100; t.career.unlocked = 2;
-  const s2 = P.load(t); assert.equal(s2.career.results.rookie.monza, undefined); assert.equal(s2.career.unlocked, 2, 'a stored unlock is kept (it may come from a migration)');
+  // results out of order, or with inconsistent points, are cut at the first bad entry
+  const bad = JSON.parse(JSON.stringify(st)); bad.career.ranks.rookie.races[1].circuit = 'bahrain';
+  assert.equal(P.status(P.load(bad), 0).races.length, 1);
+  const pts = JSON.parse(JSON.stringify(st)); pts.career.ranks.rookie.races[0].total = 40;
+  assert.equal(P.status(P.load(pts), 0).races.length, 0);
+  const vr = JSON.parse(JSON.stringify(st)); vr.career.endless = { unlocked: false, vr: 99999 };
+  const v2 = P.load(vr); assert.equal(v2.career.endless.unlocked, false); assert.equal(v2.career.endless.vr, 1000);
 });
 
-test('migration from the five-tier Career and eight-rank modes: access kept, no results or wins invented', () => {
-  // old Career v2: Rookie (100%) and Pro (125%) completed, a championship in progress with team 5
-  const oldCareer = { v: 2, unlocked: 2, completed: [0, 1], best: [3, 6, 0, 0, 0], champion: false, active: { tier: 2, team: 5, attempt: 1, races: [], pending: null } };
-  // old ranks: Initiate, Bronze, Silver (137%) won in Rival Duel; nothing in Pursuit
-  const oldRanked = { v: 1, duel: { unlocked: 3, completed: [0, 1, 2], best: { initiate: { summit: { time: 150 } } }, seen: [] }, pursuit: { unlocked: 0, completed: [], best: {}, seen: [] } };
-  const st = P.load(null, oldCareer, oldRanked);
-  assert.equal(st.career.unlocked, 2, 'beaten 125% AI: Master (150%) is open');
-  assert.equal(st.duel, undefined); assert.equal(st.pursuit, undefined);
-  assert.equal(st.team, 5);
-  for (const mode of P.MODES) for (let k = 0; k < 3; k++) { const s = P.status(st, mode, k); assert.equal(s.attempted, 0, 'no circuit results invented'); assert.equal(s.complete, false); }
-  assert.deepEqual(st.legacy.career, oldCareer); assert.deepEqual(st.legacy.ranked, oldRanked);
-  // eight-tier Career (v1): Rookie only -> Pro open; nothing -> Rookie
+test('migration: v3 (100-point) results are not converted; unlocks and completed ranks are kept; v1/v2 keep access only', () => {
+  const v3 = { v: 3, team: 4, career: { unlocked: 2, completed: [0, 1], seen: [], grid: { rookie: 5 },
+    results: { rookie: Object.fromEntries(ORDER.map(id => [id, { total: 70, pos: 3, posPts: 39, pacePts: 31, dnf: false }])),
+      pro: Object.fromEntries(ORDER.map(id => [id, { total: 75, pos: 2, posPts: 44, pacePts: 31, dnf: false }])), master: { monza: { total: 90 } } } } };
+  const st = P.load(v3);
+  assert.equal(st.v, 4); assert.equal(st.team, 4);
+  assert.equal(st.career.unlocked, 2); assert.deepEqual(st.career.completed, [0, 1]); assert.deepEqual(st.career.legacyCompleted, [0, 1]);
+  for (let k = 0; k < 3; k++) assert.equal(P.status(st, k).races.length, 0, 'no 100-point result becomes a 40-point one');
+  assert.equal(st.career.endless.unlocked, false, 'Master was not completed under the old rules');
+  assert.deepEqual(st.legacy.v3.career.results.rookie.monza, v3.career.results.rookie.monza, 'old results kept as history');
+  assert.match(st.legacy.note, /100-point/);
+  // a v3 Master completion (all six, 480+) opens Endless Career
+  const done = JSON.parse(JSON.stringify(v3)); done.career.results.master = Object.fromEntries(ORDER.map(id => [id, { total: 85 }]));
+  const s2 = P.load(done); assert.deepEqual(s2.career.completed, [0, 1, 2]); assert.equal(s2.career.endless.unlocked, true); assert.equal(s2.career.endless.vr, 1000);
+  // older saves: access only
+  const oldCareer = { v: 2, unlocked: 2, completed: [0, 1], best: [3, 6, 0, 0, 0], active: { tier: 2, team: 5 } };
+  const s3 = P.load(null, oldCareer, null); assert.equal(s3.career.unlocked, 2); assert.equal(s3.team, 5); assert.deepEqual(s3.legacy.career, oldCareer);
   assert.equal(P.load(null, { v: 1, completed: [0], best: [] }, null).career.unlocked, 1);
-  assert.equal(P.load(null, { v: 1, completed: [], best: [] }, null).career.unlocked, 0);
-  // garbage old saves are harmless
   assert.equal(P.load(null, 'x', [1, 2]).career.unlocked, 0);
-  // the migrated state saves and loads as version 3
-  assert.equal(P.load(JSON.parse(JSON.stringify(st))).career.unlocked, 2);
+  assert.equal(P.load(JSON.parse(JSON.stringify(st))).career.unlocked, 2, 'a migrated save loads again as v4');
 });
 
-test('a Career result from a real race: classification and pace from the laps driven', () => {
-  const t = tracks.get('interlagos');
-  const s = new SIM.Session(t, { type: 'race', laps: 2, gameMode: 'grandprix', aiLevel: 1, entries: SIM.DRIVERS.map((driver, k) => ({ driver, isPlayer: k === 9 })), seed: 3, spectate: true, weather: 'dry' });
-  s.totalLaps = 2;
-  const me = s.cars.find(c => c.isPlayer); me.ai = new SIM.AIDriver(me, s); // the player's car driven by the AI for the test
-  while (!s.over && s.time < 400) s.fixedStep(SIM.PHYS_DT);
-  assert.ok(s.over);
-  const res = s.results.find(r => r.car === me);
-  assert.equal(me.paceLaps.length, 2); assert.ok(me.paceLaps[0].first && !me.paceLaps[1].first);
-  assert.ok(me.paceLaps.every(l => l.t > 60 && l.t < 90 && l.water === 0));
-  const pace = P.paceScore('interlagos', t.length, me.paceLaps, 2, !!res.dnf);
-  assert.ok(pace.points >= 0 && pace.points <= 50);
-  const st = P.create(), out = P.recordCareer(st, { rank: 0, circuit: 'interlagos', id: 's1', pos: res.pos, dnf: !!res.dnf, pacePts: pace.points });
-  assert.ok(out.ok); assert.equal(out.entry.total, P.positionPoints(res.pos) + pace.points);
+/* ---------------- VR ---------------- */
+const spec = (score, vr) => {
+  const tiers = [{ min: 0, max: 1999, gain: 48, loss: 20 }, { min: 2000, max: 3999, gain: 38, loss: 28 }, { min: 4000, max: 5999, gain: 29, loss: 38 }, { min: 6000, max: 7999, gain: 19, loss: 48 }, { min: 8000, max: 9999, gain: 10, loss: 60 }];
+  const t = tiers.find(x => vr >= x.min && vr <= x.max);
+  return score === 21 ? 0 : score > 21 ? Math.round((score - 21) / 19 * t.gain) : -Math.round((21 - score) / 19 * t.loss);
+};
+test('VR change: the agreed formula for every race score 2-40 in all five bands', () => {
+  const bands = [0, 1999, 2000, 3999, 4000, 5999, 6000, 7999, 8000, 9998, 9999];
+  for (const vr of bands) for (let sc = 2; sc <= 40; sc++) {
+    const d = P.calculateVrChange(sc, vr);
+    assert.equal(d, spec(sc, vr), 'score ' + sc + ' at VR ' + vr);
+    assert.ok(Number.isInteger(d));
+    if (sc > 21) assert.ok(d > 0); else if (sc < 21) assert.ok(d < 0); else assert.equal(d, 0);
+  }
+  assert.deepEqual([0, 1999, 2000, 3999, 4000, 5999, 6000, 7999, 8000, 9998, 9999].map(P.vrBand), [0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 4]);
+  // the reference table (the formula is authoritative where a hand-rounded entry differs by one)
+  const ref = { 40: [48, 38, 29, 19, 10], 35: [35, 28, 21, 14, 7], 30: [23, 18, 14, 9, 5], 25: [10, 8, 6, 4, 2], 21: [0, 0, 0, 0, 0], 15: [-6, -9, -12, -15, -19], 10: [-12, -16, -22, -28, -35], 2: [-20, -28, -38, -48, -60] };
+  const at = [1000, 3000, 5000, 7000, 9000];
+  for (const [sc, row] of Object.entries(ref)) row.forEach((want, k) => assert.ok(Math.abs(P.calculateVrChange(+sc, at[k]) - want) <= 1, 'score ' + sc + ' band ' + k));
+  // higher bands: smaller gains, larger losses
+  for (let k = 1; k < 5; k++) { assert.ok(P.calculateVrChange(40, at[k]) < P.calculateVrChange(40, at[k - 1])); assert.ok(P.calculateVrChange(2, at[k]) < P.calculateVrChange(2, at[k - 1])); }
+  for (const [sc, vr] of [[1, 1000], [41, 1000], [20.5, 1000], [30, -1], [30, 10000], [30, 1.5]]) assert.throws(() => P.calculateVrChange(sc, vr));
 });
 
-test('Career grid: the first race of a rank starts from P20, then each race starts where the last one finished', () => {
-  const st = P.create();
-  for (let k = 0; k < 3; k++) assert.equal(P.gridPos(st, k), 20, RANKS[k].name + ' starts from the back');
-  let r = career(st, 0, 'monza', 6, 30); assert.equal(r.gridBefore, 20); assert.equal(r.gridNext, 6);
-  assert.equal(P.gridPos(st, 0), 6, 'P6 at Monza: the next race starts P6');
-  career(st, 0, 'spa', 12, 20); assert.equal(P.gridPos(st, 0), 12, 'dropping to P12 moves the next start back to P12');
-  career(st, 0, 'monza', 3, 40); assert.equal(P.gridPos(st, 0), 3, 'a replayed circuit counts as the next race too');
-  career(st, 0, 'suzuka', 9, 10); assert.equal(P.gridPos(st, 0), 9, 'a worse result than the best kept still sets the next start');
-  career(st, 0, 'bahrain', 17, 0, { dnf: true }); assert.equal(P.gridPos(st, 0), 17, 'a retirement starts from its classified place');
-  assert.equal(P.gridPos(st, 1), 20, 'every rank keeps its own grid');
-  // unclassified, invalid and duplicate races leave the grid alone
-  const used = id(); P.recordCareer(st, { rank: 0, circuit: 'spa', id: used, pos: 2, dnf: false, pacePts: 10 });
-  assert.equal(P.gridPos(st, 0), 2);
-  P.recordCareer(st, { rank: 0, circuit: 'spa', id: used, pos: 15, dnf: false, pacePts: 10 });
-  P.recordCareer(st, { rank: 0, circuit: 'spa', id: id(), pos: 0, dnf: true, pacePts: 0 });
-  assert.equal(P.gridPos(st, 0), 2);
-  // saved and loaded; a broken value falls back to the back of the grid
-  assert.equal(P.gridPos(P.load(JSON.parse(JSON.stringify(st))), 0), 2);
-  const bad = JSON.parse(JSON.stringify(st)); bad.career.grid = { rookie: 0, pro: 'x', master: 25 };
-  for (let k = 0; k < 3; k++) assert.equal(P.gridPos(P.load(bad), k), 20);
-  const old = JSON.parse(JSON.stringify(st)); delete old.career.grid;
-  assert.equal(P.gridPos(P.load(old), 0), 20, 'a save from before the grid rule starts from P20');
+test('VR stays within 0-9,999; the band is the one at the start of the race', () => {
+  assert.equal(P.calculateNewVr(9995, 40), 9999); assert.equal(P.calculateNewVr(9999, 40), 9999);
+  assert.equal(P.calculateNewVr(9999, 2), 9939, 'losses still apply at the maximum');
+  assert.equal(P.calculateNewVr(8, 2), 0); assert.equal(P.calculateNewVr(0, 2), 0); assert.equal(P.calculateNewVr(0, 40), 48);
+  assert.equal(P.calculateNewVr(8450, 40), 8460); assert.equal(P.calculateNewVr(8450, 2), 8390);
+  // 1,990 + 48 crosses into the next band: the gain is still the starting band's
+  assert.equal(P.calculateNewVr(1990, 40), 2038); assert.equal(P.calculateNewVr(2010, 2), 1982);
+});
+
+/* ---------------- Endless Career ---------------- */
+function endlessState() { const st = P.create(); st.career.unlocked = 2; st.career.completed = [0, 1, 2]; st.career.endless.unlocked = true; return st; }
+test('Endless Career: a random circuit for each race, never the same twice in a row, every circuit reachable, not a fixed rotation', () => {
+  const st = endlessState(), rng = seq(12345), count = Object.fromEntries(ORDER.map(id => [id, 0])), seqList = [];
+  let prev = null;
+  for (let k = 0; k < 1200; k++) {
+    const b = P.beginRace(st, 'endless', null, rng);
+    assert.ok(b.ok); assert.notEqual(b.active.circuit, prev, 'no immediate repeat');
+    count[b.active.circuit]++; seqList.push(b.active.circuit); prev = b.active.circuit;
+    P.recordRace(st, { id: b.active.id, pos: 10, lapRank: 11 }, rng); // 11 + 10 = 21: neutral, VR unchanged
+  }
+  for (const id of ORDER) assert.ok(count[id] > 1200 / 6 * 0.75 && count[id] < 1200 / 6 * 1.25, id + ' ' + count[id]);
+  // not a hidden six-race cycle
+  const cycles = seqList.slice(6).filter((c, k) => c === seqList[k]).length;
+  assert.ok(cycles < 1200 * 0.5, 'circuit k and k+6 coincide ' + cycles + ' times');
+  assert.equal(st.career.endless.vr, 1000); assert.equal(st.career.endless.races, 1200);
+});
+
+test('Endless Career: the drawn circuit is saved and kept until raced (reloading cannot reroll it)', () => {
+  const st = endlessState();
+  const n1 = P.ensureEndlessNext(st, seq(7));
+  for (let k = 0; k < 5; k++) { const re = P.load(JSON.parse(JSON.stringify(st))); assert.deepEqual(P.ensureEndlessNext(re, seq(1000 + k)), n1); }
+  const b = P.beginRace(st, 'endless', null, seq(9)); assert.equal(b.active.circuit, n1.circuit); assert.equal(b.active.id, n1.id);
+  const re = P.load(JSON.parse(JSON.stringify(st))); assert.equal(re.career.active.circuit, n1.circuit, 'the running race is saved with its circuit');
+});
+
+test('Endless Career: the race score moves VR once, from the starting band; retirements count; history and best VR are kept', () => {
+  const st = endlessState();
+  // P18, lap rank 4: 3 + 17 = 20 → a loss
+  let { out } = race(st, 'endless', null, 18, 4, { dnf: true });
+  assert.equal(out.entry.total, 20); assert.equal(out.entry.change, -1); assert.equal(out.entry.newVr, 999); assert.equal(out.entry.band, 0);
+  ({ out } = race(st, 'endless', null, 1, 1)); assert.equal(out.entry.change, 48); assert.equal(st.career.endless.vr, 1047);
+  assert.equal(P.recordRace(st, { id: out.entry.id, pos: 1, lapRank: 1 }).reason, 'duplicate', 'applied exactly once');
+  assert.equal(st.career.endless.vr, 1047); assert.equal(st.career.endless.best, 1047); assert.equal(st.career.endless.history.length, 2);
+  // a player at 9,995 earns +10 → 9,999; a bad race at the top still loses
+  st.career.endless.vr = 9995; ({ out } = race(st, 'endless', null, 1, 1)); assert.equal(st.career.endless.vr, 9999); assert.equal(out.entry.change, 4);
+  ({ out } = race(st, 'endless', null, 20, 20, { dnf: true })); assert.equal(st.career.endless.vr, 9939);
+  assert.equal(st.career.endless.best, 9999);
+  const re = P.load(JSON.parse(JSON.stringify(st))); assert.equal(re.career.endless.vr, 9939); assert.equal(re.career.endless.best, 9999); assert.equal(re.career.endless.history.length, 4);
+  assert.equal(P.beginRace(P.create(), 'endless', null).reason, 'locked', 'Endless Career needs Master');
+});
+
+/* ---------------- a real race into the Career ---------------- */
+test('a Career result from a real race: the official classification and best-lap rank, scored 20 + 20', () => {
+  const s = liveRace('interlagos', 2, 3);
+  runOut(s); assert.ok(s.over);
+  const me = s.results.find(r => r.car.isPlayer);
+  const st = P.create(), b = P.beginRace(st, 'rank', 0, seq(1));
+  const out = P.recordRace(st, { id: b.active.id, pos: me.pos, lapRank: me.lapRank, best: me.best, dnf: !!me.dnf });
+  assert.ok(out.ok); assert.equal(out.entry.total, me.score); assert.equal(out.entry.posPts, 21 - me.pos); assert.equal(out.entry.lapPts, 21 - me.lapRank);
+});
+
+/* ---------------- respawning removed ---------------- */
+test('respawning is gone: no marshal reset, no AI teleport, no R / Space key; a stuck car retires', () => {
+  const s = liveRace('monza', 2, 1);
+  assert.equal(typeof s.marshalReset, 'undefined'); assert.equal(typeof s.cars[1].ai.respawn, 'undefined');
+  assert.ok(!/marshalReset|respawned on track|Respawn on track/i.test(html), 'no respawn control or text in the game');
+  assert.ok(!/takePress\('KeyR'\)/.test(html), 'R no longer does anything in a race');
+  // a car pinned against a barrier, throttle on and not moving, retires after a few seconds instead of being put back
+  const t = s.track, c = s.cars[5];
+  runUntil(s, x => x.lightsOut && x.time - x.lightsOutTime > 3);
+  const i = c.idx, w = t.wallR[i];
+  c.placeAt(t, c.s, w - 1.2, 0); c.psi += 1.4; c.vx = c.vz = 0; c.ai.mode = 'recover';
+  const s0 = c.s, d0 = c.d;
+  runUntil(s, () => c.dnf, s.time + 12);
+  assert.ok(c.dnf, 'the stuck car retired'); assert.equal(c.dnfReason, 'Stuck');
+  assert.ok(Math.abs(t.dS(s0, c.s)) < 30 && Math.abs(c.d - d0) < 8, 'it was never moved back onto the circuit');
+  // damage stays with the car: nothing resets it during the race
+  const D = s.cars[2].damage; D.c[0] = 0.6; D.computePerf(); runUntil(s, () => false, s.time + 3); assert.equal(D.c[0], 0.6);
 });
 
 test('the starting grid puts the player on the chosen slot and everyone else on the others', () => {

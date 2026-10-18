@@ -9,7 +9,7 @@
 //   node tests/career-ai.cjs wet    4-lap races with a rain front arriving early: tyre calls and reference cars
 //   node tests/career-ai.cjs career  Career ranks: 6-lap races on all six circuits with the field at each rank, three
 //                                    stand-in "players" (AI at Rookie, Pro and Master skill, random grid slots) scored
-//                                    by the Career rules (position + pace points), against the promotion thresholds
+//                                    by the Career rules (position + best-lap rank points), against the thresholds
 //   node tests/career-ai.cjs all
 // Options: LEVELS=1,1.25,1.5 CIRCUITS=monza,... SEEDS=901,902 JOBS=4 (environment variables)
 const fs = require('node:fs');
@@ -92,11 +92,10 @@ const JOBS = {
     if (!s.over) return { over: false, time: s.time };
     const out = {};
     for (const [i, skill] of Object.entries(stand)) {
-      const r = s.results.find(x => x.car.driver === S.DRIVERS[i]), pace = P.paceScore(circuit, t.length, r.car.paceLaps || [], s.totalLaps, !!r.dnf);
-      out[skill] = { pos: r.pos, dnf: !!r.dnf, posPts: P.positionPoints(r.pos), pacePts: pace.points, grid: order.indexOf(+i) + 1 };
+      const r = s.results.find(x => x.car.driver === S.DRIVERS[i]);
+      out[skill] = { pos: r.pos, dnf: !!r.dnf, posPts: r.posPts, lapPts: r.lapPts, lapRank: r.lapRank, grid: order.indexOf(+i) + 1 };
     }
-    const water = s.cars[0].paceLaps ? s.cars[0].paceLaps.reduce((a, l) => a + l.water, 0) / s.cars[0].paceLaps.length : 0;
-    return { over: true, out, water, weather: s.weather.start.label + ' → ' + s.weather.label, contacts: s.stats.collisions, dnfs: s.results.filter(r => r.dnf).length };
+    return { over: true, out, weather: s.weather.start.label + ' → ' + s.weather.label, contacts: s.stats.collisions, dnfs: s.results.filter(r => r.dnf).length };
   },
   // a full field: four baseline reference cars against sixteen tier cars
   race({ circuit, level, seed, laps, wet }) {
@@ -194,16 +193,16 @@ const name = k => (Math.round(k * 100) + '%').padEnd(10);
       const res = await pool('careerRace', jobs), skills = [['Rookie', 0], ['Pro', 0.5], ['Master', 1]];
       for (let rank = 0; rank < P.RANKS.length; rank++) {
         const R = P.RANKS[rank];
-        console.log('\nCAREER · ' + R.name + ' rank (' + Math.round(R.level * 100) + '% field; 6-lap races, ' + seeds.length + ' per circuit; promotion ' + P.PROMOTE[rank] + ' of 600)');
+        console.log('\nCAREER · ' + R.name + ' rank (' + Math.round(R.level * 100) + '% field; 6-lap races, ' + seeds.length + ' per circuit; promotion ' + P.PROMOTE[rank] + ' of ' + P.RANK_MAX + ')');
         const tot = Object.fromEntries(skills.map(([n]) => [n, { best: 0, mean: 0 }]));
         for (const circuit of circuits) {
           const rs = res.filter(r => r.job.rank === rank && r.job.circuit === circuit).map(r => r.out);
           const line = skills.map(([n, k]) => {
             const e = rs.filter(r => r.over).map(r => r.out[k]); if (!e.length) return n + ' —';
-            const totals = e.map(x => x.posPts + x.pacePts); tot[n].best += Math.max(...totals); tot[n].mean += mean(totals);
-            return n + ' ' + e.map(x => 'G' + x.grid + '→P' + x.pos + (x.dnf ? ' DNF' : '') + ' ' + x.posPts + '+' + x.pacePts).join(', ');
+            const totals = e.map(x => x.posPts + x.lapPts); tot[n].best += Math.max(...totals); tot[n].mean += mean(totals);
+            return n + ' ' + e.map(x => 'G' + x.grid + '→P' + x.pos + (x.dnf ? ' DNF' : '') + ' lap P' + x.lapRank + ' ' + x.posPts + '+' + x.lapPts).join(', ');
           });
-          console.log('  ' + circuit.padEnd(11) + line.join('  |  ') + '  · ' + rs.map(r => r.over ? r.weather + ' (water ' + r.water.toFixed(2) + ', ' + r.contacts + ' contacts, ' + r.dnfs + ' DNF)' : 'NOT CLASSIFIED').join('; '));
+          console.log('  ' + circuit.padEnd(11) + line.join('  |  ') + '  · ' + rs.map(r => r.over ? r.weather + ' (' + r.contacts + ' contacts, ' + r.dnfs + ' DNF)' : 'NOT CLASSIFIED').join('; '));
         }
         console.log('  rank total (best of ' + seeds.length + ' per circuit / mean): ' + skills.map(([n]) => n + ' ' + tot[n].best.toFixed(0) + ' / ' + tot[n].mean.toFixed(0)).join(' · ') + '   threshold ' + P.PROMOTE[rank]);
       }

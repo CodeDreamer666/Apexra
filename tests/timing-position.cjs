@@ -80,14 +80,15 @@ for (const t of tracks) {
     }
     assert.ok(c.speed > rejoinSpeed + 6, 'the car accelerates without another keypress');
   });
-  test(t.def.id + ': marshal recovery keeps the timing coordinate at the car', () => {
+  test(t.def.id + ': retiring keeps the car where it stopped: no lap, no distance, a place among the retirements', () => {
     const s = race(t), c = s.player;
     place(s, c, t.length - 2, 0, 2);
     const before = c.totalDist;
-    for (let k = 0; k < 5; k++) s.marshalReset(c);
-    assert.ok(Math.abs(c.totalDist - before) < 0.1, 'recovery does not jump down the straight');
-    assert.ok(Math.abs(t.dS(t.wrapS(c.totalDist), c.s)) < 1e-6);
-    assert.equal(c.laps, 0, 'recovery does not complete a lap');
+    assert.ok(s.abandonRace(c, 'Retired'));
+    assert.ok(Math.abs(c.totalDist - before) < 0.1, 'retiring does not move the car or its race distance');
+    assert.equal(c.laps, 0, 'retiring does not complete a lap');
+    assert.ok(c.dnf && c.retiredAt === s.time && c.retiredDist === before);
+    assert.equal(s.abandonRace(c, 'Retired'), false, 'once only');
   });
 }
 test('backing across the line and driving forward again cannot count a second lap', () => {
