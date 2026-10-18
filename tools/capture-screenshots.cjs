@@ -172,11 +172,7 @@ const index = [];
     await shot(tag('pit-exit'), 'Pit exit: control returns, stop summary');
 
     if (full) {
-      // ---------- flags ----------
-      await H('H.ff(10)');
-      await H('(() => { const S = APEX.session, k = Math.floor(p.idx / S.track.N * S.track.marshalCount); S.yellow[k] = 8; S.yellow[(k + 1) % S.track.marshalCount] = 8; })()'); await H('H.ff(0.05)'); await settle(6, 1);
-      await shot(tag('flag-yellow'), 'Yellow flag in the sector');
-      await H('H.ff(8)');
+      await H('H.ff(18)');
       // ---------- damage, respawn ----------
       await H('H.crash(p, 32, 0.3)'); await frames(10, 1); // hard enough to damage the car, not to end its race
       await shot(tag('damage-impact'), 'Player crash into the barrier: impact effects');

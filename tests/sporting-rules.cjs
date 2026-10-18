@@ -98,7 +98,7 @@ for (const track of tracks) for (const mode of modes) {
       assert.equal('used' in c.tyre, false);
     }
   });
-  test(label + ': pit speeding, contact and flags never accrue time while physical safeguards remain', () => {
+  test(label + ': pit speeding and contact never accrue time while physical safeguards remain', () => {
     const S = session(track, mode), [c, o] = S.cars, t = S.track;
     S.lightsOut = true; S.time = 40;
     for (const car of S.cars) { prohibitPenaltyReads(car); car.inGarage = car !== c && car !== o; }
@@ -126,7 +126,8 @@ for (const track of tracks) for (const mode of modes) {
     c.laps = 1; o.laps = 2; c.retiring = o.retiring = null; c.dnf = o.dnf = false;
     assert.equal(S.isLapping(c, o, -15), true); assert.equal('blueFlag' in c, false);
     o.speed = 0; o.input.brake = 1;
-    S.slowUpdate(); assert.ok(S.yellow.some(x => x > 0), 'stopped car produces yellow flags');
+    S.slowUpdate(); assert.equal(S.yellow, undefined, 'stopped cars do not create yellow flags');
+    assert.ok(!S.messages.some(m => /yellow flag/i.test(m.text)));
     assert.ok(S.messages.every(msg => !/penalty|second dry|compound rule/i.test(msg.text)));
     // The same legal-progress gate still withholds skipped distance, regardless of sporting rules.
     const fake = { offN: 4, pit: null, s: 150, d: -t.halfW - 20, idx: 30 };
