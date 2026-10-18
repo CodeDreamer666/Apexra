@@ -5092,7 +5092,6 @@ const SIM = (function () {
         car.started = this.type !== 'race';
         if (this.type === 'calib') { car.started = true; car.crossings = 1; }
       });
-      if(this.type==='race')this.msg('Hold SPACE + W. Release SPACE when all five red lights go out.', 'info',this.player,6);
     }
     fitTyres(car, comp, temp) {
       car.damage.newTyres();

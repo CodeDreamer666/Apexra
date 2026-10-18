@@ -264,22 +264,21 @@ When the car is damaged, the tyre panel (bottom right) becomes a vehicle-status 
 
 ## Controls
 
-The core keyboard controls follow Super Star Car on Poki: WASD or arrow keys to drive, `Space` to respawn, and `C` to change the camera. Extra race features use the keys below.
+The core keyboard controls follow Super Star Car on Poki: WASD or arrow keys to drive, `Space` to respawn. Extra race features use the keys below.
 
 | Action | Keys |
 |---|---|
 | Throttle / brake only | `W` `S` or `↑` `↓` |
 | Steer | `A` `D` or `←` `→` |
 | Controlled drift | `W` + `S` + `A`/`D` |
-| Box this lap (optional: the autopilot takes the pit entry) | `P` |
 | Tyres & pits panel | `V` |
-| Camera / look back | `C` / `B` |
+| Look back | `B` |
 | Telemetry | `T` |
 | Race start: rev on the grid (launch control) | hold `W` |
 | Respawn car on track | `Space` (or `R`) |
 | Pause menu | `Esc` |
 
-Gamepads are supported (left stick steer, right trigger throttle, left trigger brake, Y camera, Start pause).
+Gamepads are supported (left stick steer, right trigger throttle, left trigger brake, Start pause).
 
 ## Pit stops and fuel
 
