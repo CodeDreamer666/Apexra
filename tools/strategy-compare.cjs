@@ -4,7 +4,7 @@
 // the game's own. Every car carries fuel for the whole race unless a light-fuel variant is asked for, so the
 // comparison isolates tyres and stops; the light-fuel run shows the real refuelling cost.
 //   node tools/strategy-compare.cjs [circuits] [styles] [seeds]
-//   e.g. node tools/strategy-compare.cjs summit,rivermere,redridge normal,aggressive 11,12
+//   e.g. node tools/strategy-compare.cjs monza,spa normal,aggressive 11,12
 const fs = require('node:fs'), path = require('node:path'), vm = require('node:vm');
 const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
 const context = { module: { exports: {} } };
@@ -18,6 +18,7 @@ const STRATEGIES = {
   'S3-S3': { start: 'S', stops: [[3, 'S']] },
   'S2-S2-S2': { start: 'S', stops: [[2, 'S'], [4, 'S']] },
   'S2-H4 light fuel': { start: 'S', stops: [[2, 'H']], fuel: 2.5 },
+  'S3-S3 light fuel': { start: 'S', stops: [[3, 'S']], fuel: 3.4 },
 };
 function run(id, name, { style = 'normal', seed = 11, driver = 0 } = {}) {
   const plan = STRATEGIES[name], track = new SIM.Track(SIM.CIRCUITS.find(c => c.id === id));

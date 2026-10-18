@@ -52,45 +52,36 @@
 
   /* right column: position & timing (top), tyres / vehicle status (bottom) */
   #hud-tr { position: absolute; right: 24px; top: 24px; width: 350px; padding: 14px 16px 12px; }
-  #hud-tr .pos { display: flex; align-items: baseline; gap: 12px; font-weight: 600; font-size: 22px; padding: 0 4px 8px; border-bottom: 1px solid var(--hl); }
-  #hud-tr .pos b { font-size: 46px; line-height: 1; font-weight: 700; margin-left: 12px; }
-  #hud-tr .pos span.num { font-size: 24px; font-weight: 400; color: #dfe4ec; }
+  #hud-tr .race-top { display: flex; align-items: baseline; justify-content: space-between; padding: 0 4px 8px; border-bottom: 1px solid var(--hl); }
+  #hud-tr .lap, #hud-tr .pos { display: flex; align-items: baseline; gap: 8px; font-weight: 600; font-size: 18px; }
+  #hud-tr .lap b, #hud-tr .pos b { font-size: 42px; line-height: 1; font-weight: 700; margin-left: 4px; }
+  #hud-tr .lap span.num, #hud-tr .pos span.num { font-size: 20px; font-weight: 400; color: #dfe4ec; }
+  #hud-tr .pos { padding-left: 16px; border-left: 1px solid rgba(255,255,255,.18); }
   .kv { display: flex; justify-content: space-between; align-items: center; font-size: 16px; height: 34px; padding: 0 4px; border-bottom: 1px solid var(--hl); }
+  .kv:last-child { border-bottom: 0; }
   .kv .k { color: var(--hlbl); font-weight: 600; letter-spacing: .6px; }
   .kv .v { font-weight: 600; }
-  #hud-right { position: absolute; right: 24px; bottom: 24px; width: 350px; display: flex; flex-direction: column; gap: 10px; max-height: calc(100vh / var(--hz) - 48px - 280px); }
-  #hud-br { padding: 14px 18px 12px; min-height: 0; overflow: hidden; }
-  #hud-br .vhead { display: none; justify-content: space-between; align-items: center; font-weight: 700; letter-spacing: 1px; font-size: 18px; padding-bottom: 8px; margin-bottom: 8px; border-bottom: 1px solid var(--hl); }
-  #hud-br.dmg .vhead { display: flex; }
-  #vsBadge { font-size: 12px; padding: 2px 10px; border-radius: 4px; letter-spacing: 1.2px; color: #fff; }
-  #hud-br .head { display: flex; justify-content: space-between; align-items: center; font-weight: 700; letter-spacing: 1px; font-size: 18px; }
-  #hud-br.dmg .head { font-size: 14px; }
-  #hud-br .cmpw { display: flex; align-items: center; gap: 8px; font-size: 13px; letter-spacing: 1px; }
-  .cmp { width: 30px; height: 30px; border-radius: 50%; border: 3px solid var(--c, #e8212e); display: inline-flex; align-items: center; justify-content: center; font-weight: 900; font-size: 14px; color: #fff; background: #111; }
-  #hud-br.dmg .cmp { width: 24px; height: 24px; font-size: 12px; border-width: 2px; }
-  #tyrew { display: grid; grid-template-columns: 1fr 14px 70px 14px 1fr; grid-template-rows: 1fr 1fr; column-gap: 12px; align-items: center; height: 150px; margin-top: 8px; }
-  #hud-br.dmg #tyrew { height: 118px; margin-top: 4px; }
-  #tyrew .tw { width: 14px; height: 36px; border-radius: 3px; background: #2f7bff; justify-self: center; }
-  #hud-br.dmg #tyrew .tw { height: 28px; }
-  #tyrew svg { grid-column: 3; grid-row: 1 / span 2; width: 60px; height: 130px; justify-self: center; }
-  #hud-br.dmg #tyrew svg { height: 106px; width: 50px; }
-  #tw0 { grid-area: 1 / 2; } #tw1 { grid-area: 1 / 4; } #tw2 { grid-area: 2 / 2; } #tw3 { grid-area: 2 / 4; }
-  #hud-br .trow { display: flex; align-items: center; font-size: 14px; color: var(--hlbl); height: 32px; border-top: 1px solid var(--hl); white-space: nowrap; }
-  #hud-br .trow:first-of-type { margin-top: 8px; }
-  #hud-br .trow > span { flex: 1; } #hud-br .trow > span + span { padding-left: 12px; border-left: 1px solid rgba(255,255,255,.18); flex: 0 1 auto; margin-left: 12px; }
-  #hud-br .trow b { color: #fff; margin-left: 6px; }
-  #hud-br.dmg .trow { height: 26px; font-size: 13px; }
-  #vstat { margin-top: 6px; font-size: 13px; }
-  #vstat .sh { display: flex; align-items: center; gap: 8px; font-weight: 700; letter-spacing: 1px; font-size: 14px; padding: 8px 0 4px; border-top: 1px solid var(--hl); }
-  #vstat .sh i { width: 15px; height: 15px; background: #f59e0b; -webkit-mask: var(--ic-wrench) center / contain no-repeat; mask: var(--ic-wrench) center / contain no-repeat; }
-  #vstat .rows > div { display: grid; grid-template-columns: 4px 1fr auto; column-gap: 10px; align-items: center; padding: 3px 0; }
-  #vstat .rows i { grid-row: 1 / span 2; align-self: stretch; border-radius: 2px; }
-  #vstat .rows .c { font-weight: 600; color: #eef2f8; }
-  #vstat .rows .s { font-weight: 700; font-size: 12px; letter-spacing: .8px; text-align: right; }
-  #vstat .rows .e { grid-column: 3; font-size: 12px; color: var(--hlbl); text-align: right; }
-  #vstat .rows .e.l { grid-column: 2; text-align: left; }
-  #vsPit > div { display: flex; justify-content: space-between; gap: 10px; padding: 1px 0; color: var(--hlbl); }
-  #vsPit > div b { font-weight: 600; text-align: right; }
+  #hud-right { position: absolute; right: 24px; bottom: 24px; width: 350px; display: flex; flex-direction: column; gap: 10px; }
+  #hud-br { padding: 6px 16px 8px; }
+  #hud-br .srow { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 38px; border-bottom: 1px solid var(--hl); }
+  #hud-br .srow:last-of-type { border-bottom: 0; }
+  #hud-br .sk { font-size: 12px; font-weight: 700; letter-spacing: 1.4px; color: var(--hdim); white-space: nowrap; }
+  #hud-br .sv { display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 600; letter-spacing: .6px; color: var(--hlbl); white-space: nowrap; }
+  #hud-br .sv b { color: #fff; font-weight: 700; }
+  #hud-br .wxv + .wxv { padding-left: 10px; border-left: 1px solid rgba(255,255,255,.18); }
+  #hud-br .ico { width: 20px; height: 20px; background: #cfd5df; -webkit-mask: var(--wx) center / contain no-repeat; mask: var(--wx) center / contain no-repeat; }
+  #hud-br .wear { padding-left: 10px; border-left: 1px solid rgba(255,255,255,.18); }
+  .cmp { width: 26px; height: 26px; border-radius: 50%; border: 3px solid var(--c, #e8212e); display: inline-flex; align-items: center; justify-content: center; font-weight: 900; font-size: 12px; color: #fff; background: #111; }
+  #hud-br .wbar { height: 4px; border-radius: 2px; background: rgba(255,255,255,.12); margin: -4px 0 4px; overflow: hidden; }
+  #hud-br .wbar i { display: block; height: 100%; width: 0; background: #21c55d; border-radius: 2px; }
+  #fuelVal.short { color: #ff5a5a; }
+  #vsBadge { font-size: 12px; padding: 2px 10px; border-radius: 4px; letter-spacing: 1.2px; color: #fff; background: #2e7d4f; }
+  #vstat .rows { padding: 0 0 4px; }
+  #vstat .rows > div { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: #eef2f8; padding: 2px 0; }
+  #vstat .rows i { width: 4px; height: 14px; border-radius: 2px; flex-shrink: 0; }
+  /* a short, wordless alert when the car is damaged: the status row flashes */
+  @keyframes dmgflash { 0%, 100% { background: transparent; } 30% { background: rgba(229, 57, 53, .45); } }
+  #hud-br.hit #rowCar { animation: dmgflash .45s ease-out 2; border-radius: 6px; }
   /* bottom centre: speed, gear, rpm, fuel */
   #hud-bc { position: absolute; left: 50%; bottom: 24px; transform: translateX(-50%); width: 600px; height: 162px; }
   #hud-bc.compact { height: 128px; }
@@ -113,7 +104,6 @@
   .chip b { font-weight: 600; color: var(--hlbl); }
   .chip.warn, .chip.warn b { color: #ff5a5a; }
   .chip.ot b, .chip.ot { color: #c77dff; }
-  #chipFuel b { min-width: 74px; text-align: right; }
 
   /* top centre: messages, race-start sequence, pit stop timer */
   #topc { position: absolute; left: 50%; top: 40px; transform: translateX(-50%); width: 720px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
@@ -152,10 +142,12 @@
   #telemetry { position: absolute; left: 50%; bottom: 206px; transform: translateX(-50%); width: 620px; padding: 8px 10px; display: grid; grid-template-columns: 1fr 140px; gap: 10px; }
   #telemetry canvas { width: 100%; height: 120px; display: block; }
   #fps { position: absolute; right: 8px; top: 6px; font-size: 11px; color: #8f8; text-shadow: 0 0 3px #000; }
-  #vstat svg rect, #vstat svg line { transition: fill .2s, stroke .2s; }
   #hud {
     --ic-warn: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill-rule='evenodd' d='M12 1.5 0.8 21.5h22.4zM11 9h2v6h-2zM11 16.6h2v2.2h-2z'/%3E%3C/svg%3E");
     --ic-wrench: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M22.7 19l-9.1-9.1c.9-2.3.4-5-1.5-6.9-2-2-5-2.4-7.4-1.3L9 6 6 9 1.6 4.7C.4 7.1.9 10.1 2.9 12.1c1.9 1.9 4.6 2.4 6.9 1.5l9.1 9.1c.4.4 1 .4 1.4 0l2.3-2.3c.5-.4.5-1.1.1-1.4z'/%3E%3C/svg%3E");
+    --wx-sun: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='5'/%3E%3Cpath d='M11 0h2v4h-2zM11 20h2v4h-2zM0 11h4v2H0zM20 11h4v2h-4zM3.5 5l1.4-1.4 2.8 2.8-1.4 1.4zM16.3 17.7l1.4-1.4 2.8 2.8-1.4 1.4zM3.5 19l2.8-2.8 1.4 1.4-2.8 2.8zM16.3 6.3l2.8-2.8 1.4 1.4-2.8 2.8z'/%3E%3C/svg%3E");
+    --wx-cloud: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6.5 19a4.5 4.5 0 0 1-.6-9 6.5 6.5 0 0 1 12.4 1.6A3.8 3.8 0 0 1 18 19z'/%3E%3C/svg%3E");
+    --wx-rain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6.5 14a4.5 4.5 0 0 1-.6-9 6.5 6.5 0 0 1 12.4 1.6A3.8 3.8 0 0 1 18 14zM7 16h2l-1.5 6h-2zM12 16h2l-1.5 6h-2zM17 16h2l-1.5 6h-2z'/%3E%3C/svg%3E");
     --ic-flag: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 2h2v20H5zM8 3h12l-2.5 4.5L20 12H8z'/%3E%3C/svg%3E");
   }
 
@@ -225,7 +217,7 @@
   /* the strategy and pit-service panels open over the tyre panel, in the right column */
   #strategyPanel { position:absolute; z-index:2; right:24px; bottom:78px; width:350px; max-height:calc(100vh / var(--hz) - 78px - 304px); overflow:auto; padding:16px; pointer-events:auto; }
   #strategyPanel h3 { margin:0 0 8px; letter-spacing:1px; }
-  #strategyPanel p, #tyreLife { font-size:13px; line-height:1.35; color:#cfd5df; margin:7px 0; }
+  #strategyPanel p { font-size:13px; line-height:1.35; color:#cfd5df; margin:7px 0; }
   .strategyChoices { display:grid; grid-template-columns:repeat(2,1fr); gap:7px; }
   .strategyChoice { color:#fff; font:600 14px var(--font); text-align:left; border:1px solid #424958; border-top:3px solid var(--c); border-radius:5px; padding:9px; background:#181d27; cursor:pointer; }
   .strategyChoice.sel { background:#303b50; outline:2px solid #c9a24a; }
@@ -555,40 +547,33 @@
     </div>
   </div>
   <div id="hud-tr" class="panel hz">
-    <div class="pos"><span>POS</span><b class="num" id="posNow">1</b><span class="num" id="posTot">/ 20</span></div>
-    <div class="kv"><span class="k">BEST</span><span class="v num" id="tBest">--:--.---</span></div>
+    <div class="race-top">
+      <div class="lap"><span>LAP</span><b class="num" id="lapNow">1</b><span class="num" id="lapTot">/ 6</span></div>
+      <div class="pos"><span>POS</span><b class="num" id="posNow">1</b><span class="num" id="posTot">/ 20</span></div>
+    </div>
     <div class="kv"><span class="k">CURRENT</span><span class="v num" id="tCur">0:00.000</span></div>
+    <div class="kv"><span class="k">BEST</span><span class="v num" id="tBest">--:--.---</span></div>
   </div>
   <div id="hud-right" class="hz">
-    <div id="hud-br" class="panel">
-      <div class="vhead"><span>VEHICLE STATUS</span><b id="vsBadge">OK</b></div>
-      <div class="head"><span id="tyreLabel">TYRES</span><span class="cmpw"><span class="cmp" id="cmpIcon">S</span><span id="cmpName">SOFT</span></span></div>
-      <div id="tyrew">
-        <div class="tw" id="tw0"></div>
-        <svg viewBox="0 0 60 130" aria-hidden="true">
-          <rect id="vsFloor" x="13" y="36" width="34" height="68" rx="7" fill="none" stroke-width="2"/>
-          <rect id="vsChas" x="24.5" y="12" width="11" height="62" rx="5"/>
-          <rect id="vsCoolL" x="14.5" y="48" width="8.5" height="26" rx="3"/><rect id="vsCoolR" x="37" y="48" width="8.5" height="26" rx="3"/>
-          <rect id="vsEng" x="24.5" y="77" width="11" height="22" rx="3"/>
-          <rect id="vsFwL" x="2" y="2" width="27" height="7" rx="2"/><rect id="vsFwR" x="31" y="2" width="27" height="7" rx="2"/>
-          <rect id="vsRw" x="12" y="119" width="36" height="8" rx="2"/>
-          <line id="vsS0" x1="12" y1="31" x2="25" y2="31" stroke-width="3"/><line id="vsS1" x1="35" y1="31" x2="48" y2="31" stroke-width="3"/>
-          <line id="vsS2" x1="13" y1="99" x2="25" y2="99" stroke-width="3"/><line id="vsS3" x1="35" y1="99" x2="47" y2="99" stroke-width="3"/>
-          <rect id="vsT0" x="2" y="22" width="10" height="18" rx="3"/><rect id="vsT1" x="48" y="22" width="10" height="18" rx="3"/>
-          <rect id="vsT2" x="1" y="88" width="12" height="22" rx="3"/><rect id="vsT3" x="47" y="88" width="12" height="22" rx="3"/>
-        </svg>
-        <div class="tw" id="tw1"></div>
-        <div class="tw" id="tw2"></div>
-        <div class="tw" id="tw3"></div>
+    <div id="hud-br" class="panel" aria-label="Race status">
+      <div class="srow" id="rowWx">
+        <span class="sk">WEATHER</span>
+        <span class="sv"><i class="ico" id="wxIcon"></i><span class="wxv" title="Chance of rain in the next few minutes">RAIN <b class="num" id="wxRain">0%</b></span><span class="wxv" title="How wet the track surface is">TRACK <b class="num" id="wxWet">0%</b> WET</span></span>
       </div>
-      <div class="trow"><span id="tyreLife">USEFUL LIFE <b>—</b></span><span id="tyreNext">NEXT <b>--</b></span></div>
-      <div class="trow"><span>WEAR <b class="num" id="wearPct">0%</b></span><span id="dmgTxt">CAR <b>OK</b></span></div>
-      <div id="vstat" class="hidden">
-        <div class="sh"><i></i>DAMAGE &amp; EFFECTS</div>
-        <div class="rows" id="vsRows"></div>
-        <div class="sh"><i></i>PIT SERVICE</div>
-        <div id="vsPit"></div>
+      <div class="srow">
+        <span class="sk">TYRES</span>
+        <span class="sv"><span class="cmp" id="cmpIcon">S</span><span id="cmpName">SOFT</span><span class="wear">WEAR <b class="num" id="wearPct">0%</b></span></span>
       </div>
+      <div class="wbar"><i id="wearBar"></i></div>
+      <div class="srow">
+        <span class="sk">FUEL</span>
+        <span class="sv"><b class="num" id="fuelVal">-- LAPS</b></span>
+      </div>
+      <div class="srow" id="rowCar">
+        <span class="sk">CAR STATUS</span>
+        <span class="sv"><b id="vsBadge">OK</b></span>
+      </div>
+      <div id="vstat" class="hidden"><div class="rows" id="vsRows"></div></div>
     </div>
   </div>
   <div id="hud-bc" class="hz">
@@ -602,7 +587,6 @@
       <div class="sub panel" id="dashStatus">
         <span class="chip warn" id="chipLim" style="display:none">PIT LIMITER</span>
         <span class="chip ot" id="chipDrift" style="display:none">SLIDE</span>
-        <span class="chip" id="chipFuel"><span class="k">FUEL</span><b class="num" id="fuelVal">+0.0</b></span>
       </div>
     </div>
   </div>
@@ -704,19 +688,19 @@
 <div id="controls" class="overlay hidden">
   <div class="dialog">
     <h2>Con<span>trols</span></h2>
-    <div class="sub">Super Star Car-style keyboard controls: WASD / arrows to drive. On the grid, hold W to rev to the launch rpm; launch control holds the car and releases it automatically when the red lights go out. Steer into the marked pit entry and cross the gold gate for automatic braking and control, <span id="controlsPitChoice">choose tyres and fuel</span> when you stop in one of the four shared boxes, and resume driving at pit exit. Gamepad: left stick steer, RT throttle, LT brake, Start pause.</div>
+    <div class="sub">Drive with WASD or the arrow keys. To pit, steer into the marked pit entry: the car drives itself to its box, <span id="controlsPitChoice">where you choose tyres and fuel</span>. Gamepad: left stick steers, RT throttle, LT brake, Start pauses.</div>
     <div class="keys">
       <div>Accelerate <span><kbd>W</kbd><kbd>↑</kbd></span></div>
       <div>Brake <span><kbd>S</kbd><kbd>↓</kbd></span></div>
       <div>Steer <span><kbd>A</kbd><kbd>D</kbd><kbd>←</kbd><kbd>→</kbd></span></div>
       <div>Controlled drift <span><kbd>W</kbd> + <kbd>S</kbd> + <kbd>A</kbd>/<kbd>D</kbd></span></div>
-      <div>Tyres &amp; pits panel <span><kbd>V</kbd></span></div>
+      <div>Launch (hold on the grid) <span><kbd>W</kbd></span></div>
       <div>Look back <span><kbd>B</kbd></span></div>
-      <div>Telemetry panel <span><kbd>T</kbd></span></div>
-      <div>Launch: hold before lights out <span><kbd>W</kbd></span></div>
-      <div>Respawn after launch <span><kbd>Space</kbd><kbd>R</kbd></span></div>
+      <div>Tyres &amp; pit info <span><kbd>V</kbd></span></div>
+      <div>Telemetry graph <span><kbd>T</kbd></span></div>
+      <div>Respawn on track <span><kbd>R</kbd><kbd>Space</kbd></span></div>
       <div>Mute audio <span><kbd>M</kbd></span></div>
-      <div>Pause menu <span><kbd>Esc</kbd></span></div>
+      <div>Pause <span><kbd>Esc</kbd></span></div>
     </div>
     <div class="actions"><button class="btn primary" data-act="controlsClose">Back</button></div>
   </div>
@@ -1427,6 +1411,26 @@ const SIM = (function () {
           c.brakePoint = bp; this.brakeBoards.push({ i: bp, side: -c.dir });
         }
       }
+      // Route gates (shortcut prevention): the apex of every corner of a chicane (two or more corners of alternating
+      // direction within 80 m, each tighter than a 200 m radius), in the order of the lap; see Session.routeCheck. The
+      // span a gate guards runs from 40 m before the chicane (first gate) or from the previous apex (the others) to
+      // just past its own apex, so the spans of one chicane cover all of it.
+      this.routeGates = [];
+      {
+        const cs = this.corners, nc = cs.length, link = new Array(nc).fill(false);
+        for (let k = 0; k < nc; k++) {
+          const a = cs[k], b = cs[(k + 1) % nc], gap = ((b.start - a.end + N) % N) * DS;
+          link[k] = a.dir !== b.dir && gap < 80 && a.R < 200 && b.R < 200; // corner k and k+1 form a chicane
+        }
+        for (let k = 0; k < nc; k++) {
+          const inC = link[k] || link[(k - 1 + nc) % nc]; if (!inC) continue;
+          const c = cs[k], first = !link[(k - 1 + nc) % nc];
+          const s0 = first ? this.wrapS(c.start * DS - ROUTE_GATE.lead) : cs[(k - 1 + nc) % nc].apex * DS, apexS = c.apex * DS;
+          const toApex = ((apexS - s0) % L + L) % L;
+          this.routeGates.push({ corner: c.num, name: c.name, apex: c.apex, s0, apexAt: toApex, len: toApex + ROUTE_GATE.after, inside: Math.sign(this.kappa[c.apex]) || c.dir });
+        }
+        this.routeGates.sort((a, b) => a.apex - b.apex);
+      }
       this.cornerAt = (i) => { for (const c of this.corners) { let a = c.start, b = c.end; if (b < a) b += this.N; let ii = i; if (ii < a) ii += this.N; if (ii >= a && ii <= b) return c; } return null; };
     }
     vCorner(kap, mu, kA) { const ka = Math.abs(kap); const den = ka - mu * kA; if (den <= 1e-6) return 105; return Math.min(105, Math.sqrt(mu * G / den)); }
@@ -1705,20 +1709,60 @@ const SIM = (function () {
     return res;
   }
 
+  // Trackside recommended-speed signs: information for the driver, never an assist. For every corner that needs real
+  // braking, the speed the game's own handling can carry through the tightest part of the corner on the racing line,
+  // for a reference car (fresh Hard tyres at working temperature on a dry track, half a race of fuel) using 88% of the
+  // steering's corner ceiling, rounded down to 5 km/h. Rain and worn tyres lower the real limit below the sign.
+  // A sign stands beside the approach, behind the barrier on the outside of the corner, about 120 m before the
+  // braking starts (never back past the previous corner), and only where at least 40 km/h has to be shed.
+  const SIGN_REF = { mu: 1.54, use: 0.88, lead: 120, minDrop: 40 / 3.6, maxKmh: 230 };
+  const SIGN_CACHE = new Map();
+  function cornerSpeedSigns(t) {
+    const key = t.def.id + ':' + t.N;
+    if (SIGN_CACHE.has(key)) return SIGN_CACHE.get(key);
+    const A = buildAILines(t), N = t.N, kap = A.kap[0], vRef = A.vRef, cs = t.corners, nc = cs.length;
+    const fuel = 3 * (t.def.fuelPerLap || 2.7), fT = Math.sqrt(SPEC.mass / (SPEC.mass + FUEL_PERF.corner * fuel));
+    const fwd = (a, b) => (b - a + N) % N, signs = [];
+    cs.forEach((c, k) => {
+      let v = 110;
+      for (let q = 0, n = fwd(c.start, c.end); q <= n; q++) v = Math.min(v, arcadeCornerSpeed(kap[(c.start + q) % N], SIGN_REF.mu, SIGN_REF.use * fT));
+      // the approach: the fastest the reference line runs in the 300 m before the corner
+      let vIn = 0; for (let q = 0; q <= 150; q++) vIn = Math.max(vIn, vRef[(c.start - q + N) % N]);
+      if (vIn - v < SIGN_REF.minDrop || v * 3.6 > SIGN_REF.maxKmh) return;
+      // where braking starts on the reference line
+      let b = c.start; for (let q = 0; q < 600 && vRef[(b - 1 + N) % N] > vRef[b] + 1e-3; q++) b = (b - 1 + N) % N;
+      const prev = cs[(k - 1 + nc) % nc], room = fwd(prev.end, b);
+      let i = (b - Math.min(Math.round(SIGN_REF.lead / DS), Math.max(0, room - 10)) + N) % N;
+      let side = -c.dir;
+      if (side === t.pitAt(i * DS).side && t.pitProg(i * DS) >= 0) side = -side; // never on the pit lane side
+      signs.push({ i, s: i * DS, side, kmh: Math.floor(v * 3.6 / 5) * 5, corner: c.num, corners: [c.num], name: c.name, dir: c.dir, brakeAt: b });
+    });
+    // one sign per corner complex: the parts of a chicane (consecutive corners with the same name) or two signs
+    // within 60 m share the first sign, which shows the lowest speed of the complex
+    signs.sort((a, b) => a.i - b.i);
+    const out = [], same = (a, b) => a.name === b.name || fwd(a.i, b.i) * DS < 60;
+    const merge = (into, g) => { into.kmh = Math.min(into.kmh, g.kmh); into.corners.push(...g.corners); };
+    for (const g of signs) { const last = out[out.length - 1]; if (last && same(last, g)) merge(last, g); else out.push(g); }
+    if (out.length > 1 && same(out[out.length - 1], out[0])) merge(out[0], out.pop());
+    SIGN_CACHE.set(key, out);
+    return out;
+  }
+
   /* ------------------------------------------------------------------
      TYRES, CAR SPECS
      ------------------------------------------------------------------ */
-  // Compressed game lifespans: `life` is the number of 6 km laps to 60% wear under reference driving
-  // (a clean, normal pace in conditions that suit the compound): Soft 12 km, Hard 24 km, Intermediate
-  // 12 km and Full Wet 24 km. 60% is not a failure or a change point: wear stays continuous and
-  // distance-based, and a worn tyre keeps running with progressively less grip.
+  // Game lifespans for the six-lap race: `life` is the number of 6 km laps to 60% wear under reference driving
+  // (a clean, normal pace in conditions that suit the compound): Soft 15 km (about 2.5 laps), Hard 42 km (six laps
+  // of Spa, the longest circuit, so a Hard can run the whole race anywhere), Intermediate 21 km and Full Wet 42 km.
+  // Wear is distance-based (so a longer lap wears more) and scaled by cornering and traction work, wetness and
+  // driving style. 60% is not a failure or a change point: grip falls progressively with wear (tyreWearGrip).
   // Four compounds: two dry (Soft, Hard) and two wet (Intermediate, Full Wet).
   const USEFUL_WEAR = 0.60;
   const COMPOUNDS = {
-    S: { id: 'S', name: 'SOFT', mu: 1.70, topt: 100, life: 2, color: '#e8212e', heat: 1.0 },
-    H: { id: 'H', name: 'HARD', mu: 1.54, topt: 95, life: 4, color: '#f2f2f2', heat: 0.94 },
-    I: { id: 'I', name: 'INTERMEDIATE', mu: 1.58, topt: 75, life: 2, color: '#2ecc71', heat: 0.86 },
-    W: { id: 'W', name: 'FULL WET', mu: 1.46, topt: 55, life: 4, color: '#1e7bff', heat: 0.80 },
+    S: { id: 'S', name: 'SOFT', mu: 1.70, topt: 100, life: 2.5, color: '#e8212e', heat: 1.0 },
+    H: { id: 'H', name: 'HARD', mu: 1.54, topt: 95, life: 7, color: '#f2f2f2', heat: 0.94 },
+    I: { id: 'I', name: 'INTERMEDIATE', mu: 1.58, topt: 75, life: 3.5, color: '#2ecc71', heat: 0.86 },
+    W: { id: 'W', name: 'FULL WET', mu: 1.46, topt: 55, life: 7, color: '#1e7bff', heat: 0.80 },
   };
   const DRY_COMPOUNDS = ['S', 'H'];
   // Average tyre work (driving-style × slip abrasion × temperature) of reference driving, measured on all
@@ -2451,6 +2495,11 @@ const SIM = (function () {
   // Vehicle Damage setting: scales real thresholds and failure odds.
   //  thr/scale: energy needed to start / complete damage; fatigue: how much sub-threshold knocks weaken parts;
   //  puncture/failure/fire: odds multipliers; fatal: suspension condition at which the car is out.
+  // an impact closes after this long without contact, or this long after it began (s): see Session.recordContact
+  const CONTACT_GAP = 0.05, CONTACT_MAX = 0.08;
+  // route gates (m): how far before a chicane its first gate's span starts, how far past an apex a span ends, and
+  // the half-width of the check window around the apex
+  const ROUTE_GATE = { lead: 40, after: 8, window: 4 };
   const DAMAGE_LEVELS = {
     reduced: { id: 'reduced', name: 'Reduced', thr: 2.3, scale: 1.9, fatigue: 0.25, puncture: 0.3, failure: 0.35, fire: 0, fatal: 1.0, chassisFatal: 0.85, reliability: 0 },
     standard: { id: 'standard', name: 'Standard', thr: 1.0, scale: 1.0, fatigue: 1.0, puncture: 1.0, failure: 1.0, fire: 0.45, fatal: 0.9, chassisFatal: 0.6, reliability: 0 },
@@ -2932,7 +2981,7 @@ const SIM = (function () {
      AI DRIVER
      ------------------------------------------------------------------ */
   /* ------------------------------------------------------------------
-     AI RACECRAFT — personality, trajectory planning, opponent prediction
+     AI RACECRAFT — the shared racing profile, trajectory planning, opponent prediction
      ------------------------------------------------------------------ */
   // The AI is organised in four layers that run at different rates:
   //   strategic (10 Hz, cheap): pit/tyre/fuel calls (RaceStrategy + strategy()), plus how much risk this race
@@ -2961,15 +3010,18 @@ const SIM = (function () {
   // consistency, fewer errors, better reading of rivals); the will to attack and defend is the same at every level.
   // It never touches power, top speed, grip, braking force, traction or fuel use: every car obeys the same physics.
   const AI_MAX_LEVEL = 1.5;
+  // the racing room every AI keeps from a car alongside: overlap length and lateral reach (m), centre-to-centre gap
+  // (m), how far ahead it looks along the track and across it (s); see AIDriver.updateRoom
+  const AI_ROOM = { len: 6.2, across: 3.6, gap: 2.7, lookS: 0.4, lookD: 0.25 };
   const aiSkillForLevel = (level) => clamp((clamp(+level || 1, 1, AI_MAX_LEVEL) - 1) / (AI_MAX_LEVEL - 1), 0, 1);
-  // A driver's skilled profile: judgement ratings move towards (never reach) perfect; personality (aggression,
-  // risk, patience) stays, so drivers keep their own character at every level.
+  // A driver's skilled profile: judgement ratings move towards (never reach) perfect; the will to race (aggression,
+  // risk, patience) is the shared AI_RACER profile and the same at every level.
   function aiSkillProfile(d, x) {
     const up = (v, k) => v + (1 - v) * k * x;
     return { ...d, pace: up(d.pace, 0.6), cons: up(d.cons, 0.9), brake: up(d.brake, 0.85), craft: up(d.craft, 0.85),
       tyre: up(d.tyre, 0.8), strat: up(d.strat, 0.9), adapt: up(d.adapt, 0.75) };
   }
-  // A driver's racing mind: the persistent personality (aggression, patience, risk tolerance, racecraft,
+  // A driver's racing mind: the shared racing profile (aggression, patience, risk tolerance, racecraft,
   // adaptability, consistency) combined with internal difficulty (0..1) and Career skill (0..1). It shapes
   // judgement only (how well rivals are read, how well paths are judged, how precisely they are executed,
   // how long a driver waits); it never touches the car.
@@ -3053,7 +3105,7 @@ const SIM = (function () {
       this.neighbors = []; this.attackTarget = null; this.defending = false;
       this.followTime = 0; this.plan = null; this.boxThisLap = false; this.lastPlanLap = -1;
       this.pressure = 0; this.pushMode = 0; this.tyreMode = 'normal'; this.smoothThrottle = 0;
-      // ---- racecraft: personality, the tactical state, the planned path, predictions and short-term memory ----
+      // ---- racecraft: the tactical state, the planned path, predictions and short-term memory ----
       this.mind = racingMind(p, diff, x);
       // how far onto green paint (m beyond the planning limit) this driver will take a move, an avoidance or an exit:
       // about two tyres for a careful driver, all four for a bold one. Whether it is worth it is judged per path.
@@ -3978,14 +4030,26 @@ const SIM = (function () {
       const W = L.win[k], e = (this.pathD(W.start) - L.off[0][W.start]) * W.dir;
       return e > 1.2 ? 1 : e < -1.2 ? -1 : 0;
     }
-    // 60 Hz: keep a car's width of room from any car alongside
+    // 60 Hz: keep a car's width of room from any car alongside, or about to be: a car closing up the side (already
+    // pulled out of the wake, at least 1.5 m across) that will overlap within 0.4 s, and a car drifting across towards
+    // this one (its lateral motion over the next 0.25 s). Leaving a car's width is racing room, not giving the place
+    // up; it keeps the AI from turning in on a car that has a wheel alongside.
     updateRoom() {
       const car = this.car, t = this.track; let lo = -99, hi = 99;
-      if (!car.pit && !this.pitting) for (const n of this.neighbors) {
-        const o = n.o; if (o.pit || o.inGarage || o.ghost) continue;
-        const ds = t.dS(car.s, o.s); if (ds < -6.2 || ds > 6.2) continue;
-        const g = o.d - car.d; if (Math.abs(g) > 3.6) continue;
-        if (g > 0) hi = Math.min(hi, o.d - 2.7); else lo = Math.max(lo, o.d + 2.7);
+      if (!car.pit && !this.pitting) {
+        const i = car.idx, vdMe = car.vx * t.rx[i] + car.vz * t.rz[i];
+        for (const n of this.neighbors) {
+          const o = n.o; if (o.pit || o.inGarage || o.ghost) continue;
+          const ds = t.dS(car.s, o.s), g = o.d - car.d;
+          const now = ds >= -AI_ROOM.len && ds <= AI_ROOM.len;
+          const dsP = ds + (o.speed - car.speed) * AI_ROOM.lookS, soon = !now && Math.abs(dsP) <= AI_ROOM.len && Math.abs(g) >= 1.5;
+          if (!now && !soon) continue;
+          const j = o.idx, vdO = o.vx * t.rx[j] + o.vz * t.rz[j], gP = g + (vdO - vdMe) * AI_ROOM.lookD;
+          if (Math.min(Math.abs(g), Math.abs(gP)) > AI_ROOM.across) continue;
+          const side = Math.abs(g) > 0.3 ? Math.sign(g) : Math.sign(gP) || Math.sign(g) || 1;
+          const dP = o.d + vdO * AI_ROOM.lookD; // where it is heading: the nearer of now and then counts
+          if (side > 0) hi = Math.min(hi, Math.min(o.d, dP) - AI_ROOM.gap); else lo = Math.max(lo, Math.max(o.d, dP) + AI_ROOM.gap);
+        }
       }
       this.roomLo = lo; this.roomHi = hi;
     }
@@ -5102,6 +5166,18 @@ const SIM = (function () {
     // The car's own consumption per lap (measured over its recent green-flag laps) and the laps its fuel lasts.
     fuelLapRate(car) { return car.fuelPerLapEst || this.fuelPerLap; }
     fuelRange(car) { return Math.max(0, car.fuel) / this.fuelLapRate(car); }
+    // The driver's estimate of laps of fuel left (HUD): the car's measured consumption per lap, with the lap in progress
+    // blended in once a quarter of it has been run (projected over a full lap, held within 60-160% of the measured
+    // figure so a burst of throttle or a lift cannot swing it), never while a pit stop is part of the lap.
+    fuelRangeLive(car) {
+      const base = this.fuelLapRate(car), t = this.track;
+      let rate = base;
+      if (!car.pit && !car.lapHadPit && car.lapFuel != null && car.crossings > 0) {
+        const frac = (car.totalDist - Math.floor(car.totalDist / t.length) * t.length) / t.length, burnt = car.lapFuel - car.fuel;
+        if (frac > 0.25 && burnt > 0) rate = lerp(base, clamp(burnt / frac, 0.6 * base, 1.6 * base), 0.4 * smooth01((frac - 0.25) / 0.75));
+      }
+      return Math.max(0, car.fuel) / Math.max(1e-3, rate);
+    }
     // Laps still to run to the flag from where the car is (fractional).
     lapsLeft(car) { const t = this.track; return Math.max(0, this.totalLaps - car.laps - t.wrapS(car.totalDist) / t.length); }
     get leader() { return this.order ? this.order[0] : this.cars[0]; }
@@ -5181,7 +5257,7 @@ const SIM = (function () {
         // track projection
         const prevS = car.s;
         t.project(car.x, car.z, car.idx, car.proj); car.idx = car.proj.i; car.s = car.proj.s; car.d = car.proj.d;
-        car.progress = this.legalProgress(car, t.dS(prevS, car.s), car.x - px, car.z - pz);
+        car.progress = this.routeCheck(car, this.legalProgress(car, t.dS(prevS, car.s), car.x - px, car.z - pz));
         car.totalDist += car.progress;
         if(this.weather)this.weather.displace(car,dt);
         collideWalls(car, t, this);
@@ -5197,6 +5273,8 @@ const SIM = (function () {
       // throughout selection, service and release, even if another car touches them.
       for (const car of this.cars) if (car.pit && ['awaiting','stopped','release'].includes(car.pit.phase)) this.holdPitCar(car);
       if (this.step % 4 === 0) this.updateSlipstream();
+      // live positions at 60 Hz from the one classification (the HUD, the map and the AI read the same order)
+      if (this.type === 'race' && this.step % 4 === 2) this.standings();
       if (this.step % 24 === 0) this.slowUpdate();
     }
     // Slipstream targets for every car (60 Hz). Cars are sorted by lap position once, so each car only
@@ -5529,6 +5607,38 @@ const SIM = (function () {
       const t = this.track, i = car.idx, inside = clamp(1 - 3 * t.kappa[i] * car.d, 0, 1); // kappa × d > 0 on the inside
       return Math.min(ds, Math.max(0, mx * t.tx[i] + mz * t.tz[i]) * inside);
     }
+    // Ordered route gates (Track.routeGates, one at the apex of every chicane corner). Within 4 m of the apex a car must
+    // at some moment have at least two tyres on the track or kerb (inside wheels over the kerb are fine), or be on the
+    // outside of the corner (running wide is not a shortcut). A car that passes the gate without that has skipped the
+    // corner: the progress it earned over the gate's span is taken back (routeDebt), so it must drive that distance again
+    // before its race distance, its lap and its position count it. No time penalty and no warning; the same rule for
+    // every car; the pit lane in use always counts as the route.
+    routeCheck(car, p) {
+      const t = this.track, G = t.routeGates;
+      if (!G || !G.length || this.type === 'calib' || car.inGarage) return p;
+      if (car.gateNext == null || car.gateResync) {
+        let best = 0, bd = 1e9; G.forEach((g, k) => { const d = t.dS(car.s, g.s0); const f = d < 0 ? d + t.length : d; if (f < bd) { bd = f; best = k; } });
+        car.gateNext = best; car.gateOk = false; car.gateCredit = 0; car.gateResync = false;
+      }
+      for (let guard = 0; guard < G.length; guard++) {
+        const g = G[car.gateNext], rel = t.dS(g.s0, car.s);
+        if (rel < 0) break; // not there yet
+        if (rel <= g.len) {
+          car.gateCredit += Math.max(0, p);
+          if (Math.abs(rel - g.apexAt) <= ROUTE_GATE.window && (car.offN <= 2 || g.inside * car.d <= 0 || car.pit)) car.gateOk = true;
+          break;
+        }
+        if (rel > g.len + 400) { car.gateResync = true; break; } // far past it (a reset or respawn): pick up the next gate
+        // left the gate's window: judge it, then look at the next gate (a jump can pass more than one)
+        if (!car.gateOk && car.gateCredit > 0) {
+          car.routeDebt = (car.routeDebt || 0) + car.gateCredit; this.stats.routeMisses = (this.stats.routeMisses || 0) + 1;
+          this.log(car, 'route gate missed: ' + g.name + ' (' + car.gateCredit.toFixed(0) + ' m)');
+        }
+        car.gateOk = false; car.gateCredit = 0; car.gateNext = (car.gateNext + 1) % G.length;
+      }
+      if (car.routeDebt > 0 && p > 0) { const use = Math.min(p, car.routeDebt); car.routeDebt -= use; p -= use; }
+      return p;
+    }
     timing(car, prevS = car.s, dt = PHYS_DT, at = this.time) {
       const t = this.track; const L = t.length;
       if (!this.lightsOut && this.type === 'race') return;
@@ -5538,7 +5648,9 @@ const SIM = (function () {
       if (car.lastLapBase === undefined) { car.lastLapBase = lapBase; car.lastWithin = within; return; }
       if (lapBase > car.lastLapBase) {
         car.lastLapBase = lapBase; car.lastWithin = within;
-        this.crossLine(car, at);
+        // the moment the line was crossed within this step (cars crossing in the same step keep their real order)
+        const over = car.progress > 1e-6 ? clamp(within / car.progress, 0, 1) : 0;
+        this.crossLine(car, at - over * dt);
       } else if (lapBase < car.lastLapBase) { car.lastLapBase = lapBase; car.lapValid = false; }
       if (car.crossings > 0) {
         // the lap's pace record (Career scoring): the track water the car drove on, and time and distance in the pit lane
@@ -5611,6 +5723,8 @@ const SIM = (function () {
         if (!this.finishedFlag && car.laps >= this.totalLaps) { this.finishedFlag = true; this.finishLeaderTime = at; this.events.push({ type: 'chequered' }); this.msg('CHEQUERED FLAG', 'big', null, 4); }
         if (this.finishedFlag && !car.finished) {
           car.finished = true; car.finishTime = at - this.lightsOutTime; car.finishOrder = (this.finishCount = (this.finishCount || 0) + 1);
+          car.finishDist = Math.floor(car.totalDist / t.length + 1e-9) * t.length; // the line it has just crossed
+          this.standings();
           if (car.isPlayer) this.msg('FINISHED P' + car.position, 'big', car, 5);
           if (car.ai) car.ai.mode = 'race';
           if (car.isPlayer) car.autoDrive = true;
@@ -5629,12 +5743,15 @@ const SIM = (function () {
       if (j > 800) this.events.push({ type: 'wall', car, j, x, z, nx, nz, vt });
       this.recordContact(-1 - car.id, car, null, x, z, nx, nz, vn, vt, jt, mEff);
     }
-    // One impact = all contact steps between a pair (or a car and the wall) with no gap longer than 0.1 s.
-    // It is judged once, on its peak: the closing speed at the contact point and the effective mass
+    // One impact = the contact steps between a pair (or a car and the wall) with no gap longer than 0.05 s, judged
+    // as soon as the contact ends or at most 0.08 s after it began (an impact's energy arrives within a few
+    // hundredths of a second, so a hit is never judged late). Contact that goes on (a car pinned against the barrier,
+    // two cars grinding side by side) continues as fresh impacts, each judged as it happens. Each contact step
+    // belongs to exactly one impact, so nothing is counted twice. Each impact is judged on its peak: the closing speed at the contact point and the effective mass
     // give the energy the crash structures absorb (0.5·m·v²); sliding friction adds scraping energy.
     recordContact(key, A, B, x, z, nx, nz, vn, vt, jt, mEff) {
       let ev = this.contacts.get(key);
-      if (!ev) { ev = { a: A, b: B, last: 0, E: 0, peak: 0, vn: 0, vt: 0, x, z, scrape: 0, hits: [] }; this.contacts.set(key, ev); }
+      if (!ev) { ev = { a: A, b: B, t0: this.time, last: 0, E: 0, peak: 0, vn: 0, vt: 0, x, z, scrape: 0, hits: [] }; this.contacts.set(key, ev); }
       ev.last = this.time;
       const E = 0.5 * mEff * vn * vn, sc = Math.abs(jt * vt) * 0.5; // friction impulse × sliding speed
       ev.E += E; ev.scrape += sc;
@@ -5657,7 +5774,7 @@ const SIM = (function () {
     resolveContacts() {
       if (!this.contacts.size) return;
       for (const [k, ev] of this.contacts) {
-        if (this.time - ev.last < 0.1) continue;
+        if (this.time - ev.last < CONTACT_GAP && this.time - ev.t0 < CONTACT_MAX) continue;
         this.contacts.delete(k);
         this.reportImpact(ev);
         if (this.damageOn) this.evaluateImpact(ev);
@@ -5722,31 +5839,31 @@ const SIM = (function () {
       const D = car.damage, c = D.c;
       const say = (k, tier, text, kind = 'dmg') => { if (D.tier[k] < tier) { D.tier[k] = tier; this.msg(text, kind, car, 3.5); } };
       const fw = D.fw;
-      if (D.detached[0] || D.detached[1]) say(P_FWL, 3, 'Front Wing Lost — Heavy Understeer, Pit Now', 'critical');
-      else if (fw > 0.5) say(P_FWL, 2, 'Front Wing Badly Damaged — Pit Recommended');
-      else if (fw > 0.1) say(P_FWL, 1, 'Front Wing Damaged — Reduced Front Grip');
-      if (c[P_RW] > 0.6) say(P_RW, 2, 'Rear Wing Badly Damaged — Pit Recommended');
-      else if (c[P_RW] > 0.15) say(P_RW, 1, 'Rear Wing Damaged — Reduced Rear Stability');
-      if (c[P_FLOOR] > 0.15) say(P_FLOOR, 1, 'Floor Damaged — Downforce Reduced');
+      if (D.detached[0] || D.detached[1]) say(P_FWL, 3, 'Front wing lost — heavy understeer');
+      else if (fw > 0.5) say(P_FWL, 2, 'Front wing badly damaged — understeer');
+      else if (fw > 0.1) say(P_FWL, 1, 'Front wing damaged');
+      if (c[P_RW] > 0.6) say(P_RW, 2, 'Rear wing badly damaged — unstable rear');
+      else if (c[P_RW] > 0.15) say(P_RW, 1, 'Rear wing damaged');
+      if (c[P_FLOOR] > 0.15) say(P_FLOOR, 1, 'Floor damaged — less grip');
       for (let i = 0; i < 4; i++) {
         const v = c[P_SUS + i], dir = i % 2 ? 'Right' : 'Left';
-        if (v > 0.5) say(P_SUS + i, 2, WHEEL_NAMES[i] + ' Suspension Badly Damaged — Car Pulling ' + dir);
-        else if (v > 0.12) say(P_SUS + i, 1, WHEEL_NAMES[i] + ' Suspension Damaged — Car Pulling ' + dir);
+        if (v > 0.5) say(P_SUS + i, 2, 'Suspension badly damaged — pulls ' + dir.toLowerCase());
+        else if (v > 0.12) say(P_SUS + i, 1, 'Suspension damaged — pulls ' + dir.toLowerCase());
       }
-      if (c[P_ENG] > 0.6) say(P_ENG, 2, 'Power Unit Misfiring — Power Reduced');
-      else if (c[P_ENG] > 0.15) say(P_ENG, 1, 'Power Unit Damaged — Power Reduced');
-      if (c[P_COOL] > 0.2) say(P_COOL, 1, 'Cooling Damaged — Watch Engine Temperature');
-      if (c[P_CHAS] > 0.2) say(P_CHAS, 1, 'Chassis Damaged — Handling Affected');
+      if (c[P_ENG] > 0.6) say(P_ENG, 2, 'Engine misfiring — power down');
+      else if (c[P_ENG] > 0.15) say(P_ENG, 1, 'Engine damaged — power down');
+      if (c[P_COOL] > 0.2) say(P_COOL, 1, 'Cooling damaged — engine runs hot');
+      if (c[P_CHAS] > 0.2) say(P_CHAS, 1, 'Chassis damaged');
     }
     onPuncture(car, i, cause = '') {
       this.stats.punctures = (this.stats.punctures || 0) + 1;
       this.log(car, 'puncture ' + WHEEL_NAMES[i] + (cause ? ' (' + cause + ')' : ''));
       this.events.push({ type: 'puncture', car, wheel: i });
-      this.msg(WHEEL_NAMES[i] + ' Tyre Puncture — Pit Recommended', 'critical', car, 4);
+      this.msg(WHEEL_NAMES[i] + ' tyre puncture', 'dmg', car, 4);
       car.damage.computePerf();
     }
     onTyreShred(car, i) {
-      this.msg(WHEEL_NAMES[i] + ' Tyre Destroyed — Box Now', 'critical', car, 4);
+      this.msg(WHEEL_NAMES[i] + ' tyre destroyed', 'dmg', car, 4);
       const c = Math.cos(car.psi), s = Math.sin(car.psi);
       this.addDebris(car.x - c * 1.5, car.z - s * 1.5, 'tyre', 1, car);
     }
@@ -5804,7 +5921,7 @@ const SIM = (function () {
       if (kind === 'engine' || kind === 'fire') { D.c[P_ENG] = 1; this.events.push({ type: 'failure', car, fire: kind === 'fire' }); }
       D.computePerf();
       this.log(car, 'failure ' + kind);
-      this.msg(text, 'critical', car, 5);
+      this.msg(text, 'dmg', car, 5);
       if (kind === 'fire') this.msg('RACE CONTROL: Car fire — ' + car.driver.name + ' stopping', 'rc', null, 4);
       this.startRetirement(car, reason);
     }
@@ -5856,7 +5973,7 @@ const SIM = (function () {
           this.log(car, 'reliability failure');
         }
         if (!D.failed && !car.retiring) {
-          if (D.overheat && !D.ohSaid) { D.ohSaid = true; this.msg('Power Unit Overheating — Lift and Coast', 'dmg', car, 4); }
+          if (D.overheat && !D.ohSaid) { D.ohSaid = true; this.msg('Engine overheating — power down', 'dmg', car, 4); }
           else if (D.engT < 112) D.ohSaid = false;
           this.announceDamage(car);
         }
@@ -5876,24 +5993,34 @@ const SIM = (function () {
       car.vx = car.vz = car.r = 0; car.gear = 1;
       this.log(car, 'marshal reset');
     }
+    // The one classification of the race (live positions, the finish, the results, Career): running cars by the
+    // validated race distance (cumulative, never reset at the line); a car that has taken the flag keeps the distance
+    // at which it crossed the line, so a lapped car that finishes behind the leader stays behind every car still
+    // running on the lead lap; cars that finished on the same lap by their finishing time; retirements last, by
+    // distance covered.
+    raceCompare(a, b) {
+      if (a.dnf !== b.dnf) return a.dnf ? 1 : -1;
+      const da = a.finished ? a.finishDist : a.totalDist, db = b.finished ? b.finishDist : b.totalDist;
+      if (a.finished && b.finished && Math.abs(da - db) < 1) return (a.finishTime - b.finishTime) || (a.finishOrder - b.finishOrder);
+      if (da !== db) return db - da;
+      if (a.finished !== b.finished) return a.finished ? -1 : 1;
+      return a.id - b.id;
+    }
+    standings() {
+      const order = this.cars.slice();
+      if (this.type === 'race') order.sort((a, b) => this.raceCompare(a, b));
+      else order.sort((a, b) => (a.bestLap || 1e9) - (b.bestLap || 1e9) || a.id - b.id);
+      order.forEach((c, k) => { c.position = k + 1; });
+      this.order = order;
+      return order;
+    }
     slowUpdate() {
       const t = this.track;
       this.damageTick(0.1);
       // standings
-      const order = this.cars.slice();
-      if (this.type === 'race') {
-        order.sort((a, b) => {
-          if (a.dnf !== b.dnf) return a.dnf ? 1 : -1;
-          if (a.finished && b.finished) return a.finishOrder - b.finishOrder;
-          if (a.finished !== b.finished) { const fa = a.finished ? a : b; const nf = a.finished ? b : a; if (nf.laps >= fa.laps) return a.finished ? -1 : 1; return a.finished ? -1 : 1; }
-          return b.totalDist - a.totalDist;
-        });
-      } else {
-        order.sort((a, b) => (a.bestLap || 1e9) - (b.bestLap || 1e9) || a.id - b.id);
-      }
-      const prevPos = new Map(this.cars.map(c => [c, c.position]));
-      order.forEach((c, k) => { c.position = k + 1; });
-      this.order = order;
+      const prevPos = this.slowPos || new Map(this.cars.map(c => [c, c.position]));
+      const order = this.standings();
+      this.slowPos = new Map(this.cars.map(c => [c, c.position]));
       // gaps
       if (this.type === 'race') {
         const lead = order[0];
@@ -5957,16 +6084,10 @@ const SIM = (function () {
     finishRace() {
       if (this.over) return;
       this.over = true;
-      const res = this.cars.map(c => ({ car: c, laps: c.laps, time: c.finished ? c.finishTime : null, dnf: c.dnf, best: c.bestLap, pits: c.pitStops, dist: c.totalDist }));
-      res.sort((a, b) => {
-        if (a.dnf !== b.dnf) return a.dnf ? 1 : -1;
-        if (b.laps !== a.laps) return b.laps - a.laps;
-        if (a.time != null && b.time != null) return a.time - b.time;
-        if (a.time != null) return -1; if (b.time != null) return 1;
-        return b.dist - a.dist;
-      });
-      const pts = [25, 18, 15, 12, 10, 8, 6, 4, 2, 1];
-      res.forEach((r, k) => { r.pos = k + 1; r.points = r.dnf ? 0 : (pts[k] || 0); });
+      // the results are the race classification itself (standings), never a separate ordering
+      const res = this.standings().map(c => ({ car: c, laps: c.laps, time: c.finished ? c.finishTime : null, dnf: c.dnf, best: c.bestLap, pits: c.pitStops, dist: c.finished ? c.finishDist : c.totalDist, pos: c.position }));
+      const pts = [25, 18, 15, 12, 10, 8, 6, 4, 2, 1]; // the Grand Prix results table's points column
+      for (const r of res) r.points = r.dnf ? 0 : (pts[r.pos - 1] || 0);
       // the winner is the first car to complete the race distance; a race nobody finished (all cars retired) has none
       this.winner = res[0] && res[0].car.finished ? res[0].car : null;
       this.results = res; this.events.push({ type: 'raceover' });
@@ -6178,7 +6299,7 @@ const SIM = (function () {
     return (neg ? '-' : plus ? '+' : '') + str;
   }
 
-  return { G, RHO, PHYS_DT, DS, GAME_MODES, RaceIntel, INTEL, PROGRESS, AI_MAX_LEVEL, aiSkillForLevel, TEAMS, DRIVERS, TRACK_DEF, CIRCUITS, circuitById, circuitCentreLine, elevationAt, COMPOUNDS, SPEC, Track, Car, Session, AIDriver, RaceStrategy, planStrategy, bestCompoundFor, lapLoss, stintCost, wearPerLap, DRY_COMPOUNDS, migrateCompound, TYRE_REF_WORK, fmtTime, clamp, lerp, makeRng, stepCarPhysics, SLIPSTREAM, slipstreamStrength, OFF_TRACK, GREEN_RUNOFF, PlayerHandling, KeyboardDriveInput, HANDLING, USEFUL_WEAR, TYRE_STYLES, drivingStyle, tyreWearGrip, tyreWeatherGrip, tyreMismatch, updateTyres, wetnessFor, weatherCompound, DynamicWeather, CarDamage, DAMAGE_LEVELS, PART_KEYS, PART_NAMES, WHEEL_NAMES, REPAIR_TIME, REFUEL, FUEL_TANK_LAPS, FUEL_RESERVE, START_FUEL_LAPS, FUEL_PERF, FUEL_LAP_COST, estimatePitLoss, chooseStartFuelLaps, normalizeDamageLevel, partExposure, torqueAt, defaultCompoundModel, setSeed: (s) => { rnd = makeRng(s); } };
+  return { cornerSpeedSigns, SIGN_REF, arcadeCornerSpeed, G, RHO, PHYS_DT, DS, GAME_MODES, RaceIntel, INTEL, PROGRESS, AI_MAX_LEVEL, aiSkillForLevel, TEAMS, DRIVERS, TRACK_DEF, CIRCUITS, circuitById, circuitCentreLine, elevationAt, COMPOUNDS, SPEC, Track, Car, Session, AIDriver, RaceStrategy, planStrategy, bestCompoundFor, lapLoss, stintCost, wearPerLap, DRY_COMPOUNDS, migrateCompound, TYRE_REF_WORK, fmtTime, clamp, lerp, makeRng, stepCarPhysics, SLIPSTREAM, slipstreamStrength, OFF_TRACK, GREEN_RUNOFF, PlayerHandling, KeyboardDriveInput, HANDLING, USEFUL_WEAR, TYRE_STYLES, drivingStyle, tyreWearGrip, tyreWeatherGrip, tyreMismatch, updateTyres, wetnessFor, weatherCompound, DynamicWeather, CarDamage, DAMAGE_LEVELS, PART_KEYS, PART_NAMES, WHEEL_NAMES, REPAIR_TIME, REFUEL, FUEL_TANK_LAPS, FUEL_RESERVE, START_FUEL_LAPS, FUEL_PERF, FUEL_LAP_COST, estimatePitLoss, chooseStartFuelLaps, normalizeDamageLevel, partExposure, torqueAt, defaultCompoundModel, setSeed: (s) => { rnd = makeRng(s); } };
 })();
 // ==SIM-END==
 if (typeof module !== 'undefined') module.exports = SIM;
@@ -6669,9 +6790,27 @@ R.center = { x: 0, z: 0 }; R.env = {};
 // the desert), coloured per circuit. Close to the track a fine "verge" mesh (every 4 m along the lap, out to ~80 m)
 // replaces the coarse grid, so the ground meets the road exactly on crests and in dips (the coarse grid's chords
 // would otherwise cut through the road at Eau Rouge or Interlagos); the coarse grid is sunk a little beneath it.
+// The woods around a circuit (0..1): one pattern for both the trees (buildTrees) and the darker forest floor under them.
+let WOODS = null;
+function woodsAt(x, z) { WOODS = WOODS || makeNoise(41); return WOODS.fbm(x / 520, z / 520, 3) + (R.env.style === 'canyon' ? 0.05 : 0.15); }
+// distance from the circuit for ground colouring (the terrain's distance field once built, else far)
+function distToCircuit(x, z) { return R.distAt ? R.distAt(x, z) : 1e4; }
 function groundTint(env, n, x, z, h, slope, wet) {
   const tint = env.grass || [1, 1, 1], v = n.fbm(x / 180, z / 180, 3), v2 = n(x / 45, z / 45);
-  let r = (0.78 + v * 0.18 + v2 * 0.05) * tint[0], g = (0.92 + v * 0.14 + v2 * 0.05) * tint[1], b = (0.62 + v * 0.1) * tint[2];
+  let r = (0.56 + v * 0.14 + v2 * 0.05) * tint[0], g = (0.7 + v * 0.12 + v2 * 0.05) * tint[1], b = (0.42 + v * 0.09) * tint[2];
+  if (!env.desert) {
+    // farmland away from the circuit: a patchwork of fields (meadow, crop, stubble, ploughed earth), strongest in open
+    // country; in the woods the ground is a darker forest floor (the same woods pattern the trees are planted by)
+    const far = smooth01(110, 320, distToCircuit(x, z)), open = 1 - Math.min(1, (env.forest ?? 1) * 0.55);
+    const fa = 0.6, fx = x * Math.cos(fa) - z * Math.sin(fa), fz = x * Math.sin(fa) + z * Math.cos(fa), cw = 190, ch = 130;
+    const cell = Math.floor(fx / cw) * 7919 + Math.floor(fz / ch) * 104729, hsh = ((Math.sin(cell) * 43758.5453) % 1 + 1) % 1;
+    const edge = Math.min(Math.abs(((fx / cw) % 1 + 1) % 1 - 0.5), Math.abs(((fz / ch) % 1 + 1) % 1 - 0.5)) > 0.47 ? 0.55 : 0;
+    const field = hsh < 0.45 ? [r, g, b] : hsh < 0.7 ? [0.86 * tint[0], 0.84 * tint[1], 0.46 * tint[2]] : hsh < 0.88 ? [0.8 * tint[0], 0.72 * tint[1], 0.44 * tint[2]] : [0.56, 0.45, 0.33];
+    const wf = far * (0.25 + 0.75 * open) * (1 - edge);
+    r += (field[0] - r) * wf; g += (field[1] - g) * wf; b += (field[2] - b) * wf;
+    const woods = smooth01(0.3, 0.62, woodsAt(x, z));
+    r *= 1 - 0.38 * woods; g *= 1 - 0.3 * woods; b *= 1 - 0.32 * woods;
+  }
   // Slopes read as hillside, not as a bank of sand: the turf darkens and browns as the ground steepens, and the
   // steepest faces are bare rock (grey in the green hills, red-brown sandstone in the desert).
   const rough = smooth01(0.03, 0.14, slope), rock = smooth01(0.12, 0.3, slope), rv = 0.9 + n(x / 23, z / 23) * 0.12;
@@ -6762,6 +6901,7 @@ function buildTerrain(world, track, T, opts) {
     return u + v < 1 ? a + (b - a) * u + (c - a) * v : d + (c - d) * (1 - u) + (b - d) * (1 - v);
   };
   const distAt = (x, z) => { const k = Math.min(Rn, Math.max(0, Math.round((x - x0) / step))), j = Math.min(Rn, Math.max(0, Math.round((z - z0) / step))); return dT[j * W + k]; };
+  R.distAt = distAt; // the ground colouring below reads it
   // geometry
   const pos = new Float32Array(W * W * 3), col = new Float32Array(W * W * 3), uv = new Float32Array(W * W * 2), idx = [];
   for (let j = 0; j < W; j++) for (let k = 0; k < W; k++) {
@@ -6778,7 +6918,9 @@ function buildTerrain(world, track, T, opts) {
   }
   g.setAttribute('color', new THREE.BufferAttribute(col, 3));
   const mat = antiTile(new THREE.MeshStandardMaterial({ map: env.desert ? T.gravel : T.grass, vertexColors: true, roughness: 0.95, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 2 }), 0.17, 0.45, 0.22, true);
-  const mesh = new THREE.Mesh(g, mat); mesh.receiveShadow = true; mesh.userData.kind = 'terrain'; world.add(mesh);
+  // the open landscape has no mowing stripes (only the mown verge beside the circuit does)
+  const farMat = antiTile(new THREE.MeshStandardMaterial({ map: env.desert ? T.gravel : T.grass, vertexColors: true, roughness: 0.95, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 2 }), 0.17, 0.45, 0.26, false);
+  const mesh = new THREE.Mesh(g, farMat); mesh.receiveShadow = true; mesh.userData.kind = 'terrain'; world.add(mesh);
   // ---- the fine verge along both sides of the circuit ----
   {
     const N = track.N, P = track.pit, U = [0, 0.04, 0.1, 0.2, 0.36, 0.6, 1], pos2 = [], col2 = [], uv2 = [], idx2 = [];
@@ -6834,6 +6976,8 @@ function makeWaterMaterial(wet) {
 // The distant landscape (2.3–8.7 km out): its relief is the SRTM terrain from the shader's height field, so the
 // Ardennes valleys round Spa, the hills of São Paulo or the Suzuka foothills are where they really are. The ring
 // itself is nearly flat; it is coloured by the real height and slope (forest, fields, desert or city haze).
+// how hilly each circuit's distant landscape is (0..1)
+const HILLS = { spa: 1.0, suzuka: 0.9, interlagos: 0.6, monza: 0.45, silverstone: 0.22, bahrain: 0.12 };
 function buildMountains(world, opts, track) {
   const Q = opts.quality, wet = opts.wet, env = R.env; const n = makeNoise(5);
   const cx = R.center.x, cz = R.center.z, segA = Q === 2 ? 300 : Q === 1 ? 220 : 140, segR = Q === 2 ? 36 : Q === 1 ? 28 : 20;
@@ -6842,7 +6986,9 @@ function buildMountains(world, opts, track) {
     const r = 2350 + (j / segR) ** 1.35 * 6400;
     for (let k = 0; k <= segA; k++) {
       const a = k / segA * Math.PI * 2; const x = cx + Math.cos(a) * r, z = cz + Math.sin(a) * r;
-      pos.push(x, (r < 2950 ? -2.5 : -0.5) + n.fbm(x / 900, z / 900, 3) * 6, z);
+      // hills rise towards the horizon (the Ardennes and the Suzuka range most, the Silverstone and Sakhir plains least)
+      const hills = smooth01(3200, 7600, r) * (40 + Math.max(0, n.fbm(x / 1500 + 7, z / 1500, 3)) * 260) * (HILLS[env.style || ''] ?? 0.4);
+      pos.push(x, (r < 2950 ? -2.5 : -0.5) + n.fbm(x / 900, z / 900, 3) * 6 + hills, z);
     }
   }
   for (let j = 0; j < segR; j++) for (let k = 0; k < segA; k++) { const a = j * (segA + 1) + k, b = a + segA + 1; idx.push(a, b, a + 1, b, b + 1, a + 1); }
@@ -6875,11 +7021,12 @@ function buildLandmarks(world, track, terrain, opts) {
     const n = Q === 2 ? 1400 : Q === 1 ? 900 : 450, geo = new THREE.BoxGeometry(1, 1, 1); geo.translate(0, 0.5, 0);
     const im = new THREE.InstancedMesh(geo, new THREE.MeshStandardMaterial({ roughness: 0.85, metalness: 0.1 }), n), rng = seededRand(61); let k = 0;
     for (let t = 0; t < n * 12 && k < n; t++) {
-      const a = rng() * 6.283, r = 650 + Math.pow(rng(), 0.7) * 3400, x = R.center.x + Math.cos(a) * r, z = R.center.z + Math.sin(a) * r;
+      // most towers stand in the downtown to the north-east (central São Paulo), the rest scattered over the city
+      const core = rng() < 0.6, a = core ? -0.9 + (rng() - 0.5) * 0.9 : rng() * 6.283, r = core ? 2400 + rng() * 2200 : 650 + Math.pow(rng(), 0.7) * 1950, x = R.center.x + Math.cos(a) * r, z = R.center.z + Math.sin(a) * r;
       if (terrain.distAt(x, z) < 260 || Math.hypot(x - R.center.x, z - R.center.z) < 600) continue;
-      const tall = rng() < 0.18, h = tall ? 45 + rng() * 85 : 9 + Math.pow(rng(), 2) * 30, w = tall ? 18 + rng() * 14 : 14 + rng() * 26;
+      const tall = core ? rng() < 0.55 : rng() < 0.08, h = tall ? 45 + rng() * 95 : 9 + Math.pow(rng(), 2) * 30, w = tall ? 18 + rng() * 14 : 14 + rng() * 26;
       m4.compose(v3.set(x, terrain.heightAt(x, z) - 1, z), q4.setFromAxisAngle(up, rng() * 6.28), sc.set(w, h, w * (0.6 + rng() * 0.8)));
-      im.setMatrixAt(k, m4); im.setColorAt(k, col.setHSL(0.08 + rng() * 0.05, 0.08 + rng() * 0.12, 0.55 + rng() * 0.28)); k++;
+      im.setMatrixAt(k, m4); im.setColorAt(k, rng() < 0.4 ? col.setHSL(0.58 + rng() * 0.04, 0.12 + rng() * 0.12, 0.32 + rng() * 0.14) : col.setHSL(0.08 + rng() * 0.05, 0.05 + rng() * 0.08, 0.42 + rng() * 0.2)); k++;
     }
     im.count = k; im.castShadow = false; world.add(im);
   }
@@ -6923,6 +7070,301 @@ function buildLandmarks(world, track, terrain, opts) {
   }
 }
 
+// Circuit venues: the infrastructure and landscape that make each real circuit read as itself, beyond the barriers.
+// Shared by all six: a perimeter service road outside the run-off (never the pit lane), spectator banks with crowds at
+// the big corners, car parks. Then each circuit's identity: Monza's royal park (the old banking, the Villa Reale,
+// poplar avenues), Silverstone's airfield (hangars, campsite, hay bales, hedgerows), Spa's Ardennes (chalets with slate
+// roofs, hillside terraces), Suzuka's amusement park (roller coaster, the hotel, cherry trees), Bahrain's desert
+// (tented hospitality, sandstone buildings, oil pumpjacks), Interlagos's city (hillside houses, billboard towers).
+// Everything is merged per material or instanced, stands clear of the circuit (the distance field and sceneryClear)
+// and registers a keep-out circle so no tree is planted through it.
+function buildVenue(world, track, terrain, opts) {
+  const env = R.env, Q = opts.quality, style = env.style || '', P = track.pit, rng = seededRand(97), N = track.N, DS = SIM.DS;
+  const H = terrain.heightAt, D = terrain.distAt, keepOut = R.keepOut;
+  const keep = (x, z, r) => keepOut.push({ x, z, r });
+  const free = (x, z, r, minD = 30) => D(x, z) > minD + r && !keepOut.some(k => (k.x - x) ** 2 + (k.z - z) ** 2 < (k.r + r) ** 2) && sceneryClear(track, x, z, r);
+  // a random open site minD..maxD m from the circuit
+  const site = (minD, maxD, r, tries = 400) => {
+    for (let t = 0; t < tries; t++) {
+      const a = rng() * Math.PI * 2, rr = 200 + rng() * 2600, x = R.center.x + Math.cos(a) * rr, z = R.center.z + Math.sin(a) * rr, d = D(x, z);
+      if (d < minD || d > maxD) continue;
+      if (free(x, z, r, minD)) return { x, z };
+    }
+    return null;
+  };
+  // vertex-coloured geometry, merged into one mesh per batch at the end
+  const paint = (g, c) => { const n = g.attributes.position.count, a = new Float32Array(n * 3); for (let k = 0; k < n; k++) { a[k * 3] = c[0]; a[k * 3 + 1] = c[1]; a[k * 3 + 2] = c[2]; } g.setAttribute('color', new THREE.BufferAttribute(a, 3)); return g; };
+  // vertex colours are linear: convert from the sRGB hex value
+  const hex = (h) => [(h >> 16 & 255) / 255, (h >> 8 & 255) / 255, (h & 255) / 255].map(c => Math.pow(c, 2.2));
+  const batches = new Map();
+  const add = (key, geo) => { if (!batches.has(key)) batches.set(key, []); batches.get(key).push(geo); };
+  const mats = {
+    solid: new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.82, metalness: 0.05 }),
+    metal: new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.45, metalness: 0.6 }),
+    glass: new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.12, metalness: 0.75 }),
+    road: new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.92, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }),
+    fabric: new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.75, side: THREE.DoubleSide }),
+    leaf: new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.9, flatShading: true }),
+  };
+  // place local geometry (built around the origin) at x, ground height, z, turned by yaw
+  const at = (g, x, z, yaw = 0, dy = 0) => { g.rotateY(yaw); g.translate(x, H(x, z) + dy, z); return g; };
+  // lay already-placed flat geometry onto the local ground (each vertex at the ground height under it plus its own y)
+  const drape = (g) => { const p = g.attributes.position; for (let k = 0; k < p.count; k++) p.setY(k, p.getY(k) + H(p.getX(k), p.getZ(k))); g.computeVertexNormals(); return g; };
+  const B = (w, h, d, x, y, z, c, yaw = 0) => { const g = new THREE.BoxGeometry(w, h, d); g.translate(x, y + h / 2, z); if (yaw) g.rotateY(yaw); return paint(g, c); };
+  // ---------------------------------------------------------------- shared: perimeter service road
+  // a 6 m road 22 m beyond the barrier on both sides wherever the ground there is clear of the circuit (never
+  // beside the pit lane), in continuous pieces of at least 150 m
+  {
+    const W = 6, step = 4, off = 22, verts = [], cols = [], asph = hex(0x3f4245);
+    for (const sgn of [-1, 1]) {
+      let run = [];
+      const flush = () => {
+        if (run.length * step >= 150) for (let k = 0; k + 1 < run.length; k++) {
+          const [a, b] = [run[k], run[k + 1]];
+          verts.push(a.l[0], a.l[1], a.l[2], b.l[0], b.l[1], b.l[2], a.r[0], a.r[1], a.r[2], a.r[0], a.r[1], a.r[2], b.l[0], b.l[1], b.l[2], b.r[0], b.r[1], b.r[2]);
+          for (let q = 0; q < 6; q++) cols.push(...asph);
+        }
+        run = [];
+      };
+      for (let s = 0; s < track.length; s += step) {
+        const i = Math.floor(s / DS) % N, wall = sgn > 0 ? track.wallR[i] : track.wallL[i];
+        if (sgn === P.side && track.pitProg(s) >= 0) { flush(); continue; }
+        if (sgn === -P.side && (s > track.length - 420 || s < 300)) { flush(); continue; } // behind the main grandstand
+        const d0 = sgn * (wall + off), d1 = sgn * (wall + off + W);
+        const [x0, z0] = track.pointAt(s, d0), [x1, z1] = track.pointAt(s, d1);
+        const ok = sceneryClear(track, x0, z0, 2) && sceneryClear(track, x1, z1, 2) && D(x0, z0) > wall + off - 4 && D(x1, z1) > wall + off - 4 && !keepOut.some(k => (k.x - x0) ** 2 + (k.z - z0) ** 2 < k.r * k.r);
+        if (!ok) { flush(); continue; }
+        // a sharp bend of the offset line folds the strip over itself: cut it there
+        if (run.length && Math.hypot(x0 - run[run.length - 1].l[0], z0 - run[run.length - 1].l[2]) > step * 3) flush();
+        run.push({ l: [x0, H(x0, z0) + 0.12, z0], r: [x1, H(x1, z1) + 0.12, z1] });
+      }
+      flush();
+    }
+    if (verts.length) {
+      const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(cols, 3));
+      g.computeVertexNormals(); const m = new THREE.Mesh(g, mats.road); m.receiveShadow = true; m.userData.kind = 'service road'; world.add(m);
+    }
+  }
+  // ---------------------------------------------------------------- shared: spectator banks at the big corners
+  // standing crowd on a grass bank behind a debris fence, outside the corner after the apex
+  const crowdPts = [];
+  {
+    const fence = [], posts = [], banners = [];
+    for (const c of track.corners) {
+      if (!c.brakeZone) continue;
+      const sgn = -c.dir, s0 = c.apex * DS + 15, len = 110;
+      if (sgn === track.pitAt(s0).side && track.pitProg(s0) >= 0) continue;
+      const op = track.overpass; if (op && [op.lowS, op.highS].some(o => Math.abs(track.dS(o, s0)) < 260)) continue;
+      for (let s = s0; s < s0 + len; s += 3) {
+        const i = Math.floor(track.wrapS(s) / DS) % N, wall = sgn > 0 ? track.wallR[i] : track.wallL[i];
+        const [fx, fz, fh] = track.pointAt(track.wrapS(s), sgn * (wall + 9));
+        if (!sceneryClear(track, fx, fz, 1.5)) continue;
+        // the debris fence and its posts
+        const fyaw = -fh;
+        fence.push(at(paint(new THREE.BoxGeometry(3.1, 2.4, 0.05).translate(0, 1.2, 0), hex(0x9aa3ab)), fx, fz, fyaw));
+        if ((s - s0) % 12 < 3) posts.push(at(paint(new THREE.CylinderGeometry(0.06, 0.06, 2.6, 5).translate(0, 1.3, 0), hex(0x6b7178)), fx, fz, fyaw));
+        // people standing on the bank, 2-14 m behind the fence
+        for (let r = 0; r < 5; r++) {
+          if (rng() < 0.35) continue;
+          const dd = wall + 11 + r * 2.4 + rng() * 1.2, [px, pz] = track.pointAt(track.wrapS(s + (rng() - 0.5) * 2.6), sgn * dd);
+          if (!sceneryClear(track, px, pz, 1)) continue;
+          crowdPts.push([px, H(px, pz) + r * 0.45, pz, fh + Math.PI / 2 * sgn]);
+        }
+      }
+      // a banner on the fence
+      const [bx, bz, bh] = track.pointAt(track.wrapS(s0 + len / 2), sgn * ((sgn > 0 ? track.wallR[c.apex] : track.wallL[c.apex]) + 8.9));
+      if (sceneryClear(track, bx, bz, 1)) banners.push(at(paint(new THREE.BoxGeometry(9, 1.1, 0.06).translate(0, 1.6, 0), hex([0xe10600, 0x1e5bd8, 0xf5c518, 0x1f8f4e][(rng() * 4) | 0])), bx, bz, -bh));
+    }
+    for (const g of fence) add('fence', g); for (const g of posts) add('metal', g); for (const g of banners) add('solid', g);
+  }
+  // ---------------------------------------------------------------- shared: car parks
+  const carPark = (cx, cz, w, d, yaw, n) => {
+    { const g = paint(new THREE.PlaneGeometry(w, d, 12, 8).rotateX(-Math.PI / 2), hex(0x4a4d50)); g.rotateY(yaw); g.translate(cx, 0.1, cz); add('road', drape(g)); }
+    const cs = Math.cos(yaw), sn = Math.sin(yaw);
+    for (let k = 0; k < n; k++) {
+      const u = (rng() - 0.5) * (w - 6), v = Math.round(((rng() - 0.5) * (d - 6)) / 6) * 6, x = cx + u * cs + v * sn, z = cz - u * sn + v * cs;
+      const col = hex([0xf2f2f2, 0x202225, 0x9aa3ab, 0xb3121b, 0x14276b, 0x5b6770, 0xc9c2b0][(rng() * 7) | 0]);
+      add('solid', at(B(1.8, 0.75, 4.3, 0, 0.25, 0, col), x, z, yaw + Math.PI / 2, 0));
+      add('glass', at(B(1.6, 0.55, 2.2, 0, 1.0, -0.2, hex(0x26303a)), x, z, yaw + Math.PI / 2, 0));
+    }
+    keep(cx, cz, Math.hypot(w, d) / 2 + 4);
+  };
+  for (let k = 0; k < 3; k++) { const p = site(110, 420, 70); if (p) carPark(p.x, p.z, 120, 70, rng() * Math.PI, Q === 2 ? 160 : 90); }
+  // ---------------------------------------------------------------- per-circuit identity
+  const pine = (x, z, s, c) => { // a tall narrow tree (Lombardy poplar / Italian stone pine column)
+    add('leaf', at(paint(new THREE.CylinderGeometry(0.25 * s, 0.35 * s, 3 * s, 5).translate(0, 1.5 * s, 0), hex(0x5a4330)), x, z));
+    add('leaf', at(paint(new THREE.ConeGeometry(1.6 * s, 11 * s, 7).translate(0, 8.5 * s, 0), c || hex(0x2f5a2a)), x, z));
+  };
+  const house = (x, z, yaw, w, d, h, wall, roof, steep = 0.55) => {
+    add('solid', at(B(w, h, d, 0, 0, 0, wall), x, z, yaw));
+    const r = new THREE.CylinderGeometry(0.01, w * 0.62, w * steep, 4, 1); r.rotateY(Math.PI / 4); r.scale(1, 1, d / w); r.translate(0, h + w * steep / 2, 0);
+    add('solid', at(paint(r, roof), x, z, yaw));
+  };
+  if (style === 'monza') {
+    // the old banked oval (1955): two concrete banked curves on pillars, in the park inside the circuit
+    for (let k = 0; k < 2; k++) {
+      const p = site(160, 900, 190); if (!p) break;
+      const R0 = 150, arc = Math.PI * 0.6, a0 = rng() * Math.PI * 2, seg = 28, deck = [], pil = [];
+      for (let q = 0; q < seg; q++) {
+        const a = a0 + arc * q / seg, b = a0 + arc * (q + 1) / seg, rise = 7, width = 14;
+        const pt = (ang, r, y) => [p.x + Math.cos(ang) * r, y, p.z + Math.sin(ang) * r];
+        const A = pt(a, R0, 2), Bp = pt(b, R0, 2), C = pt(a, R0 + width, 2 + rise), Dp = pt(b, R0 + width, 2 + rise);
+        const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute([...A, ...C, ...Bp, ...Bp, ...C, ...Dp], 3)); g.computeVertexNormals();
+        g.setAttribute('uv', new THREE.Float32BufferAttribute(new Array(12).fill(0), 2)); deck.push(paint(g, hex(0xb9b4aa)));
+        if (q % 2 === 0) for (const [r, h] of [[R0 + 2, 2], [R0 + width - 2, 2 + rise - 0.6]]) { const [x, , z] = pt(a, r, 0); pil.push(at(paint(new THREE.BoxGeometry(1.2, h + 1, 1.2).translate(0, (h + 1) / 2 - 1, 0), hex(0xa29d93)), x, z)); }
+      }
+      // the deck sits on the local ground height of the arc's centre
+      for (const g of deck) add('fabric', drape(g));
+      for (const g of pil) add('solid', g);
+      keep(p.x, p.z, R0 + 30);
+    }
+    // the Villa Reale, far out in the park: a long neoclassical palace with a pediment
+    { const p = site(500, 1400, 90); if (p) { const yaw = rng() * Math.PI;
+      add('solid', at(B(150, 18, 26, 0, 0, 0, hex(0xe8d9b8)), p.x, p.z, yaw)); add('solid', at(B(40, 22, 30, 0, 0, 0, hex(0xefe3c6)), p.x, p.z, yaw));
+      add('solid', at(paint(new THREE.SphereGeometry(9, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2).translate(0, 22, 0), hex(0x8fa39a)), p.x, p.z, yaw)); // the central dome
+      for (let c = -6; c <= 6; c++) add('solid', at(B(1.2, 18, 1.2, c * 3, 0, 15.5, hex(0xf4ecd8)), p.x, p.z, yaw));
+      keep(p.x, p.z, 100); } }
+    // avenues of poplars along the service roads in the park
+    for (let k = 0; k < (Q === 2 ? 260 : 140); k++) {
+      const s = rng() * track.length, sgn = rng() < 0.5 ? -1 : 1, i = Math.floor(s / DS) % N, wall = sgn > 0 ? track.wallR[i] : track.wallL[i];
+      const [x, z] = track.pointAt(s, sgn * (wall + 31 + rng() * 3)); if (free(x, z, 3, 20) && !(sgn === P.side && track.pitProg(s) >= 0)) pine(x, z, 0.9 + rng() * 0.3);
+    }
+  } else if (style === 'silverstone') {
+    // the wartime airfield: Nissen hangars (half-cylinder roofs) and the old control tower
+    for (let k = 0; k < 6; k++) {
+      const p = site(140, 700, 40); if (!p) break; const yaw = rng() * Math.PI;
+      const g = new THREE.CylinderGeometry(11, 11, 46, 16, 1, false, 0, Math.PI); g.rotateZ(Math.PI / 2); g.rotateX(0); g.translate(0, 0, 0);
+      add('metal', at(paint(g.rotateY(0), hex(0x7d868c)), p.x, p.z, yaw));
+      add('solid', at(B(0.4, 10.5, 21, 23, 0, 0, hex(0x5d646a)), p.x, p.z, yaw)); add('solid', at(B(0.4, 10.5, 21, -23, 0, 0, hex(0x5d646a)), p.x, p.z, yaw));
+      keep(p.x, p.z, 32);
+    }
+    { const p = site(200, 600, 20); if (p) { add('solid', at(B(14, 7, 14, 0, 0, 0, hex(0xe7e2d6)), p.x, p.z)); add('solid', at(B(10, 3.5, 10, 0, 7, 0, hex(0xefeae0)), p.x, p.z)); add('glass', at(B(10.2, 1.6, 10.2, 0, 8, 0, hex(0x2c3a46)), p.x, p.z)); keep(p.x, p.z, 16); } }
+    // the campsite: rows of tents and caravans
+    for (let k = 0; k < 2; k++) {
+      const p = site(160, 600, 70); if (!p) break; const yaw = rng() * Math.PI;
+      for (let t = 0; t < (Q === 2 ? 140 : 70); t++) {
+        const u = (rng() - 0.5) * 110, v = (rng() - 0.5) * 70, x = p.x + u * Math.cos(yaw) + v * Math.sin(yaw), z = p.z - u * Math.sin(yaw) + v * Math.cos(yaw);
+        if (rng() < 0.25) add('solid', at(B(2.3, 2.4, 6, 0, 0.3, 0, hex(0xf0efe8)), x, z, yaw + rng() * 0.3));
+        else { const tent = new THREE.CylinderGeometry(0.01, 2.2, 1.8, 4, 1); tent.rotateY(Math.PI / 4); tent.scale(1, 1, 1.4); tent.translate(0, 0.9, 0); add('fabric', at(paint(tent, hex([0xe85c41, 0x2f7bff, 0x21c55d, 0xf5c518, 0x8e24aa, 0xff7a1a][(rng() * 6) | 0])), x, z, rng() * 6)); }
+      }
+      keep(p.x, p.z, 70);
+    }
+    // round hay bales in the fields and hedgerows along field edges
+    for (let k = 0; k < (Q === 2 ? 220 : 110); k++) {
+      const p = site(90, 900, 3, 40); if (!p) continue;
+      const g = new THREE.CylinderGeometry(0.8, 0.8, 1.2, 10); g.rotateZ(Math.PI / 2); g.translate(0, 0.8, 0); add('solid', at(paint(g, hex(0xc9a85a)), p.x, p.z, rng() * 6));
+    }
+    for (let k = 0; k < (Q === 2 ? 40 : 20); k++) {
+      const p = site(120, 1200, 10, 60); if (!p) continue; const yaw = rng() * Math.PI, len = 60 + rng() * 120;
+      const g = new THREE.BoxGeometry(len, 2.2, 2.4); g.translate(0, 1.1, 0); add('leaf', at(paint(g, hex(0x3d5a2a)), p.x, p.z, yaw));
+    }
+  } else if (style === 'spa') {
+    // Ardennes chalets: white or stone walls under steep dark slate roofs, in clusters on the slopes
+    for (let k = 0; k < 9; k++) {
+      const p = site(150, 1100, 50); if (!p) break;
+      for (let h = 0; h < 7; h++) {
+        const x = p.x + (rng() - 0.5) * 80, z = p.z + (rng() - 0.5) * 80; if (!free(x, z, 8, 60)) continue;
+        house(x, z, rng() * Math.PI, 9 + rng() * 5, 11 + rng() * 6, 5 + rng() * 2, hex(rng() < 0.5 ? 0xece8df : 0x9b8f80), hex(0x2f3338), 0.9);
+        keep(x, z, 10);
+      }
+    }
+    // hillside spectator terraces above the run-off (Eau Rouge, Pouhon, Blanchimont)
+    for (const c of track.corners) {
+      if (c.R > 160) continue;
+      const sgn = -c.dir;
+      for (let s = c.apex * DS - 40; s < c.apex * DS + 60; s += 4) {
+        const i = Math.floor(track.wrapS(s) / DS) % N, wall = sgn > 0 ? track.wallR[i] : track.wallL[i];
+        for (let r = 0; r < 4; r++) {
+          const [x, z, h] = track.pointAt(track.wrapS(s), sgn * (wall + 32 + r * 3)); if (!sceneryClear(track, x, z, 1.5) || sgn === P.side && track.pitProg(s) >= 0) continue;
+          add('solid', at(B(4, 0.5, 2.8, 0, 0, 0, hex(0x8a8f86)), x, z, -h, r * 0.5));
+          if (rng() < 0.7) crowdPts.push([x, H(x, z) + r * 0.5 + 0.5, z, -h + Math.PI / 2 * sgn]);
+        }
+      }
+    }
+  } else if (style === 'suzuka') {
+    // the amusement park beside the main straight: a roller coaster on lattice supports
+    { const p = site(200, 700, 120); if (p) {
+      const pts = [], n = 90, yaw = rng() * Math.PI;
+      for (let k = 0; k <= n; k++) { const a = k / n * Math.PI * 2; pts.push(new THREE.Vector3(Math.cos(a) * 90 + Math.cos(3 * a) * 20, 8 + 14 * Math.pow(Math.sin(a * 2), 2) + (k < 12 ? k * 2 : 0), Math.sin(a) * 50 + Math.sin(2 * a) * 18)); }
+      const curve = new THREE.CatmullRomCurve3(pts, true), tube = new THREE.TubeGeometry(curve, 240, 0.8, 6, true);
+      add('metal', at(paint(tube, hex(0xe53935)), p.x, p.z, yaw));
+      for (let k = 0; k < n; k += 3) { const v = pts[k]; const g = new THREE.CylinderGeometry(0.3, 0.4, v.y, 5); g.translate(v.x, v.y / 2, v.z); add('metal', at(paint(g, hex(0xf2f2f2)), p.x, p.z, yaw)); }
+      keep(p.x, p.z, 120);
+    } }
+    // the circuit hotel: a long white block under a curved Japanese roof
+    { const p = site(250, 900, 60); if (p) { const yaw = rng() * Math.PI;
+      add('solid', at(B(80, 14, 18, 0, 0, 0, hex(0xf1efe9)), p.x, p.z, yaw)); add('glass', at(B(80.4, 1.4, 18.4, 0, 6, 0, hex(0x2a3540)), p.x, p.z, yaw));
+      const roof = new THREE.CylinderGeometry(14, 14, 86, 20, 1, false, Math.PI * 0.35, Math.PI * 0.3); roof.rotateZ(Math.PI / 2); roof.translate(0, 0.6, 0);
+      add('solid', at(paint(roof, hex(0x3b4650)), p.x, p.z, yaw)); keep(p.x, p.z, 55); } }
+    // cherry trees (pink crowns) among the woods near the circuit
+    for (let k = 0; k < (Q === 2 ? 220 : 110); k++) {
+      const p = site(45, 500, 4, 40); if (!p) continue; const s = 0.8 + rng() * 0.5;
+      add('leaf', at(paint(new THREE.CylinderGeometry(0.25 * s, 0.35 * s, 2.8 * s, 5).translate(0, 1.4 * s, 0), hex(0x5a4030)), p.x, p.z));
+      add('leaf', at(paint(new THREE.IcosahedronGeometry(3 * s, 0).scale(1, 0.75, 1).translate(0, 4.2 * s, 0), hex(rng() < 0.6 ? 0xf3b6c8 : 0xe8909f)), p.x, p.z));
+    }
+  } else if (style === 'bahrain') {
+    // hospitality under white tensile tents, and sandstone buildings with shaded arcades
+    for (let k = 0; k < 6; k++) {
+      const p = site(90, 500, 35); if (!p) break;
+      for (let t = 0; t < 5; t++) { const tent = new THREE.ConeGeometry(9, 6, 4, 1, true); tent.rotateY(Math.PI / 4); tent.translate(0, 8, 0); add('fabric', at(paint(tent, hex(0xf6f4ee)), p.x + (t - 2) * 13, p.z, 0));
+        for (const [ox, oz] of [[-6, -6], [6, -6], [-6, 6], [6, 6]]) add('metal', at(B(0.3, 5, 0.3, ox, 0, oz, hex(0xd0d0d0)), p.x + (t - 2) * 13, p.z)); }
+      keep(p.x, p.z, 40);
+    }
+    for (let k = 0; k < 8; k++) {
+      const p = site(150, 1200, 30); if (!p) break; const yaw = rng() * Math.PI, w = 30 + rng() * 30;
+      add('solid', at(B(w, 9 + rng() * 6, 16, 0, 0, 0, hex(0xd8c39a)), p.x, p.z, yaw));
+      for (let a = -w / 2 + 3; a < w / 2 - 2; a += 4) add('solid', at(B(0.8, 4, 0.8, a, 0, 8.6, hex(0xcab68c)), p.x, p.z, yaw));
+      keep(p.x, p.z, w / 2 + 6);
+    }
+    // oil pumpjacks out in the desert (the Sakhir field)
+    for (let k = 0; k < (Q === 2 ? 26 : 14); k++) {
+      const p = site(600, 2400, 8, 60); if (!p) continue; const yaw = rng() * Math.PI;
+      add('metal', at(B(1.2, 5, 1.2, 0, 0, 0, hex(0x3c3f44)), p.x, p.z, yaw)); add('metal', at(B(9, 0.8, 0.8, 0, 5.2, 0, hex(0xb8892b)), p.x, p.z, yaw + 0.05));
+      add('metal', at(B(1.8, 2.2, 1.6, 4.4, 4.2, 0, hex(0x3c3f44)), p.x, p.z, yaw)); add('solid', at(B(4, 0.4, 3, 0, 0, 0, hex(0x8e8478)), p.x, p.z, yaw));
+    }
+  } else if (style === 'interlagos') {
+    // the hillside neighbourhoods of São Paulo: dense small houses in many colours, stepped up the slopes
+    const n = Q === 2 ? 6500 : Q === 1 ? 4000 : 1800, geo = new THREE.BoxGeometry(1, 1, 1); geo.translate(0, 0.5, 0);
+    const im = new THREE.InstancedMesh(geo, new THREE.MeshStandardMaterial({ roughness: 0.85 }), n), m4 = new THREE.Matrix4(), q4 = new THREE.Quaternion(), v3 = new THREE.Vector3(), sc = new THREE.Vector3(), up = new THREE.Vector3(0, 1, 0), col = new THREE.Color();
+    // neighbourhoods: blobs of the noise field, filled street block by street block on a 9 m grid turned to each
+    // neighbourhood's own orientation (houses touch along the block, streets between the blocks)
+    let k = 0; const nz = makeNoise(77), taken = new Set();
+    for (let t = 0; t < n * 30 && k < n; t++) {
+      const a = rng() * 6.283, r = 260 + Math.pow(rng(), 0.8) * 1500, x0 = R.center.x + Math.cos(a) * r, z0 = R.center.z + Math.sin(a) * r;
+      if (nz.fbm(x0 / 340, z0 / 340, 2) < 0.12) continue;
+      const ang = Math.floor(nz(x0 / 900, z0 / 900) * 8) * 0.39, ca = Math.cos(ang), sa = Math.sin(ang);
+      const gu = Math.round((x0 * ca + z0 * sa) / 9), gv = Math.round((-x0 * sa + z0 * ca) / 9);
+      if (gu % 6 === 0 || gv % 4 === 0) continue; // the streets
+      const key = gu * 100003 + gv; if (taken.has(key)) continue;
+      const x = (gu * ca - gv * sa) * 9, z = (gu * sa + gv * ca) * 9;
+      if (D(x, z) < 140 || keepOut.some(o => (o.x - x) ** 2 + (o.z - z) ** 2 < o.r * o.r)) continue;
+      taken.add(key);
+      const h = 3 + Math.floor(rng() * 3.2) * 2.8;
+      m4.compose(v3.set(x, H(x, z) - 0.5, z), q4.setFromAxisAngle(up, -ang), sc.set(8.4, h, 8.4));
+      im.setMatrixAt(k, m4); im.setColorAt(k, col.setHex([0xe8d5b5, 0xd9734a, 0xf2c14e, 0x6fa8a3, 0xe8e2d6, 0xc65a5a, 0x8fb06c, 0xb9b0a3, 0xd8d0c4, 0xa9a39a][(rng() * 10) | 0]).multiplyScalar(0.72 + rng() * 0.25)); k++;
+    }
+    im.count = k; world.add(im);
+    // billboard towers beside the approaches
+    for (let k = 0; k < 10; k++) { const p = site(60, 260, 6); if (!p) break; const yaw = rng() * Math.PI;
+      add('metal', at(B(0.8, 14, 0.8, 0, 0, 0, hex(0x777c82)), p.x, p.z, yaw)); add('solid', at(B(12, 5, 0.4, 0, 14, 0, hex([0xe10600, 0x1e5bd8, 0xf5c518, 0x1f8f4e][(rng() * 4) | 0])), p.x, p.z, yaw)); keep(p.x, p.z, 8); }
+  }
+  // ---------------------------------------------------------------- crowds on banks and terraces (one instanced mesh)
+  if (crowdPts.length) {
+    const geo = new THREE.BoxGeometry(0.45, 1.65, 0.32); geo.translate(0, 0.82, 0);
+    const n = Math.min(crowdPts.length, Q === 2 ? 9000 : Q === 1 ? 5000 : 2000);
+    const im = new THREE.InstancedMesh(geo, animateCrowd(new THREE.MeshStandardMaterial({ roughness: 0.9 })), n), m4 = new THREE.Matrix4(), q4 = new THREE.Quaternion(), up = new THREE.Vector3(0, 1, 0), v3 = new THREE.Vector3(), one = new THREE.Vector3(1, 1, 1), col = new THREE.Color();
+    for (let k = 0; k < n; k++) { const [x, y, z, yaw] = crowdPts[k]; m4.compose(v3.set(x, y, z), q4.setFromAxisAngle(up, yaw), one); im.setMatrixAt(k, m4); im.setColorAt(k, col.setHex([0xe53935, 0x1e88e5, 0xfdd835, 0xffffff, 0x222222, 0xff7043, 0x43a047, 0x8e24aa][(rng() * 8) | 0]).lerp(CROWD_GREY, 0.35)); }
+    im.count = n; world.add(im);
+  }
+  // ---------------------------------------------------------------- merge the batches
+  const matFor = { solid: mats.solid, metal: mats.metal, glass: mats.glass, road: mats.road, fabric: mats.fabric, leaf: mats.leaf, fence: new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.6, metalness: 0.5, transparent: true, opacity: 0.55, side: THREE.DoubleSide, depthWrite: false }) };
+  for (const [key, list] of batches) {
+    if (!list.length) continue;
+    const m = new THREE.Mesh(mergeGeoms(list, true), matFor[key]); m.castShadow = Q === 2 && key !== 'road' && key !== 'fence'; m.receiveShadow = true; if (key === 'road') m.userData.kind = 'service road';
+    world.add(m);
+  }
+}
+
 function buildWorld(scene, track, T, opts) {
   const world = new THREE.Group(); scene.add(world);
   const wet = opts.wet; const Q = opts.quality; const P = wet ? SKY.wet : SKY.dry, env = R.env;
@@ -6942,7 +7384,9 @@ function buildWorld(scene, track, T, opts) {
 
   // ---------- terrain ----------
   const terrain = buildTerrain(world, track, T, opts); R.heightAt = terrain.heightAt; R.distAt = terrain.distAt;
-  const inLake = (x, z) => lakeE(x, z) < 1.12 || riverDist(x, z) < 60;
+  // where no tree may stand: water, and the venue's buildings, car parks and campsites (R.keepOut, see buildVenue)
+  R.keepOut = [];
+  const inLake = (x, z) => lakeE(x, z) < 1.12 || riverDist(x, z) < 60 || R.keepOut.some(k => (k.x - x) ** 2 + (k.z - z) ** 2 < k.r * k.r);
   const wm = makeWaterMaterial(wet); R.waterMat = wm;
 
   // ---------- lake ----------
@@ -7036,6 +7480,7 @@ function buildWorld(scene, track, T, opts) {
     im.count = k2; im.castShadow = Q === 2; world.add(im);
   }
   buildLandmarks(world, track, terrain, opts);
+  buildVenue(world, track, terrain, opts);
   // ---------- clouds ----------
   {
     const rng = seededRand(3); const count = wet || env.floodlit ? 0 : Q === 0 ? 14 : 30;
@@ -7417,6 +7862,36 @@ function buildTrack(scene, track, T, opts) {
       for (const n of [100, 200, 300]) if (panels[n].length) G.add(new THREE.Mesh(mergeGeoms(panels[n]), new THREE.MeshStandardMaterial({ map: boardTex(n), roughness: .6 })));
     }
   }
+  // ---- recommended corner-speed signs (SIM.cornerSpeedSigns): a number in km/h and the corner's direction ----
+  {
+    const signTex = (kmh, dir) => canvasTex(256, 224, (g, w, hh) => {
+      g.fillStyle = '#0d2a5c'; g.fillRect(0, 0, w, hh);
+      g.strokeStyle = '#ffffff'; g.lineWidth = 8; g.strokeRect(6, 6, w - 12, hh - 12);
+      g.fillStyle = '#ffd21f'; g.beginPath(); // the corner's direction: a bent arrow
+      const ax = w / 2, ay = 56, sx = dir > 0 ? 1 : -1;
+      g.moveTo(ax - 50 * sx, ay + 26); g.lineTo(ax - 50 * sx, ay - 4); g.lineTo(ax + 18 * sx, ay - 4); g.lineTo(ax + 18 * sx, ay - 24);
+      g.lineTo(ax + 52 * sx, ay + 4); g.lineTo(ax + 18 * sx, ay + 32); g.lineTo(ax + 18 * sx, ay + 12); g.lineTo(ax - 32 * sx, ay + 12); g.lineTo(ax - 32 * sx, ay + 26); g.closePath(); g.fill();
+      g.fillStyle = '#ffffff'; g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.font = '900 96px Titillium Web, Arial'; g.fillText(String(kmh), w / 2, 140);
+      g.font = '700 30px Titillium Web, Arial'; g.fillText('km/h', w / 2, 196);
+    });
+    const byTex = new Map(), frame = [];
+    for (const sg of SIM.cornerSpeedSigns(track)) {
+      const s = sg.s, i = sg.i, side = sg.side, wall = side > 0 ? track.wallR[i] : track.wallL[i];
+      const dd = wall + 1.6; // behind the barrier, clear of the braking boards' line
+      const [x, z, h] = track.pointAt(s, side * dd);
+      const yaw = Math.atan2(-Math.cos(h), -Math.sin(h));
+      if (!sceneryClear(track, x, z, 0.6)) continue;
+      const key = sg.kmh + ':' + sg.dir; if (!byTex.has(key)) byTex.set(key, { kmh: sg.kmh, dir: sg.dir, list: [] });
+      byTex.get(key).list.push(xf(new THREE.PlaneGeometry(2.0, 1.75), { p: [x - Math.cos(h) * 0.06, 2.6, z - Math.sin(h) * 0.06], r: [0, yaw, 0] }));
+      frame.push(xf(new THREE.BoxGeometry(2.08, 1.83, 0.1), { p: [x, 2.6, z], r: [0, yaw, 0] }));
+      for (const o of [-0.75, 0.75]) frame.push(xf(new THREE.CylinderGeometry(0.06, 0.06, 1.8, 6), { p: [x + Math.cos(yaw) * o, 0.9, z - Math.sin(yaw) * o] }));
+    }
+    if (frame.length) {
+      G.add(new THREE.Mesh(mergeGeoms(frame), new THREE.MeshStandardMaterial({ color: 0x8c9198, roughness: .5, metalness: .5 })));
+      for (const v of byTex.values()) G.add(new THREE.Mesh(mergeGeoms(v.list), new THREE.MeshStandardMaterial({ map: signTex(v.kmh, v.dir), roughness: .55, emissive: 0x111111 })));
+    }
+  }
   // ---- TV camera towers (the trackside broadcast positions) ----
   if (opts.broadcastTowers && opts.broadcastTowers.length) {
     const metal = [], kit = [];
@@ -7586,17 +8061,19 @@ function buildGrandstands(G, track, T, opts, objs) {
 
 function buildTrees(scene, track, inLake, opts) {
   const Q = opts.quality, env = R.env, canyon = env.style === 'canyon';
-  const count = Math.round((Q === 2 ? 7000 : Q === 1 ? 4000 : 1500) * (env.forest ?? 1));
+  // trees per circuit: dense woods at Spa, Monza and Suzuka, open country at Silverstone, a few palms in Bahrain;
+  // planted within 1.6 km of the circuit, where they are seen
+  const count = Math.round((Q === 2 ? 14000 : Q === 1 ? 8000 : 3000) * (env.forest ?? 1));
   const heightAt = R.heightAt || (() => 0), distAt = R.distAt;
   const paint = (g, c) => { const n = g.attributes.position.count; const a = new Float32Array(n * 3); const p = g.attributes.position; for (let k = 0; k < n; k++) { const shade = 0.82 + 0.25 * Math.min(1, Math.max(0, (p.getY(k) - 2) / 12)); a[k * 3] = c[0] * shade; a[k * 3 + 1] = c[1] * shade; a[k * 3 + 2] = c[2] * shade; } g.setAttribute('color', new THREE.BufferAttribute(a, 3)); return g; };
   // spruce: four tiers of drooping cones
   const trunk = new THREE.CylinderGeometry(0.28, 0.45, 3.2, 6); trunk.translate(0, 1.6, 0);
-  const tiers = [[3.4, 5.0, 4.6], [2.8, 4.4, 7.2], [2.1, 3.8, 9.6], [1.3, 3.2, 11.8]].map(([r, h, y]) => { const c = new THREE.ConeGeometry(r, h, 8, 1, true); c.translate(0, y, 0); return paint(c, [0.17, 0.32, 0.18]); });
+  const tiers = [[3.4, 5.0, 4.6], [2.8, 4.4, 7.2], [2.1, 3.8, 9.6], [1.3, 3.2, 11.8]].map(([r, h, y]) => { const c = new THREE.ConeGeometry(r, h, 8, 1, true); c.translate(0, y, 0); return paint(c, [0.11, 0.23, 0.12]); });
   const spruce = mergeGeoms([paint(trunk, [0.32, 0.22, 0.15]), ...tiers]);
   // broadleaf: lumpy icosahedron crown
   const bt = new THREE.CylinderGeometry(0.3, 0.42, 3.6, 6); bt.translate(0, 1.8, 0);
   const crown = new THREE.IcosahedronGeometry(3.6, 1); { const p = crown.attributes.position; const r2 = seededRand(8); for (let k = 0; k < p.count; k++) { const f = 0.85 + r2() * 0.3; p.setXYZ(k, p.getX(k) * f, p.getY(k) * f * 0.9, p.getZ(k) * f); } crown.translate(0, 6.3, 0); }
-  const broad = mergeGeoms([paint(bt, [0.34, 0.25, 0.17]), paint(crown.toNonIndexed(), canyon ? [0.3, 0.36, 0.2] : [0.26, 0.42, 0.18])]);
+  const broad = mergeGeoms([paint(bt, [0.34, 0.25, 0.17]), paint(crown.toNonIndexed(), canyon ? [0.3, 0.36, 0.2] : [0.17, 0.3, 0.11])]);
   // date palms in the desert: a tall bare trunk and a flat crown of fronds
   let palm = null;
   if (env.desert) {
@@ -7606,7 +8083,7 @@ function buildTrees(scene, track, inLake, opts) {
   }
   const mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .92, flatShading: true, side: env.desert ? THREE.DoubleSide : THREE.FrontSide });
   // forest density: clustered with noise so the hills get woods and clearings
-  const nz = makeNoise(41); const rng = seededRand(23);
+  const rng = seededRand(23);
   const CH = 520, chunks = new Map();
   const put = (kind, x, y, z, s, rot, colr) => {
     const key = kind + ':' + Math.floor(x / CH) + ',' + Math.floor(z / CH);
@@ -7614,13 +8091,15 @@ function buildTrees(scene, track, inLake, opts) {
     c.list.push([x, y, z, s, rot, colr]);
   };
   let n = 0, tries = 0;
-  while (n < count && tries < count * 30) {
+  while (n < count && tries < count * 40) {
     tries++;
     const x = R.center.x - 2500 + rng() * 5000, z = R.center.z - 2300 + rng() * 4600;
-    const forest = nz.fbm(x / 520, z / 520, 3) + (canyon ? 0.05 : 0.15);
-    if (rng() > forest * 1.8) continue;
+    const dT = distAt ? distAt(x, z) : 1e9; if (dT < 40 || dT > 1600) continue;
+    // woods: dense where the woods pattern is high, the odd lone tree elsewhere
+    // the more wooded the circuit's setting, the lower the woods threshold (Spa nearly all forest, Silverstone open)
+    const thr = 0.34 - 0.2 * (env.forest ?? 1), forest = woodsAt(x, z), w = smooth01(thr, thr + 0.34, forest);
+    if (rng() > 0.03 + w * w * 1.1) continue;
     if (inLake(x, z)) continue;
-    const dT = distAt ? distAt(x, z) : 1e9; if (dT < 75) continue;
     if (CASTLE && Math.hypot(x - CASTLE.x, z - CASTLE.z) < 230) continue;
     const y = heightAt(x, z); if (y > 420) continue;
     // exact clearance from the circuit for trees near it
@@ -7630,7 +8109,7 @@ function buildTrees(scene, track, inLake, opts) {
       if (track.pitProg(proj.s) >= 0 && ad < 90) continue;
       if (Math.abs(track.dS(0, proj.s)) < 420 && ad < 90) continue;
     }
-    const s = (0.75 + rng() * 0.8) * (canyon ? 0.7 : 1); const isBroad = y < 120 && rng() < (env.broadleaf ?? 0.32);
+    const s = (0.8 + rng() * 0.7 + w * 0.6) * (canyon ? 0.7 : 1); const isBroad = y < 120 && rng() < (env.broadleaf ?? 0.32);
     const tint = 0.8 + rng() * 0.35, hue = rng();
     put(isBroad ? 'b' : 's', x, y - 0.4, z, s, rng() * 6.28, [tint * (0.9 + hue * 0.25), tint, tint * (0.9 + (1 - hue) * 0.15)]);
     n++;
@@ -9053,8 +9532,8 @@ function startRace(gridOrder, entries) {
     fuelInfo();
   }
   const descriptions = {
-    S: ['Highest grip and traction; wears fast.', 'Fast opening or closing stints, one or two stops'],
-    H: ['Lower grip, but long and steady life.', 'Long stints; a careful driver can run all six laps'],
+    S: ['Highest grip and traction; wears fast.', 'Short, fast stints with one pit stop'],
+    H: ['Lower grip, but long and steady life.', 'Long stints; lasts the whole six-lap race'],
     I: ['For damp conditions.', 'Damp track / overheats on dry asphalt'],
     W: ['For heavy rain.', 'Standing water / overheats on dry asphalt'],
   };
@@ -9065,7 +9544,7 @@ function startRace(gridOrder, entries) {
     b.setAttribute('aria-pressed', String(c === G.briefCompound));
     b.innerHTML = '<span class="brief-selected" aria-hidden="true">' + briefIcon('check') + 'SELECTED</span>' + briefTyreArt(c)
       + '<span class="brief-tyre-copy"><b>' + comp.name + '</b><span>' + descriptions[c][0] + '</span></span>'
-      + '<div class="brief-tyre-facts"><p>' + briefIcon('clock') + '<span>60% worn after ~ <b>' + comp.life + ' laps</b></span></p>'
+      + '<div class="brief-tyre-facts"><p>' + briefIcon('clock') + '<span>60% worn after ~ <b>' + (comp.life * 6000 / (G.track ? G.track.length : 6000)).toFixed(1) + ' laps</b> here</span></p>'
       + '<p>' + briefIcon('bars') + '<span>Best use: ' + descriptions[c][1] + '</span></p></div>';
     b.onclick = () => {
       G.briefCompound = c;
@@ -9244,7 +9723,6 @@ function updateStrategyUI(p, sess) {
   const wear=Math.max(...p.tyre.wear), rate=SIM.wearPerLap(sess,p,p.tyre.c);
   const life=rate>0?Math.max(0,(SIM.USEFUL_WEAR-wear)/rate):Infinity;
   const lifeText=isFinite(life)?life.toFixed(1)+' laps':'—';
-  $('tyreLife').innerHTML='USEFUL LIFE <b>~'+lifeText+'</b>'; $('tyreNext').innerHTML=sess.fuelEnabled?'FUEL <b>≈'+sess.fuelRange(p).toFixed(1)+' L</b>':'STYLE <b>'+p.tyre.style.name+'</b>';
   $('strategyTitle').textContent = sess.fuelEnabled ? 'TYRES, FUEL & PIT STOP' : 'TYRES & PIT STOP';
   $('strategyFuel').classList.toggle('hidden', !sess.fuelEnabled);
   if($('strategyPanel').classList.contains('hidden')) return;
@@ -9276,6 +9754,8 @@ function hudMessages() {
     const relevant = !m.car || m.car === G.focus || m.kind === 'purple' || m.kind === 'critical' || m.kind === 'big' || (m.kind === 'pit' && m.car === G.focus);
     if (G.attract) continue;
     if (m.kind === 'pit' && m.car !== G.focus) continue;
+    // damage is shown by the car status panel (with a brief flash), never as a text pop-up
+    if (m.kind === 'dmg') continue;
     if (m.kind === 'critical' && m.car && m.car !== G.focus && sess.cars.length > 12 && !m.car.isPlayer) continue;
     if (relevant) pushMsg(m.text, m.kind, m.dur);
   }
@@ -9618,67 +10098,46 @@ function drawMinimap() {
     g.lineWidth = me ? 3.5 : 2; g.strokeStyle = me ? '#fff' : 'rgba(0,0,0,.7)'; g.stroke();
   }
 }
+// damage colour from 0 (healthy) to 1 (destroyed): amber, orange, red
+const DMG_COL = (d) => d >= 0.55 ? '#ff3b3b' : d >= 0.25 ? '#ff8a1f' : '#f5c518';
+const WHEEL_SHORT = ['Front-left', 'Front-right', 'Rear-left', 'Rear-right'];
+// Car status: one word (OK, DAMAGED, RETIRING, RETIRED) and, only when something matters, up to three short lines
+// saying what the damage does to the car. A new problem flashes the status row briefly (no text pop-up).
 function updateVehicleStatus(p, sess) {
-  const el = $('vstat'), D = p.damage, c = D.c;
-  const show = !p.inGarage && (!D.isClean() || D.engT > 115 || !!p.retiring || D.scuff > 0.05);
-  el.classList.toggle('hidden', !show); $('hud-br').classList.toggle('dmg', show);
-  // the car silhouette in the tyre panel doubles as the component diagram: neutral while the car is healthy
-  const fill = (id, d) => { $(id).setAttribute('fill', show ? DMG_COL(d) : '#cfd5df'); };
-  fill('vsFwL', D.detached[0] ? 1 : c[0]); fill('vsFwR', D.detached[1] ? 1 : c[1]); fill('vsRw', D.detached[2] ? 1 : c[2]);
-  $('vsFloor').setAttribute('stroke', show ? DMG_COL(c[3]) : 'rgba(207,213,223,.6)');
-  fill('vsChas', c[10]); fill('vsEng', D.failed === 'engine' ? 1 : Math.max(c[8], D.engT > 125 ? 0.3 : 0));
-  fill('vsCoolL', c[9]); fill('vsCoolR', c[9]);
-  const blink = performance.now() % 600 < 300;
+  const D = p.damage, c = D.c, fatal = sess.damageLevel.fatal, rows = [];
+  // [severity, text]
+  if (p.retiring) rows.push([2, (p.dnf ? 'Out of the race' : 'Stopping') + (p.retiring.reason ? ' — ' + p.retiring.reason.toLowerCase() : '')]);
   for (let i = 0; i < 4; i++) {
-    $('vsS' + i).setAttribute('stroke', show ? DMG_COL(c[4 + i] >= sess.damageLevel.fatal ? 1 : c[4 + i]) : 'rgba(207,213,223,.7)');
-    $('vsT' + i).setAttribute('fill', D.shred[i] ? '#4a4f58' : D.punctRate[i] > 0 ? (blink ? '#ff3b3b' : '#5a1010') : '#7d8696');
+    if (D.shred[i]) rows.push([1.2, WHEEL_SHORT[i] + ' tyre destroyed']);
+    else if (D.punctRate[i] > 0) rows.push([1.1, WHEEL_SHORT[i] + ' tyre puncture']);
   }
-  if (!show) return;
-  // problems, worst first: [severity, component, state, effect]
-  const rows = [];
-  const pct = (d) => Math.round(d * 100) + '%';
-  const state = (d) => d >= 0.55 ? 'SEVERE' : d >= 0.25 ? 'DAMAGED' : 'MINOR';
   const fw = D.fw;
-  if (D.detached[0] || D.detached[1]) rows.push([1, 'Front wing', 'LOST', 'Heavy understeer']);
-  else if (fw > 0.04) rows.push([fw, 'Front wing ' + pct(fw), state(fw), fw > 0.4 ? 'Heavy understeer' : 'Less front grip']);
-  for (let i = 0; i < 4; i++) {
-    if (D.shred[i]) rows.push([1.2, WHEEL_SHORT[i] + ' tyre', 'DESTROYED', 'Box now']);
-    else if (D.punctRate[i] > 0) rows.push([1.1, WHEEL_SHORT[i] + ' tyre', 'PUNCTURE', 'Pit']);
-  }
-  if (D.detached[2]) rows.push([1, 'Rear wing', 'LOST', 'Unstable rear']);
-  else if (c[2] > 0.04) rows.push([c[2], 'Rear wing ' + pct(c[2]), state(c[2]), 'Less rear stability']);
-  for (let i = 0; i < 4; i++) if (c[4 + i] > 0.04) rows.push([c[4 + i], WHEEL_SHORT[i] + ' suspension ' + pct(c[4 + i]), c[4 + i] >= sess.damageLevel.fatal ? 'BROKEN' : state(c[4 + i]), 'Pulls ' + (i % 2 ? 'right' : 'left')]);
-  if (c[3] > 0.04) rows.push([c[3] * 0.9, 'Floor ' + pct(c[3]), state(c[3]), 'Less downforce']);
-  if (D.failed === 'engine') rows.push([1.3, 'Power unit', D.fire ? 'FIRE' : 'FAILED', 'No power']);
-  else if (c[8] > 0.04) rows.push([c[8], 'Power unit ' + pct(c[8]), state(c[8]), '−' + Math.round((1 - D.perf.power) * 100) + '% power']);
-  if (D.engT > 115 && D.failed !== 'engine') rows.push([D.engT > 125 ? 0.7 : 0.3, 'Engine ' + Math.round(D.engT) + '°C', D.engT > 125 ? 'OVERHEATING' : 'HOT', D.engT > 125 ? 'Lift and coast' : 'Running hot']);
-  if (c[9] > 0.04) rows.push([c[9], 'Cooling ' + pct(c[9]), state(c[9]), D.leak > 0.05 ? 'Leaking' : 'Runs hot']);
-  if (c[10] > 0.04) rows.push([c[10] * 1.4, 'Chassis ' + pct(c[10]), state(c[10]), 'Structural']);
-  if (!rows.length && D.scuff > 0.05) rows.push([0, 'Bodywork', 'SCUFFED', 'Cosmetic only']);
-  rows.sort((a, b) => b[0] - a[0]);
-  $('vsRows').innerHTML = rows.slice(0, 3).map(r => { const col = r[0] >= 1 ? '#ff3b3b' : DMG_COL(Math.max(0.06, r[0])); return `<div><i style="background:${col}"></i><span class="c">${r[1]}</span><span class="s" style="color:${col}">${r[2]}</span><span class="e l"></span><span class="e">${r[3]}</span></div>`; }).join('');
-  const sev = p.retiring ? 2 : D.severity();
+  if (D.detached[0] || D.detached[1]) rows.push([1, 'Front wing lost — heavy understeer']);
+  else if (fw > 0.1) rows.push([fw, fw > 0.4 ? 'Front wing damaged — understeer' : 'Front wing damaged']);
+  if (D.detached[2]) rows.push([1, 'Rear wing lost — unstable rear']);
+  else if (c[2] > 0.15) rows.push([c[2], 'Rear wing damaged']);
+  let pull = 0, sus = 0;
+  for (let i = 0; i < 4; i++) if (c[4 + i] > 0.12) { sus = Math.max(sus, c[4 + i]); pull += (i % 2 ? 1 : -1) * c[4 + i]; }
+  if (sus > 0) rows.push([sus >= fatal ? 1 : sus, 'Suspension damaged' + (Math.abs(pull) > 0.08 ? ' — pulls ' + (pull > 0 ? 'right' : 'left') : '')]);
+  if (c[3] > 0.15) rows.push([c[3] * 0.9, 'Floor damaged — less grip']);
+  if (D.failed === 'engine') rows.push([1.3, D.fire ? 'Engine fire' : 'Engine failure']);
+  else if (c[8] > 0.15) rows.push([c[8], 'Engine damage — power down']);
+  else if (D.engT > 125) rows.push([0.7, 'Engine overheating']);
+  if (c[9] > 0.2 && D.failed !== 'engine') rows.push([c[9] * 0.8, 'Cooling damaged']);
+  if (c[10] > 0.2) rows.push([c[10], 'Chassis damaged']);
+  rows.sort((x, y) => y[0] - x[0]);
+  const word = p.retiring ? (p.dnf ? 'RETIRED' : 'RETIRING') : rows.length ? 'DAMAGED' : 'OK';
   const badge = $('vsBadge');
-  badge.textContent = p.retiring ? (p.dnf ? 'RETIRED' : 'RETIRING') : sev < 0.05 ? 'OK' : sev < 0.25 ? 'MINOR' : sev < 0.55 ? 'DAMAGED' : 'SEVERE';
-  badge.style.background = p.retiring ? '#e53935' : sev < 0.05 ? '#2e7d4f' : sev < 0.25 ? '#b8860b' : sev < 0.55 ? '#c2410c' : '#c62828';
-  // Factual component and service estimates; no pit recommendation.
-  const pit = $('vsPit'), kv = (k, v, col) => `<div>${k}<b style="color:${col || '#fff'}">${v}</b></div>`;
-  const drivable = p.retiring ? (p.dnf ? 'Out of the race' : 'Stop the car safely') : 'Drivable';
-  const status = kv('Car status', drivable, p.retiring ? '#ff6b6b' : '#3ee07a');
-  if (p.retiring) { pit.innerHTML = status; return; }
-  if (p.pit) { const P = p.pit; pit.innerHTML = kv('Pit lane', P.phase === 'awaiting' ? (sess.fuelEnabled ? 'Choose tyres and fuel' : 'Choose tyres') : P.phase === 'release' ? 'Waiting for a safe release' : P.phase === 'stopped' ? 'Crew working' : P.phase === 'out' ? 'Automatic pit exit' : P.phase === 'queue' ? 'Queueing for a box' : 'Automatic pit entry', '#f5c518') + status; return; }
-  const plan = D.repairPlan({ service: true }); const loss = D.lapLoss();
-  const punct = D.anyPuncture();
-  const items = (punct ? ['Tyres'] : []).concat(plan.items);
-  if (!items.length) {
-    const fixed = loss.fixed > 0.3;
-    pit.innerHTML = kv('Repairable', fixed ? 'Not in the pits' : 'No repair needed', fixed ? '#ff8a1f' : '#9aa3b2') + status;
-  } else {
-    const urgent = punct || D.detached[0] || D.detached[1] || D.detached[2] || fw > 0.5 || c[2] > 0.5;
-    const stopT = Math.max(2.4, plan.time);
-    pit.innerHTML = kv('Repairable', items.join(' + '), urgent ? '#ff6b6b' : '#fff') + kv('Est. stop time', '≈ ' + stopT.toFixed(1) + ' s') +
-      (loss.rep > 0.05 && loss.rep < 20 ? kv('Time lost', '≈ ' + loss.rep.toFixed(1) + ' s/lap', loss.rep > 0.6 ? '#f5c518' : '#dfe4ec') : '') + status;
+  badge.textContent = word;
+  badge.style.background = word === 'OK' ? '#2e7d4f' : word === 'DAMAGED' ? (rows[0][0] >= 0.55 ? '#c62828' : '#c2410c') : '#e53935';
+  $('vstat').classList.toggle('hidden', !rows.length);
+  $('vsRows').innerHTML = rows.slice(0, 3).map(r => '<div><i style="background:' + (r[0] >= 1 ? '#ff3b3b' : DMG_COL(Math.max(0.1, r[0]))) + '"></i>' + r[1] + '</div>').join('');
+  // a new or worse problem: flash the status row
+  const sig = rows.map(r => r[1]).join('|') + Math.round((rows[0] ? rows[0][0] : 0) * 10);
+  if (G.dmgCar === p && G.dmgSig != null && sig !== G.dmgSig && rows.length) {
+    const el = $('hud-br'); el.classList.remove('hit'); void el.offsetWidth; el.classList.add('hit');
   }
+  G.dmgCar = p; G.dmgSig = sig;
 }
 let hudT = 0;
 function updateHud(dt) {
@@ -9696,41 +10155,43 @@ function updateHud(dt) {
   hudT += dt; if (hudT < 0.066) return; hudT = 0;
   const p = car;
   $('spdUnit').textContent = 'KM/H';
-  // top-right
+  // top-right: lap and position (from the race classification), current and best lap
+  const lapsTotal = sess.totalLaps || SIM.GAME_MODES.grandprix.laps;
+  $('lapNow').textContent = p.finished ? lapsTotal : Math.min(lapsTotal, Math.max(1, (p.laps || 0) + 1));
+  $('lapTot').textContent = '/ ' + lapsTotal;
   $('posNow').textContent = p.position || '-'; $('posTot').textContent = '/ ' + sess.cars.length;
   $('tBest').textContent = p.bestLap ? fmt(p.bestLap) : '--:--.---';
   const started = sess.lightsOut;
   const cur = started ? sess.time - (sess.type === 'race' && p.crossings === 0 ? sess.lightsOutTime : p.lapStart) : 0;
   $('tCur').textContent = fmt(Math.max(0, cur));
   $('tCur').style.color = !p.lapValid && sess.type === 'race' ? '#ff6b6b' : '';
-  // pit limiter / fuel
+  // pit limiter and slide chips under the dashboard
   $('chipLim').style.display = p.pit && G.track.inLimiter(p.s) ? '' : 'none';
   const dr = $('chipDrift'); const sa = Math.abs(p.slideAngle || 0);
   if (sa > 0.08 && p.speed > 6) { dr.style.display = ''; dr.textContent = 'SLIDE ' + Math.round(sa * 57.3) + '°'; } else dr.style.display = 'none';
-  // fuel: estimated laps of range from the car's own consumption (an estimate, not a guarantee)
-  const showFuel = sess.fuelEnabled;
-  const compact = !showFuel && $('chipLim').style.display === 'none' && $('chipDrift').style.display === 'none';
-  $('chipFuel').classList.toggle('hidden', !showFuel);
+  const compact = $('chipLim').style.display === 'none' && $('chipDrift').style.display === 'none';
   $('dashStatus').classList.toggle('hidden', compact);
   $('hud-bc').classList.toggle('compact', compact);
-  if (showFuel) {
-    const range = sess.fuelRange(p), toGo = sess.type === 'race' ? sess.lapsLeft(p) : Infinity;
-    $('fuelVal').textContent = '≈' + range.toFixed(1) + ' LAPS'; $('chipFuel').title = p.fuel.toFixed(1) + ' kg in the tank';
-    $('chipFuel').className = 'chip' + (sess.type === 'race' && range < toGo && range < 1.3 ? ' warn' : '');
-  }
-  // tyres
+  // weather: the forecast's chance of rain (the same public forecast the AI teams use) and how wet the track is
+  const W = sess.weather, fc = W ? W.forecast() : null, wet = clamp(p.surfaceWet ?? sess.wet ?? 0, 0, 1);
+  $('wxRain').textContent = Math.round((fc ? fc.probability : 0) * 100) + '%';
+  $('wxWet').textContent = Math.round(wet * 100) + '%';
+  $('wxIcon').style.setProperty('--wx', W && W.raining ? 'var(--wx-rain)' : W && W.cloud > 0.55 ? 'var(--wx-cloud)' : 'var(--wx-sun)');
+  // tyres: compound and one overall wear figure (the mean of the four tyres)
   const comp = SIM.COMPOUNDS[p.tyre.c];
-  $('cmpIcon').textContent = p.tyre.c; $('cmpIcon').style.setProperty('--c', comp.color); $('cmpName').textContent = comp.name.toUpperCase();
-  $('tyreLabel').textContent = 'TYRES';
-  for (let i = 0; i < 4; i++) {
-    const T = p.tyre.temp[i]; const dT = T - comp.topt;
-    const col = dT < -25 ? '#2f7bff' : dT < -10 ? '#29b6f6' : dT < 12 ? '#21c55d' : dT < 25 ? '#f5c518' : '#e53935';
-    $('tw' + i).style.background = col; $('tw' + i).style.opacity = (1 - p.tyre.wear[i] * 0.7).toFixed(2); $('tw' + i).style.boxShadow = '0 0 8px ' + col + '66';
-  }
+  $('cmpIcon').textContent = p.tyre.c; $('cmpIcon').style.setProperty('--c', comp.color); $('cmpName').textContent = comp.name;
   const wavg = (p.tyre.wear[0] + p.tyre.wear[1] + p.tyre.wear[2] + p.tyre.wear[3]) / 4;
   $('wearPct').textContent = Math.round(wavg * 100) + '%';
-  const sev = p.retiring ? 1 : p.damage.severity();
-  $('dmgTxt').innerHTML = 'CAR <b style="color:' + (sev < 0.05 ? '#fff' : DMG_COL(sev)) + '">' + (p.retiring ? 'OUT' : sev < 0.05 ? 'OK' : sev < 0.25 ? 'MINOR' : sev < 0.55 ? 'DAMAGED' : 'SEVERE') + '</b>';
+  const wb = $('wearBar'); wb.style.width = Math.round(clamp(wavg, 0, 1) * 100) + '%';
+  wb.style.background = wavg < 0.5 ? '#21c55d' : wavg < 0.7 ? '#f5c518' : wavg < 0.85 ? '#ff8a1f' : '#ff3b3b';
+  // fuel: estimated laps left at the car's own measured consumption, flagged when it will not reach the flag
+  const fuelRow = $('fuelVal').closest('.srow'); fuelRow.classList.toggle('hidden', !sess.fuelEnabled);
+  if (sess.fuelEnabled) {
+    const range = sess.fuelRangeLive(p), toGo = sess.type === 'race' && !p.finished ? sess.lapsLeft(p) : 0;
+    const short = toGo > 0 && range < toGo - 0.05;
+    $('fuelVal').textContent = range.toFixed(1) + ' LAPS' + (short ? ' · SHORT' : '');
+    $('fuelVal').classList.toggle('short', short);
+  }
   updateVehicleStatus(p, sess);
   updateStrategyUI(p, sess);
   // flags
@@ -10530,7 +10991,7 @@ function updateRain(dt) {
    Switch on with ?aidebug in the URL or F9 during a session; Shift+F9 picks the next AI car. While it is off nothing
    here runs, draws or allocates, and the planner keeps no candidate geometry. The panel shows one AI driver's mind:
    its tactical state and why, the chosen path and the candidates it weighed, where it predicts the cars around it
-   will be, where it means to brake, its personality and skill, and its recent decisions (moves, aborts, mistakes). */
+   will be, where it means to brake, its racing profile and skill, and its recent decisions (moves, aborts, mistakes). */
 const AIDIAG = { on: /[?&]aidebug\b/.test(location.search), focus: null, el: null, cvs: null, txt: null, t: 0 };
 function aiDiagFocus(sess) {
   const F = AIDIAG.focus;
