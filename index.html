@@ -9044,21 +9044,24 @@ function sidewallTex(comp) {
 // [tread, sidewall]; the blurred set is swapped in when the wheel spins fast
 function tyreMaterials(comp, blur = false) {
   const key = (blur ? 'tmb' : 'tm') + comp; if (MAT_CACHE[key]) return MAT_CACHE[key];
-  const tread = MAT_CACHE.tread || (MAT_CACHE.tread = new THREE.MeshStandardMaterial({ color: 0x1c1c1d, roughness: .74 }));
+  const tread = MAT_CACHE.tread || (MAT_CACHE.tread = new THREE.MeshStandardMaterial({ color: 0x29292b, roughness: .72 }));
   const side = new THREE.MeshStandardMaterial({ map: blur ? sidewallBlurTex(comp) : sidewallTex(comp), roughness: .78 });
   return MAT_CACHE[key] = [tread, side];
 }
 function textTex(txt, color, bg, w = 512, h = 96, font = '900 70px Titillium Web, Arial', spacing = 12) {
   return canvasTex(w, h, (g) => { if (bg) { g.fillStyle = bg; g.fillRect(0, 0, w, h); } else g.clearRect(0, 0, w, h); g.fillStyle = color; g.font = font; g.textAlign = 'center'; g.textBaseline = 'middle'; if (g.letterSpacing !== undefined) g.letterSpacing = spacing + 'px'; g.fillText(txt, w / 2, h / 2 + 4); });
 }
+const CAR_EXPOSURE = 1.28; // livery brightness multiplier
 function makeCarMesh(car, opts = {}) {
   const geo = carGeometries(); const team = car.team;
   const grp = new THREE.Group();
   // per-car materials share the car's part mask (broken-off pieces)
   const mask = { value: 0 }, depthMat = partMask(new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking }), mask);
-  const bodyMat = partMask(new THREE.MeshPhysicalMaterial({ color: 0xffffff, map: liveryTex(team), roughness: 0.36, metalness: team.id === 'voltex' ? 0.25 : 0.12, clearcoat: 0.6, clearcoatRoughness: 0.3, specularIntensity: 0.6, envMapIntensity: 1.0 }), mask);
-  const accentMat = partMask(new THREE.MeshPhysicalMaterial({ color: team.c2, roughness: 0.35, metalness: team.id === 'voltex' ? 0.85 : 0.3, clearcoat: 0.5, clearcoatRoughness: 0.3, specularIntensity: 0.6 }), mask);
-  const carbonMat = partMask(new THREE.MeshStandardMaterial({ color: 0x15171a, roughness: 0.45, metalness: 0.3 }), mask);
+  // (cars are exposed brighter than the scenery around them — a lighter livery and stronger sky reflections — so they
+  // read clearly in the chase view, in the shade and in the rain)
+  const bodyMat = partMask(new THREE.MeshPhysicalMaterial({ color: new THREE.Color(CAR_EXPOSURE, CAR_EXPOSURE, CAR_EXPOSURE), map: liveryTex(team), roughness: 0.34, metalness: team.id === 'voltex' ? 0.25 : 0.12, clearcoat: 0.6, clearcoatRoughness: 0.28, specularIntensity: 0.6, envMapIntensity: 1.8 }), mask);
+  const accentMat = partMask(new THREE.MeshPhysicalMaterial({ color: new THREE.Color(team.c2).multiplyScalar(CAR_EXPOSURE * 0.92), roughness: 0.34, metalness: team.id === 'voltex' ? 0.85 : 0.3, clearcoat: 0.5, clearcoatRoughness: 0.28, specularIntensity: 0.6, envMapIntensity: 1.7 }), mask);
+  const carbonMat = partMask(new THREE.MeshStandardMaterial({ color: 0x25282d, roughness: 0.42, metalness: 0.3, envMapIntensity: 1.6 }), mask);
   const mirrorMat = partMask(new THREE.MeshStandardMaterial({ color: 0xc8ced6, metalness: 1, roughness: 0.06 }), mask);
   const darkMat = MAT_CACHE.dark || (MAT_CACHE.dark = new THREE.MeshStandardMaterial({ color: 0x050506, roughness: 0.6 }));
   const add = (g, m, shadow = true) => { const mesh = new THREE.Mesh(g, m); mesh.castShadow = shadow; mesh.receiveShadow = true; if (m !== darkMat) mesh.customDepthMaterial = depthMat; grp.add(mesh); return mesh; };
@@ -9874,10 +9877,12 @@ function clearPlayerAssists(car) {
 // in corners and sink lower with speed. Shake is smooth (layered sines, applied as rotation) and comes from kerbs,
 // rough ground, high-speed buffeting and damage; impacts give a directional jolt that settles like a damped spring.
 const _lookW = new THREE.Vector3();
+// the chase camera: metres behind the car, height, look-ahead point and field of view (fixed in every situation)
+const CHASE = { dist: 5.2, height: 1.62, ahead: 4, lookY: 0.82, fov: 60 };
 class CameraRig {
   constructor(camera) {
     this.camera = camera; this.pos = new THREE.Vector3(); this.look = new THREE.Vector3(); this.yaw = 0; this.init = false;
-    this.shake = 0; this.fov = 62; this.dOff = 0; this.lat = 0; this.fovKick = 0; this.t = 0;
+    this.shake = 0; this.fov = CHASE.fov; this.t = 0;
     this.kick = new THREE.Vector3(); this.kickV = new THREE.Vector3(); this.rough = 0;
   }
   // a jolt pushing the camera along (dx, dz) (world, normalised), strength 0…1
@@ -9889,26 +9894,22 @@ class CameraRig {
     if (!car) return;
     this.t += dt;
     const fx = Math.cos(car.psi), fz = Math.sin(car.psi);
-    let targetFov = 62;
     // heading smoothing (the view swings a little behind the car)
     let dy = car.psi - this.yaw; dy = Math.atan2(Math.sin(dy), Math.cos(dy));
     this.yaw += dy * Math.min(1, dt * 6.5);
-    if (!this.init) { this.yaw = car.psi; this.dOff = 0; this.lat = 0; this.kick.set(0, 0, 0); this.kickV.set(0, 0, 0); }
+    if (!this.init) { this.yaw = car.psi; this.kick.set(0, 0, 0); this.kickV.set(0, 0, 0); }
     const yx = Math.cos(this.yaw), yz = Math.sin(this.yaw);
     const back = extra.lookBack ? -1 : 1;
-    const spd = clamp(car.speed / 90, 0, 1);
-    // springs: longitudinal g moves the camera back (accelerating) or in (braking); lateral g swings it wide
-    this.dOff += (clamp(car.gLong * 0.16, -0.7, 0.45) - this.dOff) * Math.min(1, dt * 3.2);
-    this.lat += (clamp(-car.gLat * 0.05, -0.28, 0.28) - this.lat) * Math.min(1, dt * 2.6);
-    const dist = 6.6 + this.dOff * 1 + spd * 0.25, h = 1.95 - spd * 0.18;
-    const rx = -yz, rz = yx; // camera right
-    const tp = new THREE.Vector3(car.x - yx * dist * back + rx * this.lat, h, car.z - yz * dist * back + rz * this.lat);
-    if (!this.init || this.pos.distanceTo(tp) > 40) this.pos.copy(tp); else this.pos.lerp(tp, 1 - Math.exp(-dt * 14));
-    this.look.set(car.x + fx * 4 * back, 0.9 - spd * 0.08, car.z + fz * 4 * back);
-    targetFov = 60 + spd * 13;
+    // A fixed chase position: the same distance, height and field of view at any speed, under braking, accelerating
+    // and cornering. The camera is placed exactly behind the car every frame (no position lag, which at 300 km/h
+    // trailed the car by several metres); only its heading follows the car's with a short delay through corners.
+    const dist = CHASE.dist, h = CHASE.height;
+    const tp = new THREE.Vector3(car.x - yx * dist * back, h, car.z - yz * dist * back);
+    this.pos.copy(tp);
+    this.look.set(car.x + fx * CHASE.ahead * back, CHASE.lookY, car.z + fz * CHASE.ahead * back);
     // impact jolt: a damped spring on a position offset
     this.kickV.addScaledVector(this.kick, -90 * dt); this.kickV.multiplyScalar(Math.exp(-dt * 9)); this.kick.addScaledVector(this.kickV, dt);
-    if (this.kick.lengthSq() > 4) this.kick.setLength(2);
+    if (this.kick.lengthSq() > 0.09) this.kick.setLength(0.3); // (a jolt shakes the view; it does not move the camera away)
     // shake amplitude (radians): kerbs, rough ground, buffeting at speed, damage vibration, impacts
     let amp = 0;
     for (let i = 0; i < 4; i++) if (car.surf[i] === 1) amp += 0.0022; else if (car.surf[i] >= 3) amp += 0.0035;
@@ -9925,9 +9926,7 @@ class CameraRig {
       cam.rotateY((Math.sin(t * 29.3 + 2.1) * 0.6 + Math.sin(t * 53.9) * 0.4) * amp * 0.7);
       cam.rotateZ((Math.sin(t * 23.7 + 0.7) * 0.5 + Math.sin(t * 47.3 + 2.9) * 0.5) * amp * 0.8);
     }
-    this.fovKick *= Math.exp(-dt * 2.2);
-    targetFov += this.fovKick + car.slipstream;
-    this.fov = this.init ? lerp(this.fov, targetFov, Math.min(1, dt * 4)) : targetFov;
+    this.fov = CHASE.fov;
     if (Math.abs(cam.fov - this.fov) > 0.01) { cam.fov = this.fov; cam.updateProjectionMatrix(); }
     this.init = true;
   }
@@ -10094,7 +10093,7 @@ function ensureWorld() {
   G.fireLight = null;
   if (q > 0) { G.fireLight = new THREE.PointLight(0xff7a2a, 0, 30, 1.6); scene.add(G.fireLight); }
   // rain: streaks in a box that travels with the camera (they slant towards you at speed) and splashes on the ground
-  G.rain = null; G.splash = null;
+  G.rain = null; G.splash = null; G.spray = null;
   {
     const n = lim(1500, 3500, 5200), pos = new Float32Array(n * 6), drops = new Float32Array(n * 3);
     for (let k = 0; k < n; k++) drops.set([(Math.random() - .5) * 60, Math.random() * 30 - 6, (Math.random() - .5) * 60], k * 3);
@@ -10103,6 +10102,9 @@ function ensureWorld() {
     G.rainDrops = drops;
     G.splash = new Particles(scene, textures.smoke, lim(120, 300, 500), { drag: 2, lit: true, color: [0.86, 0.89, 0.93] });
     G.splash.mat.uniforms.sunCol.value.copy(sunCol); G.splash.mat.uniforms.ambCol.value.copy(ambCol);
+    // spray off wet tyres: fine, faint, low droplets (see drivingEffects)
+    G.spray = new Particles(scene, textures.smoke, lim(500, 1200, 1800), { drag: 2.6, lit: true, fadeIn: 0.03, color: [0.86, 0.89, 0.93] });
+    G.spray.mat.uniforms.sunCol.value.copy(sunCol); G.spray.mat.uniforms.ambCol.value.copy(ambCol);
   }
   // car detail distances (full detail and shadows / mid / far): a lower level simplifies cars sooner
   G.carLod = q === 2 ? [90, 220] : q === 1 ? [70, 180] : [45, 130];
@@ -10143,7 +10145,7 @@ function startSession(cfg) {
   G.focusIdx = G.session.cars.indexOf(G.focus);
   G.camRig.init = false;
   if (G.player) { G.pc = new PlayerControl(G.player); G.player.boxCompound = null; }
-  for (const sys of [G.smoke, G.dust, G.grit, G.sparks, G.fire, G.debris, G.skids]) sys.clear();
+  for (const sys of [G.smoke, G.dust, G.grit, G.sparks, G.fire, G.debris, G.skids, G.spray]) if (sys) sys.clear();
   G.flashes.length = 0; G.hitT.clear(); G.fx.hit = G.fx.dmg = G.fx.cut = G.fx.sev = 0;
   $('hud').classList.toggle('hidden', !!G.attract);
   $('menu').classList.toggle('hidden', !G.attract);
@@ -11197,7 +11199,7 @@ function updateDamageVisuals(car, m, sess, dt) {
   if (key !== m.dmgKey) {
     m.dmgKey = key;
     m.bodyMat.clearcoat = burnt ? 0.1 : 1 - 0.75 * D.scuff; m.bodyMat.roughness = burnt ? 0.85 : 0.3 + 0.38 * D.scuff;
-    m.bodyMat.color.setScalar((1 - 0.12 * D.scuff - 0.3 * c[P_CHAS_IDX]) * (burnt ? 0.35 : 1));
+    m.bodyMat.color.setScalar(CAR_EXPOSURE * (1 - 0.12 * D.scuff - 0.3 * c[P_CHAS_IDX]) * (burnt ? 0.35 : 1));
     m.accentMat.roughness = 0.35 + 0.4 * D.scuff; m.accentMat.clearcoat = burnt ? 0.1 : 0.8 * (1 - 0.7 * D.scuff);
   }
 }
@@ -11301,8 +11303,9 @@ const RUBBER = [0.02, 0.02, 0.022], RUBBER_WET = [0.05, 0.055, 0.06], RUT_GRAVEL
 const teamRGB = (car) => car._rgb || (car._rgb = new THREE.Color(car.team.c1).toArray());
 // Effects of normal driving for one car, all read from the simulation: rubber marks from lock-ups, wheelspin and
 // slides; dust, gravel, grass and ruts off track; floor sparks when the plank touches down (kerbs, braking dive,
-// high-speed bottoming, floor damage). Normal driving makes no tyre smoke and no wet spray or mist (they hid the
-// car ahead); only a car shoved sideways by an impact still smokes from its scrubbing tyres.
+// high-speed bottoming, floor damage). Normal driving makes no tyre smoke; only a car shoved sideways by an impact
+// still smokes from its scrubbing tyres. On a wet road the tyres throw a fine spray: low, faint and short-lived, so it
+// never hides the car ahead (a dense mist or rooster tail did).
 function drivingEffects(car,m,dt,dist,wet,near) {
   const R = Math.random, v = car.speed, c = Math.cos(car.psi), s = Math.sin(car.psi);
   const count = (rate) => { const f = rate * dt * near; return Math.floor(f) + (R() < f % 1 ? 1 : 0); };
@@ -11339,6 +11342,20 @@ function drivingEffects(car,m,dt,dist,wet,near) {
       for (let k = 0; k < nd; k++) G.dust.emit(wx, 0.25, wz, car.vx * 0.3 + (R() - .5) * 2.5, 0.6 + R() * 1.4, car.vz * 0.3 + (R() - .5) * 2.5, 1.6 + R() * 1.4, 0.8, 2.4, gravel ? 0.42 : 0.2, gravel ? [0.78, 0.69, 0.52] : [0.5, 0.46, 0.34]);
       const ng = count((gravel ? 70 : 26) * k2 * (i >= 2 ? 1.4 : 0.6));
       for (let k = 0; k < ng; k++) G.grit.emit(wx, 0.12, wz, car.vx * (0.35 + R() * 0.4) + (R() - .5) * 5, 1.5 + R() * 4.5, car.vz * (0.35 + R() * 0.4) + (R() - .5) * 5, 1.2, 0.05 + R() * 0.05, 0, 1, gravel ? [0.62 + R() * 0.2, 0.55 + R() * 0.15, 0.42] : [0.2, 0.28, 0.12]);
+    }
+  }
+  // wet road: droplets thrown up and back off the tyres (mostly the rears), never above about half a metre, gone in
+  // half a second, and fainter close to the camera
+  if (wet > 0.12 && v > 10 && G.spray && !car.pit) {
+    const k = clamp((wet - 0.12) / 0.45, 0, 1) * clamp((v - 10) / 45, 0, 1), fade = 0.3 + 0.7 * smooth01(5, 28, dist);
+    for (let i = 0; i < 4; i++) {
+      const n = count((i >= 2 ? 75 : 22) * k); if (!n) continue;
+      const lx = WHEEL_LX[i] - 0.32, ly = WHEEL_LY[i] * 1.06, wx = car.x + c * lx - s * ly, wz = car.z + s * lx + c * ly;
+      for (let q = 0; q < n; q++) {
+        const side = (R() - .5) * 2.4, f = 0.5 + R() * 0.25;
+        G.spray.emit(wx + (R() - .5) * 0.25, 0.1 + R() * 0.12, wz + (R() - .5) * 0.25, car.vx * f - s * side, 0.7 + R() * 1.8, car.vz * f + c * side,
+          0.32 + R() * 0.3, 0.07 + R() * 0.07, 0.35, (0.14 + 0.14 * k) * fade);
+      }
     }
   }
   // floor sparks: the titanium skid blocks touch down over kerbs, in the braking dive, when bottoming at top speed,
@@ -11468,7 +11485,7 @@ function updateCarVisuals(dt) {
     if (fireCar && fireD < 160) { const t = tNow; G.fireLight.position.set(fireCar.x, 1.6, fireCar.z); G.fireLight.intensity = 60 * (0.75 + 0.25 * Math.sin(t * 29) * Math.sin(t * 13.7 + 1)); }
     else G.fireLight.intensity = 0;
   }
-  G.smoke.update(dt, -0.25); G.dust.update(dt, -0.12); G.grit.update(dt, 9.8); G.sparks.update(dt); G.fire.update(dt, -2.5);
+  G.smoke.update(dt, -0.25); G.dust.update(dt, -0.12); G.grit.update(dt, 9.8); G.sparks.update(dt); G.fire.update(dt, -2.5); if (G.spray) G.spray.update(dt, 7);
   G.skids.update(); G.debris.update(dt, sess.cars, G.track); updatePitCrews();
   if (G.brakeDiscs) { G.brakeDiscs.count = nDisc; G.brakeDiscs.instanceMatrix.needsUpdate = true; if (G.brakeDiscs.instanceColor) G.brakeDiscs.instanceColor.needsUpdate = true; }
   G.glows.end(camPos, tNow);
@@ -11579,7 +11596,7 @@ function impactResolved(e) {
     m.smokeT = Math.max(m.smokeT || 0, 0.8 + 2.2 * sv); m.smokeAt = [e.lx * 0.7, e.ly * 0.7];
     G.flashes.push({ x: e.x, y: 0.5, z: e.z, t: 0, T: 0.18 + 0.15 * sv, size: 2 + 2.5 * sv, k: 0.8 + sv }); if (G.flashes.length > 12) G.flashes.shift();
   }
-  if (car === G.focus && sv > 0.3) { G.camRig.fovKick = Math.min(G.camRig.fovKick, -4 * sv); G.fx.hit = Math.max(G.fx.hit, 0.25 + 0.45 * sv); }
+  if (car === G.focus && sv > 0.3) { G.fx.hit = Math.max(G.fx.hit, 0.25 + 0.45 * sv); }
 }
 // A whole wing half or rear wing coming off (simulation event): the actual assembly, with whatever pieces it had
 // already lost, tumbles away; losing both front-wing halves in a frontal hit takes the nose cone with them.
@@ -11632,7 +11649,6 @@ function processEvents() {
         if (e.car === G.focus) { G.fx.hit = Math.max(G.fx.hit, 0.35); G.camRig.impulse(0.4, -Math.cos(e.car.psi), -Math.sin(e.car.psi)); }
       }
     } else if (e.type === 'lightsout') { if (!G.attract) G.audio.oneShot('go'); if (G.focus && G.focus.isPlayer) G.camRig.impulse(0.25, -Math.cos(G.focus.psi), -Math.sin(G.focus.psi)); }
-    else if (e.type === 'overtake') { if (e.car === G.focus && !G.attract) G.camRig.fovKick = 4; }
     else if (e.type === 'raceover') { if (!G.attract) { recordCareerRace(sess); setTimeout(()=>{if(G.session===sess)showResults();},1200); } else setTimeout(() => { if (G.attract && G.mode === 'menu') startAttract(); }, 3000); }
     else if (e.type === 'pitstop' && e.car === G.focus) G.audio.oneShot('pit');
   }
@@ -11975,7 +11991,7 @@ function frame(now) {
     // screen effects decay; particle sizes follow the viewport height and field of view
     const fx = G.fx; fx.hit = Math.max(0, fx.hit - dt * 3.2); fx.dmg = Math.max(0, fx.dmg - dt * 1.3); fx.cut = Math.max(0, fx.cut - dt * 2.8);
     const pScale = renderer.domElement.height / (2 * Math.tan(camera.fov * Math.PI / 360));
-    for (const sys of [G.smoke, G.dust, G.grit, G.fire, G.splash]) if (sys) sys.mat.uniforms.scale.value = pScale;
+    for (const sys of [G.smoke, G.dust, G.grit, G.fire, G.splash, G.spray]) if (sys) sys.mat.uniforms.scale.value = pScale;
     const f = G.focus;
     if (G.post) {
       const fast = S.speedBlur === 'on' && f && !G.paused && !G.attract;
