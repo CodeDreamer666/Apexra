@@ -8,7 +8,7 @@ const { serveGame } = require('./browser-game.cjs');
 const root = path.resolve(process.env.BENCH_ROOT || path.join(__dirname, '..'));
 const out = path.resolve(process.env.BENCH_OUT || '/tmp/apexra-environment-benchmark');
 const ids = (process.env.CIRCUITS || 'monza,silverstone,spa,suzuka,bahrain,interlagos').split(',');
-const samples = Number(process.env.BENCH_FRAMES || 32), width = 640, height = 360;
+const samples = Number(process.env.BENCH_FRAMES || 32), width = 640, height = 360, quality = process.env.BENCH_QUALITY || 'medium';
 const localThree = process.env.THREE_JS || (fs.existsSync('/tmp/apexra-three.module.js') ? '/tmp/apexra-three.module.js' : null);
 fs.mkdirSync(out, { recursive: true });
 const probe = `window.__environmentBench = {
@@ -49,24 +49,24 @@ const probe = `window.__environmentBench = {
 };`;
 const percentile=(a,p)=>a.slice().sort((x,y)=>x-y)[Math.min(a.length-1,Math.floor((a.length-1)*p))];
 (async()=>{
- const server=await serveGame(root,html=>html.replace('window.APEX = G;', 'window.APEX = G; S.quality = "medium"; S.volume = 0;\n'+probe));
+ const server=await serveGame(root,html=>html.replace('window.APEX = G;', 'window.APEX = G; S.quality = "'+quality+'"; S.volume = 0;\n'+probe));
  const browser=await chromium.launch({executablePath:process.env.CHROMIUM_PATH||'/usr/bin/chromium',headless:true,
   args:['--use-angle=swiftshader','--enable-unsafe-swiftshader','--ignore-gpu-blocklist','--js-flags=--expose-gc']});
- const report={protocol:{width,height,quality:'medium',samplesPerWeather:samples,seed:741,
+ const report={protocol:{width,height,quality,samplesPerWeather:samples,seed:741,
   timing:'Synchronized frame throughput (production frame plus WebGL finish and blocking pixel readback); CPU is submission time, not isolated physics time.',
   regions:['quarter-lap pack','middle-lap pack','tightest-corner approach','overpass / hillside approach'],gpuFrameTimeMs:null},source:{indexSha256:crypto.createHash('sha256').update(fs.readFileSync(path.join(root,'index.html'))).digest('hex')},results:[]};
  try {
   const page=await browser.newPage({viewport:{width,height}});page.setDefaultTimeout(180000);
   const errors=[];page.on('console',m=>{if(m.type()==='error')errors.push(m.text())});page.on('pageerror',e=>{errors.push(e.message);console.error('pageerror:',e.message)});
   page.on('requestfailed',r=>{if(r.url().includes('three'))console.error('module request failed:',r.url(),r.failure().errorText)});
-  await page.addInitScript(()=>{localStorage.setItem('apexgp.settings.v1',JSON.stringify({quality:'medium',camera:'chase',volume:0,circuit:'monza'}));let seed=741;Math.random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296};window.requestAnimationFrame=()=>1;});
+  await page.addInitScript((quality)=>{localStorage.setItem('apexgp.settings.v1',JSON.stringify({quality,camera:'chase',volume:0,circuit:'monza'}));let seed=741;Math.random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296};window.requestAnimationFrame=()=>1;},quality);
   await page.route('**/*',r=>{
     const url=r.request().url();
     if(localThree && url.includes('three.module'))return r.fulfill({contentType:'application/javascript',body:fs.readFileSync(localThree)});
     if(url.includes('fonts.googleapis.com'))return r.fulfill({contentType:'text/css',body:''});
     return r.continue();
   });
-  console.log('Loading',root);await page.goto(server.url+'/index.html');
+  console.log('Loading',root);await page.goto(server.url+'/index.html?quality='+quality); // (the graphics level is otherwise chosen from the device)
   await page.waitForFunction(()=>document.getElementById('loading').classList.contains('hidden') || !document.getElementById('loadErr').classList.contains('hidden'), null, {polling:200});
   console.log('Renderer ready');const loadError=await page.locator('#loadErr').textContent();if(loadError)throw Error(loadError);
   for(const id of ids)for(const rain of [false,true]) {
