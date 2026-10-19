@@ -1,0 +1,251 @@
+{
+  "protocol": {
+    "width": 640,
+    "height": 360,
+    "quality": "low",
+    "samplesPerWeather": 16,
+    "seed": 741,
+    "timing": "Synchronized frame throughput (production frame plus WebGL finish and blocking pixel readback); CPU is submission time, not isolated physics time.",
+    "regions": [
+      "quarter-lap pack",
+      "middle-lap pack",
+      "tightest-corner approach",
+      "overpass / hillside approach"
+    ],
+    "gpuFrameTimeMs": null
+  },
+  "source": {
+    "indexSha256": "f9e18d94230aa4aae10bc6e5355273b0fa24690759132b7b6f2b868f97179d39"
+  },
+  "results": [
+    {
+      "circuit": "monza",
+      "weather": "dry",
+      "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+      "gpuTimerAvailable": true,
+      "cars": 20,
+      "quality": "low",
+      "width": 640,
+      "height": 360,
+      "forest": {
+        "trees": 6751,
+        "bushes": 4094,
+        "rocks": 1107,
+        "tufts": 7020,
+        "cells": 586,
+        "nearCells": 5,
+        "midCells": 8,
+        "farCells": 33,
+        "visibleCells": 46,
+        "nearShadowMeshes": 0,
+        "theme": "monza",
+        "geometryVariants": 15,
+        "farBatches": 297
+      },
+      "frames": 16,
+      "avgFps": 1.5073577902135324,
+      "p95FrameMs": 851.7000000001863,
+      "p99FrameMs": 851.7000000001863,
+      "cpuFrameMs": 16.768749999959255,
+      "drawCalls": 627.4375,
+      "triangles": 357751.375,
+      "geometries": 321,
+      "textures": 143,
+      "heapMB": 90.67398929595947,
+      "regions": [
+        {
+          "region": 0,
+          "avgFps": 1.4929272571195007,
+          "p95FrameMs": 707.3000000002794
+        },
+        {
+          "region": 1,
+          "avgFps": 1.1726766344178992,
+          "p95FrameMs": 851.7000000001863
+        },
+        {
+          "region": 2,
+          "avgFps": 1.6386055466800256,
+          "p95FrameMs": 603.6000000000931
+        },
+        {
+          "region": 3,
+          "avgFps": 1.920122887865081,
+          "p95FrameMs": 521
+        }
+      ]
+    },
+    {
+      "circuit": "monza",
+      "weather": "rain",
+      "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+      "gpuTimerAvailable": true,
+      "cars": 20,
+      "quality": "low",
+      "width": 640,
+      "height": 360,
+      "forest": {
+        "trees": 6751,
+        "bushes": 4094,
+        "rocks": 1107,
+        "tufts": 7020,
+        "cells": 586,
+        "nearCells": 5,
+        "midCells": 8,
+        "farCells": 33,
+        "visibleCells": 46,
+        "nearShadowMeshes": 0,
+        "theme": "monza",
+        "geometryVariants": 15,
+        "farBatches": 297
+      },
+      "frames": 16,
+      "avgFps": 1.5689812408681536,
+      "p95FrameMs": 822.5999999996275,
+      "p99FrameMs": 822.5999999996275,
+      "cpuFrameMs": 13.687500000029104,
+      "drawCalls": 629.1875,
+      "triangles": 357845,
+      "geometries": 368,
+      "textures": 178,
+      "heapMB": 88.2441816329956,
+      "regions": [
+        {
+          "region": 0,
+          "avgFps": 1.6879061524177266,
+          "p95FrameMs": 623
+        },
+        {
+          "region": 1,
+          "avgFps": 1.193922932274954,
+          "p95FrameMs": 822.5999999996275
+        },
+        {
+          "region": 2,
+          "avgFps": 1.6296598085149725,
+          "p95FrameMs": 632
+        },
+        {
+          "region": 3,
+          "avgFps": 1.9771637585886692,
+          "p95FrameMs": 502.60000000009313
+        }
+      ]
+    },
+    {
+      "circuit": "spa",
+      "weather": "dry",
+      "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+      "gpuTimerAvailable": true,
+      "cars": 20,
+      "quality": "low",
+      "width": 640,
+      "height": 360,
+      "forest": {
+        "trees": 8222,
+        "bushes": 4959,
+        "rocks": 1324,
+        "tufts": 8552,
+        "cells": 659,
+        "nearCells": 4,
+        "midCells": 8,
+        "farCells": 47,
+        "visibleCells": 59,
+        "nearShadowMeshes": 0,
+        "theme": "spa",
+        "geometryVariants": 12,
+        "farBatches": 279
+      },
+      "frames": 16,
+      "avgFps": 1.5211005162231914,
+      "p95FrameMs": 790.6000000000931,
+      "p99FrameMs": 790.6000000000931,
+      "cpuFrameMs": 15.106250000040745,
+      "drawCalls": 533.0625,
+      "triangles": 400331.25,
+      "geometries": 359,
+      "textures": 175,
+      "heapMB": 93.59421253204346,
+      "regions": [
+        {
+          "region": 0,
+          "avgFps": 1.4780873549623221,
+          "p95FrameMs": 704.7000000001863
+        },
+        {
+          "region": 1,
+          "avgFps": 1.2915724895057794,
+          "p95FrameMs": 790.6000000000931
+        },
+        {
+          "region": 2,
+          "avgFps": 2.167434299647792,
+          "p95FrameMs": 460.3000000002794
+        },
+        {
+          "region": 3,
+          "avgFps": 1.3937282229960635,
+          "p95FrameMs": 718.9000000003725
+        }
+      ]
+    },
+    {
+      "circuit": "spa",
+      "weather": "rain",
+      "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+      "gpuTimerAvailable": true,
+      "cars": 20,
+      "quality": "low",
+      "width": 640,
+      "height": 360,
+      "forest": {
+        "trees": 8222,
+        "bushes": 4959,
+        "rocks": 1324,
+        "tufts": 8552,
+        "cells": 659,
+        "nearCells": 4,
+        "midCells": 8,
+        "farCells": 47,
+        "visibleCells": 59,
+        "nearShadowMeshes": 0,
+        "theme": "spa",
+        "geometryVariants": 12,
+        "farBatches": 279
+      },
+      "frames": 16,
+      "avgFps": 1.4718057216446168,
+      "p95FrameMs": 888.5,
+      "p99FrameMs": 888.5,
+      "cpuFrameMs": 13.95625000007567,
+      "drawCalls": 535.1875,
+      "triangles": 400352,
+      "geometries": 405,
+      "textures": 209,
+      "heapMB": 71.28666496276855,
+      "regions": [
+        {
+          "region": 0,
+          "avgFps": 1.5395273650988042,
+          "p95FrameMs": 653.8000000002794
+        },
+        {
+          "region": 1,
+          "avgFps": 1.2709710218604382,
+          "p95FrameMs": 765.8000000002794
+        },
+        {
+          "region": 2,
+          "avgFps": 2.200220022002764,
+          "p95FrameMs": 458.1999999997206
+        },
+        {
+          "region": 3,
+          "avgFps": 1.2093360744948978,
+          "p95FrameMs": 840.1000000000931
+        }
+      ]
+    }
+  ],
+  "errors": []
+}
