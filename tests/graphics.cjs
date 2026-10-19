@@ -43,3 +43,29 @@ test('few CPU cores, little memory or no float render targets cap the level', ()
   assert.equal(SIM.graphicsTier({ gpu: rtx, halfFloat: true }, { userAgent: desktop.userAgent }).tier, 2);
   assert.match(SIM.graphicsTier({ gpu: rtx, halfFloat: true }, { ...desktop, hardwareConcurrency: 2 }).why, /2 CPU cores/);
 });
+
+test('4K Ultra renders UHD on smaller, Retina and 4K displays', () => {
+  for (const [w, h, dpr] of [[1920, 1080, 1], [1600, 900, 1], [1920, 1080, 2], [3840, 2160, 1]]) {
+    const pr = SIM.renderPixelRatio(w, h, dpr, '4k');
+    assert.equal(Math.round(w * pr), 3840);
+    assert.equal(Math.round(h * pr), 2160);
+  }
+});
+
+test('resolution preserves aspect ratio and respects GPU limits', () => {
+  for (const [w, h] of [[3440, 1440], [1440, 900], [390, 844]]) {
+    const pr = SIM.renderPixelRatio(w, h, 1, '4k');
+    assert.ok(w * pr <= 3840 && h * pr <= 2160);
+    assert.ok(Math.abs(w * pr - 3840) < .001 || Math.abs(h * pr - 2160) < .001);
+    assert.ok(Math.abs((w * pr) / (h * pr) - w / h) < .000001);
+  }
+  assert.equal(SIM.renderPixelRatio(1920, 1080, 1, '4k', 2048), 2048 / 1920);
+  assert.equal(SIM.renderPixelRatio(1920, 1080, 1, 'native', 1024), 1024 / 1920);
+});
+
+test('Native uses physical pixels on standard and high-density screens', () => {
+  assert.equal(SIM.renderPixelRatio(1920, 1080, 1, 'native'), 1);
+  assert.equal(SIM.renderPixelRatio(1440, 900, 2, 'native'), 2);
+  assert.equal(SIM.renderPixelRatio(1280, 720, 1.25, 'native'), 1.25);
+  assert.equal(SIM.renderPixelRatio(3840, 2160, 1, 'native'), 1);
+});

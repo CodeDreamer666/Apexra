@@ -232,13 +232,20 @@ Each circuit has its own vegetation: temperate woodland at Monza, mixed countrys
 The implementation, measured before/after results and verification limits are documented in [the environment report](reports/environment-redesign/README.md). The reproducible render benchmark is `node tools/environment-benchmark.cjs`; set `BENCH_ROOT` to compare a checkout and `THREE_JS` to use a local Three.js 0.160 module.
 
 ### Graphics and smoothness
-There is no graphics menu: the game picks a graphics level for your computer by itself and keeps checking that it runs smoothly.
+Choose **4K Ultra** or **Native** in the main menu or pause menu. The choice is saved and applies immediately, including during a race.
 
-- **High** (computers with a dedicated graphics card, Apple Silicon Macs): sharp shadows, the most detailed woods and full screen effects.
+- **4K Ultra** (the default) renders at 3840 × 2160 in a widescreen window. Smaller windows get a supersampled image; other aspect ratios fit within 3840 × 2160 without stretching.
+- **Native** matches your display's physical pixels, including Retina and other high-density screens. Use it for less GPU work on a smaller display.
+
+Motion blur, colour fringing and lens distortion are removed. Multisample antialiasing, restrained bloom and a subtle detail pass keep the road, cars and distant edges clear. HUD text and icons stay crisp, and track maps scale for high-density displays. The GPU's maximum render size is respected.
+
+The game picks scenery detail for your computer and keeps checking that it runs smoothly:
+
+- **High** (computers with a dedicated graphics card, Apple Silicon Macs): sharp shadows, the most detailed woods, 4× multisample antialiasing and subtle bloom.
 - **Medium** (good laptops with built-in graphics): softer shadows and lighter effects.
-- **Low** (older or basic laptops, phones and tablets): no shadows or screen effects, fewer trees and a lower drawing resolution, so the game stays playable.
+- **Low** (older or basic laptops, phones and tablets): no shadows or screen effects, fewer trees and lighter terrain.
 
-If the game can't keep up while you race, it first lowers its drawing resolution, then draws the distant woods less far, and finally switches to a lower level. It shows a short message when it does this, and the new level starts with your next race. If your computer runs smoothly for a long time, it moves up a level. The game remembers the level for your computer. To choose a level yourself, add `?quality=low`, `?quality=medium` or `?quality=high` to the end of the game's address.
+If the game can't keep up while you race, it draws distant woods less far, then removes screen effects and switches to a lower scenery level for your next race. Your selected resolution stays fixed. If your computer runs smoothly for a long time, scenery detail moves up a level. The game remembers this level for your computer. To choose scenery detail yourself, add `?quality=low`, `?quality=medium` or `?quality=high` to the game's address; this is independent of the resolution control.
 
 ### Lap timing and race position
 Lap times are recorded when your car crosses the painted start/finish line. Positions follow completed laps and where each car is on the circuit, including the pit lane. Returning a tyre to the track clears extra shortcut braking, so held throttle accelerates the car again as grip returns. It does not move your timing line or leave your displayed position behind your car. Yellow flags and caution restrictions are removed. Reversing over the line and crossing it again cannot count an extra lap.

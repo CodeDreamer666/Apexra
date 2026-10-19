@@ -10,12 +10,18 @@
 <link href="https://fonts.googleapis.com/css2?family=Titillium+Web:wght@400;600;700;900&display=swap" rel="stylesheet">
 <style>
   :root {
-    --panel: rgba(12, 14, 19, 0.80);
-    --panel2: rgba(22, 25, 33, 0.92);
-    --line: rgba(255, 255, 255, 0.10);
-    --txt: #f2f4f8;
-    --dim: #9aa3b2;
-    --accent: #e10600;
+    color-scheme: dark;
+    --panel: rgba(7, 19, 33, .96);
+    --panel2: #0b1a2c;
+    --line: rgba(111, 168, 215, .22);
+    --txt: #f4f8ff;
+    --dim: #a6bdd7;
+    --accent: #45c7ff;
+    --accent-bright: #68ddff;
+    --surface: linear-gradient(135deg, rgba(18, 38, 61, .97), rgba(5, 15, 28, .98));
+    --edge: #365d7c;
+    --selection: #00d4ff;
+    --focus: 0 0 0 1px var(--selection), 0 0 20px rgba(0, 183, 255, .15);
     --gold: #c9a24a;
     --purple: #a020f0;
     --green: #21c55d;
@@ -142,7 +148,6 @@
 
   /* top centre: messages, race-start sequence, pit stop timer */
   #topc { position: absolute; left: 50%; top: 40px; transform: translateX(-50%); width: 720px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
-  #hud.starting #topc { top: 108px; }
   #msgs { display: flex; flex-direction: column; align-items: center; gap: 8px; }
   #msgs:empty { display: none; }
   .msg { display: flex; align-items: center; gap: 14px; padding: 10px 24px 10px 16px; border-radius: 6px; font-weight: 600; font-size: 20px; letter-spacing: .3px; background: rgba(12, 14, 20, .86); border: 1px solid rgba(255,255,255,.08); border-left: 5px solid #5aa9ff; box-shadow: 0 6px 20px rgba(0,0,0,.35); animation: msgin .25s ease-out; white-space: nowrap; --ic: none; --icc: #5aa9ff; }
@@ -156,23 +161,11 @@
   .msg.warn::before, .msg.critical::before, .msg.dmg::before, .msg.pit::before, .msg.rc::before { display: block; }
   .msg.purple { border-left-color: var(--purple); }
   @keyframes msgin { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
-  #launchHint { display: flex; align-items: center; gap: 12px; padding: 10px 22px 10px 14px; font-size: 18px; font-weight: 600; white-space: nowrap; }
-  #launchHint kbd { margin: 0; min-width: 0; padding: 3px 18px; font-size: 17px; letter-spacing: 1px; background: rgba(255,255,255,.04); border: 1.5px solid rgba(255,255,255,.75); border-radius: 6px; transition: background .08s, color .08s; }
-  #launchHint kbd.on { background: #fff; color: #0b1020; }
-  #launchText { margin-left: 8px; }
   #lights { display: flex; gap: 22px; padding: 18px 24px; }
   #hud #lights.panel { background: rgba(8, 10, 16, .88); }
   #lights .pod { width: 76px; background: #07080c; border-radius: 10px; padding: 9px; display: flex; flex-direction: column; gap: 10px; border: 1px solid rgba(255,255,255,.07); box-shadow: inset 0 2px 8px rgba(0,0,0,.6); }
   #lights .pod i { width: 56px; height: 56px; border-radius: 50%; background: radial-gradient(circle at 45% 40%, #3a0a0a, #1c0303 70%); display: block; }
   #lights .pod.on i { background: radial-gradient(circle at 40% 35%, #ff9a90, #ff1f1f 45%, #b30000); box-shadow: 0 0 24px rgba(255, 40, 40, .85); }
-  #launchStatus { display: flex; align-items: center; gap: 10px; padding: 10px 24px; font-size: 15px; white-space: nowrap; }
-  #launchStatus .k { color: var(--hlbl); font-weight: 600; letter-spacing: 1px; }
-  #launchStatus b { font-size: 24px; font-weight: 700; }
-  #launchStatus .vsep { height: 24px; margin: 0 12px; }
-  #rpmBar { display: flex; gap: 4px; margin-left: 10px; }
-  #rpmBar i { width: 6px; height: 20px; border-radius: 2px; background: rgba(255,255,255,.16); }
-  #rpmBar i.on { background: var(--hblue); }
-  #rpmBar i.hi { background: #ff3b3b; }
   #telemetry { position: absolute; left: 50%; bottom: 206px; transform: translateX(-50%); width: 620px; padding: 8px 10px; display: grid; grid-template-columns: 1fr 140px; gap: 10px; }
   #telemetry canvas { width: 100%; height: 120px; display: block; }
   #fps { position: absolute; right: 8px; top: 6px; font-size: 11px; color: #8f8; text-shadow: 0 0 3px #000; }
@@ -193,14 +186,14 @@
   .logo span { color: var(--accent); }
   .logo-sub { color: var(--dim); letter-spacing: 4px; font-size: 13px; margin: 10px 0 34px; text-transform: uppercase; }
   .btn { pointer-events: auto; display: flex; align-items: center; gap: 14px; width: 100%; padding: 13px 18px; margin: 5px 0; font: 700 18px var(--font); letter-spacing: 1.5px; text-transform: uppercase; color: #fff; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.10); border-left: 4px solid transparent; border-radius: 4px; cursor: pointer; transition: all .12s; text-align: left; }
-  .btn:hover, .btn:focus-visible { background: rgba(225, 6, 0, .18); border-left-color: var(--accent); outline: none; transform: translateX(4px); }
-  .btn.primary { background: linear-gradient(90deg, #e10600, #9c0400); border-color: #e10600; }
+  .btn:hover, .btn:focus-visible { background: rgba(69, 199, 255, .12); border-left-color: var(--accent); outline: none; transform: translateX(4px); }
+  .btn.primary { background: linear-gradient(110deg, #5bd7ff, #199fe8); border-color: #68ddff; color: #041522; }
   .btn.primary:hover { filter: brightness(1.15); }
   .btn:disabled { opacity: .35; cursor: default; transform: none; }
   .btn small { margin-left: auto; font-size: 12px; color: rgba(255,255,255,.6); letter-spacing: 1px; font-weight: 600; }
   #circuitSelect h3 { margin: 0; font-size: clamp(22px, 2vw, 32px); letter-spacing: .3px; font-weight: 700; }
   .cmap { width: 100%; aspect-ratio: 760 / 340; display: block; margin: 8px 0 0; }
-  /* circuit selection: six geometry-drawn maps; hover lifts, the selection glows red */
+  /* Circuit selection: six geometry-drawn maps with a cyan selection. */
   #circuitSelect { position: absolute; right: 48px; bottom: 48px; width: min(980px, calc(100vw - 690px)); padding: 18px 22px 20px; pointer-events: none; background: rgba(10,12,17,.9);
     opacity: 0; transform: translateY(14px); transition: opacity .22s, transform .22s; }
   #menu.selecting #circuitSelect { opacity: 1; transform: none; pointer-events: auto; }
@@ -526,6 +519,192 @@
   .cr-note { color:var(--dim); font-size:14px; margin:0; }
   #career .cr-actions .btn { margin:0; min-width:0; max-width:100%; white-space:normal; overflow-wrap:anywhere; }
   @media(max-width:480px) { #career .dialog { padding:20px; gap:24px; } }
+  /* One aligned stack for pit planning and live vehicle status. */
+  #hud-right { width:360px; gap:10px; }
+  #pitPlan { position:static; width:auto; padding:14px; }
+  #pitPlan .pp-head { align-items:center; padding-bottom:10px; }
+  #pitPlan .pp-head small { font-size:11px; letter-spacing:0; }
+  #pitPlan .pp-row { min-height:40px; gap:12px; }
+  #pitPlan .pp-row:has(.pp-tyres) { display:block; padding:10px 0; }
+  #pitPlan .pp-tyres { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:6px; margin-top:8px; }
+  #pitPlan .pp-tyre { width:100%; padding:6px 0 4px; gap:3px; }
+  #pitPlan .pp-fuel { gap:6px; font-size:12px; }
+  #pitPlan .pp-fuel button { flex:none; width:25px; }
+  #pitPlan .pp-rep { height:28px; font-size:11px; letter-spacing:.4px; }
+  #pitPlan .pp-note { padding-top:10px; font-size:10px; line-height:1.5; }
+  #hud-br { padding:8px 14px; }
+  #hud-br .srow { min-height:40px; gap:8px; }
+  #hud-br .sk { font-size:11px; letter-spacing:1px; }
+  #hud-br .sv { gap:8px; font-size:13px; letter-spacing:0; }
+  #hud-br .wxv + .wxv, #hud-br .wear { padding-left:8px; }
+  #hud-br .wbar { margin:0 0 4px; height:3px; }
+  #hud-br .cs-hint { font-size:10px; letter-spacing:0; }
+  #lights { position:absolute; top:0; left:50%; transform:translateX(-50%); gap:10px; padding:8px 14px; border-top:0; border-radius:0 0 10px 10px; }
+  #lights .pod { width:42px; padding:6px; gap:6px; border-radius:6px; }
+  #lights .pod i { width:30px; height:30px; }
+  #topc { top:112px; }
+  /* Reference HUD: cyan accents, compound cards, plan summary, and inset status rows. */
+  #hud-right { width:410px; gap:10px; }
+  #hud-right .panel { background:linear-gradient(135deg,rgba(17,33,51,.95),rgba(3,12,22,.94)); border:1px solid #477da5; border-radius:12px; box-shadow:inset 0 1px 10px #68c6ff14,0 6px 22px #0007; }
+  .rh-icon { width:20px; height:20px; flex:none; fill:none; stroke:#51b9ff; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+  #pitPlan { padding:12px; }
+  #pitPlan .pp-head { padding-bottom:10px; border-color:#477da575; gap:10px; }
+  #pitPlan .pp-head b, .rs-head b { display:flex; align-items:center; gap:9px; color:#f3f7ff; font-size:18px; letter-spacing:.5px; white-space:nowrap; }
+  #pitPlan .pp-head small { font-size:10px; color:#b5cbe5; white-space:nowrap; }
+  #pitPlan .pp-head strong { color:#55c5ff; font-size:13px; }
+  #pitPlan .pp-tyre-head { display:flex; align-items:center; justify-content:space-between; }
+  #pitPlan .pp-tyre-head small { color:#a7c1e0; font-size:11px; }
+  #pitPlan .pp-k { display:flex; align-items:center; gap:10px; color:#eef5ff; font-size:13px; letter-spacing:.4px; }
+  #pitPlan .pp-row { min-height:44px; border-color:#6385a43d; }
+  #pitPlan .pp-row:has(.pp-tyres) { padding:10px 0 12px; }
+  #pitPlan .pp-tyres { gap:6px; }
+  #pitPlan .pp-tyre { min-height:74px; justify-content:center; gap:4px; border:1px solid #58738c; border-radius:7px; background:linear-gradient(140deg,#29374988,#0b1521bb); font-size:12px; }
+  #pitPlan .pp-tyre i { width:26px; height:26px; border-width:4px; font-size:15px; line-height:18px; }
+  #pitPlan .pp-tyre small { color:#acc9ec; font-size:11px; }
+  #pitPlan .pp-tyre[aria-pressed="true"] { border-color:#00d4ff; background:linear-gradient(130deg,#123a72aa,#0f2e5eaa); box-shadow:inset 0 0 12px #237aff66,0 0 7px #00c8ff88; }
+  #pitPlan .pp-tyre:focus-visible, #pitPlan button:focus-visible { outline:2px solid #fff; outline-offset:2px; }
+  #pitPlan .pp-fuel { border:1px solid #66819b; border-radius:6px; gap:0; font-size:12px; }
+  #pitPlan .pp-fuel > span { min-width:158px; padding:0 8px; text-align:center; }
+  #pitPlan .pp-fuel button { width:30px; height:29px; border:0; background:#7697bf1c; font-size:20px; }
+  #pitPlan .pp-rep { height:31px; font-size:11px; border-radius:6px; padding:0 12px; }
+  #pitPlan .pp-rep[aria-pressed="true"] { color:#e8fff1; border-color:#23f17c; background:linear-gradient(120deg,#087a42b0,#034a2b99); box-shadow:inset 0 0 10px #20ff6533; }
+  #pitPlan .pp-note { display:grid; grid-template-columns:1.1fr 1fr .9fr .8fr; align-items:center; gap:8px; border-top:1px solid #6385a43d; padding-top:10px; margin-top:2px; color:#d8e7fa; }
+  #pitPlan .pp-note > span { min-width:0; }
+  #pitPlan .pp-note > span + span { border-left:1px solid #6385a470; padding-left:8px; }
+  #pitPlan .pp-note > span:has(.cmp) { display:flex; align-items:center; gap:5px; }
+  #pitPlan .pp-note .cmp { width:22px; height:22px; font-style:normal; font-size:11px; flex:none; }
+  #pitPlan .pp-note small, #pitPlan .pp-note b { display:block; font-size:10px; line-height:1.4; }
+  #pitPlan .pp-note small { color:#a9c3e2; }
+  #pitPlan .pp-note .pp-summary-title { color:#91afd4; font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; }
+  #hud-br { padding:10px; }
+  .rs-head { display:flex; align-items:center; justify-content:space-between; padding:0 2px 9px; }
+  .rs-head small { color:#a7c1e0; font-size:11px; }
+  #hud-br .srow { display:grid; grid-template-columns:116px minmax(0,1fr); min-height:34px; padding:0 9px; margin-top:4px; border:1px solid #53708a70; border-radius:7px; background:linear-gradient(110deg,#07111e99,#263b5180); }
+  #hud-br .srow:last-of-type { border-bottom:1px solid #53708a70; }
+  #hud-br .sk { display:flex; align-items:center; gap:10px; color:#c8ddf6; font-size:12px; letter-spacing:.4px; }
+  #hud-br .sv { min-height:22px; border-left:1px solid #738fb5; padding-left:12px; gap:8px; font-size:12px; }
+  #hud-br .wxv b { color:#57c8ff; font-size:15px; }
+  #hud-br .wxv + .wxv { padding-left:8px; border-color:#738fb5; }
+  #hud-br .ico { background:#9bc7ff; width:20px; height:20px; flex:none; }
+  #hud-br .cmp { width:24px; height:24px; font-size:12px; }
+  #hud-br .wear { margin-left:auto; border-color:#738fb5; }
+  #hud-br .wbar { height:2px; margin:0 10px; }
+  #hud-br #fuelVal { font-size:16px; }
+  #vsBadge { border:1px solid #24e96d; box-shadow:inset 0 0 9px #3cff6c33; }
+  #hud-br .cs-hint { margin-left:auto; color:#a7c1e0; }
+
+  /* Shared navy / ice-blue surfaces, from the paddock to the race HUD. */
+  html, body { background:#040d18; }
+  button, input { -webkit-tap-highlight-color:transparent; }
+  button { touch-action:manipulation; }
+  button:focus-visible, input:focus-visible { outline:2px solid var(--accent-bright); outline-offset:4px; }
+  #hud { --hp:var(--panel); --hb:var(--edge); --hl:var(--line); --hdim:var(--dim); --hlbl:#d4e5f7; --hblue:var(--accent); }
+  #hud .panel, #hud-right .panel, .dialog, #carStatus .cs-panel, #circuitSelect {
+    background:var(--surface); border:1px solid var(--edge); border-radius:14px;
+    box-shadow:inset 0 1px 0 #b4e5ff14, 0 12px 32px #0005; backdrop-filter:none; -webkit-backdrop-filter:none;
+  }
+  #accentbar { height:2px; background:linear-gradient(90deg,#147ed1,var(--selection),#147ed1); box-shadow:0 0 12px #00c8ff40; }
+  .overlay, #carStatus, #raceBrief { background:rgba(2,9,18,.82); backdrop-filter:none; -webkit-backdrop-filter:none; }
+  .dialog { padding:28px 30px; }
+  .dialog h2, #carStatus h2 { font-weight:900; letter-spacing:.7px; }
+  .dialog .sub { line-height:1.6; }
+  .btn { min-height:46px; border:1px solid var(--edge); border-radius:9px; background:#142a41; letter-spacing:.7px; transition:background .16s,border-color .16s,box-shadow .16s,transform .16s; }
+  .btn:hover, .btn:focus-visible { border-color:var(--accent); box-shadow:0 0 18px #00b7ff12; transform:none; }
+  .btn.primary { box-shadow:inset 0 1px 0 #ffffff40,0 5px 20px #009cff1a; font-weight:900; }
+  .btn.primary:hover { background:linear-gradient(110deg,#89e7ff,#35b9ff); filter:none; }
+  .btn small { color:inherit; opacity:.75; }
+  .btn.armed { border-color:#ff6269; background:#4a1929; color:#ffc0c7; }
+  kbd { background:#162e47; border-color:#3d6487; border-bottom-width:2px; color:#e6f4ff; border-radius:5px; }
+  #menu { background:linear-gradient(90deg,rgba(3,12,24,.98),rgba(5,17,33,.9) 35%,rgba(3,12,24,.18) 80%); }
+  .menu-left { width:clamp(360px,38vw,560px); padding:clamp(24px,7vh,84px) clamp(24px,3.3vw,64px) 24px; gap:16px; }
+  .menu-kicker { display:flex; align-items:center; gap:10px; color:#b2d2ec; font-size:11px; font-weight:700; letter-spacing:3px; }
+  .menu-kicker::before { content:''; width:6px; height:6px; border-radius:50%; background:var(--selection); box-shadow:0 0 10px #00d4ff66; }
+  .logo { font-size:clamp(48px,5.6vw,88px); letter-spacing:-2px; margin:2px 0 0; text-shadow:none; }
+  .logo span { color:var(--accent-bright); }
+  .menu-intro { margin:0 0 8px; color:var(--dim); font-size:15px; line-height:1.5; }
+  .menu-intro b { display:block; color:#e4f1ff; font-size:23px; font-weight:600; margin-bottom:4px; }
+  .mode-picker { margin:0; }
+  .mode-options { grid-template-columns:1fr; gap:10px; }
+  .mode-option { padding:15px 16px; gap:14px; border-color:var(--edge); border-radius:10px; background:var(--surface); color:var(--dim); }
+  .mode-option svg { color:var(--accent); margin-top:2px; }
+  .mode-option b { font-size:18px; margin-bottom:4px; }
+  .mode-option[aria-pressed="true"] { border-color:var(--selection); background:linear-gradient(120deg,#103e65,#0a1d34); box-shadow:var(--focus); }
+  .mode-option[aria-pressed="true"] svg { color:var(--accent-bright); }
+  .mode-option.mode-career:hover { border-color:var(--accent); background:#142e48; }
+  .menu-left .btn { padding:15px 20px; font-size:18px; }
+  #menuStart::after { content:'\2192'; margin-left:auto; font-size:24px; line-height:1; }
+  .display-control { padding:14px 0 0; border-top:1px solid var(--line); }
+  .display-label { display:block; margin-bottom:9px; color:var(--dim); font-size:11px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; }
+  .display-options { display:grid; grid-template-columns:1fr 1fr; gap:6px; padding:4px; border:1px solid var(--edge); border-radius:10px; background:#061323; }
+  .display-options button { min-height:38px; border:1px solid transparent; border-radius:6px; background:transparent; color:var(--dim); font:700 14px var(--font); cursor:pointer; }
+  .display-options button:hover { color:#fff; background:#132c45; }
+  .display-options button[aria-pressed="true"] { border-color:#3d97c5; background:#133f60; color:#e3f7ff; box-shadow:inset 0 1px 0 #ffffff0d; }
+  .display-readout { display:block; min-height:16px; margin-top:8px; color:var(--dim); font-size:11px; letter-spacing:.3px; }
+  .menu-foot { margin:0; color:#91acc8; font-size:10px; letter-spacing:1.3px; }
+  #circuitSelect { top:clamp(24px,7vh,84px); right:clamp(24px,3vw,64px); bottom:auto; width:calc(62vw - 64px); max-width:1060px; min-width:0; max-height:calc(100vh - 48px); overflow:auto; padding:22px; }
+  #circuitSelect .cs-head { padding-bottom:16px; border-bottom:1px solid var(--line); }
+  #circuitSelect .cs-head::after { content:'SELECT CIRCUIT'; flex:none; font-size:10px; letter-spacing:1.5px; color:var(--accent); }
+  #csCards { grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
+  .cs-card { flex-direction:column; padding:12px; border-color:var(--edge); background:#081828; border-radius:10px; }
+  .cs-card .cmap { width:100%; }
+  .cs-card:hover { background:#122d46; border-color:#67b5dd; }
+  .cs-card[aria-selected="true"] { border-color:var(--selection); background:linear-gradient(145deg,#123b60,#0b1c32); box-shadow:var(--focus); }
+  #raceBrief { --brief-yellow:var(--accent-bright); }
+  #raceBrief .dialog { border-color:var(--edge); background:var(--surface); }
+  #raceBrief h2 span { color:var(--accent); }
+  .brief-meta, .briefFuel, .brief-fuel-total { border-color:var(--edge); background:#0a1c2f; }
+  .brief-meta .brief-icon, .brief-section-title .brief-icon, .brief-fuel-heading .brief-icon, .brief-fuel-detail .brief-icon { color:var(--accent); }
+  .brief-meta small, .brief-meta p > span { color:var(--dim); }
+  .brief-tyre { border-width:1px; border-color:#365774; background:linear-gradient(140deg,#14293f,#091725); }
+  .brief-tyre[data-c="H"] { border-color:#365774; }
+  .brief-tyre[aria-pressed="true"] { border-color:var(--selection); background:linear-gradient(140deg,#143e66,#0a1f36); box-shadow:var(--focus); }
+  .brief-selected { background:var(--selection); color:#041522; }
+  #briefFuel::-webkit-slider-runnable-track { border-color:#3988b1; }
+  #briefFuel::-moz-range-track { border-color:#3988b1; }
+  #briefFuel::-webkit-slider-thumb { border-color:#b4efff; }
+  #briefFuel::-moz-range-thumb { border-color:#b4efff; }
+  #briefStart { background:linear-gradient(110deg,#5bd7ff,#199fe8); border-color:var(--accent-bright); color:#041522; }
+  #briefStart:hover { background:linear-gradient(110deg,#89e7ff,#35b9ff); }
+  .cr-ranks li[aria-current] { color:var(--accent-bright); }
+  .cr-next .cr-map path { stroke:var(--accent); }
+  .cr-seg[aria-selected="true"], .cr-chip.live { background:#103b5c; border-color:var(--selection); box-shadow:var(--focus); }
+  .cr-seg.live .cr-state { color:var(--accent); }
+  .cr-race { border-color:var(--edge); background:#091a2b; }
+  .cr-race.next { border-color:var(--accent); background:#102f4b; box-shadow:var(--focus); }
+  table.res th { color:#a8c4de; padding:10px; }
+  table.res td { padding:9px 10px; border-color:var(--line); }
+  table.res tr:nth-child(even) td { background:#b4dfff04; }
+  table.res tr.me td { background:#1f9edb26; color:#e5f8ff; }
+  .sum-hero, .res-career, .cr-stats > div { background:#0b2035; border-color:var(--edge); }
+  #hud-tr .race-top { padding-bottom:12px; }
+  #hud-tr .lap b, #hud-tr .pos b { color:#f7fbff; font-weight:900; }
+  #hud-tr .pos b { color:var(--accent-bright); }
+  #hud-tr .lap > span:first-child, #hud-tr .pos > span:first-child { font-size:12px; color:var(--dim); letter-spacing:1.5px; }
+  #hud-br .srow { background:linear-gradient(110deg,#081522,#152c43); border-color:#3a5d7a; }
+  #pitPlan .pp-tyre { background:linear-gradient(140deg,#1b3047,#0c1a2b); border-color:#47617e; }
+  #pitPlan .pp-tyre[aria-pressed="true"] { border-color:var(--selection); box-shadow:inset 0 -3px var(--selection),0 0 12px #00c8ff30; background:linear-gradient(130deg,#16477b,#0c2849); }
+  #pitPlan .pp-fuel button:hover { background:#25618a; }
+  #vsBadge { background:linear-gradient(120deg,#087a42,#075032); }
+  #dash .body { background:linear-gradient(180deg,#112b43f5,#061323fa); }
+  #dash .body::before, #dash .gear::before { background:var(--accent); }
+  #dash .gear { background:linear-gradient(180deg,#185d8fe6,#0b2e4d); color:#e9faff; }
+  #dash .sub { border-color:var(--edge); }
+  #pitSvc .pv-head b, #carStatus h2, #carStatus .cs-sec { border-color:var(--accent); }
+  #pitSvc .pv-bar i, .rs-track i { background:linear-gradient(90deg,#148fd5,var(--selection)); }
+  .msg { background:#0b1e32f5; border-color:var(--line); border-left-color:var(--accent); }
+  #carStatus .cs-item { background:#10263c; border-color:var(--edge); }
+  #carStatus .cs-sub, #carStatus .cs-k, #carStatus .cs-legend { color:var(--dim); }
+  #loading { background:radial-gradient(ellipse at 50% 40%,#133654,#040d18 70%); }
+  #loading .bar { background:#18344c; height:3px; width:min(340px,70vw); }
+  #loading .bar i { background:linear-gradient(90deg,#188fd5,var(--selection)); }
+  #toast { background:#102a42; border:1px solid var(--edge); border-radius:9px; }
+  @media(min-width:2400px) { .menu-left { width:700px; padding:96px 72px 48px; gap:24px; } .logo { font-size:108px; } .menu-intro { font-size:20px; } .menu-intro b { font-size:30px; } .menu-kicker { font-size:14px; } .mode-option { padding:22px; font-size:18px; } .mode-option b { font-size:24px; } .menu-left .btn { padding:22px 28px; font-size:23px; } .display-label, .display-readout { font-size:15px; } .display-options button { min-height:48px; font-size:18px; } .menu-foot { font-size:14px; } #circuitSelect { width:calc(100vw - 820px); top:96px; padding:32px; } .cs-card { font-size:23px; } }
+  @media(min-width:2400px) and (min-height:1100px) { .dialog, #carStatus .cs-panel { zoom:1.5; max-height:calc((100vh - 48px) / 1.5); } }
+  @media(max-width:1100px) { #csCards { grid-template-columns:repeat(2,minmax(0,1fr)); } #circuitSelect .cs-head::after { display:none; } #circuitSelect { width:calc(100vw - 410px); right:24px; } .menu-left { width:370px; padding-left:24px; padding-right:24px; } }
+  @media(max-height:760px) and (min-width:901px) { .menu-left { padding-top:24px; gap:10px; } .logo { font-size:56px; } .menu-intro { margin-bottom:2px; font-size:13px; } .menu-intro b { font-size:20px; } .mode-option { padding:12px; font-size:12px; } .menu-left .btn { padding:12px 18px; } }
+  @media(max-width:900px) { #circuitSelect { position:fixed; inset:16px; width:auto; max-height:calc(100vh - 32px); } #menu.selecting .menu-left { visibility:hidden; } .menu-left { width:min(460px,100%); } .keys { grid-template-columns:1fr; } .dialog { padding:22px; } }
+  @media(max-width:500px) { .menu-left { padding:24px 20px; gap:12px; } .logo { font-size:60px; } .menu-intro b { font-size:21px; } .mode-option { font-size:13px; padding:12px; } #circuitSelect { padding:16px; } .cs-head { margin-bottom:10px; } #csCards { gap:8px; } .cs-card { padding:10px; font-size:14px; } .cs-actions .btn { flex:1; justify-content:center; padding:10px; } #pause .dialog { width:calc(100vw - 32px) !important; } }
+  @media(prefers-reduced-motion:reduce) { *, *::before, *::after { scroll-behavior:auto !important; transition:none !important; animation:none !important; } }
 </style>
 </head>
 <body>
@@ -533,10 +712,19 @@
 <div id="fxFlash" class="fxl"></div><div id="fxDmg" class="fxl"></div><div id="fxCut" class="fxl"></div>
 
 <div id="hud" class="hidden">
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="rh-tools" viewBox="0 0 24 24"><path d="m4 3 17 17m-3-17-4 4 3 3 4-4M3 21l6-6m5-8L7 14l3 3 7-7M3 3l1 5 3 1 2-2-1-3z"/></symbol>
+<symbol id="rh-fuel" viewBox="0 0 24 24"><path d="M4 21V3h10v18M3 21h13M5 5h7v6H5m9-4 4 3v8a2 2 0 0 0 4 0v-6l-4-5"/></symbol>
+<symbol id="rh-repair" viewBox="0 0 24 24"><path d="m14 5 5-3a6 6 0 0 1-7 9L4 21l-3-3 10-8a6 6 0 0 1 9-7l-4 4z"/></symbol>
+<symbol id="rh-bars" viewBox="0 0 24 24"><path d="M3 21v-7h4v7zm7 0V8h4v13zm7 0V2h4v19z"/></symbol>
+<symbol id="rh-tyre" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><path d="m5 5 3 3m8 8 3 3M5 19l3-3m8-8 3-3"/></symbol>
+<symbol id="rh-engine" viewBox="0 0 24 24"><path d="M5 8h4V5h7v3h3v11H7v-3H4V9m-3 1v6m9-14h6m5 7h2v10h-2M12 9l-2 5h5l-2 4"/></symbol>
+<symbol id="rh-timer" viewBox="0 0 24 24"><circle cx="12" cy="14" r="8"/><path d="M9 2h6m-3 0v4m6 1 2-2m-8 9 3-4"/></symbol>
+</defs></svg>
   <div id="accentbar"></div>
   <div id="hud-left" class="hz">
     <div class="lstack">
-      <div id="hud-bl" class="panel"><div class="plabel">Track map</div><canvas id="minimap" width="652" height="472"></canvas></div>
+      <div id="hud-bl" class="panel"><canvas aria-label="Track map" id="minimap" width="652" height="472"></canvas></div>
     </div>
   </div>
   <div id="hud-tr" class="panel hz">
@@ -548,22 +736,30 @@
     <div class="kv"><span class="k">BEST</span><span class="v num" id="tBest">--:--.---</span></div>
   </div>
   <div id="hud-right" class="hz">
+  <div id="pitPlan" class="panel hidden" aria-label="Pit plan">
+    <div class="pp-head"><b><svg class="rh-icon" aria-hidden="true"><use href="#rh-tools"/></svg>PIT PLAN</b><small id="ppEst">Estimated stop: <strong>2.4 s</strong> stationary</small></div>
+    <div class="pp-row"><div class="pp-tyre-head"><span class="pp-k">TYRES</span><small>Select tyre compound</small></div><span class="pp-tyres" id="ppTyres" role="group" aria-label="Tyres for the next stop"></span></div>
+    <div class="pp-row" id="ppFuelRow"><span class="pp-k"><svg class="rh-icon" aria-hidden="true"><use href="#rh-fuel"/></svg>FUEL</span><span class="pp-fuel"><button type="button" id="ppFuelDown" aria-label="Less fuel">−</button><span id="ppFuel">+0.0 laps</span><button type="button" id="ppFuelUp" aria-label="More fuel">+</button></span></div>
+    <div class="pp-row"><span class="pp-k"><svg class="rh-icon" aria-hidden="true"><use href="#rh-repair"/></svg>REPAIRS</span><button type="button" class="pp-rep" id="ppRepair" aria-pressed="true">REPAIR ALL DAMAGE</button></div>
+    <div class="pp-note" id="ppNote"></div>
+  </div>
     <div id="hud-br" class="panel" aria-label="Race status">
+      <div class="rs-head"><b><svg class="rh-icon" aria-hidden="true"><use href="#rh-bars"/></svg>RACE STATUS</b><small>Track conditions</small></div>
       <div class="srow" id="rowWx">
-        <span class="sk">WEATHER</span>
-        <span class="sv"><i class="ico" id="wxIcon"></i><span class="wxv" title="Chance of rain in the next few minutes">RAIN <b class="num" id="wxRain">0%</b></span><span class="wxv" title="How wet the track surface is">TRACK <b class="num" id="wxWet">0%</b> WET</span></span>
+        <span class="sk"><i class="ico" id="wxIcon"></i>WEATHER</span>
+        <span class="sv"><span class="wxv" title="Chance of rain in the next few minutes">RAIN <b class="num" id="wxRain">0%</b></span><span class="wxv" title="How wet the track surface is">TRACK <b class="num" id="wxWet">0%</b> WET</span></span>
       </div>
       <div class="srow">
-        <span class="sk">TYRES</span>
+        <span class="sk"><svg class="rh-icon" aria-hidden="true"><use href="#rh-tyre"/></svg>TYRES</span>
         <span class="sv"><span class="cmp" id="cmpIcon">S</span><span id="cmpName">SOFT</span><span class="wear">WEAR <b class="num" id="wearPct">0%</b></span></span>
       </div>
       <div class="wbar"><i id="wearBar"></i></div>
       <div class="srow">
-        <span class="sk">FUEL</span>
+        <span class="sk"><svg class="rh-icon" aria-hidden="true"><use href="#rh-fuel"/></svg>FUEL</span>
         <span class="sv"><b class="num" id="fuelVal">-- LAPS</b></span>
       </div>
       <div class="srow" id="rowCar">
-        <span class="sk">CAR STATUS</span>
+        <span class="sk"><svg class="rh-icon" aria-hidden="true"><use href="#rh-engine"/></svg>CAR STATUS</span>
         <span class="sv"><b id="vsBadge">OK</b><span class="cs-hint"><kbd>C</kbd> details</span></span>
       </div>
       <div id="vstat" class="hidden"><div class="rows" id="vsRows"></div></div>
@@ -583,18 +779,10 @@
       </div>
     </div>
   </div>
+  <div id="lights" class="panel hz hidden"><div class="pod"><i></i><i></i></div><div class="pod"><i></i><i></i></div><div class="pod"><i></i><i></i></div><div class="pod"><i></i><i></i></div><div class="pod"><i></i><i></i></div></div>
   <div id="topc" class="hz">
     <div id="msgs"></div>
-    <div id="launchHint" class="panel hidden"><kbd id="kW">W</kbd><span id="launchText">Hold W to rev, launch is automatic when the lights go out</span></div>
-    <div id="lights" class="panel hidden"><div class="pod"><i></i><i></i></div><div class="pod"><i></i><i></i></div><div class="pod"><i></i><i></i></div><div class="pod"><i></i><i></i></div><div class="pod"><i></i><i></i></div></div>
-    <div id="launchStatus" class="panel hidden" aria-live="polite"><span class="k">LAUNCH</span><b id="launchState">STANDBY</b><i class="vsep"></i><b class="num" id="launchRpm">4000</b><span class="k">RPM</span><span id="rpmBar"></span></div>
-  </div>
-  <div id="pitPlan" class="panel hz hidden" aria-label="Pit plan">
-    <div class="pp-head"><b>PIT PLAN</b><small id="ppEst">Stop ≈ 2.4 s</small></div>
-    <div class="pp-row"><span class="pp-k">TYRES</span><span class="pp-tyres" id="ppTyres" role="group" aria-label="Tyres for the next stop"></span></div>
-    <div class="pp-row" id="ppFuelRow"><span class="pp-k">FUEL</span><span class="pp-fuel"><button type="button" id="ppFuelDown" aria-label="Less fuel">−</button><span id="ppFuel">+0.0 laps</span><button type="button" id="ppFuelUp" aria-label="More fuel">+</button></span></div>
-    <div class="pp-row"><span class="pp-k">REPAIRS</span><button type="button" class="pp-rep" id="ppRepair" aria-pressed="true">REPAIR ALL DAMAGE</button></div>
-    <div class="pp-note" id="ppNote"></div>
+
   </div>
   <section id="pitSvc" class="panel hz hidden" role="status" aria-live="polite" aria-labelledby="pvTitle">
     <div class="pv-head"><b id="pvTitle">PIT STOP</b><span id="pvStatus"></span></div>
@@ -614,6 +802,12 @@
     </div></fieldset></div>
     <button id="menuStart" class="btn primary" data-act="play">Start Grand Prix</button>
     <button class="btn" data-act="controls">Controls</button>
+    <div class="display-control" aria-label="Display resolution">
+      <span class="display-label" id="menuResolutionLabel">Resolution</span>
+      <div class="display-options" role="group" aria-labelledby="menuResolutionLabel"><button type="button" data-resolution="native" aria-pressed="false">Native</button><button type="button" data-resolution="4k" aria-pressed="true">4K Ultra</button></div>
+      <small class="display-readout" role="status">3840 × 2160 · Motion blur off</small>
+    </div>
+    <p class="menu-foot">WASD / ARROWS TO DRIVE</p>
   </div>
   <div id="circuitSelect" class="panel" role="dialog" aria-labelledby="csName" aria-hidden="true">
     <div class="cs-head">
@@ -713,6 +907,11 @@
     <button class="btn" data-act="controls">Controls</button>
     <button class="btn hidden" data-act="skip" id="btnSkip">Skip to the result</button>
     <button class="btn" data-act="exit" id="btnExit">Exit to main menu</button>
+    <div class="display-control" aria-label="Display resolution">
+      <span class="display-label" id="pauseResolutionLabel">Resolution</span>
+      <div class="display-options" role="group" aria-labelledby="pauseResolutionLabel"><button type="button" data-resolution="native" aria-pressed="false">Native</button><button type="button" data-resolution="4k" aria-pressed="true">4K Ultra</button></div>
+      <small class="display-readout" role="status">3840 × 2160 · Motion blur off</small>
+    </div>
   </div>
 </div>
 
@@ -5421,7 +5620,6 @@ const SIM = (function () {
         if (!this.lightsHoldAt && this.lights >= 5) this.lightsHoldAt = this.startSeqT + 0.6 + rnd() * 2.2;
         if (this.lightsHoldAt && this.startSeqT >= this.lightsHoldAt) {
           this.lightsOut = true; this.lights = 0; this.lightsOutTime = this.time; this.events.push({ type: 'lightsout' });
-          this.msg('LIGHTS OUT AND AWAY WE GO!', 'big', null, 3);
           for (const c of this.cars) { c.lapStart = this.time; }
         }
       }
@@ -6535,6 +6733,13 @@ const SIM = (function () {
     if (tier > 1 && !info.halfFloat) { tier = 1; why += ', no float render targets'; }
     return { tier, why };
   }
+  // Resolution is independent of scenery detail. 4K supersamples smaller windows while preserving their aspect
+  // ratio; Native matches physical display pixels. Respect the GPU's maximum renderbuffer / texture dimension.
+  function renderPixelRatio(width, height, dpr = 1, mode = '4k', maxDimension = 16384) {
+    const w = Math.max(1, Number(width) || 1), h = Math.max(1, Number(height) || 1);
+    const desired = mode === 'native' ? Math.max(1, Number(dpr) || 1) : Math.min(3840 / w, 2160 / h);
+    return Math.min(desired, Math.max(1, maxDimension) / Math.max(w, h));
+  }
   // Strategy pace model: relative lap time for an effective tyre grip mu (fresh Soft ≈ 1.68 = 1.0), fitted to
   // solo laps with frozen wear on all three circuits; lapTime (s per 6 km) is the circuit's grip sensitivity
   // (def.tyrePace); mismatch is the extra loss per unit of tyreMismatch (wet tyres overheating on a dry track,
@@ -6551,7 +6756,7 @@ const SIM = (function () {
     return (neg ? '-' : plus ? '+' : '') + str;
   }
 
-  return { COMPONENTS, CI, NPART, severityOf, componentEffect, DAMAGE_MIN, REPAIR_MIN, PIT_PARK_DECEL, gridWithPlayerAt, cornerSpeedSigns, SIGN_REF, arcadeCornerSpeed, G, RHO, PHYS_DT, DS, GAME_MODES, RaceIntel, INTEL, PROGRESS, AI_MAX_LEVEL, aiSkillForLevel, TEAMS, DRIVERS, TRACK_DEF, CIRCUITS, circuitById, circuitCentreLine, elevationAt, COMPOUNDS, SPEC, Track, Car, Session, AIDriver, RaceStrategy, planStrategy, bestCompoundFor, lapLoss, stintCost, wearPerLap, DRY_COMPOUNDS, migrateCompound, TYRE_REF_WORK, fmtTime, clamp, lerp, makeRng, stepCarPhysics, SLIPSTREAM, slipstreamStrength, OFF_TRACK, GREEN_RUNOFF, PlayerHandling, KeyboardDriveInput, HANDLING, USEFUL_WEAR, TYRE_STYLES, drivingStyle, tyreWearGrip, tyreWeatherGrip, tyreMismatch, updateTyres, wetnessFor, weatherCompound, DynamicWeather, CarDamage, DAMAGE_LEVELS, PART_KEYS, PART_NAMES, WHEEL_NAMES, REPAIR_TIME, REFUEL, FUEL_TANK_LAPS, FUEL_RESERVE, START_FUEL_LAPS, FUEL_PERF, FUEL_LAP_COST, estimatePitLoss, chooseStartFuelLaps, graphicsTier, normalizeDamageLevel, partExposure, torqueAt, defaultCompoundModel, setSeed: (s) => { rnd = makeRng(s); } };
+  return { COMPONENTS, CI, NPART, severityOf, componentEffect, DAMAGE_MIN, REPAIR_MIN, PIT_PARK_DECEL, gridWithPlayerAt, cornerSpeedSigns, SIGN_REF, arcadeCornerSpeed, G, RHO, PHYS_DT, DS, GAME_MODES, RaceIntel, INTEL, PROGRESS, AI_MAX_LEVEL, aiSkillForLevel, TEAMS, DRIVERS, TRACK_DEF, CIRCUITS, circuitById, circuitCentreLine, elevationAt, COMPOUNDS, SPEC, Track, Car, Session, AIDriver, RaceStrategy, planStrategy, bestCompoundFor, lapLoss, stintCost, wearPerLap, DRY_COMPOUNDS, migrateCompound, TYRE_REF_WORK, fmtTime, clamp, lerp, makeRng, stepCarPhysics, SLIPSTREAM, slipstreamStrength, OFF_TRACK, GREEN_RUNOFF, PlayerHandling, KeyboardDriveInput, HANDLING, USEFUL_WEAR, TYRE_STYLES, drivingStyle, tyreWearGrip, tyreWeatherGrip, tyreMismatch, updateTyres, wetnessFor, weatherCompound, DynamicWeather, CarDamage, DAMAGE_LEVELS, PART_KEYS, PART_NAMES, WHEEL_NAMES, REPAIR_TIME, REFUEL, FUEL_TANK_LAPS, FUEL_RESERVE, START_FUEL_LAPS, FUEL_PERF, FUEL_LAP_COST, estimatePitLoss, chooseStartFuelLaps, graphicsTier, renderPixelRatio, normalizeDamageLevel, partExposure, torqueAt, defaultCompoundModel, setSeed: (s) => { rnd = makeRng(s); } };
 })();
 // ==SIM-END==
 if (typeof module !== 'undefined') module.exports = SIM;
@@ -8355,7 +8560,7 @@ function makeFoliageAtlas(quality, theme, desert) {
     frond('palm', 82, 0.42, 0.28);
     fern('fern'); grass('grass');
   }, { cpu: true });
-  tex.minFilter = THREE.LinearMipmapLinearFilter; tex.anisotropy = Math.min(4, R.maxAniso || 4);
+  tex.minFilter = THREE.LinearMipmapLinearFilter; tex.anisotropy = Math.min(8, R.maxAniso || 4);
   const rect = (name) => { const [c, r] = FOLIAGE_TILES[name], k = 1 / 4, e = 0.5 / S, rows = name === 'bark' ? 2 : 1; return [c * k + e, 1 - (r + rows) * k + e, (c + 1) * k - e, 1 - r * k - e]; };
   return { tex, rect };
 }
@@ -9711,8 +9916,8 @@ class PostFX {
   constructor(renderer, quality) {
     this.r = renderer; this.q = quality; this.w = 1; this.h = 1;
     const type = THREE.HalfFloatType;
-    this.rt = new THREE.WebGLRenderTarget(1, 1, { type, samples: quality === 2 ? 4 : 2, depthBuffer: true, stencilBuffer: false });
-    this.levels = quality === 2 ? 6 : 5;
+    this.rt = new THREE.WebGLRenderTarget(1, 1, { type, samples: Math.min(quality === 2 ? 4 : 2, renderer.capabilities.maxSamples), depthBuffer: true, stencilBuffer: false });
+    this.levels = quality === 2 ? 5 : 4;
     this.bl = []; for (let i = 0; i < this.levels; i++) this.bl.push(new THREE.WebGLRenderTarget(1, 1, { type, depthBuffer: false, stencilBuffer: false }));
     this.cam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
     const tri = new THREE.BufferGeometry(); tri.setAttribute('position', new THREE.Float32BufferAttribute([-1, -1, 0, 3, -1, 0, -1, 3, 0], 3));
@@ -9747,11 +9952,11 @@ class PostFX {
         gl_FragColor = vec4(c / 16.0 * weight, 1.0);
       }`, { blending: THREE.AdditiveBlending, transparent: true });
     this.mComp = mk({
-      tScene: { value: null }, tBloom: { value: null }, bloomStr: { value: 0.55 }, exposure: { value: 1.0 }, blur: { value: 0 },
-      vign: { value: 0.28 }, sat: { value: 1.0 }, contrast: { value: 1.05 }, lift: { value: new THREE.Vector3(0.012, 0.016, 0.026) }, gain: { value: new THREE.Vector3(1.02, 1.0, 0.97) }, time: { value: 0 },
-      clock: { value: 0 }, aspect: { value: 1.6 }, flash: { value: 0 }, dmg: { value: 0 }, cut: { value: 0 }, ca: { value: 0 }, lines: { value: 0 }, rain: { value: 0 },
+      tScene: { value: null }, tBloom: { value: null }, texel: { value: new THREE.Vector2() }, bloomStr: { value: 0.18 }, exposure: { value: 1.0 },
+      vign: { value: 0.12 }, sat: { value: 1.0 }, contrast: { value: 1.04 }, lift: { value: new THREE.Vector3(0.004, 0.006, 0.01) }, gain: { value: new THREE.Vector3(1.01, 1.0, 0.99) }, time: { value: 0 },
+      flash: { value: 0 }, dmg: { value: 0 }, cut: { value: 0 },
     }, `
-      uniform sampler2D tScene, tBloom; uniform float bloomStr, exposure, blur, vign, sat, contrast, time, clock, aspect, flash, dmg, cut, ca, lines, rain; uniform vec3 lift, gain; varying vec2 vUv;
+      uniform sampler2D tScene, tBloom; uniform vec2 texel; uniform float bloomStr, exposure, vign, sat, contrast, time, flash, dmg, cut; uniform vec3 lift, gain; varying vec2 vUv;
       vec3 aces(vec3 color){
         const mat3 IM = mat3(vec3(0.59719, 0.07600, 0.02840), vec3(0.35458, 0.90834, 0.13383), vec3(0.04823, 0.01566, 0.83777));
         const mat3 OM = mat3(vec3(1.60475, -0.10208, -0.00327), vec3(-0.53108, 1.10813, -0.07276), vec3(-0.07367, -0.00605, 1.07602));
@@ -9760,45 +9965,22 @@ class PostFX {
         return clamp(OM * (a / b), 0.0, 1.0);
       }
       vec3 toSRGB(vec3 c){ return mix(c * 12.92, 1.055 * pow(c, vec3(1.0 / 2.4)) - 0.055, step(0.0031308, c)); }
-      float h21(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
-      // raindrops on the lens: each cell may hold a drop that beads up, refracts the view and evaporates
-      vec2 lensRain(vec2 uv, out float wet){
-        vec2 off = vec2(0.0); wet = 0.0; float sc = 7.0;
-        for (int l = 0; l < 2; l++) {
-          vec2 p = vec2(uv.x * aspect, uv.y) * sc + float(l) * 3.7; vec2 cell = floor(p); vec2 f = fract(p) - 0.5;
-          float h = h21(cell + float(l) * 17.0); float life = fract(clock * (0.05 + 0.05 * h) + h * 7.0);
-          vec2 c = (vec2(h21(cell + 3.1), h21(cell + 5.7)) - 0.5) * 0.55;
-          float r = (0.07 + 0.12 * h21(cell + 9.2)) * smoothstep(0.0, 0.08, life);
-          vec2 d = f - c; float m = smoothstep(r, r * 0.6, length(d)) * (1.0 - life) * step(0.4, h);
-          off -= d * m * 0.9 / sc; wet = max(wet, m); sc *= 1.9;
-        }
-        return uv + off * rain;
-      }
       void main(){
-        vec2 uv = vUv; float drop = 0.0;
-        if (rain > 0.0) uv = lensRain(uv, drop);
-        vec3 col;
-        if (ca > 0.001) { vec2 dc = (uv - 0.5) * ca * 0.02; col = vec3(texture2D(tScene, uv + dc).r, texture2D(tScene, uv).g, texture2D(tScene, uv - dc).b); }
-        else col = texture2D(tScene, uv).rgb;
-        if (blur > 0.0) {
-          vec2 dir = uv - vec2(0.5, 0.56); float m = smoothstep(0.1, 0.62, length(dir)) * blur;
-          vec3 acc = col; for (int i = 1; i < 7; i++) acc += texture2D(tScene, uv - dir * m * float(i)).rgb; col = acc / 7.0;
-        }
+        vec2 uv = vUv;
+        vec3 col = texture2D(tScene, uv).rgb;
+        // A restrained, neighbourhood-clamped detail pass preserves edges without bright sharpening halos.
+        vec3 n = texture2D(tScene, uv + vec2(0.0, texel.y)).rgb;
+        vec3 s = texture2D(tScene, uv - vec2(0.0, texel.y)).rgb;
+        vec3 e = texture2D(tScene, uv + vec2(texel.x, 0.0)).rgb;
+        vec3 w = texture2D(tScene, uv - vec2(texel.x, 0.0)).rgb;
+        vec3 lo = min(col, min(min(n, s), min(e, w))), hi = max(col, max(max(n, s), max(e, w)));
+        col = clamp(col + (col - (n + s + e + w) * 0.25) * 0.18, lo, hi);
         col += texture2D(tBloom, uv).rgb * bloomStr;
         col = toSRGB(aces(col));
         float l = dot(col, vec3(0.2126, 0.7152, 0.0722));
         col = mix(vec3(l), col, sat);
         col = clamp((col - 0.5) * contrast + 0.5, 0.0, 1.0);
         col = col * gain + lift * (1.0 - col);
-        col += drop * rain * 0.05;
-        // speed lines: faint streaks rushing out from the centre at the edges of the screen
-        if (lines > 0.0) {
-          vec2 d = (vUv - vec2(0.5, 0.52)) * vec2(aspect, 1.0); float r = length(d), a = atan(d.y, d.x);
-          float k = a / 6.2832 * 150.0, id = floor(k), hh = h21(vec2(id, 4.0));
-          float w = smoothstep(0.5, 0.1, abs(fract(k) - 0.5)) * step(0.8, hh);
-          float dash = smoothstep(0.0, 0.25, fract(r * 1.6 - clock * (1.4 + hh * 1.8) + hh * 9.0)) * smoothstep(1.0, 0.6, fract(r * 1.6 - clock * (1.4 + hh * 1.8) + hh * 9.0));
-          col += w * dash * smoothstep(0.42, 0.95, r) * lines * 0.07;
-        }
         vec2 q = uv - 0.5; float rr = dot(q, q);
         col *= 1.0 - vign * rr * 1.5;
         col = mix(col, vec3(0.62, 0.04, 0.02), dmg * smoothstep(0.06, 0.32, rr) * 0.55);
@@ -9807,11 +9989,12 @@ class PostFX {
         col += (fract(sin(dot(gl_FragCoord.xy, vec2(12.9898, 78.233)) + time) * 43758.5453) - 0.5) / 255.0;
         gl_FragColor = vec4(col, 1.0);
       }`);
-    this.bloomStr = quality === 2 ? 0.55 : 0.45;
+    this.bloomStr = quality === 2 ? 0.18 : 0.12;
   }
   setSize(w, h) {
     this.w = Math.max(1, w | 0); this.h = Math.max(1, h | 0);
     this.rt.setSize(this.w, this.h);
+    this.mComp.uniforms.texel.value.set(1 / this.w, 1 / this.h);
     for (let i = 0; i < this.levels; i++) this.bl[i].setSize(Math.max(1, this.w >> (i + 1)), Math.max(1, this.h >> (i + 1)));
   }
   pass(mat, target) { this.quad.material = mat; this.r.setRenderTarget(target); this.r.render(this.sc, this.cam); }
@@ -9820,17 +10003,16 @@ class PostFX {
     r.autoClear = false;
     r.setRenderTarget(this.rt); r.clear(true, true, false); r.render(scene, camera);
     // bloom: threshold + downsample chain, then additive tent upsample back up
-    this.mPre.uniforms.tSrc.value = this.rt.texture; this.mPre.uniforms.texel.value.set(1 / this.w, 1 / this.h); this.mPre.uniforms.thr.value = p.wet ? 0.85 : 1.15;
+    this.mPre.uniforms.tSrc.value = this.rt.texture; this.mPre.uniforms.texel.value.set(1 / this.w, 1 / this.h); this.mPre.uniforms.thr.value = p.wet ? 1.6 : 2.0;
     this.pass(this.mPre, this.bl[0]);
     for (let i = 1; i < this.levels; i++) { const s = this.bl[i - 1]; this.mDown.uniforms.tSrc.value = s.texture; this.mDown.uniforms.texel.value.set(1 / s.width, 1 / s.height); this.pass(this.mDown, this.bl[i]); }
     for (let i = this.levels - 1; i > 0; i--) { const s = this.bl[i]; this.mUp.uniforms.tSrc.value = s.texture; this.mUp.uniforms.texel.value.set(1 / s.width, 1 / s.height); this.mUp.uniforms.weight.value = 1.0; this.pass(this.mUp, this.bl[i - 1]); }
     const u = this.mComp.uniforms;
     u.tScene.value = this.rt.texture; u.tBloom.value = this.bl[0].texture; u.bloomStr.value = this.bloomStr * (p.wet ? 0.8 : 1);
-    u.exposure.value = p.exposure != null ? p.exposure : 1.0; u.blur.value = p.blur || 0; u.time.value = (u.time.value + 0.618) % 100;
+    u.exposure.value = p.exposure != null ? p.exposure : 1.0; u.time.value = (u.time.value + 0.618) % 100;
     // (a natural grade: saturation near neutral reads as photographed rather than painted)
-    u.sat.value = p.wet ? 0.9 : 1.0; u.contrast.value = p.wet ? 1.07 : 1.05; u.vign.value = 0.28;
-    u.clock.value = performance.now() / 1000 % 1000; u.aspect.value = this.w / this.h;
-    u.flash.value = p.flash || 0; u.dmg.value = p.dmg || 0; u.cut.value = p.cut || 0; u.ca.value = p.ca || 0; u.lines.value = p.lines || 0; u.rain.value = p.rain || 0;
+    u.sat.value = p.wet ? 0.94 : 1.0; u.contrast.value = 1.04; u.vign.value = 0.12;
+    u.flash.value = p.flash || 0; u.dmg.value = p.dmg || 0; u.cut.value = p.cut || 0;
     this.pass(this.mComp, null);
     r.autoClear = prevAuto;
   }
@@ -9853,16 +10035,17 @@ const clamp = SIM.clamp, lerp = SIM.lerp, fmt = SIM.fmtTime;
 /* ---------------- runtime defaults and race choices ---------------- */
 const SETTINGS_KEY = 'apexgp.settings.v1';
 const DEFAULTS = { startTyre:'H', startFuel:6.5, circuit:SIM.CIRCUITS[0].id,
-  quality:'high', volume:70, speedBlur:'on', camera:'chase' };
+  quality:'high', volume:70, speedBlur:'off', resolution:'4k', camera:'chase' };
 const S = { ...DEFAULTS };
 try { const raw = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}');
-  for (const k of ['startTyre', 'startFuel', 'circuit', 'camera']) if (raw[k] != null) S[k] = raw[k];
+  for (const k of ['startTyre', 'startFuel', 'circuit', 'camera', 'resolution']) if (raw[k] != null) S[k] = raw[k];
 } catch(e) { /* storage unavailable */ }
 S.startTyre = SIM.migrateCompound(S.startTyre) || 'H';
 S.startFuel = clamp(Math.round((+S.startFuel || 6.5) * 2) / 2, ...SIM.START_FUEL_LAPS);
 if (!SIM.CIRCUITS.some(c => c.id === S.circuit)) S.circuit = SIM.CIRCUITS[0].id;
 if (S.camera !== 'cockpit') S.camera = 'chase';
-const saveSettings = () => { try { localStorage.setItem(SETTINGS_KEY, JSON.stringify({ startTyre:S.startTyre, startFuel:S.startFuel, circuit:S.circuit, camera:S.camera })); } catch(e) { /* ignore */ } };
+if (!['native', '4k'].includes(S.resolution)) S.resolution = DEFAULTS.resolution;
+const saveSettings = () => { try { localStorage.setItem(SETTINGS_KEY, JSON.stringify({ startTyre:S.startTyre, startFuel:S.startFuel, circuit:S.circuit, camera:S.camera, resolution:S.resolution })); } catch(e) { /* ignore */ } };
 /* ---------------- Career progression ----------------
    Three six-race championships and Endless Career (SIM.PROGRESS). The v4 save has its own key; the earlier saves
    (v3 and older) stay untouched in theirs. */
@@ -10155,11 +10338,10 @@ window.APEX = G; // handy for debugging / automated tests
 
 function qualityLevel() { return S.quality === 'low' ? 0 : S.quality === 'medium' ? 1 : 2; }
 /* ---------------- graphics level ----------------
-   There is no graphics menu: the level is picked from the device, then held to the frame rate the game actually reaches.
-   high: 2048 shadows, 4x MSAA post-processing with bloom, the densest forest; medium: 1024 shadows, 2x MSAA; low: no
-   shadows or post-processing, a lighter forest and terrain, and fewer pixels. The governor (governGraphics) lowers the
-   level when even the lowest render scale cannot hold the frame rate, and raises it after a long smooth stretch; the
-   level it settles on is remembered for this device. ?quality=low|medium|high in the address forces a level. */
+   Scenery detail adapts to the device; the driver's saved resolution choice stays fixed. High: 2048 shadows, 4x
+   MSAA and restrained bloom; medium: 1024 shadows, 2x MSAA; low: lighter scenery without post-processing. The
+   governor reduces scenery and effects before lowering the next session's detail, without blurring the picture.
+   ?quality=low|medium|high forces scenery detail independently of Native / 4K Ultra. */
 const GFX_KEY = 'apexgp.gfx.v1', GFX_TIERS = ['low', 'medium', 'high'];
 let GFX = { tier: 2, why: '', gpu: '', forced: false, failed: [] };
 function probeGpu() {
@@ -10196,11 +10378,18 @@ function setGraphicsTier(tier, down) {
   GFX.tier = tier; GFX.why = 'measured on this device'; S.quality = GFX_TIERS[tier];
   try { localStorage.setItem(GFX_KEY, JSON.stringify({ tier, gpu: GFX.gpu, failed: GFX.failed })); } catch (e) { /* storage unavailable */ }
 }
-// How many pixels a level draws: the device pixel ratio up to a cap, and a pixel budget so a 4K or Retina screen does
-// not multiply the work of every pass.
+// Keep the requested image resolution at every detail level, including Low.
 function basePixelRatio(q) {
-  const cap = q === 2 ? 1.5 : q === 1 ? 1.15 : 0.85, budget = q === 2 ? 3.7e6 : q === 1 ? 2.1e6 : 1.0e6;
-  return Math.max(0.5, Math.min(window.devicePixelRatio || 1, cap, Math.sqrt(budget / Math.max(1, window.innerWidth * window.innerHeight))));
+  return SIM.renderPixelRatio(window.innerWidth, window.innerHeight, window.devicePixelRatio, S.resolution, R.maxRenderSize || 16384);
+}
+function updateDisplayUI() {
+  for (const b of document.querySelectorAll('[data-resolution]')) b.setAttribute('aria-pressed', String(b.dataset.resolution === S.resolution));
+  const canvas = renderer.domElement;
+  for (const label of document.querySelectorAll('.display-readout')) label.textContent = canvas.width + ' × ' + canvas.height + ' · Motion blur off';
+}
+function setDisplayResolution(mode) {
+  if (!['native', '4k'].includes(mode)) return;
+  S.resolution = mode; G.resScale = 1; saveSettings(); onResize();
 }
 function speedUnit(v) { return v * 3.6; }
 
@@ -10526,7 +10715,6 @@ function updateStrategyUI(p, sess) {
   if (!show) return;
   if (sess.time < (G.strategyRefresh || 0) && G.strategyCar === p) return;
   G.strategyRefresh = sess.time + 0.25; G.strategyCar = p;
-  $('pitPlan').style.setProperty('--brh', ($('hud-right').offsetHeight + 10) + 'px');
   const pl = pitPlanOf(p), sel = pl.tyre, box = $('ppTyres');
   if (!box.children.length) PP_TYRES.forEach((c, k) => {
     const b = document.createElement('button'); b.type = 'button'; b.className = 'pp-tyre'; b.dataset.c = c;
@@ -10547,8 +10735,12 @@ function updateStrategyUI(p, sess) {
   $('ppRepair').textContent = pl.repair ? (dmg ? 'REPAIR ALL · +' + rp.extra.toFixed(1) + ' s' : 'REPAIR ALL DAMAGE') : 'NO REPAIRS';
   const change = (sel || p.tyre.c) !== 'keep', fuelT = sess.fuelEnabled && fuelLaps > 0 ? SIM.REFUEL.connect + fuelLaps * sess.fuelLapRate(p) / SIM.REFUEL.rate : 0;
   const stop = Math.max(0.8, change || (pl.repair && rp.jobs.some(j => /^corner/.test(j.station))) ? (pl.repair ? rp.time : 2.4) : 0, fuelT, pl.repair ? rp.time - (change ? 0 : 2.4) : 0);
-  $('ppEst').textContent = 'Stop ≈ ' + stop.toFixed(1) + ' s stationary';
-  $('ppNote').innerHTML = '<kbd>1</kbd>–<kbd>5</kbd> tyres · <kbd>−</kbd> <kbd>+</kbd> fuel · <kbd>0</kbd> repairs. Enter the pit lane and the stop runs by itself.';
+  $('ppEst').innerHTML = 'Estimated stop: <strong>' + stop.toFixed(1) + ' s</strong> stationary';
+  const summaryTyre = sel === 'keep' ? p.tyre.c : sel || p.tyre.c, summaryComp = SIM.COMPOUNDS[summaryTyre];
+  $('ppNote').innerHTML = '<span class="pp-summary-title">Pit stop summary</span>'
+    + '<span><i class="cmp" style="--c:' + summaryComp.color + '">' + summaryTyre + '</i><span><small>Tyres</small><b>' + (sel === 'keep' ? 'KEEP' : summaryComp.name.replace('INTERMEDIATE', 'INTER').replace('FULL WET', 'WET')) + '</b></span></span>'
+    + '<span><small>Fuel</small><b>' + (sess.fuelEnabled ? '+' + fuelLaps.toFixed(1) + ' laps' : 'No refuel') + '</b></span>'
+    + '<span><small>Repairs</small><b>' + (pl.repair ? dmg : 0) + ' areas</b></span>';
 }
 // The pit-stop panel: where the car is in the lane, then each job of the service with its state, and the time left.
 function updatePitService(p, sess) {
@@ -10610,16 +10802,19 @@ const LED_N = 15;
 function initHud() {
   const leds = $('leds'); for (let k = 0; k < LED_N; k++) leds.appendChild(document.createElement('i'));
   G.ledEls = Array.from(leds.children);
-  for (let k = 0; k < 10; k++) $('rpmBar').appendChild(document.createElement('i'));
   G.mm = { cvs: $('minimap'), ctx: $('minimap').getContext('2d') };
   fitHud(); window.addEventListener('resize', fitHud);
   G.tel = { cvs: $('telCanvas'), ctx: $('telCanvas').getContext('2d'), g: $('gCanvas').getContext('2d'), buf: [] };
   prepMinimap();
+  for (const button of document.querySelectorAll('[data-resolution]')) button.addEventListener('click', () => setDisplayResolution(button.dataset.resolution));
+  updateDisplayUI();
 }
 // Scale the HUD with the window: panels are laid out on a virtual canvas of at least 1600×900 px.
 function fitHud() {
   const hz = clamp(Math.min(window.innerWidth / 1600, window.innerHeight / 900), 0.55, 1.5);
   G.hudZoom = hz; $('hud').style.setProperty('--hz', hz.toFixed(4));
+  if (G.mmT) prepMinimap();
+  if (CS.open) [...$('csCards').children].forEach((b, i) => drawCircuitMap(b.querySelector('canvas'), SIM.CIRCUITS[i]));
 }
 // The track map fills its panel: the circuit is turned to the angle at which it fits the panel largest (most
 // circuits are long and narrow, the panel is wide), so every corner is far enough from the next to read at a glance.
@@ -10637,16 +10832,21 @@ function mapFit(t, W, H, pad) {
   return (x, z) => [ox + (x * c - z * s - minU) * sc, oz + (x * s + z * c - minV) * sc];
 }
 function prepMinimap() {
-  const t = G.track, cvs = G.mm.cvs, W = cvs.width, H = cvs.height;
+  const t = G.track, cvs = G.mm.cvs, W = 652, H = 472;
+  const density = Math.max(1, (cvs.clientWidth || 326) * (G.hudZoom || 1) * (window.devicePixelRatio || 1) / W);
+  cvs.width = Math.round(W * density); cvs.height = Math.round(H * density);
+  G.mm.ctx.setTransform(density, 0, 0, density, 0, 0);
   G.mmT = { g: cvs.getContext('2d'), tf: mapFit(t, W, H, 22), W, H };
   // static layer
-  const st = document.createElement('canvas'); st.width = W; st.height = H; const sg = st.getContext('2d');
+  const st = document.createElement('canvas'); st.width = cvs.width; st.height = cvs.height; const sg = st.getContext('2d');
+  sg.setTransform(density, 0, 0, density, 0, 0);
   const path = (g, tf, w, col) => { g.beginPath(); for (let i = 0; i <= t.N; i += 2) { const [x, y] = tf(t.cx[i % t.N], t.cz[i % t.N]); if (i === 0) g.moveTo(x, y); else g.lineTo(x, y); } g.closePath(); g.strokeStyle = col; g.lineWidth = w; g.lineJoin = 'round'; g.stroke(); };
   path(sg, G.mmT.tf, 16, 'rgba(0,0,0,.55)'); path(sg, G.mmT.tf, 9, '#f2f4f8');
   // start line, across the track
   const [sx, sy] = G.mmT.tf(t.cx[0], t.cz[0]), [ax, ay] = G.mmT.tf(t.cx[0] + t.tx[0], t.cz[0] + t.tz[0]);
-  sg.save(); sg.translate(sx, sy); sg.rotate(Math.atan2(ay - sy, ax - sx)); sg.fillStyle = '#e10600'; sg.fillRect(-4, -13, 8, 26); sg.restore();
+  sg.save(); sg.translate(sx, sy); sg.rotate(Math.atan2(ay - sy, ax - sx)); sg.fillStyle = '#45c7ff'; sg.fillRect(-4, -13, 8, 26); sg.restore();
   G.mmStatic = st;
+  G.mm.ctx.drawImage(st, 0, 0, W, H);
 }
 // Menu circuit maps are drawn from the circuit's centre line, the same
 // geometry the playable Track is built on (x east, z south, as the minimap).
@@ -10667,9 +10867,9 @@ function drawCircuitMap(cvs, def) {
   const ox = (W - (maxX - minX) * sc) / 2, oy = (H - (maxZ - minZ) * sc) / 2, tf = ([x, z]) => [ox + (x - minX) * sc, oy + (z - minZ) * sc];
   const route = () => { g.beginPath(); for (let i = 0; i <= pts.length; i += 3) { const [x, y] = tf(pts[i % pts.length]); if (i === 0) g.moveTo(x, y); else g.lineTo(x, y); } g.closePath(); };
   g.lineJoin = g.lineCap = 'round';
-  route(); g.shadowColor = 'rgba(255,24,10,.95)'; g.shadowBlur = 16 * u; g.strokeStyle = 'rgba(225,6,0,.75)'; g.lineWidth = 7 * u; g.stroke();
-  route(); g.shadowBlur = 6 * u; g.strokeStyle = '#ff3b2a'; g.lineWidth = 4 * u; g.stroke();
-  route(); g.shadowBlur = 0; g.strokeStyle = '#fff4f2'; g.lineWidth = 1.8 * u; g.stroke();
+  route(); g.shadowColor = 'rgba(0,193,255,.5)'; g.shadowBlur = 8 * u; g.strokeStyle = 'rgba(22,141,208,.7)'; g.lineWidth = 7 * u; g.stroke();
+  route(); g.shadowBlur = 0; g.strokeStyle = '#45c7ff'; g.lineWidth = 4 * u; g.stroke();
+  route(); g.shadowBlur = 0; g.strokeStyle = '#e4f8ff'; g.lineWidth = 1.8 * u; g.stroke();
   // start/finish: a chequered bar across the track and an arrow in the direction of travel
   const [sx, sy] = tf(pts[0]), [ax, ay] = tf(pts[8]), dx = ax - sx, dy = ay - sy, l = Math.hypot(dx, dy) || 1, tx = dx / l, ty = dy / l;
   for (let k = -3; k < 3; k++) for (let c = 0; c < 2; c++) {
@@ -10927,8 +11127,8 @@ function leaveRace() {
   exitToMenu();
 }
 function drawMinimap() {
-  const { g, tf } = G.mmT; const t = G.track, sess = G.session; const W = G.mm.cvs.width, H = G.mm.cvs.height;
-  g.clearRect(0, 0, W, H); g.drawImage(G.mmStatic, 0, 0);
+  const { g, tf, W, H } = G.mmT; const t = G.track, sess = G.session;
+  g.clearRect(0, 0, W, H); g.drawImage(G.mmStatic, 0, 0, W, H);
   const cars = sess.cars.filter(c => !c.inGarage && !c.dnf).sort((a, b) => (a === G.focus) - (b === G.focus));
   for (const c of cars) {
     const [x, y] = tf(c.x, c.z); const me = c === G.focus;
@@ -11163,20 +11363,6 @@ function updateHud(dt) {
 }
 function updateLights() {
   const sess = G.session; if (!sess || sess.type !== 'race') { $('hud').classList.remove('starting'); return; }
-  const p = G.player, launch = p && p.launch;
-  // launch control: hold W on the grid; the clutch releases automatically at lights out
-  const showLaunch = !!(launch && launch.active && !G.attract && !(sess.lightsOut && launch.engagement >= 1));
-  $('launchHint').classList.toggle('hidden', !showLaunch); $('launchStatus').classList.toggle('hidden', !showLaunch);
-  if (showLaunch) {
-    const w = p.input.throttle > 0.05, armed = w && Math.abs(p.rpm - SIM.SPEC.launchRpm) < 1;
-    $('kW').classList.toggle('on', w);
-    $('launchText').textContent = !sess.lightsOut ? 'Hold W to rev, launch is automatic when the lights go out' : w ? 'Lights out, launching' : 'Lights out, press W to go';
-    $('launchState').textContent = sess.lightsOut ? (w ? 'ENGAGING' : 'PRESS W') : armed ? 'ARMED' : w ? 'REVVING' : 'HOLD W';
-    $('launchState').style.color = armed || (sess.lightsOut && w) ? '#3ee07a' : '';
-    $('launchRpm').textContent = Math.round(p.rpm / 10) * 10;
-    const bars = $('rpmBar').children, lit = Math.round(p.rpm / 12000 * bars.length), tgt = Math.round(SIM.SPEC.launchRpm / 12000 * bars.length);
-    for (let k = 0; k < bars.length; k++) bars[k].className = k < lit ? (k >= tgt + 1 ? 'hi' : 'on') : '';
-  }
   const n = sess.lightsOut ? 0 : sess.lights;
   if (n !== G.lastLights) {
     if (n > G.lastLights && !G.attract) G.audio.oneShot('beep');
@@ -11185,7 +11371,7 @@ function updateLights() {
     for (const l of G.trackObj.objs.gantryLamps) { l.mat.emissive.setHex(l.c < n ? 0xff1a1a : 0x000000); l.mat.color.setHex(l.c < n ? 0xff3030 : 0x220000); }
   }
   if (sess.lightsOut && !$('lights').classList.contains('hidden') && sess.time - sess.lightsOutTime > 1.5) $('lights').classList.add('hidden');
-  $('hud').classList.toggle('starting', showLaunch || !$('lights').classList.contains('hidden'));
+  $('hud').classList.toggle('starting', !$('lights').classList.contains('hidden'));
 }
 function drawTelemetry(car, dt) {
   const T = G.tel; T.acc = (T.acc || 0) + dt; if (T.acc < 1 / 30) return; T.acc = 0;
@@ -11295,6 +11481,7 @@ function updateDamageVisuals(car, m, sess, dt) {
     m.rw.visible = !gone;
     if (!gone) { m.rw.rotation.set(d > 0.4 ? Math.sin(now * 23) * 0.05 * shake * d : 0, d * 0.08, -d * 0.4); m.rw.position.set(RW_PIVOT[0], RW_PIVOT[1] - d * 0.06 + up, 0); }
   }
+  if (car === G.focus && G.camRig.mode === 'cockpit') show |= bit(PT.MIRL) | bit(PT.MIRR); // Clean cockpit: hide both mirror housings, stalks and glass.
   if (car === G.focus && G.camRig.mode === 'cockpit' && !G.lookBack) show |= bit(PT.HALO); // (the cockpit draws its own, slimmer halo)
   m.mask.value = show;
   const fatal = sess.damageLevel.fatal, k = Math.min(dt, 0.05);
@@ -11574,15 +11761,18 @@ function updateCarVisuals(dt) {
       for (const o of m.midHide) o.visible = lod < 1;
     }
     // the driver: hands on the wheel at full detail; in the cockpit view the focus car's own head is the camera
-    if (m.lod < 1) poseDriver(m.driver, car.steer, car.gLat || 0);
+    if (m.lod < 1) {
+      const staticCockpit = car === G.focus && G.camRig.mode === 'cockpit';
+      poseDriver(m.driver, staticCockpit ? 0 : car.steer, staticCockpit ? 0 : car.gLat || 0);
+    }
     const inside = car === G.focus && G.camRig.mode === 'cockpit' && !G.lookBack;
     m.helmet.visible = m.lod < 2 && !(car === G.focus && G.camRig.mode === 'cockpit');
     if (inside) {
       if (!G.cockpitHalo) G.cockpitHalo = new THREE.Mesh(driverGeometries().cockpitHalo, new THREE.MeshStandardMaterial({ color: 0x15171a, roughness: 0.42, metalness: 0.3 }));
       if (G.cockpitHalo.parent !== m.group) m.group.add(G.cockpitHalo);
     } else if (car === G.focus && G.cockpitHalo && G.cockpitHalo.parent) G.cockpitHalo.parent.remove(G.cockpitHalo);
-    if (car === G.focus && G.camRig.mode === 'cockpit') { if (m.driver.dispMat.map !== G.wheelTex && G.wheelTex) m.driver.dispMat.map = G.wheelTex; }
-    else if (m.driver.dispMat.map === G.wheelTex) m.driver.dispMat.map = wheelScreenTex(car.team);
+    // The cockpit wheel uses its fixed decorative display; race telemetry stays in the HUD.
+    if (m.driver.dispMat.map !== wheelScreenTex(car.team)) m.driver.dispMat.map = wheelScreenTex(car.team);
     // brake temperature (visual): heats with braking effort at speed, cools with airflow
     const bk = car.inGarage ? 0 : car.brake * car.speed / 85;
     for (let i = 0; i < 4; i++) m.bh[i] = clamp(m.bh[i] + (bk * (i < 2 ? 1.35 : 0.9) - m.bh[i] * (0.28 + car.speed * 0.0035) * (wet ? 1.6 : 1)) * dt, 0, 1.3);
@@ -12107,7 +12297,6 @@ function frame(now) {
       updateCarVisuals(G.paused ? 0 : dt);
       const camCar = G.focus;
       G.camRig.update(dt, camCar, { lookBack: G.lookBack, model: G.models.get(camCar) });
-      if (G.camRig.mode === 'cockpit' && camCar && (!G.wheelTex || (G.wheelT = (G.wheelT || 0) + dt) > 1 / 15)) { G.wheelT = 0; updateWheelDisplay(camCar, sess); } // (15 times a second; at once on entering the cockpit)
       if (G.prevCam) G.camVel = camera.position.clone().sub(G.prevCam).multiplyScalar(1 / Math.max(dt, 1e-3)); G.prevCam = camera.position.clone();
       // shadows follow the camera target
       if (R.sun) placeSun(camCar);
@@ -12127,19 +12316,12 @@ function frame(now) {
     // medium level: the shadow map is redrawn every second frame (its light follows the focus car, so a shadow lags
     // by one frame at most)
     renderer.shadowMap.autoUpdate = G.worldQ !== 1; if (G.worldQ === 1 && (G.frameN = (G.frameN || 0) + 1) % 2) renderer.shadowMap.needsUpdate = true;
-    updateMirrors(G.focus && G.camRig.mode === 'cockpit' && !G.lookBack && G.session ? G.models.get(G.focus) : null);
     // screen effects decay; particle sizes follow the viewport height and field of view
     const fx = G.fx; fx.hit = Math.max(0, fx.hit - dt * 3.2); fx.dmg = Math.max(0, fx.dmg - dt * 1.3); fx.cut = Math.max(0, fx.cut - dt * 2.8);
     const pScale = renderer.domElement.height / (2 * Math.tan(camera.fov * Math.PI / 360));
     for (const sys of [G.smoke, G.dust, G.grit, G.fire, G.splash, G.spray]) if (sys) sys.mat.uniforms.scale.value = pScale;
-    const f = G.focus;
     if (G.post) {
-      const fast = S.speedBlur === 'on' && f && !G.paused && !G.attract;
-      const blur = fast ? clamp((f.speed - 55) / 40, 0, 1) * 0.012 : 0;
-      const lines = fast ? clamp((f.speed - 64) / 24, 0, 1) : 0;
-      const ca = fx.hit * 0.9 + (fast ? clamp((f.speed - 70) / 30, 0, 1) * 0.12 : 0);
-      const rain=G.session.weather?G.session.weather.rain:0;
-      G.post.render(scene, camera, { wet: G.worldWet, blur, exposure: lerp(1,0.93,G.session.weather?G.session.weather.cloud:0), lines, ca, rain, flash: fx.hit * 0.55, dmg: fx.dmg, cut: fx.cut });
+      G.post.render(scene, camera, { wet: G.worldWet, exposure: lerp(1,0.93,G.session.weather?G.session.weather.cloud:0), flash: fx.hit * 0.55, dmg: fx.dmg, cut: fx.cut });
     } else {
       renderer.render(scene, camera);
       G.fxEls.flash.style.opacity = (fx.hit * 0.4).toFixed(3); G.fxEls.dmg.style.opacity = (fx.dmg * 0.8).toFixed(3); G.fxEls.cut.style.opacity = fx.cut.toFixed(3);
@@ -12158,6 +12340,7 @@ function onResize() {
   G.basePR = basePixelRatio(G.worldQ ?? qualityLevel()); if (!G.fixedRes) renderer.setPixelRatio(G.basePR * G.resScale);
   renderer.setSize(w, h); camera.aspect = w / h; camera.updateProjectionMatrix();
   if (G.post) { const v = renderer.getDrawingBufferSize(new THREE.Vector2()); G.post.setSize(v.x, v.y); }
+  updateDisplayUI();
 }
 // Keep the shadow map centred on the focus car, snapped to whole shadow texels so shadows do not shimmer as the camera moves.
 const _sF = new THREE.Vector3(), _sR = new THREE.Vector3(), _sU = new THREE.Vector3(), _sT = new THREE.Vector3();
@@ -12168,26 +12351,18 @@ function placeSun(car) {
   _sT.copy(_sR).multiplyScalar(a).addScaledVector(_sU, b).addScaledVector(_sF, c);
   R.sun.target.position.copy(_sT); R.sun.position.copy(_sT).addScaledVector(L, 320); R.sun.target.updateMatrixWorld();
 }
-// Dynamic resolution: drop the render scale when the frame rate sags, recover it slowly when there is headroom.
-// Every change reallocates the render targets (a visible hitch), so the scale may not see-saw: after a drop it is not
-// raised again for 30 s, and only after 10 s of comfortable frame rate.
+// Adapt scenery and effects only. Never trade the driver's selected resolution for a blurred, upscaled image.
 function adaptResolution() {
   if (G.fixedRes || document.hidden || G.mode === 'loading') return;
-  if (G.fps < 48) { G.lowN = (G.lowN || 0) + 1; G.highN = 0; } else if (G.fps > 58) { G.highN = (G.highN || 0) + 1; G.lowN = 0; } else { G.lowN = 0; G.highN = 0; }
-  let s = G.resScale; const now = performance.now();
-  if (G.lowN >= 4 && s > 0.6) { s = Math.max(0.6, s * 0.88); G.lowN = 0; G.resDropT = now; }
-  if (G.highN >= 20 && s < 1 && now - (G.resDropT || -1e9) > 30000) { s = Math.min(1, s * 1.06); G.highN = 0; }
-  if (s !== G.resScale) { G.resScale = s; onResize(); }
-  governGraphics(now);
+  governGraphics(performance.now());
 }
 // Only real driving counts (not menus, pauses or the first seconds after a world build, while shaders compile).
-// Down: the lowest render scale still under 45 FPS for 3 s first shortens the forest's draw distance, then drops the
-// post-processing at once and lowers the level from the next session. Up: 90 s at 58+ FPS on full resolution raises
-// it by one, but never back to a level this device already failed.
+// Down: sustained low frame rate shortens forest draw distance, then drops post-processing and lowers the next
+// session's scenery detail. Up: 90 s at 58+ FPS raises it by one, never back to a level this device already failed.
 function governGraphics(now) {
   const live = G.mode === 'race' && !G.paused && G.session && G.session.lightsOut && now - (G.worldBuiltAt || 0) > 8000 && !GFX.forced;
   if (!live) { G.govLow = G.govHigh = 0; return; }
-  G.govLow = G.fps < 45 && G.resScale <= 0.61 ? (G.govLow || 0) + 1 : 0;
+  G.govLow = G.fps < 45 ? (G.govLow || 0) + 1 : 0;
   G.govHigh = G.fps >= 58 && G.resScale >= 0.999 && (!G.forest || G.forest.budget >= 1) ? (G.govHigh || 0) + 1 : 0;
   if (G.govLow >= 6) {
     G.govLow = 0;
@@ -12195,7 +12370,7 @@ function governGraphics(now) {
     if (G.worldQ > 0 && GFX.tier >= G.worldQ) {
       setGraphicsTier(G.worldQ - 1, true);
       if (G.post) { G.post.dispose(); G.post = null; }
-      const t = $('toast'); t.textContent = 'Graphics lowered to ' + GFX_TIERS[GFX.tier] + ' to keep the game smooth on this device.'; t.classList.remove('hidden'); setTimeout(() => t.classList.add('hidden'), 5000);
+      const t = $('toast'); t.textContent = 'Scenery detail set to ' + GFX_TIERS[GFX.tier] + ' for smoother racing. Resolution stays ' + (S.resolution === '4k' ? '4K Ultra.' : 'Native.'); t.classList.remove('hidden'); setTimeout(() => t.classList.add('hidden'), 5000);
     }
   }
   if (G.govHigh >= 180 && G.worldQ < 2 && GFX.tier === G.worldQ && !GFX.failed.includes(G.worldQ + 1)) { G.govHigh = 0; setGraphicsTier(G.worldQ + 1, false); }
@@ -12238,10 +12413,11 @@ async function boot() {
   setLoad(0.5); await new Promise(r => setTimeout(r, 30));
   chooseGraphics();
   try {
-    // (medium and high draw through their own multisampled target: an antialiased canvas would only add a resolve)
+    // PostFX already multisamples the scene. A second multisampled 4K canvas wastes substantial GPU memory.
     renderer = new THREE.WebGLRenderer({ antialias: GFX.tier === 0 || !GFX.post, powerPreference: 'high-performance' });
   } catch (e) { throw new Error('WebGL is not available in this browser (' + e.message + ').'); }
-  R.maxAniso = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+  R.maxAniso = Math.min(16, renderer.capabilities.getMaxAnisotropy());
+  R.maxRenderSize = Math.min(renderer.capabilities.maxTextureSize, renderer.getContext().getParameter(renderer.getContext().MAX_RENDERBUFFER_SIZE));
   renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.0; renderer.info.autoReset = false;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   $('game').appendChild(renderer.domElement);
