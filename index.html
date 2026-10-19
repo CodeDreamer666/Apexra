@@ -12143,7 +12143,7 @@ function frame(now) {
       updateCarVisuals(G.paused ? 0 : dt);
       const camCar = G.focus;
       G.camRig.update(dt, camCar, { lookBack: G.lookBack, model: G.models.get(camCar) });
-      if (G.camRig.mode === 'cockpit' && camCar && (G.wheelT = (G.wheelT || 0) + dt) > 1 / 15) { G.wheelT = 0; updateWheelDisplay(camCar, sess); }
+      if (G.camRig.mode === 'cockpit' && camCar && (!G.wheelTex || (G.wheelT = (G.wheelT || 0) + dt) > 1 / 15)) { G.wheelT = 0; updateWheelDisplay(camCar, sess); } // (15 times a second; at once on entering the cockpit)
       if (G.prevCam) G.camVel = camera.position.clone().sub(G.prevCam).multiplyScalar(1 / Math.max(dt, 1e-3)); G.prevCam = camera.position.clone();
       // shadows follow the camera target
       if (R.sun) placeSun(camCar);
