@@ -9006,7 +9006,8 @@ function carGeometries() {
   carbon.push(tag(tube([[-0.42, 0.66, -0.3], [-0.4, 0.83, -0.29], [-0.1, 0.89, -0.27], [0.18, 0.88, -0.1], [0.24, 0.88, 0], [0.18, 0.88, 0.1], [-0.1, 0.89, 0.27], [-0.4, 0.83, 0.29], [-0.42, 0.66, 0.3]], 0.032, 32), PT.HALO));
   carbon.push(tag(rod([0.24, 0.88, 0], [0.45, 0.66, 0], 0.03), PT.HALO));
   // cockpit opening & seat (dark)
-  dark.push(xf(new THREE.BoxGeometry(0.75, 0.04, 0.5), { p: [0.05, 0.705, 0] }));
+  // (behind the steering wheel and below the driver's arms: the wheel and hands stand above it)
+  dark.push(xf(new THREE.BoxGeometry(0.6, 0.02, 0.44), { p: [-0.04, 0.692, 0] }));
   CAR_GEO.body = mergeGeoms(body);
   CAR_GEO.carbon = mergeGeoms(carbon);
   CAR_GEO.accent = mergeGeoms(accent);
@@ -9065,9 +9066,9 @@ function textTex(txt, color, bg, w = 512, h = 96, font = '900 70px Titillium Web
    Car frame: x forward, y up, z across. The head sits where the helmet always was (0, 0.79, 0).
    --------------------------------------------------------------- */
 const DRIVER = {
-  head: [0, 0.79, 0], shoulder: [-0.07, 0.665, 0.19], elbow: [0.14, 0.6, 0.215],
-  wheel: [0.38, 0.665, 0], wheelTilt: 0.38, grip: 0.135, steerRatio: 5.5, steerMax: 2.3,
-  eye: [0.07, 0.815, 0], // the cockpit camera: just in front of the driver's eyes
+  head: [0, 0.79, 0], shoulder: [-0.07, 0.705, 0.19], elbow: [0.15, 0.668, 0.215],
+  wheel: [0.42, 0.728, 0], wheelTilt: 0.3, grip: 0.135, steerRatio: 5.5, steerMax: 2.3,
+  eye: [0.02, 0.805, 0], // the cockpit camera: at the driver's eyes
 };
 const SKIN = [0xe0b18f, 0xc68e6a, 0xa7714e, 0x8a5a3b, 0x6b4430, 0xf0c7a8];
 function paintGeo(g, rgb) { const n = g.attributes.position.count, a = new Float32Array(n * 3); for (let k = 0; k < n; k++) a.set(rgb, k * 3); g.setAttribute('color', new THREE.BufferAttribute(a, 3)); return g; }
@@ -9103,9 +9104,9 @@ function driverGeometries() {
   // HANS collar, shoulders and upper arms (suit = material colour; the carbon collar is painted dark)
   {
     const parts = [];
-    const hans = new THREE.TorusGeometry(0.105, 0.03, 8, 20); hans.rotateX(Math.PI / 2); hans.scale(1.1, 1, 1.25); hans.translate(-0.04, 0.68, 0); parts.push(paintGeo(hans, [0.07, 0.07, 0.08]));
+    const hans = new THREE.TorusGeometry(0.105, 0.03, 8, 20); hans.rotateX(Math.PI / 2); hans.scale(1.1, 1, 1.25); hans.translate(-0.04, 0.7, 0); parts.push(paintGeo(hans, [0.07, 0.07, 0.08]));
     const shoulders = new THREE.CapsuleGeometry(0.065, 0.3, 4, 10); shoulders.rotateX(Math.PI / 2); shoulders.translate(DRIVER.shoulder[0], DRIVER.shoulder[1] - 0.01, 0); parts.push(paintGeo(shoulders, W));
-    const torso = new THREE.BoxGeometry(0.22, 0.24, 0.36); torso.translate(-0.12, 0.55, 0); parts.push(paintGeo(torso, W));
+    const torso = new THREE.BoxGeometry(0.22, 0.24, 0.36); torso.translate(-0.12, 0.58, 0); parts.push(paintGeo(torso, W));
     for (const sz of [-1, 1]) {
       const [sx, sy, sz0] = DRIVER.shoulder, [ex, ey, ez] = DRIVER.elbow;
       const up = rod([sx, sy, sz * sz0], [ex, ey, sz * ez], 0.042); parts.push(paintGeo(up, W));
