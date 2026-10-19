@@ -680,7 +680,8 @@
       <div>Steer <span><kbd>A</kbd><kbd>D</kbd><kbd>←</kbd><kbd>→</kbd></span></div>
       <div>Controlled drift <span><kbd>W</kbd> + <kbd>S</kbd> + <kbd>A</kbd>/<kbd>D</kbd></span></div>
       <div>Launch (hold on the grid) <span><kbd>W</kbd></span></div>
-      <div>Look back <span><kbd>B</kbd></span></div>
+      <div>Chase / cockpit camera <span><kbd>F</kbd></span></div>
+      <div>Look back (cockpit: see the driver) <span><kbd>B</kbd></span></div>
       <div>Pit plan <span><kbd>V</kbd></span></div>
       <div>Pit plan tyres: Soft · Hard · Inter · Wet · Keep <span><kbd>1</kbd>–<kbd>5</kbd></span></div>
       <div>Pit plan fuel <span><kbd>−</kbd><kbd>+</kbd></span></div>
@@ -789,7 +790,7 @@ const SIM = (function () {
   // A tyre entering green paint reduces the whole car's velocity to 85% once per continuous excursion.
   // An 80 ms clear interval bridges mesh/tyre seams before rearming. Sustained grip loss and mild rolling
   // resistance vary with tyre count, ease in/out, and never replace grass/gravel resistance. Shared by all cars.
-  const GREEN_RUNOFF = { width: 3.2, entrySpeed: 0.85, exitDelay: 0.08, loss: [0, 0.025, 0.065, 0.11, 0.18], drag: [0, 0, 0.004, 0.012, 0.025], rise: 0.12, fall: 0.3 };
+  const GREEN_RUNOFF = { width: 3.2, entrySpeed: 0.85, entryTime: 0.6, exitDelay: 0.08, loss: [0, 0.025, 0.065, 0.11, 0.18], drag: [0, 0, 0.004, 0.012, 0.025], rise: 0.12, fall: 0.3 };
   const clamp = (x, a, b) => (x < a ? a : x > b ? b : x);
   const lerp = (a, b, t) => a + (b - a) * t;
   const smooth01 = (t) => { t = clamp(t, 0, 1); return t * t * (3 - 2 * t); };
@@ -1990,7 +1991,7 @@ const SIM = (function () {
       this.axL = 0; this.ayL = 0; this.gLong = 0; this.gLat = 0;
       this.load = new Float64Array(4); this.slipA = new Float64Array(4); this.lock = new Uint8Array(4); this.spin = new Uint8Array(4);
       this.slipPow = new Float64Array(4); this.surf = new Uint8Array(4); this.offN = 0; this.offLvl = 0; this.offGrip = 1; this.wheelRot = new Float64Array(4); this.util = new Float64Array(4);
-      this.greenEntryActive = false; this.greenExitTime = 0; this.greenEntries = 0;
+      this.greenEntryActive = false; this.greenExitTime = 0; this.greenEntries = 0; this.greenDrainT = 0;
       this.terrainN = 0; this.runoffN = 0; this.runoffLoss = 0; this.runoffGrip = 1; this.runoffDrag = 0;
       // Launch control (race starts): the automatic clutch stays open on the grid and engages after lights out.
       this.launch={active:race.type==='race',engagement:race.type==='race'?0:1,releasedAt:null}; this.surfaceWet=null;
@@ -2027,7 +2028,7 @@ const SIM = (function () {
     fuelTurnMul() { const F = this.fuelPerfLoad(); return F > 0 ? Math.sqrt(SPEC.mass / (SPEC.mass + FUEL_PERF.corner * F)) : 1; }
     placeAt(track, s, d, speed = 0) {
       const [x, z, h] = track.pointAt(s, d); this.x = x; this.z = z; this.psi = h;
-      this.vx = Math.cos(h) * speed; this.vz = Math.sin(h) * speed; this.r = 0;
+      this.vx = Math.cos(h) * speed; this.vz = Math.sin(h) * speed; this.r = 0; this.greenDrainT = 0;
       // projected from the intended sample, so a car placed on an overpass is on the right level
       track.project(x, z, track.wrapI(Math.round(track.wrapS(s) / DS)), this.proj); this.idx = this.proj.i; this.s = this.proj.s; this.d = this.proj.d;
     }
@@ -2354,7 +2355,14 @@ const SIM = (function () {
     car.vx += fwx / m * dt; car.vz += fwz / m * dt;
     car.r += Mz / sp.Iz * dt;
     car.r *= (1 - 0.6 * dt);
-    if (greenEntry) { car.vx *= GREEN_RUNOFF.entrySpeed; car.vz *= GREEN_RUNOFF.entrySpeed; car.greenEntries++; }
+    // Each entry onto the green paint costs 15% of the car's speed, taken off smoothly over entryTime (0.6 s) rather
+    // in one step: 100 km/h runs down through 99, 98 … to 85 and stops there. The loss runs to the end even if the car
+    // leaves the paint at once, so a quick touch costs the same as a longer one.
+    if (greenEntry) { car.greenDrainT += GREEN_RUNOFF.entryTime; car.greenEntries++; }
+    if (car.greenDrainT > 0) {
+      const part = Math.min(dt, car.greenDrainT), f = Math.pow(GREEN_RUNOFF.entrySpeed, part / GREEN_RUNOFF.entryTime);
+      car.vx *= f; car.vz *= f; car.greenDrainT -= part; if (car.greenDrainT < 1e-9) car.greenDrainT = 0;
+    }
     // standstill clamp
     const u2 = car.vx * c + car.vz * s, v2 = -car.vx * s + car.vz * c;
     if (Math.abs(u2) < 0.25 && Math.abs(v2) < 0.4 && (car.brake > 0.05 || car.throttle < 0.02) && car.gear !== -1 && !(car.throttle > 0.05 && car.brake < 0.05)) {
@@ -4509,7 +4517,8 @@ const SIM = (function () {
       for (let q = m - 1; q >= 0; q--) { const g = gripAt(q), vc = cv(K[q]) * g, vb = VB[q + 1] + dec * g * SG[q]; VB[q] = vc < vb ? vc : vb; }
       // early elimination: a path that needs far more than this car can do from here is not a path
       c.feasible = VB[0] > X.v0 - 6 || c.kind === 'keep' || c.kind === 'line';
-      let v = X.v0, tt = 0, risk = 0, minGap = 9, blocked = 0, tow = 0, lead = -50, overlap = 99; this.evT[0] = 0; c.overlapTurn = 99;
+      // (the speed starts with the rest of a green entry's loss still to come)
+      let v = X.v0 * Math.pow(GREEN_RUNOFF.entrySpeed, (this.car.greenDrainT || 0) / GREEN_RUNOFF.entryTime), tt = 0, risk = 0, minGap = 9, blocked = 0, tow = 0, lead = -50, overlap = 99; this.evT[0] = 0; c.overlapTurn = 99;
       const opps = X.opps, no = X.nOpp, tmax = (AI_PRED_N - 1) * AI_PRED_DT;
       c.dTurn = X.qTurn >= 0 ? D[X.qTurn] : D[0]; c.dMid = D[m >> 1];
       let onGreen = !!this.car.greenEntryActive;
@@ -8996,8 +9005,8 @@ function carGeometries() {
   // halo
   carbon.push(tag(tube([[-0.42, 0.66, -0.3], [-0.4, 0.83, -0.29], [-0.1, 0.89, -0.27], [0.18, 0.88, -0.1], [0.24, 0.88, 0], [0.18, 0.88, 0.1], [-0.1, 0.89, 0.27], [-0.4, 0.83, 0.29], [-0.42, 0.66, 0.3]], 0.032, 32), PT.HALO));
   carbon.push(tag(rod([0.24, 0.88, 0], [0.45, 0.66, 0], 0.03), PT.HALO));
-  // cockpit opening & seat (dark)
-  dark.push(xf(new THREE.BoxGeometry(0.75, 0.04, 0.5), { p: [0.05, 0.705, 0] }));
+  // cockpit: the seat back (dark), behind the driver's shoulders; the driver fills the opening (makeDriver)
+  dark.push(xf(new THREE.BoxGeometry(0.08, 0.1, 0.42), { p: [-0.3, 0.72, 0] }));
   CAR_GEO.body = mergeGeoms(body);
   CAR_GEO.carbon = mergeGeoms(carbon);
   CAR_GEO.accent = mergeGeoms(accent);
@@ -9009,8 +9018,6 @@ function carGeometries() {
   CAR_GEO.rimF = new THREE.CylinderGeometry(0.229, 0.229, 0.26, 24, 1, true); CAR_GEO.rimF.rotateX(Math.PI / 2);
   CAR_GEO.rimR = new THREE.CylinderGeometry(0.229, 0.229, 0.345, 24, 1, true); CAR_GEO.rimR.rotateX(Math.PI / 2);
   CAR_GEO.cover = new THREE.CircleGeometry(0.23, 28);
-  CAR_GEO.helmet = new THREE.SphereGeometry(0.13, 16, 12);
-  CAR_GEO.visor = xf(new THREE.SphereGeometry(0.133, 14, 6, -0.9, 1.8, 1.15, 0.5), { r: [0, Math.PI / 2, 0] });
   CAR_GEO.flap = airfoil(0.26, 0.1, 1.0, 0.07); CAR_GEO.flap.translate(-0.13, 0, 0); // pivots about its leading edge
   CAR_GEO.light = new THREE.BoxGeometry(0.04, 0.09, 0.14);
   // a curved piece of bodywork (painted with the livery) and jagged carbon panels, thrown out by heavy impacts
@@ -9051,6 +9058,163 @@ function tyreMaterials(comp, blur = false) {
 function textTex(txt, color, bg, w = 512, h = 96, font = '900 70px Titillium Web, Arial', spacing = 12) {
   return canvasTex(w, h, (g) => { if (bg) { g.fillStyle = bg; g.fillRect(0, 0, w, h); } else g.clearRect(0, 0, w, h); g.fillStyle = color; g.font = font; g.textAlign = 'center'; g.textBaseline = 'middle'; if (g.letterSpacing !== undefined) g.letterSpacing = spacing + 'px'; g.fillText(txt, w / 2, h / 2 + 4); });
 }
+/* ---------------------------------------------------------------
+   THE DRIVER — in the seat of every car: a helmet with a clear visor over the face, the HANS collar, shoulders and
+   arms in the team's suit, and gloves on a steering wheel that turns with the steering (the forearms follow the
+   hands). The wheel carries a display that shows the focus car's gear, speed, revs, lap, position and delta.
+   Car frame: x forward, y up, z across. The head sits where the helmet always was (0, 0.79, 0).
+   --------------------------------------------------------------- */
+const DRIVER = {
+  head: [0, 0.79, 0], shoulder: [-0.07, 0.705, 0.19], elbow: [0.16, 0.668, 0.225],
+  wheel: [0.39, 0.735, 0], wheelTilt: 0.28, grip: 0.15, steerRatio: 5.5, steerMax: 2.3,
+  eye: [-0.07, 0.865, 0], // the cockpit camera: the visor camera, wide, looking down the nose past the wheel
+};
+const SKIN = [0xe0b18f, 0xc68e6a, 0xa7714e, 0x8a5a3b, 0x6b4430, 0xf0c7a8];
+function paintGeo(g, rgb) { const n = g.attributes.position.count, a = new Float32Array(n * 3); for (let k = 0; k < n; k++) a.set(rgb, k * 3); g.setAttribute('color', new THREE.BufferAttribute(a, 3)); return g; }
+function driverGeometries() {
+  if (CAR_GEO.driver) return CAR_GEO.driver;
+  const D = CAR_GEO.driver = {}, W = [1, 1, 1];
+  // helmet shell with the visor opening cut out of its front
+  {
+    const s = new THREE.SphereGeometry(0.13, 28, 20).toNonIndexed(), p = s.attributes.position, keep = [];
+    for (let k = 0; k < p.count; k += 3) {
+      const cx = (p.getX(k) + p.getX(k + 1) + p.getX(k + 2)) / 3 / 0.13, cy = (p.getY(k) + p.getY(k + 1) + p.getY(k + 2)) / 3 / 0.13;
+      if (cx > 0.42 && cy > -0.34 && cy < 0.36) continue; // the visor opening
+      for (let j = 0; j < 3; j++) keep.push(p.getX(k + j), p.getY(k + j) - (p.getY(k + j) < -0.06 ? 0.012 : 0), p.getZ(k + j));
+    }
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(keep, 3)); g.computeVertexNormals();
+    // a chin bar and a lighter top stripe in the helmet's paint (vertex colours on white: the material carries the colour)
+    D.helmet = paintGeo(g, W);
+  }
+  // the face behind the visor: skin (material colour), eyes, brows and the fireproof balaclava framing it
+  {
+    const parts = [];
+    const face = new THREE.SphereGeometry(0.108, 20, 16); face.scale(1, 1.12, 0.92); face.translate(0.006, -0.004, 0); parts.push(paintGeo(face, W));
+    for (const sz of [-1, 1]) {
+      const white = new THREE.SphereGeometry(0.0145, 10, 8); white.scale(0.6, 0.7, 1); white.translate(0.1, 0.02, sz * 0.034); parts.push(paintGeo(white, [1.15, 1.1, 1.05]));
+      const iris = new THREE.SphereGeometry(0.0072, 8, 6); iris.translate(0.1075, 0.02, sz * 0.034); parts.push(paintGeo(iris, [0.06, 0.04, 0.03]));
+      const brow = new THREE.BoxGeometry(0.008, 0.006, 0.028); brow.rotateX(sz * 0.18); brow.translate(0.104, 0.043, sz * 0.035); parts.push(paintGeo(brow, [0.12, 0.08, 0.05]));
+    }
+    const nose = new THREE.ConeGeometry(0.012, 0.03, 8); nose.rotateZ(-Math.PI / 2 + 0.25); nose.translate(0.118, -0.002, 0); parts.push(paintGeo(nose, [0.96, 0.92, 0.9]));
+    const bala = new THREE.TorusGeometry(0.098, 0.017, 8, 28); bala.scale(1, 1.12, 0.95); bala.rotateY(Math.PI / 2); bala.translate(0.07, -0.004, 0); parts.push(paintGeo(bala, [0.1, 0.1, 0.11]));
+    D.face = mergeGeoms(parts, true);
+  }
+  D.visor = xf(new THREE.SphereGeometry(0.133, 18, 8, -1.0, 2.0, 1.1, 0.75), { r: [0, Math.PI / 2, 0] });
+  // HANS collar, shoulders and upper arms (suit = material colour; the carbon collar is painted dark)
+  {
+    const parts = [];
+    const hans = new THREE.TorusGeometry(0.105, 0.03, 8, 20); hans.rotateX(Math.PI / 2); hans.scale(1.1, 1, 1.25); hans.translate(-0.04, 0.7, 0); parts.push(paintGeo(hans, [0.07, 0.07, 0.08]));
+    const shoulders = new THREE.CapsuleGeometry(0.065, 0.3, 4, 10); shoulders.rotateX(Math.PI / 2); shoulders.translate(DRIVER.shoulder[0], DRIVER.shoulder[1] - 0.01, 0); parts.push(paintGeo(shoulders, W));
+    const torso = new THREE.BoxGeometry(0.22, 0.24, 0.36); torso.translate(-0.12, 0.58, 0); parts.push(paintGeo(torso, W));
+    for (const sz of [-1, 1]) {
+      const [sx, sy, sz0] = DRIVER.shoulder, [ex, ey, ez] = DRIVER.elbow;
+      const up = rod([sx, sy, sz * sz0], [ex, ey, sz * ez], 0.042); parts.push(paintGeo(up, W));
+      const elbow = new THREE.SphereGeometry(0.042, 8, 6); elbow.translate(ex, ey, sz * ez); parts.push(paintGeo(elbow, W));
+    }
+    D.body = mergeGeoms(parts, true);
+  }
+  // forearm: a unit-length cylinder along +y (posed every frame from the elbow to the hand)
+  D.forearm = new THREE.CylinderGeometry(0.03, 0.038, 1, 8); D.forearm.translate(0, 0.5, 0);
+  // steering wheel in its own frame (x towards the driver, y up the wheel, z across), shaped like a modern F1 wheel:
+  // a flat-topped carbon plate that sweeps down into two grips, a big central screen, rotary switches and coloured
+  // buttons round it, shift paddles behind; the gloves hold the grips, thumbs on the front (gloves are white: the
+  // material carries the team colour)
+  {
+    const parts = [], dark = [0.03, 0.03, 0.035], G = DRIVER.grip;
+    const outline = new THREE.Shape();
+    outline.moveTo(-0.115, 0.07); outline.lineTo(0.115, 0.07); outline.quadraticCurveTo(0.14, 0.07, 0.15, 0.04); outline.lineTo(0.165, -0.035);
+    outline.quadraticCurveTo(0.165, -0.075, 0.13, -0.075); outline.lineTo(0.09, -0.065); outline.quadraticCurveTo(0, -0.045, -0.09, -0.065);
+    outline.lineTo(-0.13, -0.075); outline.quadraticCurveTo(-0.165, -0.075, -0.165, -0.035); outline.lineTo(-0.15, 0.04); outline.quadraticCurveTo(-0.14, 0.07, -0.115, 0.07);
+    const plate = new THREE.ExtrudeGeometry(outline, { depth: 0.028, bevelEnabled: true, bevelThickness: 0.004, bevelSize: 0.004, bevelSegments: 2, curveSegments: 6 });
+    plate.rotateY(-Math.PI / 2); plate.translate(0.014, 0, 0); parts.push(paintGeo(plate.toNonIndexed(), dark)); // (shape x → wheel z, extruded along x)
+    // the screen's bezel
+    const bezel = new THREE.BoxGeometry(0.006, 0.072, 0.13); bezel.translate(0.018, 0.017, 0); parts.push(paintGeo(bezel, [0.01, 0.01, 0.012]));
+    for (const sz of [-1, 1]) {
+      const grip = new THREE.CapsuleGeometry(0.024, 0.075, 4, 10); grip.translate(0.004, -0.03, sz * G); parts.push(paintGeo(grip, [0.015, 0.015, 0.015]));
+      const paddle = new THREE.BoxGeometry(0.004, 0.06, 0.07); paddle.translate(-0.025, 0.02, sz * 0.085); parts.push(paintGeo(paddle, [0.16, 0.16, 0.17]));
+      // rotary switches below the screen and push buttons beside it
+      for (let r = 0; r < 2; r++) { const knob = new THREE.CylinderGeometry(0.011, 0.012, 0.014, 12); knob.rotateZ(Math.PI / 2); knob.translate(0.022, -0.04, sz * (0.03 + r * 0.045)); parts.push(paintGeo(knob, [0.2, 0.2, 0.22]));
+        const dot = new THREE.CylinderGeometry(0.004, 0.004, 0.016, 6); dot.rotateZ(Math.PI / 2); dot.translate(0.023, -0.033, sz * (0.03 + r * 0.045)); parts.push(paintGeo(dot, [1, 0.85, 0.2])); }
+      for (let bq = 0; bq < 4; bq++) { const btn = new THREE.CylinderGeometry(0.0065, 0.0065, 0.01, 10); btn.rotateZ(Math.PI / 2); btn.translate(0.02, 0.045 - bq * 0.022, sz * 0.092); parts.push(paintGeo(btn, [[0.95, 0.15, 0.12], [0.1, 0.55, 1], [1, 0.75, 0.1], [0.2, 0.85, 0.3]][(bq + (sz > 0 ? 2 : 0)) % 4])); }
+      // glove: palm round the grip, thumb on the front plate, fingers behind, cuff
+      const palm = new THREE.SphereGeometry(0.036, 12, 10); palm.scale(1.1, 1.35, 1); palm.translate(0.014, -0.028, sz * G); parts.push(paintGeo(palm, [1, 1, 1]));
+      const thumb = new THREE.CapsuleGeometry(0.0105, 0.032, 3, 8); thumb.rotateX(sz * 1.1); thumb.translate(0.03, 0.006, sz * (G - 0.032)); parts.push(paintGeo(thumb, [1, 1, 1]));
+      const fingers = new THREE.CapsuleGeometry(0.013, 0.05, 3, 8); fingers.translate(-0.022, -0.028, sz * (G + 0.004)); parts.push(paintGeo(fingers, [0.85, 0.85, 0.85]));
+      const cuff = new THREE.CylinderGeometry(0.036, 0.034, 0.04, 10); cuff.rotateZ(Math.PI / 2 - 0.55); cuff.translate(0.045, -0.062, sz * G); parts.push(paintGeo(cuff, [0.08, 0.08, 0.09]));
+    }
+    D.wheel = mergeGeoms(parts, true);
+    D.display = new THREE.PlaneGeometry(0.122, 0.062); D.display.rotateY(Math.PI / 2); D.display.translate(0.0215, 0.017, 0);
+  }
+  // the halo as the driver sees it from the cockpit: the same hoop and centre pillar, drawn slimmer and a little higher
+  // so it frames the top of the view instead of filling it (the car's own halo is hidden in the cockpit view)
+  {
+    const hoop = [[-0.42, 0.66, -0.3], [-0.4, 0.86, -0.3], [-0.08, 0.955, -0.28], [0.24, 0.955, -0.12], [0.32, 0.955, 0], [0.24, 0.955, 0.12], [-0.08, 0.955, 0.28], [-0.4, 0.86, 0.3], [-0.42, 0.66, 0.3]];
+    D.cockpitHalo = mergeGeoms([tube(hoop, 0.02, 40), rod([0.32, 0.955, 0], [0.5, 0.66, 0], 0.02)], true);
+  }
+  return D;
+}
+// The wheel display for a car that has none of its own yet: a dark screen with the team colour (the focus car's
+// screen is the live G.wheelTex, see updateWheelDisplay)
+function wheelScreenTex(team) {
+  const key = 'ws' + team.id; if (MAT_CACHE[key]) return MAT_CACHE[key];
+  return MAT_CACHE[key] = canvasTex(128, 64, (g, w, h) => { g.fillStyle = '#050608'; g.fillRect(0, 0, w, h); g.fillStyle = team.c1 === '#141414' ? team.c2 : team.c1; g.fillRect(0, 0, w, 6); g.fillStyle = '#7fd7ff'; g.font = '700 30px Arial'; g.textAlign = 'center'; g.fillText('N', w / 2, 46); });
+}
+function makeDriver(car, team) {
+  const D = driverGeometries(), group = new THREE.Group(), skin = SKIN[(car.num || 0) % SKIN.length];
+  const head = new THREE.Group(); head.position.set(...DRIVER.head);
+  head.add(new THREE.Mesh(D.helmet, new THREE.MeshPhysicalMaterial({ color: team.c2, vertexColors: true, roughness: 0.25, clearcoat: 1, envMapIntensity: 1.5 })));
+  head.add(new THREE.Mesh(D.face, new THREE.MeshStandardMaterial({ color: skin, vertexColors: true, roughness: 0.62 })));
+  const visor = new THREE.Mesh(D.visor, new THREE.MeshStandardMaterial({ color: 0x1a2a38, transparent: true, opacity: 0.26, roughness: 0.04, metalness: 0.6, depthWrite: false }));
+  visor.renderOrder = 2; head.add(visor);
+  group.add(head);
+  const suit = new THREE.MeshStandardMaterial({ color: team.c1 === '#141414' ? 0x202226 : team.c1, vertexColors: true, roughness: 0.78 });
+  const body = new THREE.Mesh(D.body, suit); group.add(body);
+  const forearms = [-1, 1].map(() => { const f = new THREE.Mesh(D.forearm, suit); group.add(f); return f; });
+  // the wheel faces the driver (its frame turned round, +x towards the seat), tilted up towards his eyes
+  const mount = new THREE.Group(); mount.position.set(...DRIVER.wheel); mount.rotation.y = Math.PI; group.add(mount);
+  const tilt = new THREE.Group(); tilt.rotation.z = DRIVER.wheelTilt; mount.add(tilt);
+  const spin = new THREE.Group(); tilt.add(spin);
+  spin.add(new THREE.Mesh(D.wheel, new THREE.MeshStandardMaterial({ color: team.c2, vertexColors: true, roughness: 0.55 })));
+  const dispMat = new THREE.MeshBasicMaterial({ map: wheelScreenTex(team), toneMapped: false });
+  spin.add(new THREE.Mesh(D.display, dispMat));
+  const drv = { group, head, body, forearms, mount, tilt, spin, dispMat, team, angle: NaN, detail: [body, ...forearms, mount] };
+  poseDriver(drv, 0);
+  return drv;
+}
+// Steering wheel angle from the front wheels' angle; gloves turn with the wheel, forearms reach from the fixed elbows to
+// the gloves. A real F1 wheel turns about 5–6× the front wheels' angle, with roughly a quarter turn to full lock.
+const _drvH = new THREE.Vector3(), _drvE = new THREE.Vector3(), _drvY = new THREE.Vector3(0, 1, 0);
+function poseDriver(drv, steer, gLat = 0) {
+  const a = clamp(steer * DRIVER.steerRatio, -DRIVER.steerMax, DRIVER.steerMax);
+  drv.head.rotation.x = clamp(-gLat * 0.012, -0.22, 0.22); // the head leans into a corner
+  if (Math.abs(a - drv.angle) < 1e-3) return;
+  drv.angle = a; drv.spin.rotation.x = -a; // (the wheel's frame faces backwards: a positive angle turns it clockwise for the driver)
+  drv.mount.updateMatrix(); drv.tilt.updateMatrix(); drv.spin.updateMatrix();
+  drv.forearms.forEach((f, k) => {
+    // the wrist, just behind the glove on its grip, carried round by the wheel; the forearm reaches it from the elbow
+    _drvH.set(0.04, -0.07, (k ? -1 : 1) * DRIVER.grip).applyMatrix4(drv.spin.matrix).applyMatrix4(drv.tilt.matrix).applyMatrix4(drv.mount.matrix);
+    _drvE.set(DRIVER.elbow[0], DRIVER.elbow[1], (k ? 1 : -1) * DRIVER.elbow[2]);
+    const d = _drvH.sub(_drvE), len = d.length();
+    f.position.copy(_drvE); f.quaternion.setFromUnitVectors(_drvY, d.divideScalar(len)); f.scale.set(1, len, 1);
+  });
+}
+// The live wheel display (focus car): gear, speed, rev lights, lap, position and the gap to the car ahead/behind.
+function updateWheelDisplay(car, sess) {
+  if (!G.wheelTex) { G.wheelCanvas = document.createElement('canvas'); G.wheelCanvas.width = 256; G.wheelCanvas.height = 128; G.wheelTex = new THREE.CanvasTexture(G.wheelCanvas); G.wheelTex.colorSpace = THREE.SRGBColorSpace; }
+  const g = G.wheelCanvas.getContext('2d'), w = 256, h = 128;
+  g.fillStyle = '#04060a'; g.fillRect(0, 0, w, h);
+  // rev lights: green, red, blue across the top
+  const rpm = clamp(((car.rpm || 0) - 7000) / 5000, 0, 1), lit = Math.round(rpm * 15); // (shifts come at about 11,850 rpm)
+  for (let k = 0; k < 15; k++) { g.fillStyle = k < lit ? (k < 5 ? '#2bff5a' : k < 10 ? '#ff2a2a' : '#4a7dff') : '#18202a'; g.beginPath(); g.arc(18 + k * 15.7, 11, 5.5, 0, Math.PI * 2); g.fill(); }
+  g.textAlign = 'center'; g.fillStyle = '#fff';
+  g.font = '700 64px Arial'; g.fillText(car.gear === -1 ? 'R' : car.gear === 0 ? 'N' : String(car.gear), w / 2, 92);
+  g.font = '700 26px Arial'; g.fillStyle = '#7fd7ff'; g.fillText(String(Math.round(car.speed * 3.6)), 44, 62); g.font = '600 13px Arial'; g.fillText('KM/H', 44, 78);
+  const order = sess.order || sess.cars, pos = order.indexOf(car) + 1;
+  g.font = '700 22px Arial'; g.fillStyle = '#ffd34a'; g.fillText('P' + pos, w - 44, 62); g.font = '600 13px Arial'; g.fillText('LAP ' + Math.min(sess.totalLaps || 0, (car.laps || 0) + 1) + '/' + (sess.totalLaps || 0), w - 44, 78);
+  const best = car.bestLap ? fmt(car.bestLap) : '--:--.---';
+  g.font = '600 15px Arial'; g.fillStyle = '#b8c4d0'; g.fillText('BEST ' + best, w / 2, 118);
+  G.wheelTex.needsUpdate = true;
+}
 const CAR_EXPOSURE = 1.28; // livery brightness multiplier
 function makeCarMesh(car, opts = {}) {
   const geo = carGeometries(); const team = car.team;
@@ -9067,11 +9231,8 @@ function makeCarMesh(car, opts = {}) {
   const add = (g, m, shadow = true) => { const mesh = new THREE.Mesh(g, m); mesh.castShadow = shadow; mesh.receiveShadow = true; if (m !== darkMat) mesh.customDepthMaterial = depthMat; grp.add(mesh); return mesh; };
   add(geo.body, bodyMat); add(geo.carbon, carbonMat); add(geo.accent, accentMat); add(geo.dark, darkMat, false);
   const mirror = add(geo.mirror, mirrorMat, false);
-  // helmet
-  const helmet = new THREE.Group(); helmet.position.set(0.0, 0.79, 0);
-  helmet.add(new THREE.Mesh(geo.helmet, new THREE.MeshPhysicalMaterial({ color: team.c2, roughness: .25, clearcoat: 1 })));
-  helmet.add(new THREE.Mesh(geo.visor, new THREE.MeshStandardMaterial({ color: 0x0b0b0b, roughness: .1, metalness: .8 })));
-  grp.add(helmet);
+  // the driver (helmet, face behind the visor, suit, arms, gloves on the steering wheel)
+  const driver = makeDriver(car, team); grp.add(driver.group); const helmet = driver.head;
   // front wing halves and rear wing as separate groups so damage can bend or remove them
   const fw = [-1, 1].map(sg => {
     const g = new THREE.Group(); g.position.set(FW_PIVOT[0], FW_PIVOT[1], sg * FW_PIVOT[2]);
@@ -9119,7 +9280,7 @@ function makeCarMesh(car, opts = {}) {
   // level of detail: decals and small parts are hidden for distant cars, shadows only near the camera
   const detail = [wingTxt, num, ...grp.children.filter(c => c.isMesh && c.geometry.type === 'PlaneGeometry')];
   const shadowCasters = []; grp.traverse(o => { if (o.isMesh && o.castShadow) shadowCasters.push(o); });
-  return { group: grp, wheels, flap, light, lightMat, helmet, bodyMat, accentMat, carbonMat, mirrorMat, rimMat, coverMat, coverBlur, fw, rw, detail: [...new Set(detail)], shadowCasters, lod: -1, midHide: [mirror, helmet.children[1]], dmgKey: '',
+  return { group: grp, wheels, flap, light, lightMat, helmet, bodyMat, accentMat, carbonMat, mirrorMat, rimMat, coverMat, coverBlur, fw, rw, detail: [...new Set(detail)], shadowCasters, lod: -1, midHide: [mirror, ...driver.detail], driver, dmgKey: '',
     bh: new Float32Array(4), skid: null, lastX: null, lastZ: 0, mask, brk: 0,
     // body reaction to impacts (springs on roll / pitch / squash, a hop) and per-wheel flail of broken corners
     rx: { roll: 0, pitch: 0, vr: 0, vp: 0, hop: 0, vh: 0, sq: 0, vs: 0, sqx: 1, yaw: 0, vy: 0 }, flail: new Float32Array(8), torn: [false, false, false, false],
@@ -9669,15 +9830,16 @@ const clamp = SIM.clamp, lerp = SIM.lerp, fmt = SIM.fmtTime;
 /* ---------------- runtime defaults and race choices ---------------- */
 const SETTINGS_KEY = 'apexgp.settings.v1';
 const DEFAULTS = { startTyre:'H', startFuel:6.5, circuit:SIM.CIRCUITS[0].id,
-  quality:'high', volume:70, speedBlur:'on' };
+  quality:'high', volume:70, speedBlur:'on', camera:'chase' };
 const S = { ...DEFAULTS };
 try { const raw = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}');
-  for (const k of ['startTyre', 'startFuel', 'circuit']) if (raw[k] != null) S[k] = raw[k];
+  for (const k of ['startTyre', 'startFuel', 'circuit', 'camera']) if (raw[k] != null) S[k] = raw[k];
 } catch(e) { /* storage unavailable */ }
 S.startTyre = SIM.migrateCompound(S.startTyre) || 'H';
 S.startFuel = clamp(Math.round((+S.startFuel || 6.5) * 2) / 2, ...SIM.START_FUEL_LAPS);
 if (!SIM.CIRCUITS.some(c => c.id === S.circuit)) S.circuit = SIM.CIRCUITS[0].id;
-const saveSettings = () => { try { localStorage.setItem(SETTINGS_KEY, JSON.stringify({ startTyre:S.startTyre, startFuel:S.startFuel, circuit:S.circuit })); } catch(e) { /* ignore */ } };
+if (S.camera !== 'cockpit') S.camera = 'chase';
+const saveSettings = () => { try { localStorage.setItem(SETTINGS_KEY, JSON.stringify({ startTyre:S.startTyre, startFuel:S.startFuel, circuit:S.circuit, camera:S.camera })); } catch(e) { /* ignore */ } };
 /* ---------------- Career progression ----------------
    Three six-race championships and Endless Career (SIM.PROGRESS). The v4 save has its own key; the earlier saves
    (v3 and older) stay untouched in theirs. */
@@ -9879,11 +10041,34 @@ function clearPlayerAssists(car) {
 const _lookW = new THREE.Vector3();
 // the chase camera: metres behind the car, height, look-ahead point and field of view (fixed in every situation)
 const CHASE = { dist: 5.2, height: 1.62, ahead: 4, lookY: 0.82, fov: 60 };
+// the cockpit camera (car frame, see DRIVER.eye): the point it looks at, and, looking back, the onboard camera on the
+// nose that faces the driver
+const COCKPIT = { look: [8, -0.35, 0], fov: 76, faceCam: [1.05, 0.98, 0], faceLook: [0, 0.74, 0], faceFov: 50 };
+const _ckE = new THREE.Vector3(), _ckT = new THREE.Vector3();
 class CameraRig {
   constructor(camera) {
     this.camera = camera; this.pos = new THREE.Vector3(); this.look = new THREE.Vector3(); this.yaw = 0; this.init = false;
     this.shake = 0; this.fov = CHASE.fov; this.t = 0;
-    this.kick = new THREE.Vector3(); this.kickV = new THREE.Vector3(); this.rough = 0;
+    this.kick = new THREE.Vector3(); this.kickV = new THREE.Vector3(); this.rough = 0; this.mode = 'chase';
+  }
+  setMode(m) { this.mode = m === 'cockpit' ? 'cockpit' : 'chase'; this.init = false; }
+  // first person: the driver's eye, fixed to the car (its pitch and roll included), looking down the road; looking
+  // back, the camera on the nose shows the driver's face and hands on the wheel
+  cockpit(dt, car, model, lookBack) {
+    const cam = this.camera, g = model.group; g.updateMatrixWorld(true);
+    _ckE.set(...(lookBack ? COCKPIT.faceCam : DRIVER.eye)).applyMatrix4(g.matrixWorld);
+    _ckT.set(...(lookBack ? COCKPIT.faceLook : COCKPIT.look)).applyMatrix4(g.matrixWorld);
+    cam.position.copy(_ckE); this.pos.copy(_ckE);
+    _ckT.y += elevWarp(_ckT.x, _ckT.z, cam.position.x, cam.position.z, car.idx); cam.lookAt(_ckT);
+    // the head feels kerbs, rough ground and buffeting at speed (smaller than the chase camera's shake)
+    let amp = 0;
+    for (let i = 0; i < 4; i++) if (car.surf[i] === 1) amp += 0.0012; else if (car.surf[i] >= 3) amp += 0.002;
+    amp = amp * clamp(car.speed / 25, 0, 1) + clamp((car.speed - 60) / 40, 0, 1) * 0.0006 + this.shake * 0.03 + this.rough * 0.01;
+    this.shake *= Math.exp(-dt * 6); this.rough *= Math.exp(-dt * 4);
+    if (amp > 0 && !lookBack) { const t = this.t; cam.rotateX((Math.sin(t * 37.1) * 0.6 + Math.sin(t * 61.7 + 1.3) * 0.4) * amp); cam.rotateZ((Math.sin(t * 23.7 + 0.7) * 0.5 + Math.sin(t * 47.3 + 2.9) * 0.5) * amp); }
+    this.fov = lookBack ? COCKPIT.faceFov : COCKPIT.fov;
+    if (Math.abs(cam.fov - this.fov) > 0.01) { cam.fov = this.fov; cam.updateProjectionMatrix(); }
+    this.yaw = car.psi; this.init = true;
   }
   // a jolt pushing the camera along (dx, dz) (world, normalised), strength 0…1
   impulse(strength, dx, dz) {
@@ -9893,6 +10078,7 @@ class CameraRig {
     const cam = this.camera;
     if (!car) return;
     this.t += dt;
+    if (this.mode === 'cockpit' && extra.model) { this.cockpit(dt, car, extra.model, !!extra.lookBack); return; }
     const fx = Math.cos(car.psi), fz = Math.sin(car.psi);
     // heading smoothing (the view swings a little behind the car)
     let dy = car.psi - this.yaw; dy = Math.atan2(Math.sin(dy), Math.cos(dy));
@@ -11168,6 +11354,7 @@ function updateDamageVisuals(car, m, sess, dt) {
     m.rw.visible = !gone;
     if (!gone) { m.rw.rotation.set(d > 0.4 ? Math.sin(now * 23) * 0.05 * shake * d : 0, d * 0.08, -d * 0.4); m.rw.position.set(RW_PIVOT[0], RW_PIVOT[1] - d * 0.06 + up, 0); }
   }
+  if (car === G.focus && G.camRig.mode === 'cockpit' && !G.lookBack) show |= bit(PT.HALO); // (the cockpit draws its own, slimmer halo)
   m.mask.value = show;
   const fatal = sess.damageLevel.fatal, k = Math.min(dt, 0.05);
   for (let i = 0; i < 4; i++) {
@@ -11444,8 +11631,17 @@ function updateCarVisuals(dt) {
       for (const w of m.wheels) { w.spin.children[1].visible = lod < 1; w.cover.visible = lod < 2; }
       // (a mirror or a visor 90 m away is a pixel or two: each hidden part is one draw call less per car)
       for (const o of m.midHide) o.visible = lod < 1;
-      m.helmet.visible = lod < 2;
     }
+    // the driver: hands on the wheel at full detail; in the cockpit view the focus car's own head is the camera
+    if (m.lod < 1) poseDriver(m.driver, car.steer, car.gLat || 0);
+    const inside = car === G.focus && G.camRig.mode === 'cockpit' && !G.lookBack;
+    m.helmet.visible = m.lod < 2 && !inside;
+    if (inside) {
+      if (!G.cockpitHalo) G.cockpitHalo = new THREE.Mesh(driverGeometries().cockpitHalo, new THREE.MeshStandardMaterial({ color: 0x15171a, roughness: 0.42, metalness: 0.3 }));
+      if (G.cockpitHalo.parent !== m.group) m.group.add(G.cockpitHalo);
+    } else if (car === G.focus && G.cockpitHalo && G.cockpitHalo.parent) G.cockpitHalo.parent.remove(G.cockpitHalo);
+    if (car === G.focus && G.camRig.mode === 'cockpit') { if (m.driver.dispMat.map !== G.wheelTex && G.wheelTex) m.driver.dispMat.map = G.wheelTex; }
+    else if (m.driver.dispMat.map === G.wheelTex) m.driver.dispMat.map = wheelScreenTex(car.team);
     // brake temperature (visual): heats with braking effort at speed, cools with airflow
     const bk = car.inGarage ? 0 : car.brake * car.speed / 85;
     for (let i = 0; i < 4; i++) m.bh[i] = clamp(m.bh[i] + (bk * (i < 2 ? 1.35 : 0.9) - m.bh[i] * (0.28 + car.speed * 0.0035) * (wet ? 1.6 : 1)) * dt, 0, 1.3);
@@ -11662,6 +11858,7 @@ function handleKeys(dt) {
   if (takePress('Escape') || (G.pad && G.pad.start)) { if (G.csOpen) closeCarStatus(); else if (G.mode !== 'menu' && !$('results').classList.contains('hidden') === false) togglePause(); }
   if (G.paused || !sess || G.attract) return;
   if (takePress('KeyT')) G.showTel = !G.showTel;
+  if (takePress('KeyF')) { G.camRig.setMode(G.camRig.mode === 'cockpit' ? 'chase' : 'cockpit'); S.camera = G.camRig.mode; saveSettings(); pushMsg(G.camRig.mode === 'cockpit' ? 'Cockpit camera' : 'Chase camera', 'info', 1.2); }
   if (takePress('KeyV')) toggleStrategy();
   // the pit plan, at any time during the race: 1-5 tyres (Soft, Hard, Intermediate, Full Wet, keep), − + fuel, 0 repairs
   if (G.player && !G.player.dnf && sess.type === 'race') {
@@ -11968,7 +12165,8 @@ function frame(now) {
       if (G.focus && (G.focus.ghost || G.focus.dnf) && G.mode !== 'race') { G.focus = (sess.order || sess.cars).find(c => !c.dnf) || G.focus; }
       updateCarVisuals(G.paused ? 0 : dt);
       const camCar = G.focus;
-      G.camRig.update(dt, camCar, { lookBack: G.lookBack });
+      G.camRig.update(dt, camCar, { lookBack: G.lookBack, model: G.models.get(camCar) });
+      if (G.camRig.mode === 'cockpit' && camCar && (!G.wheelTex || (G.wheelT = (G.wheelT || 0) + dt) > 1 / 15)) { G.wheelT = 0; updateWheelDisplay(camCar, sess); } // (15 times a second; at once on entering the cockpit)
       if (G.prevCam) G.camVel = camera.position.clone().sub(G.prevCam).multiplyScalar(1 / Math.max(dt, 1e-3)); G.prevCam = camera.position.clone();
       // shadows follow the camera target
       if (R.sun) placeSun(camCar);
@@ -12084,7 +12282,7 @@ async function boot() {
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   $('game').appendChild(renderer.domElement);
   camera = new THREE.PerspectiveCamera(62, 1, 0.1, 12000); G.camera = camera;
-  G.camRig = new CameraRig(camera);
+  G.camRig = new CameraRig(camera); G.camRig.setMode(S.camera);
   G.audio = new AudioEngine();
   G.fxEls = { flash: $('fxFlash'), dmg: $('fxDmg'), cut: $('fxCut') };
   setLoad(0.65); await new Promise(r => setTimeout(r, 30));

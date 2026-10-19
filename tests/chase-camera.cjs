@@ -10,7 +10,7 @@ const { serveGame } = require('../tools/browser-game.cjs');
 // accelerating, cornering), and on a wet road the tyres throw a low, faint spray that stays below the driver's eye
 // line. The game loads Three.js from a CDN: set THREE_JS=/path/to/three.module.js (three@0.160.0) without network
 // access; if it cannot be loaded the test is skipped. CHROMIUM_PATH can select a browser.
-test('chase camera: fixed distance and field of view in every situation; low, faint wet spray', { timeout: 600000 }, async (t) => {
+test('chase camera: fixed distance and field of view in every situation; cockpit camera and driver; low, faint wet spray', { timeout: 600000 }, async (t) => {
   const server = await serveGame(path.join(__dirname, '..'), html => html.replace('window.APEX = G;', 'window.APEX = G; window.__start = (cfg) => startSession(cfg);'));
   const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined, args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
   try {
@@ -50,7 +50,16 @@ test('chase camera: fixed distance and field of view in every situation; low, fa
       // the wet spray thrown so far
       const sp = G.spray, live = [];
       for (let i = 0; i < sp.n; i++) if (sp.life[i] > 0) live.push({ y: sp.pos[i * 3 + 1], a: sp.baseA[i] });
-      return { views, spray: { count: live.length, maxY: Math.max(...live.map(p => p.y)), maxA: Math.max(...live.map(p => p.a)) } };
+      // the cockpit camera: at the driver's eyes, the focus car's own head hidden, its hands on a wheel turned with the
+      // steering, the live wheel display; looking back, the nose camera faces the driver
+      G.camRig.setMode('cockpit'); __frames(4);
+      const m = G.models.get(car), cam = G.camera.position, fx = Math.cos(car.psi), fz = Math.sin(car.psi);
+      const cockpit = { along: (cam.x - car.x) * fx + (cam.z - car.z) * fz, side: Math.abs(-(cam.x - car.x) * fz + (cam.z - car.z) * fx), headHidden: !m.helmet.visible,
+        wheel: m.driver.angle, steer: car.steer, display: m.driver.dispMat.map === G.wheelTex, others: s.cars.filter(c => c !== car).every(c => { const o = G.models.get(c); return !o || o.helmet.visible || o.lod >= 2; }) };
+      G.lookBack = true; __frames(2);
+      cockpit.backAlong = (cam.x - car.x) * fx + (cam.z - car.z) * fz; cockpit.headBack = m.helmet.visible;
+      G.lookBack = false; G.camRig.setMode('chase');
+      return { views, cockpit, spray: { count: live.length, maxY: Math.max(...live.map(p => p.y)), maxA: Math.max(...live.map(p => p.a)) } };
     });
     const d0 = r.views[0].dist;
     for (const v of r.views) {
@@ -61,6 +70,13 @@ test('chase camera: fixed distance and field of view in every situation; low, fa
     assert.ok(r.spray.count > 20, 'the tyres throw spray on a wet road: ' + r.spray.count);
     assert.ok(r.spray.maxY < 1.2, 'spray stays low: ' + r.spray.maxY.toFixed(2) + ' m');
     assert.ok(r.spray.maxA <= 0.3, 'spray is faint: ' + r.spray.maxA.toFixed(2));
+    const k = r.cockpit;
+    assert.ok(Math.abs(k.along) < 0.3 && k.side < 0.1, 'cockpit camera at the driver: ' + JSON.stringify(k));
+    assert.ok(k.headHidden, 'the camera is the driver\'s head: its own helmet is not drawn');
+    assert.ok(k.others, 'every other driver keeps his head');
+    assert.ok(Math.abs(k.wheel - Math.max(-2.3, Math.min(2.3, k.steer * 5.5))) < 0.05, 'the wheel turns with the steering: ' + k.wheel + ' for ' + k.steer);
+    assert.ok(k.display, 'the wheel shows the live display');
+    assert.ok(k.backAlong > 0.8 && k.headBack, 'looking back from the cockpit: the nose camera, facing the driver');
     assert.deepEqual(errors, [], 'no page errors');
   } finally { await browser.close(); await server.close(); }
 });

@@ -125,7 +125,8 @@ Using the kerbs, running a little wide, or putting two wheels over the inside ke
 | Steer | `A` / `D` or `←` / `→` |
 | Controlled drift | `W` + `S` + `A`/`D` |
 | Launch at the start | Hold `W` on the grid |
-| Look back | `B` |
+| Switch between the chase camera and the cockpit (first-person) camera | `F` |
+| Look back (in the cockpit: the camera on the nose shows your driver's face and hands) | `B` |
 | Show or hide the pit plan | `V` |
 | Pit plan: tyres Soft / Hard / Inter / Wet / keep | `1` `2` `3` `4` `5` |
 | Pit plan: less / more fuel | `−` / `+` |
@@ -145,6 +146,8 @@ Using the kerbs, running a little wide, or putting two wheels over the inside ke
 ## The race screen
 
 You watch the race from a camera just behind your car. It stays at the same distance and height all the time, whether you're slow, flat out, braking or cornering.
+
+Press `F` for the cockpit camera: you sit in the driver's seat, behind the halo, with your hands on the steering wheel. The hands turn the wheel as you steer, and the wheel's screen shows your gear, speed, rev lights, position, lap and best lap. All the usual race information stays on screen. Hold `B` in the cockpit to see the driver from the camera on the nose. The game remembers which camera you used last.
 
 **Top right: race information**
 - **LAP:** the lap you're on, for example `LAP 3 / 6`.
@@ -222,7 +225,7 @@ On a wet track the tyres throw up a fine spray of water. It stays low and fades 
 Following closely behind another car on a straight gives you a tow, which makes you faster. Use it to set up an overtake into the next braking zone.
 
 ### Track edges and forests
-The road is bordered by red-and-white corner kerbs, green painted runoff, a usable grass or gravel recovery strip, and physical barriers. Entering green runoff removes 15% of your speed once; staying on it adds modest resistance and grip loss. Returning to another surface rearms the next entry. Grass and gravel slow the car more, but held throttle keeps it moving and restores acceleration when you rejoin. The AI follows the same rules.
+The road is bordered by red-and-white corner kerbs, green painted runoff, a usable grass or gravel recovery strip, and physical barriers. Entering green runoff costs 15% of your speed, taken off smoothly over about half a second (at 100 km/h the speed runs down to 85 and stops there), once per visit; staying on it adds modest resistance and grip loss. Returning to another surface rearms the next entry. Grass and gravel slow the car more, but held throttle keeps it moving and restores acceleration when you rejoin. The AI follows the same rules.
 
 Each circuit has its own vegetation: temperate woodland at Monza, mixed countryside at Silverstone, Ardennes spruce and fir at Spa, Japanese woodland and cherry trees at Suzuka, dry woodland and palms at Bahrain, and subtropical greenery at Interlagos. Behind the fence the woods start with a band of shrubs and long grass. The trees are built from real-looking leaves, needles and palm fronds, sway in the wind (more in a storm), glow when the sun shines through them, and stand on a darker floor of leaf litter and ferns. Further away, woods cover the hills in clumps with open fields between. Large spectator complexes are replaced by nature; functional pits and circuit landmarks remain.
 
