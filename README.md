@@ -220,9 +220,18 @@ Following closely behind another car on a straight gives you a tow, which makes 
 ### Track edges and forests
 The road is bordered by red-and-white corner kerbs, green painted runoff, a usable grass or gravel recovery strip, and physical barriers. Entering green runoff removes 15% of your speed once; staying on it adds modest resistance and grip loss. Returning to another surface rearms the next entry. Grass and gravel slow the car more, but held throttle keeps it moving and restores acceleration when you rejoin. The AI follows the same rules.
 
-Each circuit has its own vegetation: temperate woodland at Monza, mixed countryside at Silverstone, Ardennes pines at Spa, Japanese woodland at Suzuka, dry woodland and palms at Bahrain, and subtropical greenery at Interlagos. Detailed nearby trees and undergrowth give way to simpler instanced trees and distant silhouettes. Large spectator complexes are replaced by nature; functional pits and circuit landmarks remain.
+Each circuit has its own vegetation: temperate woodland at Monza, mixed countryside at Silverstone, Ardennes spruce and fir at Spa, Japanese woodland and cherry trees at Suzuka, dry woodland and palms at Bahrain, and subtropical greenery at Interlagos. Behind the fence the woods start with a band of shrubs and long grass. The trees are built from real-looking leaves, needles and palm fronds, sway in the wind (more in a storm), glow when the sun shines through them, and stand on a darker floor of leaf litter and ferns. Further away, woods cover the hills in clumps with open fields between. Large spectator complexes are replaced by nature; functional pits and circuit landmarks remain.
 
 The implementation, measured before/after results and verification limits are documented in [the environment report](reports/environment-redesign/README.md). The reproducible render benchmark is `node tools/environment-benchmark.cjs`; set `BENCH_ROOT` to compare a checkout and `THREE_JS` to use a local Three.js 0.160 module.
+
+### Graphics and smoothness
+There is no graphics menu: the game picks a graphics level for your computer by itself and keeps checking that it runs smoothly.
+
+- **High** (computers with a dedicated graphics card, Apple Silicon Macs): sharp shadows, the most detailed woods and full screen effects.
+- **Medium** (good laptops with built-in graphics): softer shadows and lighter effects.
+- **Low** (older or basic laptops, phones and tablets): no shadows or screen effects, fewer trees and a lower drawing resolution, so the game stays playable.
+
+If the game can't keep up while you race, it first lowers its drawing resolution, then draws the distant woods less far, and finally switches to a lower level. It shows a short message when it does this, and the new level starts with your next race. If your computer runs smoothly for a long time, it moves up a level. The game remembers the level for your computer. To choose a level yourself, add `?quality=low`, `?quality=medium` or `?quality=high` to the end of the game's address.
 
 ### Lap timing and race position
 Lap times are recorded when your car crosses the painted start/finish line. Positions follow completed laps and where each car is on the circuit, including the pit lane. Returning a tyre to the track clears extra shortcut braking, so held throttle accelerates the car again as grip returns. It does not move your timing line or leave your displayed position behind your car. Yellow flags and caution restrictions are removed. Reversing over the line and crossing it again cannot count an extra lap.

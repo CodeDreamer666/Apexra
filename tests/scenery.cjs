@@ -69,6 +69,19 @@ const FOREST = function () {
     for (const o of c.levels[1].children) if (o.castShadow) throw Error('Middle foliage casts shadows');
   }
   for (const b of f.farChunks) for (const o of b.node.children) if (o.castShadow) throw Error('Distant foliage casts shadows');
+  // photographic foliage: textured cards with wind weights; impostors carry colour and normal images baked from the
+  // same 3D trees (render-target textures), so a tree keeps its look between levels of detail
+  for (const c of f.cells) for (const g of c.levels.slice(0, 2)) for (const o of g.children) {
+    if (!o.geometry.attributes.aWind || !o.material.map || !o.geometry.attributes.uv) throw Error('Tree without foliage texture or wind weights');
+    if (o.geometry.index.count / 3 > 2400) throw Error('Tree too heavy: ' + o.geometry.index.count / 3 + ' triangles');
+  }
+  let impostors = 0;
+  for (const b of f.farChunks) for (const o of b.node.children) {
+    impostors++;
+    if (!o.material.map || !o.material.normalMap || !o.material.map.isRenderTargetTexture) throw Error('Impostor not baked from its tree');
+    if (o.geometry.attributes.position.count !== 4) throw Error('Impostor is not a single billboard');
+  }
+  if (!impostors) throw Error('No distant forest');
   const version = f.lodTexture.version; f.update(camera, 0);
   if (f.lodTexture.version !== version) throw Error('Stable camera reuploaded forest mask');
   camera.copy(saved); f.update(camera, 0);
@@ -184,7 +197,7 @@ async function scan(browser, id) {
     if (r.request().url().includes('fonts.googleapis.com')) return r.fulfill({ contentType: 'text/css', body: '' });
     return r.continue();
   });
-  await page.goto(gameURL + '/index.html');
+  await page.goto(gameURL + '/index.html?quality=high'); // the richest world (the level is otherwise chosen from the device)
   await page.waitForFunction(() => document.getElementById('loading').classList.contains('hidden') || !document.getElementById('loadErr').classList.contains('hidden'), null, { polling: 300 });
   if (await page.evaluate(() => !document.getElementById('loadErr').classList.contains('hidden'))) { await page.close(); return null; }
   assert.equal(await page.evaluate(() => APEX.track.def.id), id, 'the attract race shows the chosen circuit');
