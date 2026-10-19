@@ -37,10 +37,16 @@ test('Career end to end: fixed order, Retire is a counted result, no retry, brow
     // ---- the Career screen: four stages, only the next race can be started ----
     await page.click('[data-act="career"]');
     await page.waitForSelector('#career:not(.hidden)');
-    assert.equal(await page.locator('#crBar > li').count(), 4, 'Rookie, Pro, Master and Endless');
-    assert.match(await page.locator('#crActions .btn.primary').textContent(), /Start race 1: Monza/);
-    assert.equal(await page.locator('#crTier .cr-go:not([disabled])').count(), 1, 'only the scheduled race can be raced');
-    assert.match(await page.locator('#crBar > li').nth(3).textContent(), /Locked/);
+    await page.keyboard.press('Escape');
+    await page.waitForSelector('#career', { state: 'hidden' });
+    await page.click('[data-act="career"]');
+    await page.waitForSelector('#career:not(.hidden)');
+    assert.equal(await page.locator('#crRanks > li').count(), 4, 'Rookie, Pro, Master and Endless');
+    assert.match(await page.locator('#crRanks > li[aria-current="step"]').textContent(), /Rookie/);
+    assert.equal(await page.locator('#crRanks > li.locked').count(), 3, 'Pro, Master and Endless are locked');
+    assert.match(await page.locator('#crTier .cr-next').textContent(), /1\/6.*Monza/);
+    assert.equal(await page.locator('#crActions .btn').count(), 1, 'only the scheduled race can be raced');
+    assert.match(await page.locator('#crActions .btn.primary').textContent(), /Start race/);
     await shot('career-rookie');
 
     // ---- race 1: start, then Retire from the pause menu ----
@@ -91,7 +97,7 @@ test('Career end to end: fixed order, Retire is a counted result, no retry, brow
     assert.equal(r2.length, 2); assert.equal(r2[1].circuit, 'silverstone'); assert.equal(r2[1].reason, 'forfeit'); assert.equal(r2[1].total, 2); assert.equal(st.career.active, null);
     await page.click('[data-act="career"]');
     await page.waitForSelector('#career:not(.hidden)');
-    assert.match(await page.locator('#crActions .btn.primary').textContent(), /Start race 3: Spa/, 'the Career moved on to race 3');
+    assert.match(await page.locator('#crTier .cr-next').textContent(), /3\/6.*Spa/, 'the Career moved on to race 3');
 
     // ---- Endless Career: the drawn circuit survives reloads ----
     await page.evaluate((k) => {
@@ -101,11 +107,12 @@ test('Career end to end: fixed order, Retire is a counted result, no retry, brow
     const nextEndless = async () => {
       await page.reload(); assert.ok(await load());
       await page.click('[data-act="career"]'); await page.waitForSelector('#career:not(.hidden)');
-      await page.locator('#crBar > li').nth(3).locator('button').click();
-      return page.locator('#crEndlessStart').textContent();
+      // (with Endless unlocked the Career screen opens on it)
+      assert.match(await page.locator('#crEndlessStart').textContent(), /Start race/);
+      return page.locator('#crTier .cr-next b').textContent();
     };
     const first = await nextEndless();
-    assert.match(first, /Start race: /);
+    assert.ok((await page.evaluate(() => SIM.CIRCUITS.map(c => c.short))).includes(first), 'a drawn circuit: ' + first);
     assert.match(await page.locator('#crTier').textContent(), /1,000/);
     await shot('career-endless');
     for (let k = 0; k < 3; k++) assert.equal(await nextEndless(), first, 'the same drawn circuit after a reload');

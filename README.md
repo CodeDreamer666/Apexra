@@ -229,12 +229,12 @@ The road is bordered by red-and-white corner kerbs, green painted runoff, a usab
 
 Each circuit has its own vegetation: temperate woodland at Monza, mixed countryside at Silverstone, Ardennes spruce and fir at Spa, Japanese woodland and cherry trees at Suzuka, dry woodland and palms at Bahrain, and subtropical greenery at Interlagos. Behind the fence the woods start with a band of shrubs and long grass. The trees are built from real-looking leaves, needles and palm fronds, sway in the wind (more in a storm), glow when the sun shines through them, and stand on a darker floor of leaf litter and ferns. Further away, woods cover the hills in clumps with open fields between. Large spectator complexes are replaced by nature; functional pits and circuit landmarks remain.
 
-The implementation, measured before/after results and verification limits are documented in [the environment report](reports/environment-redesign/README.md). The reproducible render benchmark is `node tools/environment-benchmark.cjs`; set `BENCH_ROOT` to compare a checkout and `THREE_JS` to use a local Three.js 0.160 module.
+The reproducible render benchmark is `node tools/environment-benchmark.cjs`; set `BENCH_ROOT` to compare a checkout and `THREE_JS` to use a local Three.js 0.160 module.
 
 ### Graphics and smoothness
 Choose **4K Ultra** or **Native** in the main menu or pause menu. The choice is saved and applies immediately, including during a race.
 
-- **4K Ultra** (the default) renders at 3840 × 2160 in a widescreen window. Smaller windows get a supersampled image; other aspect ratios fit within 3840 × 2160 without stretching.
+- **4K Ultra** (the default on computers that get the High scenery level; others start on Native) renders at 3840 × 2160 in a widescreen window. Smaller windows get a supersampled image; other aspect ratios fit within 3840 × 2160 without stretching.
 - **Native** matches your display's physical pixels, including Retina and other high-density screens. Use it for less GPU work on a smaller display.
 
 Motion blur, colour fringing and lens distortion are removed. Multisample antialiasing, restrained bloom and a subtle detail pass keep the road, cars and distant edges clear. HUD text and icons stay crisp, and track maps scale for high-density displays. The GPU's maximum render size is respected.
