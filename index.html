@@ -9065,7 +9065,7 @@ function textTex(txt, color, bg, w = 512, h = 96, font = '900 70px Titillium Web
    Car frame: x forward, y up, z across. The head sits where the helmet always was (0, 0.79, 0).
    --------------------------------------------------------------- */
 const DRIVER = {
-  head: [0, 0.79, 0], shoulder: [-0.07, 0.705, 0.19], elbow: [0.16, 0.668, 0.225],
+  head: [0, 0.79, 0], shoulder: [-0.07, 0.705, 0.19], elbow: [0.17, 0.62, 0.22],
   wheel: [0.39, 0.735, 0], wheelTilt: 0.28, grip: 0.15, steerRatio: 5.5, steerMax: 2.3,
   eye: [-0.07, 0.865, 0], // the cockpit camera: the visor camera, wide, looking down the nose past the wheel
 };
@@ -9114,7 +9114,7 @@ function driverGeometries() {
     D.body = mergeGeoms(parts, true);
   }
   // forearm: a unit-length cylinder along +y (posed every frame from the elbow to the hand)
-  D.forearm = new THREE.CylinderGeometry(0.03, 0.038, 1, 8); D.forearm.translate(0, 0.5, 0);
+  D.forearm = new THREE.CylinderGeometry(0.026, 0.032, 1, 10); D.forearm.translate(0, 0.5, 0);
   // steering wheel in its own frame (x towards the driver, y up the wheel, z across), shaped like a modern F1 wheel:
   // a flat-topped carbon plate that sweeps down into two grips, a big central screen, rotary switches and coloured
   // buttons round it, shift paddles behind; the gloves hold the grips, thumbs on the front (gloves are white: the
