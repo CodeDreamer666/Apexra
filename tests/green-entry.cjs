@@ -16,13 +16,28 @@ function rig(kmh, player = true) {
   return { c, set: a => { surfaces = a; }, step: (seconds = dt) => S.stepCarPhysics(c, seconds, t, env) };
 }
 
+// the 15% entry loss is taken off smoothly over GREEN_RUNOFF.entryTime, not in one step; the reference car b has the
+// same paint forces (it is already on the paint, entry latched) but no entry, so a/b isolates the entry loss
+const T = S.GREEN_RUNOFF.entryTime;
+const ratioAfter = (a, b, seconds) => { for (let k = 0; k < Math.round(seconds / dt); k++) { a.step(); b.step(); } return a.c.speed / b.c.speed; };
 for (const kmh of [100, 200, 300]) for (const n of [1, 2, 4]) {
-  test(`${kmh} km/h, ${n} tyres: entry removes exactly 15% of velocity once`, () => {
-    const a = rig(kmh), b = rig(kmh);
-    a.set(Array.from({ length: 4 }, (_, i) => i < n ? 2 : 0));
+  test(`${kmh} km/h, ${n} tyres: entry removes 15% of velocity smoothly, once`, () => {
+    const a = rig(kmh), b = rig(kmh), paint = Array.from({ length: 4 }, (_, i) => i < n ? 2 : 0);
+    a.set(paint); b.set(paint); b.c.greenEntryActive = true;
     a.step(1e-9); b.step(1e-9);
-    assert.ok(Math.abs(a.c.speed / b.c.speed - .85) < 1e-8);
+    assert.ok(a.c.speed / b.c.speed > 0.999, 'no sudden drop at the moment of entry');
     assert.equal(a.c.greenEntries, 1);
+    let prev = 1;
+    for (const t of [0.1, 0.2, 0.3, 0.4, 0.5]) { const r = ratioAfter(a, b, 0.1); assert.ok(r < prev - 0.01 && r > 0.85, `falling steadily at ${t} s: ${r.toFixed(4)}`); prev = r; }
+    const done = ratioAfter(a, b, T - 0.5 + 0.05);
+    // (exactly 15% is taken off; the slower car then has slightly less air drag than the reference, hence the margin)
+    assert.ok(Math.abs(done - .85) < 0.005, 'the loss ends at 15%: ' + done);
+    assert.equal(a.c.greenDrainT, 0);
+    // and stops there: from now on the car slows exactly like one already on the paint at the same speed
+    const c = rig(a.c.speed * 3.6); c.set(paint); c.c.greenEntryActive = true; c.c.x = a.c.x;
+    for (const k of ['runoffDrag', 'runoffLoss', 'runoffGrip', 'offLvl', 'gear']) c.c[k] = a.c[k];
+    for (let k = 0; k < Math.round(1 / dt); k++) { a.step(); c.step(); }
+    assert.ok(Math.abs(a.c.speed / c.c.speed - 1) < 0.005, 'no further loss after the 15%: ' + a.c.speed + ' vs ' + c.c.speed);
     for (let k = 0; k < 240; k++) a.step();
     assert.equal(a.c.greenEntries, 1, 'staying on paint cannot compound the entry penalty');
     assert.ok(a.c.speed > kmh / 3.6 * .55, 'ordinary rolling resistance, not repeated 15% reductions');
@@ -40,10 +55,9 @@ test('wheel swaps and brief seam gaps do not rearm; a real exit does', () => {
   assert.equal(r.c.greenEntries, 1);
   r.set([1, 1, 1, 1]);
   for (let k = 0; k < 24; k++) r.step();
-  const before = r.c.speed;
   r.set([2, 2, 2, 2]); r.step(1e-9);
   assert.equal(r.c.greenEntries, 2);
-  assert.ok(Math.abs(r.c.speed / before - .85) < 1e-8);
+  assert.ok(r.c.greenDrainT >= T - 1e-6, 'a real exit rearms a full new entry loss');
 });
 
 test('AI and player receive the same entry pulse and sustained forces, including a grass/paint mix', () => {
