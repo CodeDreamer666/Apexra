@@ -24,9 +24,9 @@ function race(st, kind, rank, pos, lapRank, more = {}) {
 const championship = (st, rank, results) => results.map(([pos, lap, more]) => race(st, 'rank', rank, pos, lap, more));
 
 /* ---------------- the race score ---------------- */
-test('three ranks and their thresholds: Rookie 160, Pro 180, Master 200 of 240; six circuits in a fixed order', () => {
+test('three ranks and their thresholds: Rookie 120, Pro 140, Master 200 of 240; six circuits in a fixed order', () => {
   assert.deepEqual(RANKS.map(r => [r.id, r.name, r.level]), [['rookie', 'Rookie', 1], ['pro', 'Pro', 1.25], ['master', 'Master', 1.5]]);
-  assert.deepEqual(P.PROMOTE, [160, 180, 200]);
+  assert.deepEqual(P.PROMOTE, [120, 140, 200]);
   assert.equal(P.RANK_MAX, 240); assert.equal(P.RACE_MAX, 40); assert.equal(P.RANK_RACES, 6);
   assert.deepEqual(P.CIRCUITS, ORDER); assert.equal(P.ENDLESS_LEVEL, 1.5);
   assert.deepEqual(Object.keys(SIM.GAME_MODES), ['grandprix']); assert.equal(SIM.GAME_MODES.grandprix.laps, 6);
@@ -160,14 +160,14 @@ test('a championship is raced in the fixed order from Monza; nothing can be skip
     const b = P.beginRace(st, 'rank', 0, seq(k + 1)); assert.equal(b.active.circuit, ORDER[k]);
     assert.equal(P.beginRace(st, 'rank', 0).reason, 'active', 'one race at a time');
     assert.equal(P.recordRace(st, { id: 'not-this-race', pos: 1, lapRank: 1 }).reason, 'not-active');
-    const out = P.recordRace(st, { id: b.active.id, pos: 10, lapRank: 10, best: 90 });
+    const out = P.recordRace(st, { id: b.active.id, pos: 12, lapRank: 12, best: 90 });
     assert.ok(out.ok); assert.equal(out.entry.circuit, ORDER[k]); seen.push(b.active.id);
     // the same result can never be recorded twice (double click, reloaded results screen)
     assert.equal(P.recordRace(st, { id: b.active.id, pos: 1, lapRank: 1 }).reason, 'duplicate');
   }
   assert.equal(P.status(st, 0).races.length, 6);
   assert.equal(P.beginRace(st, 'rank', 0).reason, 'done', 'no seventh race, no replay');
-  assert.equal(P.beginRace(st, 'rank', 1).reason, 'locked', 'Pro stays locked: 6 × 21 = 126 < 160');
+  assert.equal(P.beginRace(st, 'rank', 1).reason, 'locked', 'Pro stays locked: 6 × 18 = 108 < 120');
 });
 
 test('a retirement counts as the race: its points stand and the championship moves on', () => {
@@ -178,24 +178,35 @@ test('a retirement counts as the race: its points stand and the championship mov
   assert.equal(P.status(st, 0).total, 20);
 });
 
-test('promotion only after all six races: Rookie 160, Pro 180, Master 200; a failed rank restarts from race 1', () => {
+test('Rookie promotion requires exactly 120 points across six races', () => {
+  for (const [lastLapRank, expected, passed] of [[12, 119, false], [11, 120, true]]) {
+    const st = P.create();
+    championship(st, 0, [[11, 11], [11, 11], [11, 11], [11, 11], [11, 11], [11, lastLapRank]]);
+    const status = P.status(st, 0);
+    assert.equal(status.total, expected);
+    assert.equal(status.passed, passed);
+    assert.equal(st.career.unlocked, passed ? 1 : 0);
+  }
+});
+
+test('promotion only after all six races: Rookie 120, Pro 140, Master 200; a failed rank restarts from race 1', () => {
   const st = P.create();
   // Rookie: 40 points in each of the first four races (160) is not a promotion yet
   championship(st, 0, [[1, 1], [1, 1], [1, 1], [1, 1]]);
   assert.equal(st.career.unlocked, 0); assert.equal(P.status(st, 0).total, 160); assert.ok(!P.status(st, 0).done);
   assert.equal(P.restartRank(st, 0), false, 'no restart in the middle of a championship');
-  // two retirements before a lap (2 points each): 164 ≥ 160
+  // two retirements before a lap (2 points each): 164 ≥ 120
   championship(st, 0, [[20, 20, { dnf: true }], [20, 20, { dnf: true }]]);
   let S = P.status(st, 0); assert.ok(S.done && S.passed); assert.equal(S.total, 164);
   assert.equal(st.career.unlocked, 1); assert.deepEqual(st.career.completed, [0]);
-  // Pro: 179 fails (5 × 30 + 29 = 179), 180 passes
-  championship(st, 1, [[6, 6], [6, 6], [6, 6], [6, 6], [6, 6], [6, 7]]);
-  S = P.status(st, 1); assert.equal(S.total, 179); assert.ok(S.failed); assert.equal(st.career.unlocked, 1);
+  // Pro: 139 fails (5 × 24 + 19 = 139), 140 passes
+  championship(st, 1, [[9, 9], [9, 9], [9, 9], [9, 9], [9, 9], [11, 12]]);
+  S = P.status(st, 1); assert.equal(S.total, 139); assert.ok(S.failed); assert.equal(st.career.unlocked, 1);
   assert.equal(P.beginRace(st, 'rank', 1).reason, 'done');
   assert.ok(P.restartRank(st, 1)); S = P.status(st, 1);
   assert.equal(S.index, 0); assert.equal(S.next, 'monza'); assert.equal(S.attempt, 2); assert.equal(S.total, 0);
   assert.deepEqual(st.career.completed, [0], 'restarting Pro never touches Rookie');
-  championship(st, 1, [[6, 6], [6, 6], [6, 6], [6, 6], [6, 6], [6, 6]]);
+  championship(st, 1, [[9, 9], [9, 9], [9, 9], [9, 9], [9, 9], [11, 11]]);
   assert.ok(P.status(st, 1).passed); assert.equal(st.career.unlocked, 2);
   // Master: 199 fails, 200 completes and opens Endless Career with VR 1,000
   // (P4 with lap rank 5: 17 + 16 = 33; five of those and a 34 is 199, and a 35 is 200)

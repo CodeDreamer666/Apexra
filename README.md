@@ -35,8 +35,8 @@ The main challenge: three championships, then Endless Career.
 
 | Rank | Opponents | Points needed after six races |
 |---|---|---|
-| Rookie | 100% | 160 / 240 |
-| Pro | 125% | 180 / 240 |
+| Rookie | 100% | 120 / 240 |
+| Pro | 125% | 140 / 240 |
 | Master | 150% | 200 / 240 |
 | Endless Career | 150% | opens when you pass Master |
 

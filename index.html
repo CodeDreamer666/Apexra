@@ -198,25 +198,17 @@
   .btn.primary:hover { filter: brightness(1.15); }
   .btn:disabled { opacity: .35; cursor: default; transform: none; }
   .btn small { margin-left: auto; font-size: 12px; color: rgba(255,255,255,.6); letter-spacing: 1px; font-weight: 600; }
-  .circuit-card { position: absolute; right: 48px; bottom: 48px; width: clamp(340px, 36vw, 610px); padding: 18px 22px 14px; pointer-events: auto; background: rgba(10,12,17,.86); transition: opacity .2s, transform .2s; }
-  .circuit-card h3, #circuitSelect h3 { margin: 0; font-size: clamp(22px, 2vw, 32px); letter-spacing: .3px; font-weight: 700; }
-  .circuit-card .country, #circuitSelect .country { color: var(--dim); font-size: 14px; letter-spacing: 1.5px; text-transform: uppercase; }
+  #circuitSelect h3 { margin: 0; font-size: clamp(22px, 2vw, 32px); letter-spacing: .3px; font-weight: 700; }
   .cmap { width: 100%; aspect-ratio: 760 / 340; display: block; margin: 8px 0 0; }
-  #menu.selecting .circuit-card { opacity: 0; transform: translateY(10px); pointer-events: none; }
-  /* circuit selection: three geometry-drawn maps; hover lifts, the selection glows red */
+  /* circuit selection: six geometry-drawn maps; hover lifts, the selection glows red */
   #circuitSelect { position: absolute; right: 48px; bottom: 48px; width: min(980px, calc(100vw - 690px)); padding: 18px 22px 20px; pointer-events: none; background: rgba(10,12,17,.9);
     opacity: 0; transform: translateY(14px); transition: opacity .22s, transform .22s; }
   #menu.selecting #circuitSelect { opacity: 1; transform: none; pointer-events: auto; }
   .cs-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 14px; }
-  .cs-nav { display: flex; gap: 8px; }
-  .cs-nav button { width: 40px; height: 40px; border-radius: 6px; border: 1px solid rgba(255,255,255,.16); background: rgba(255,255,255,.06); color: #fff; font: 700 26px/1 var(--font); cursor: pointer; transition: background .12s, border-color .12s; }
-  .cs-nav button:hover, .cs-nav button:focus-visible { background: rgba(225,6,0,.22); border-color: var(--accent); outline: none; }
   #csCards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
   .cs-card { position: relative; display: flex; flex-direction: column; gap: 6px; padding: 12px 12px 8px; text-align: left; color: #fff; font: 700 16px var(--font); letter-spacing: .3px;
     background: #0b0d12; border: 1px solid rgba(255,255,255,.12); border-radius: 8px; cursor: pointer; transition: transform .14s, border-color .14s, box-shadow .14s, background .14s; }
   .cs-card .cmap { margin: 0; }
-  .cs-card .cs-c { font: 600 12px var(--font); letter-spacing: .4px; color: rgba(255,255,255,.62); margin-top: -4px; }
-  .cs-meta { font: 600 13px var(--font); letter-spacing: .4px; color: rgba(255,255,255,.7); margin-top: 2px; }
   .cs-card:hover { transform: translateY(-3px); border-color: rgba(255,255,255,.34); background: #10131a; }
   .cs-card:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
   .cs-card:active { transform: translateY(0) scale(.985); }
@@ -381,7 +373,6 @@
   }
   @media(prefers-reduced-motion:reduce) { .brief-tyre { transition:none; } }
   .mode-picker { margin:4px 0 10px; }
-  .mode-picker legend { padding:0; margin-bottom:8px; color:#9faebe; font-size:12px; font-weight:700; letter-spacing:2px; text-transform:uppercase; }
   .mode-picker fieldset { border:0; padding:0; margin:0; }
   .mode-options { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
   .mode-option { display:flex; align-items:flex-start; gap:10px; padding:14px 12px; border:1px solid #3b4658; border-radius:9px; background:linear-gradient(130deg,#192331,#0c111a); color:#dfe6f0; text-align:left; font:400 14px/1.35 var(--font); cursor:pointer; }
@@ -391,22 +382,19 @@
   .mode-option[aria-pressed="true"] svg { color:#ff564d; }
   .mode-option:focus-visible { outline:2px solid white; outline-offset:3px; }
   .mode-option.mode-career:hover { border-color:#5b6a80; }
-  .mode-option b small { margin-left:6px; font-size:12px; font-weight:700; letter-spacing:1px; color:#ff8a80; text-transform:uppercase; }
   @media(max-width:420px) { .mode-options { grid-template-columns:1fr; } .menu-left { padding-left:24px; padding-right:24px; } }
 
   .dialog, .menu-left { scrollbar-width:none; }
   .dialog::-webkit-scrollbar, .menu-left::-webkit-scrollbar { display:none; }
   .menu-left { width:min(640px,100vw); padding:clamp(28px,12vh,130px) 48px 24px; gap:14px; overflow-y:auto; }
   .menu-left .btn { display:flex; align-items:center; padding:clamp(16px,2.6vh,26px) 30px; margin:0; font-size:clamp(18px,1.6vw,25px); letter-spacing:.5px; }
-  @media(max-width:760px) { .circuit-card { display:none; } }
-  @media (prefers-reduced-motion: reduce) { .cs-card, #circuitSelect, .circuit-card { transition: none; } }
+  @media (prefers-reduced-motion: reduce) { .cs-card, #circuitSelect { transition: none; } }
 
   /* ---------------- career ---------------- */
   #career .dialog { width:min(1240px,96vw); max-height:94vh; padding:22px 26px 18px; display:flex; flex-direction:column; gap:14px; }
   .cr-head { display:flex; align-items:flex-end; justify-content:space-between; gap:16px; }
   .cr-head .sub { margin:0; }
   .cr-head .btn { width:auto; margin:0; padding:10px 22px; }
-  .cr-badge { display:inline-block; margin-left:10px; padding:1px 9px; border-radius:4px; font-size:12px; font-weight:700; letter-spacing:1.4px; color:#111; background:var(--gold); vertical-align:middle; }
   .cr-bar { list-style:none; margin:0; padding:0; display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:6px; }
   .cr-seg { position:relative; width:100%; display:flex; flex-direction:column; align-items:flex-start; gap:2px; padding:12px 10px 9px; text-align:left; color:#fff; cursor:pointer;
     font:700 15px var(--font); letter-spacing:.3px; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.10); border-radius:6px; transition:background .15s, border-color .15s, box-shadow .2s, opacity .15s; }
@@ -469,16 +457,11 @@
   .cr-stats b { font-size:24px; line-height:1.2; }
   .cr-course { font-size:14px; font-weight:600; color:var(--dim); }
   .cr-course.ok { color:#4be38a; } .cr-course.no { color:#ff7a72; }
-  .cr-team { display:flex; align-items:center; gap:12px; }
-  .cr-team label { font-size:12px; color:var(--dim); letter-spacing:1.5px; text-transform:uppercase; font-weight:700; white-space:nowrap; }
-  .cr-team select { flex:1; padding:8px 10px; font:600 15px var(--font); color:#fff; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.14); border-radius:4px; }
-  .cr-team select option { background:#1b1e26; }
-  .cr-team .tb, .cr-standings .tb, .sum-table .tb { display:inline-block; width:4px; height:15px; vertical-align:middle; margin-right:8px; border-radius:1px; }
+  .cr-standings .tb, .sum-table .tb { display:inline-block; width:4px; height:15px; vertical-align:middle; margin-right:8px; border-radius:1px; }
   .cr-actions { display:flex; gap:10px; flex-wrap:wrap; margin-top:auto; }
   .cr-actions .btn { width:auto; margin:0; padding:12px 22px; }
   .cr-actions .btn.primary { flex:1 1 auto; justify-content:center; }
   .cr-note { margin:0; font-size:14px; color:var(--dim); }
-  .cr-legacy { display:block; margin-top:6px; color:#f4ca73; font-size:13px; }
   .cr-table { display:flex; flex-direction:column; min-height:0; min-width:0; border:1px solid rgba(255,255,255,.08); border-radius:8px; background:rgba(0,0,0,.18); }
   .cr-tablehead { display:flex; justify-content:space-between; align-items:center; gap:10px; padding:10px 12px 6px; font-size:12px; font-weight:700; letter-spacing:1.5px; color:var(--dim); text-transform:uppercase; }
   .cr-tablehead span:last-child { color:#ff8a80; letter-spacing:.8px; }
@@ -492,9 +475,6 @@
   .cr-standings td.r, .cr-standings th.r, .sum-table td.r, .sum-table th.r { text-align:right; }
   .cr-standings .dim { color:var(--dim); }
   .cr-standings tr.cut td, .sum-table tr.cut td { border-bottom:2px dashed rgba(225,6,0,.85); }
-  .cr-reset { align-self:flex-start; background:none; border:0; padding:2px 0; color:var(--dim); font:600 13px var(--font); letter-spacing:.4px; cursor:pointer; text-decoration:underline; text-underline-offset:3px; }
-  .cr-reset:hover, .cr-reset:focus-visible { color:#fff; outline:none; }
-  .cr-reset.armed { color:#ff7a72; }
   .btn.armed { border-color:#ff7a72; background:rgba(225,6,0,.22); }
   /* career result strip on the race results */
   .res-career { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:8px; margin:0 0 14px; }
@@ -525,6 +505,27 @@
   @media (max-width:980px) { .cr-body { grid-template-columns:1fr; } .cr-scroll { flex:none; max-height:50vh; } .cr-bar { grid-template-columns:repeat(4,minmax(0,1fr)); } .res-career { grid-template-columns:repeat(3,minmax(0,1fr)); } }
   @media (max-width:560px) { .cr-bar { grid-template-columns:repeat(2,minmax(0,1fr)); } .cr-races, .cr-stats { grid-template-columns:1fr; } .cr-race + .cr-race::before { display:none; } }
   @media (prefers-reduced-motion: reduce) { .cr-seg, .cr-seg::before, .cr-race { transition:none; } .cr-seg.unlocked-now, .sum-hero { animation:none; } }
+  #career .dialog { width:min(520px,94vw); gap:28px; padding:26px; }
+  #career .cr-head { align-items:center; }
+  #career .cr-head h2 { margin:0; }
+  #career .cr-body { display:block; flex:none; }
+  #career .cr-tier { gap:26px; }
+  .cr-score-row { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+  .cr-score-row > div { display:flex; flex-direction:column; gap:8px; }
+  .cr-score-row small, .cr-next small { color:var(--dim); font-size:13px; }
+  .cr-score-row b { font-size:clamp(24px,6vw,34px); line-height:1.1; white-space:nowrap; }
+  .cr-score-row > div + div b { color:var(--dim); }
+  .cr-ranks { display:flex; gap:8px; list-style:none; padding:0; margin:0; }
+  .cr-ranks li { flex:1; text-align:center; padding:8px 4px; border-bottom:2px solid var(--line); color:var(--dim); font-size:13px; }
+  .cr-ranks li[aria-current] { color:#fff; border-color:var(--accent); font-weight:700; }
+  .cr-ranks li.locked { opacity:.5; }
+  .cr-next { display:flex; align-items:center; justify-content:space-between; gap:14px; padding-top:22px; border-top:1px solid var(--line); }
+  .cr-next .cr-map { width:120px; height:62px; flex:none; }
+  .cr-next .cr-map path { fill:none; stroke:#ff3b2a; stroke-width:2.2; stroke-linejoin:round; }
+  .cr-next b { display:block; font-size:25px; margin-top:6px; }
+  .cr-note { color:var(--dim); font-size:14px; margin:0; }
+  #career .cr-actions .btn { margin:0; min-width:0; max-width:100%; white-space:normal; overflow-wrap:anywhere; }
+  @media(max-width:480px) { #career .dialog { padding:20px; gap:24px; } }
 </style>
 </head>
 <body>
@@ -607,25 +608,18 @@
 <div id="menu" class="screen hidden">
   <div class="menu-left">
     <h1 class="logo">Apex<span>ra</span></h1>
-    <div class="mode-picker"><fieldset><legend>Game Mode</legend><div class="mode-options">
+    <div class="mode-picker"><fieldset aria-label="Game mode"><div class="mode-options">
       <button type="button" class="mode-option" data-mode="grandprix" aria-pressed="true"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M4 30V3m1 0c8-6 13 6 23 0v16c-10 6-15-6-23 0"/><path d="M8 5h5v5H8zm10 5h5v5h-5z" fill="currentColor"/></svg><span><b>Grand Prix — 6 Laps</b>20 drivers from the grid. Master your tyre, fuel and pit strategy.</span></button>
-      <button type="button" class="mode-option mode-career" data-act="career" id="btnCareer"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M3 27h6v-6H3zm10 0h6V15h-6zm10 0h6V6h-6z"/><path d="m4 15 8-7 6 4 10-9" /></svg><span><b>Career <small id="careerTierLabel"></small></b>Rookie, Pro and Master: six races each, in order, 40 points a race. Then Endless Career and your VR rating.</span></button>
+      <button type="button" class="mode-option mode-career" data-act="career" id="btnCareer"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M3 27h6v-6H3zm10 0h6V15h-6zm10 0h6V6h-6z"/><path d="m4 15 8-7 6 4 10-9" /></svg><span><b>Career</b>Rookie, Pro and Master: six races each, in order, 40 points a race. Then Endless Career and your VR rating.</span></button>
     </div></fieldset></div>
     <button id="menuStart" class="btn primary" data-act="play">Start Grand Prix</button>
     <button class="btn" data-act="controls">Controls</button>
   </div>
-  <div class="circuit-card panel" id="circuitCard">
-    <div class="country">Circuit</div>
-    <h3 id="ccName"></h3>
-    <div class="cs-meta" id="ccMeta"></div>
-    <canvas id="ccMap" class="cmap" width="760" height="340" aria-hidden="true"></canvas>
-  </div>
-  <div id="circuitSelect" class="panel" role="dialog" aria-labelledby="csTitle" aria-hidden="true">
+  <div id="circuitSelect" class="panel" role="dialog" aria-labelledby="csName" aria-hidden="true">
     <div class="cs-head">
-      <div><div class="country" id="csTitle">Select circuit</div><h3 id="csName"></h3><div class="cs-meta" id="csMeta"></div></div>
-      <div class="cs-nav"><button type="button" id="csPrev" aria-label="Previous circuit">&#8249;</button><button type="button" id="csNext" aria-label="Next circuit">&#8250;</button></div>
+      <div><h3 id="csName"></h3></div>
     </div>
-    <div id="csCards" role="listbox" aria-labelledby="csTitle"></div>
+    <div id="csCards" role="listbox" aria-label="Circuits"></div>
     <div class="cs-actions"><button type="button" class="btn" id="csBack">Back</button><button type="button" class="btn primary" id="csGo">Race here</button></div>
   </div>
 </div>
@@ -744,18 +738,13 @@
 <div id="career" class="overlay hidden">
   <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="crTitle">
     <div class="cr-head">
-      <div><h2 id="crTitle">Ca<span>reer</span></h2><div class="sub" id="crSub"></div></div>
+      <div><h2 id="crTitle">Ca<span>reer</span></h2></div>
       <button class="btn" id="crBack" type="button">Back</button>
     </div>
-    <ol class="cr-bar" id="crBar" role="listbox" aria-label="Career stages" aria-orientation="horizontal"></ol>
+    <ol class="cr-ranks" id="crRanks" aria-label="Career ranks"></ol>
     <div class="cr-body">
       <section class="cr-tier" id="crTier" aria-live="polite"></section>
-      <section class="cr-table" aria-labelledby="crTableTitle">
-        <div class="cr-tablehead"><span id="crTableTitle">Championship standings</span><span id="crCut"></span></div>
-        <div class="cr-scroll" id="crScroll" tabindex="0" aria-label="Championship standings, scrollable"><table class="res cr-standings" id="crStand"></table></div>
-      </section>
     </div>
-    <button type="button" class="cr-reset" id="crReset">Reset career progress</button>
   </div>
 </div>
 
@@ -6287,7 +6276,7 @@ const SIM = (function () {
      CAREER — three six-race championships (Rookie 100%, Pro 125%, Master 150% AI), then Endless Career.
        Each rank is raced in a fixed order (Monza, Silverstone, Spa, Suzuka, Bahrain, Interlagos), one attempt per race:
        the result of every race counts, a retirement included, and is saved before the next race opens. After the
-       sixth race the championship total (max 240) is judged: Rookie 160, Pro 180, Master 200. A pass unlocks the next
+       sixth race the championship total (max 240) is judged: Rookie 120, Pro 140, Master 200. A pass unlocks the next
        rank for good (Master unlocks Endless Career); a fail, or a new attempt at a passed rank, starts again at race 1.
        Endless Career: 150% AI, a random circuit for every race (never the same one twice in a row), and a VR rating
        (0…9,999, from 1,000) that the race score moves up or down.
@@ -6302,7 +6291,7 @@ const SIM = (function () {
   const CAREER_ORDER = ['monza', 'silverstone', 'spa', 'suzuka', 'bahrain', 'interlagos'];
   const PROGRESS_CIRCUITS = CAREER_ORDER.filter(id => CIRCUITS.some(c => c.id === id));
   const PROGRESS_VERSION = 4, CAREER_FIELD = RACE_FIELD, RANK_RACES = 6, RANK_MAX = RANK_RACES * RACE_SCORE_MAX;
-  const CAREER_PROMOTE = [160, 180, 200];
+  const CAREER_PROMOTE = [120, 140, 200];
   const ENDLESS_LEVEL = 1.50;
   // VR: the Endless Career rating
   const VR_START = 1000, VR_MIN = 0, VR_MAX = 9999, VR_NEUTRAL = 21;
@@ -10658,7 +10647,6 @@ function prepMinimap() {
   const [sx, sy] = G.mmT.tf(t.cx[0], t.cz[0]), [ax, ay] = G.mmT.tf(t.cx[0] + t.tx[0], t.cz[0] + t.tz[0]);
   sg.save(); sg.translate(sx, sy); sg.rotate(Math.atan2(ay - sy, ax - sx)); sg.fillStyle = '#e10600'; sg.fillRect(-4, -13, 8, 26); sg.restore();
   G.mmStatic = st;
-  updateCircuitCard();
 }
 // Menu circuit maps are drawn from the circuit's centre line, the same
 // geometry the playable Track is built on (x east, z south, as the minimap).
@@ -10692,23 +10680,14 @@ function drawCircuitMap(cvs, def) {
   const ux = hx - bx, uy = hy - by, ul = Math.hypot(ux, uy) || 1, nx = ux / ul, ny = uy / ul, a = 7 * u;
   g.fillStyle = '#fff'; g.beginPath(); g.moveTo(hx + nx * a, hy + ny * a); g.lineTo(hx - nx * a * 0.6 - ny * a * 0.7, hy - ny * a * 0.6 + nx * a * 0.7); g.lineTo(hx - nx * a * 0.6 + ny * a * 0.7, hy - ny * a * 0.6 - nx * a * 0.7); g.closePath(); g.fill();
 }
-// "Italy · 5.793 km lap · 6 laps, 34.758 km": the real lap length and the race distance in the chosen mode
-function circuitMeta(def, full = true) {
-  const km = (m) => (m / 1000).toFixed(3) + ' km', laps = SIM.GAME_MODES.grandprix.laps;
-  return def.country + ' · ' + km(def.length) + (full ? ' lap · ' + laps + ' laps, ' + km(def.length * laps) : '');
-}
-function updateCircuitCard() {
-  const def = SIM.circuitById(S.circuit);
-  $('ccName').textContent = def.name; $('ccMeta').textContent = circuitMeta(def); drawCircuitMap($('ccMap'), def);
-}
 // ---- circuit selection (opens from Start Grand Prix) ----
 const CS = { open: false, idx: 0, built: false };
 function buildCircuitCards() {
   const box = $('csCards'); box.replaceChildren();
   SIM.CIRCUITS.forEach((def, k) => {
     const b = document.createElement('button'); b.type = 'button'; b.className = 'cs-card'; b.setAttribute('role', 'option'); b.dataset.k = k;
-    b.innerHTML = '<span>' + def.short + '</span><span class="cs-c">' + circuitMeta(def, false) + '</span><canvas class="cmap" aria-hidden="true"></canvas>';
-    b.setAttribute('aria-label', def.name + ', ' + circuitMeta(def));
+    b.innerHTML = '<span>' + def.short + '</span><canvas class="cmap" aria-hidden="true"></canvas>';
+    b.setAttribute('aria-label', def.name);
     b.onclick = () => selectCircuit(k); b.ondblclick = () => confirmCircuit();
     box.appendChild(b);
   });
@@ -10717,7 +10696,7 @@ function buildCircuitCards() {
 function selectCircuit(k) {
   const n = SIM.CIRCUITS.length; CS.idx = ((k % n) + n) % n;
   [...$('csCards').children].forEach((b, i) => { b.setAttribute('aria-selected', i === CS.idx ? 'true' : 'false'); b.tabIndex = i === CS.idx ? 0 : -1; });
-  $('csName').textContent = SIM.CIRCUITS[CS.idx].name; $('csMeta').textContent = circuitMeta(SIM.CIRCUITS[CS.idx]);
+  $('csName').textContent = SIM.CIRCUITS[CS.idx].name;
 }
 function openCircuitSelect() {
   if (!CS.built) buildCircuitCards();
@@ -10743,12 +10722,10 @@ async function confirmCircuit() {
   if (!CS.open) return;
   const def = SIM.CIRCUITS[CS.idx];
   G.career = null;
-  S.circuit = def.id; saveSettings(); closeCircuitSelect(); updateCircuitCard();
+  S.circuit = def.id; saveSettings(); closeCircuitSelect();
   await ensureCircuit(def);
   startRace();
 }
-$('csPrev').onclick = () => selectCircuit(CS.idx - 1);
-$('csNext').onclick = () => selectCircuit(CS.idx + 1);
 $('csBack').onclick = () => closeCircuitSelect();
 $('csGo').onclick = () => confirmCircuit();
 window.addEventListener('keydown', (e) => {
@@ -10761,7 +10738,7 @@ window.addEventListener('keydown', (e) => {
   else return;
   e.preventDefault(); e.stopPropagation();
 }, true);
-window.addEventListener('resize', () => { if (G.track) updateCircuitCard(); if (CS.open) [...$('csCards').children].forEach((b, i) => drawCircuitMap(b.querySelector('canvas'), SIM.CIRCUITS[i])); });
+window.addEventListener('resize', () => { if (CS.open) [...$('csCards').children].forEach((b, i) => drawCircuitMap(b.querySelector('canvas'), SIM.CIRCUITS[i])); });
 /* ---------------- career ----------------
    Three ranks, six circuits each. Every circuit is its own six-lap Grand Prix scored out of 100 (50 for the finishing
    position, 50 for lap-time pace); the rank score is the sum of the best score on each circuit. The rules and the
@@ -10780,7 +10757,7 @@ function circuitSvg(def) {
   const d = pts.filter((_, i) => i % 4 === 0).map(([x, z], i) => (i ? 'L' : 'M') + (ox + (x - minX) * sc).toFixed(1) + ' ' + (oy + (z - minZ) * sc).toFixed(1)).join('') + 'Z';
   return '<svg class="cr-map" viewBox="0 0 120 58" aria-hidden="true"><path d="' + d + '"/></svg>';
 }
-const careerTeam = () => PG.team != null ? PG.team : 0;
+const careerTeam = () => 0; // Career always uses Team A, including existing saves.
 const fmtVr = (v) => Math.round(v).toLocaleString('en-US');
 const circuitShort = (id) => SIM.circuitById(id).short;
 const careerLabel = (info) => info.kind === 'endless' ? 'Endless Career' : RK[info.rank].name + ' — race ' + ((info.index ?? 0) + 1) + '/6';
@@ -10792,7 +10769,6 @@ function recordCareerRace(sess) {
   PG = loadProgress();
   sess.careerOutcome = SIM.PROGRESS.recordRace(PG, { id: info.id, pos: me.pos, lapRank: me.lapRank, best: me.best, dnf: !!me.dnf, reason: me.dnf ? 'retired' : 'finished', at: Date.now() });
   if (sess.careerOutcome.ok) { saveProgress(); if (sess.careerOutcome.unlockedNow != null) CRUI.flash = sess.careerOutcome.unlockedNow; if (sess.careerOutcome.endlessUnlocked) CRUI.flash = 3; }
-  updateCareerButton();
 }
 function renderCareerStrip(sess) {
   const el = $('resCareer'), out = sess.careerOutcome;
@@ -10814,12 +10790,6 @@ function renderCareerStrip(sess) {
   }
   el.innerHTML = h;
 }
-function updateCareerButton() {
-  const m = PG.career, e = m.endless;
-  if (e.unlocked) { $('careerTierLabel').textContent = 'Endless · VR ' + fmtVr(e.vr); return; }
-  const st = SIM.PROGRESS.status(PG, m.unlocked);
-  $('careerTierLabel').textContent = RK[m.unlocked].name + ' · ' + (st.done ? 'race 6/6' : 'race ' + (st.index + 1) + '/6') + ' · ' + st.total + '/' + st.max;
-}
 // the Career screen's four stages: Rookie, Pro, Master and Endless Career (index 3)
 const ENDLESS_TAB = 3;
 function openCareer(sel) {
@@ -10830,13 +10800,14 @@ function openCareer(sel) {
   if (CRUI.sel > maxSel && CRUI.sel !== ENDLESS_TAB) CRUI.sel = maxSel;
   $('career').classList.remove('hidden');
   renderCareer();
-  const seg = $('crBar').querySelector('[aria-selected="true"]'); if (seg) seg.focus({ preventScroll: true });
+  $('crBack').focus({ preventScroll: true });
 }
 function closeCareer() {
   CRUI.open = false; $('career').classList.add('hidden');
   const b = $('btnCareer'); if (b && G.mode === 'menu') b.focus({ preventScroll: true });
 }
-function selectTier(k) { CRUI.sel = clamp(k, 0, ENDLESS_TAB); renderCareer(); const seg = $('crBar').children[CRUI.sel]; if (seg) seg.firstChild.focus({ preventScroll: true }); }
+$('crBack').onclick = () => closeCareer();
+function selectTier(k) { CRUI.sel = clamp(k, 0, ENDLESS_TAB); renderCareer(); $('crBack').focus({ preventScroll: true }); }
 // Two clicks for anything that throws away progress: the first arms the button for a few seconds.
 function armed(btn, label, fn) {
   if (btn.dataset.armed) { fn(); return; }
@@ -10844,114 +10815,49 @@ function armed(btn, label, fn) {
   setTimeout(() => { if (btn.isConnected && btn.dataset.armed) { delete btn.dataset.armed; btn.classList.remove('armed'); btn.textContent = old; } }, 4000);
 }
 function renderCareer() {
-  const sel = CRUI.sel, m = PG.career, e = m.endless;
-  $('crSub').innerHTML = (e.unlocked ? 'Master complete.<span class="cr-badge">ENDLESS CAREER</span> ' : '')
-    + 'Three six-race championships, raced in order: Monza, Silverstone, Spa, Suzuka, Bahrain, Interlagos. Each race scores up to 40: 20 for your finishing position and 20 for the rank of your best lap. Every result counts — a retirement too — and there are no retries. After race 6: Rookie needs 160 / 240, Pro 180, Master 200. Completing Master opens Endless Career.'
-    + (PG.legacy && PG.legacy.note ? '<span class="cr-legacy">' + PG.legacy.note + '</span>' : '');
-  const bar = $('crBar'); bar.replaceChildren();
-  const tabs = RK.map((r, k) => {
-    const st = SIM.PROGRESS.status(PG, k), locked = k > m.unlocked, done = m.completed.includes(k);
-    return { title: r.name, small: 'Rank ' + (k + 1) + ' · AI ' + pct(r.level), locked, cls: (done ? ' done' : '') + (done && k === RK.length - 1 ? ' champ' : '') + (!locked && st.index > 0 && !st.done ? ' live' : ''),
-      state: locked ? CR_ICON.lock + 'Locked' : !st.done && st.index > 0 ? 'Race ' + (st.index + 1) + '/6 · ' + st.total : done ? CR_ICON.check + 'Completed' : st.done ? st.total + ' / 240 · not passed' : 'Race 1/6' };
-  });
-  tabs.push({ title: 'Endless', small: 'After Master · AI 150%', locked: !e.unlocked, cls: e.unlocked ? ' champ' : '', state: e.unlocked ? 'VR ' + fmtVr(e.vr) : CR_ICON.lock + 'Locked' });
-  tabs.forEach((t, k) => {
-    const li = document.createElement('li'), b = document.createElement('button');
-    b.type = 'button'; b.className = 'cr-seg' + (t.locked ? ' locked' : '') + t.cls + (CRUI.flash === k ? ' unlocked-now' : '');
-    b.setAttribute('role', 'option'); b.setAttribute('aria-selected', String(k === sel)); b.tabIndex = k === sel ? 0 : -1;
-    b.innerHTML = '<small>' + t.small + '</small>' + t.title + '<span class="cr-state">' + t.state + '</span>';
-    b.setAttribute('aria-label', t.title + ', ' + t.state.replace(/<[^>]+>/g, ''));
-    b.onclick = () => selectTier(k);
-    li.appendChild(b); bar.appendChild(li);
-  });
+  const current = PG.career.endless.unlocked ? ENDLESS_TAB : PG.career.unlocked;
+  $('crRanks').innerHTML = [...RK.map(r => r.name), 'Endless'].map((name, k) =>
+    '<li' + (k === current ? ' aria-current="step"' : '') + (k > current ? ' class="locked"' : '') + '>' + name + '</li>'
+  ).join('');
   CRUI.flash = -1;
-  if (sel === ENDLESS_TAB) renderEndless(); else renderRank(sel);
-  updateCareerButton();
+  if (CRUI.sel === ENDLESS_TAB) renderEndless(); else renderRank(CRUI.sel);
 }
 function renderRank(sel) {
-  const rank = RK[sel], m = PG.career, st = SIM.PROGRESS.status(PG, sel), unlocked = st.unlocked, box = $('crTier');
-  const chip = !unlocked ? ['Locked', ''] : st.done ? (st.passed ? ['Passed', sel === RK.length - 1 ? 'champ' : 'done'] : ['Not passed', 'live']) : st.index ? ['Race ' + (st.index + 1) + ' of 6', 'live'] : st.completed ? ['Completed earlier', 'done'] : ['Ready', ''];
-  let h = '<div class="cr-tierhead"><div><small>Rank ' + (sel + 1) + ' of ' + RK.length + ' · AI difficulty ' + pct(rank.level) + (st.attempt > 1 ? ' · attempt ' + st.attempt : '') + '</small><h3>' + rank.name + '</h3></div>'
-    + '<span class="cr-chip ' + chip[1] + '">' + chip[0] + '</span></div>'
-    + '<div class="cr-req"><b>' + st.need + ' / ' + st.max + '</b><span>after all six races' + (sel < RK.length - 1 ? ' to unlock ' + RK[sel + 1].name : ' to complete Master and open Endless Career') + '</span></div>';
-  h += '<ol class="cr-races cr-six">' + st.schedule.map((circuit, k) => {
-    const def = SIM.circuitById(circuit), e = st.races[k], current = unlocked && !st.done && k === st.index;
-    const cls = e ? 'done' : current ? 'next' : 'locked';
-    const state = e ? '<b class="num">' + e.total + '</b> · ' + (e.dnf ? 'DNF ' : '') + 'P' + e.pos + ' · lap P' + e.lapRank : current ? 'Next race' : 'Race ' + (k + 1);
-    return '<li class="cr-race ' + cls + '"><button type="button" class="cr-go"' + (current ? '' : ' disabled') + ' aria-label="Race ' + (k + 1) + ', ' + def.name + ', ' + (e ? e.total + ' of 40' : current ? 'next race' : 'not yet') + '">'
-      + '<small>' + (k + 1) + ' · ' + def.country + '</small><b>' + def.short + '</b>' + circuitSvg(def) + '<span class="cr-rstate">' + state + '</span></button></li>';
-  }).join('') + '</ol>';
-  h += '<div class="cr-stats"><div><small>Championship</small><b class="num">' + st.total + ' / ' + st.max + '</b></div><div><small>Needed</small><b class="num">' + st.need + '</b></div>'
-    + '<div><small>Race</small><b class="num">' + (st.done ? '6 / 6' : (st.index + 1) + ' / 6') + '</b></div>'
-    + '<div><small>Next start</small><b class="num">' + (st.done ? '—' : 'P' + SIM.PROGRESS.gridPos(PG, 'rank', sel)) + '</b></div></div>'
-    + '<p class="cr-course ' + (st.done ? (st.passed ? 'ok' : 'no') : '') + '">' + (!unlocked ? 'Pass ' + RK[sel - 1].name + ' (' + SIM.PROGRESS.PROMOTE[sel - 1] + ' / 240 after six races) to unlock.'
-      : st.done ? (st.passed ? 'Championship passed with ' + st.total + ' points.' + (sel < RK.length - 1 ? ' ' + RK[sel + 1].name + ' is unlocked.' : ' Endless Career is open.') : 'Championship not passed: ' + st.total + ' of ' + st.need + ' needed. Start a new ' + rank.name + ' championship from race 1.')
-      : 'Next: race ' + (st.index + 1) + ' at ' + circuitShort(st.next) + '. ' + (st.index ? Math.max(0, st.need - st.total) + ' more points needed over the remaining ' + (6 - st.index) + ' race' + (6 - st.index === 1 ? '' : 's') + '.' : 'Your first race starts from P20; after that you start where you finished the race before.')) + '</p>';
-  const cur = careerTeam();
-  h += '<div class="cr-team"><label for="crTeam">Your team</label><select id="crTeam">' + SIM.TEAMS.map((t, k) => '<option value="' + k + '"' + (k === cur ? ' selected' : '') + '>' + t.name + '</option>').join('') + '</select></div>';
-  h += '<div class="cr-actions" id="crActions"></div>';
-  box.innerHTML = h;
-  $('crTeam').onchange = (ev) => { PG.team = +ev.target.value; saveProgress(); };
-  for (const b of box.querySelectorAll('.cr-go:not([disabled])')) b.onclick = () => careerStart('rank', sel);
+  const rank = RK[sel], st = SIM.PROGRESS.status(PG, sel), unlocked = st.unlocked, box = $('crTier');
+  const targetLabel = 'Target score';
+  let h = '<div class="cr-score-row"><div><small>Current score</small><b class="num">' + st.total + ' / ' + st.max + '</b></div>'
+    + '<div><small>' + targetLabel + '</small><b class="num">' + st.need + ' / ' + st.max + '</b></div></div>';
+  if (!unlocked) h += '<p class="cr-note">Complete ' + RK[sel - 1].name + ' to unlock.</p>';
+  else if (!st.done) {
+    const def = SIM.circuitById(st.next);
+    h += '<div class="cr-next"><div><small>Next race · ' + (st.index + 1) + '/6</small><b>' + def.short + '</b></div>' + circuitSvg(def) + '</div>';
+  }
+  else h += '<p class="cr-note">' + (st.passed ? 'Championship passed' : 'Target not reached') + '</p>';
+  box.innerHTML = h + '<div class="cr-actions" id="crActions"></div>';
   const acts = $('crActions');
   const mk = (txt, fn, cls = '') => { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn ' + cls; b.textContent = txt; b.onclick = () => fn(b); acts.appendChild(b); return b; };
   if (!unlocked) mk('Locked', () => {}, 'primary').disabled = true;
-  else if (!st.done) mk('Start race ' + (st.index + 1) + ': ' + circuitShort(st.next) + ' ▸', () => careerStart('rank', sel), 'primary');
+  else if (!st.done) mk('Start race', () => careerStart('rank', sel), 'primary');
   else {
     if (st.passed && sel < RK.length - 1) mk('Next rank: ' + RK[sel + 1].name + ' ▸', () => selectTier(sel + 1), 'primary');
     if (st.passed && sel === RK.length - 1) mk('Endless Career ▸', () => selectTier(ENDLESS_TAB), 'primary');
-    mk(st.passed ? 'New ' + rank.name + ' championship' : 'Restart ' + rank.name + ' from race 1', (b) => armed(b, 'Click again: this clears the six results above', () => {
+    mk(st.passed ? 'New ' + rank.name + ' championship' : 'Restart ' + rank.name + ' from race 1', (b) => armed(b, 'Click again to restart this championship', () => {
       PG = loadProgress(); if (SIM.PROGRESS.restartRank(PG, sel)) saveProgress(); renderCareer();
     }), st.passed ? '' : 'primary');
   }
-  // the right-hand table: this championship, race by race
-  $('crCut').textContent = st.need + ' / 240 to ' + (sel < RK.length - 1 ? 'unlock ' + RK[sel + 1].name : 'open Endless Career');
-  $('crTableTitle').textContent = rank.name + ' championship' + (st.attempt > 1 ? ' · attempt ' + st.attempt : '');
-  let t = '<tr><th>#</th><th>Circuit</th><th class="r">Finish</th><th class="r">Best lap</th><th class="r">Pos</th><th class="r">Lap</th><th class="r">Total</th></tr>';
-  st.schedule.forEach((circuit, k) => {
-    const e = st.races[k];
-    t += '<tr class="' + (e ? '' : 'dim') + '"><td>' + (k + 1) + '</td><td>' + circuitShort(circuit) + '</td>'
-      + (e ? '<td class="r num">' + (e.dnf ? 'DNF ' : '') + 'P' + e.pos + '</td><td class="r num">' + (e.best ? fmt(e.best) : '—') + ' (P' + e.lapRank + ')</td><td class="r num">' + e.posPts + '</td><td class="r num">' + e.lapPts + '</td><td class="r num"><b>' + e.total + '</b></td>'
-        : '<td class="r dim">—</td><td class="r dim">—</td><td class="r dim">—</td><td class="r dim">—</td><td class="r dim">—</td>') + '</tr>';
-  });
-  t += '<tr class="me"><td></td><td><b>Championship</b></td><td></td><td></td><td></td><td></td><td class="r num"><b>' + st.total + ' / ' + st.max + '</b></td></tr>';
-  $('crStand').innerHTML = t;
 }
 function renderEndless() {
   const e = SIM.PROGRESS.endless(PG), box = $('crTier');
-  let h = '<div class="cr-tierhead"><div><small>After Master · AI difficulty 150% · a random circuit every race</small><h3>Endless Career</h3></div>'
-    + '<span class="cr-chip ' + (e.unlocked ? 'champ' : '') + '">' + (e.unlocked ? 'VR ' + fmtVr(e.vr) : 'Locked') + '</span></div>';
   if (!e.unlocked) {
-    h += '<p class="cr-course">Complete Master with at least 200 / 240 points to open Endless Career: six-lap races against 150% AI on a randomly drawn circuit, building a VR rating from 1,000 up to 9,999.</p>';
-    box.innerHTML = h;
-    $('crCut').textContent = ''; $('crTableTitle').textContent = 'Endless Career'; $('crStand').innerHTML = '<tr><td class="dim">Locked</td></tr>';
+    box.innerHTML = '<p class="cr-note">Complete Master to unlock Endless.</p>';
     return;
   }
-  const band = SIM.PROGRESS.VR_BANDS[e.band], last = e.last;
   if (!e.next) { SIM.PROGRESS.ensureEndlessNext(PG); saveProgress(); }
-  const next = PG.career.endless.next, def = SIM.circuitById(next.circuit);
-  h += '<div class="cr-vr"><b class="num">' + fmtVr(e.vr) + '</b><span>VR<small>of ' + fmtVr(e.max) + ' · best ' + fmtVr(e.best) + '</small></span>'
-    + (last ? '<em class="' + (last.change > 0 ? 'up' : last.change < 0 ? 'down' : '') + '">' + (last.change > 0 ? '+' : last.change < 0 ? '−' : '±') + Math.abs(last.change) + ' last race</em>' : '') + '</div>'
-    + '<div class="cr-stats"><div><small>Races</small><b class="num">' + e.races + '</b></div><div><small>This band</small><b class="num">+' + band.gain + ' / −' + band.loss + '</b></div>'
-    + '<div><small>Neutral score</small><b class="num">21 / 40</b></div><div><small>Next start</small><b class="num">P' + SIM.PROGRESS.gridPos(PG, 'endless') + '</b></div></div>'
-    + '<ol class="cr-races cr-six"><li class="cr-race next"><button type="button" class="cr-go" id="crEndlessGo" aria-label="Next Endless race: ' + def.name + '"><small>Next race · ' + def.country + '</small><b>' + def.short + '</b>' + circuitSvg(def) + '<span class="cr-rstate">Drawn at random</span></button></li></ol>'
-    + '<p class="cr-course">A race score above 21 raises your VR, below 21 lowers it. The higher your VR, the smaller the gains and the larger the losses. Every result counts, a retirement too.</p>';
-  const cur = careerTeam();
-  h += '<div class="cr-team"><label for="crTeam">Your team</label><select id="crTeam">' + SIM.TEAMS.map((t, k) => '<option value="' + k + '"' + (k === cur ? ' selected' : '') + '>' + t.name + '</option>').join('') + '</select></div>';
-  h += '<div class="cr-actions" id="crActions"><button type="button" class="btn primary" id="crEndlessStart">Start race: ' + def.short + ' ▸</button></div>';
-  box.innerHTML = h;
-  $('crTeam').onchange = (ev) => { PG.team = +ev.target.value; saveProgress(); };
-  $('crEndlessStart').onclick = $('crEndlessGo').onclick = () => careerStart('endless');
-  $('crCut').textContent = 'VR ' + fmtVr(e.vr);
-  $('crTableTitle').textContent = 'Endless Career · recent races';
-  let t = '<tr><th>#</th><th>Circuit</th><th class="r">Finish</th><th class="r">Lap</th><th class="r">Score</th><th class="r">VR</th><th class="r">Change</th></tr>';
-  const hist = e.history.slice().reverse().slice(0, 12);
-  hist.forEach((r, k) => {
-    t += '<tr><td>' + (e.races - k) + '</td><td>' + circuitShort(r.circuit) + '</td><td class="r num">' + (r.dnf ? 'DNF ' : '') + 'P' + r.pos + '</td><td class="r num">P' + r.lapRank + '</td><td class="r num"><b>' + r.total + '</b></td><td class="r num">' + fmtVr(r.newVr) + '</td>'
-      + '<td class="r num ' + (r.change > 0 ? 'vr-up' : r.change < 0 ? 'vr-down' : '') + '">' + (r.change > 0 ? '+' : r.change < 0 ? '−' : '±') + Math.abs(r.change) + '</td></tr>';
-  });
-  if (!hist.length) t += '<tr><td colspan="7" class="dim">No Endless races yet. Your VR starts at 1,000.</td></tr>';
-  $('crStand').innerHTML = t;
+  const def = SIM.circuitById(PG.career.endless.next.circuit);
+  box.innerHTML = '<div class="cr-score-row"><div><small>Current VR</small><b class="num">' + fmtVr(e.vr) + '</b></div></div>'
+    + '<div class="cr-next"><div><small>Next race</small><b>' + def.short + '</b></div>' + circuitSvg(def) + '</div>'
+    + '<div class="cr-actions" id="crActions"><button type="button" class="btn primary" id="crEndlessStart">Start race</button></div>';
+  $('crEndlessStart').onclick = () => careerStart('endless');
 }
 // Start the next Career race: the scheduled race of a rank, or the drawn Endless race. Nothing is counted until the
 // race starts (the brief can still be left); from the start, the race must end in a result.
@@ -11020,7 +10926,6 @@ function leaveRace() {
   }
   exitToMenu();
 }
-updateCareerButton();
 function drawMinimap() {
   const { g, tf } = G.mmT; const t = G.track, sess = G.session; const W = G.mm.cvs.width, H = G.mm.cvs.height;
   g.clearRect(0, 0, W, H); g.drawImage(G.mmStatic, 0, 0);
