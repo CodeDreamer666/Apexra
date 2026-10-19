@@ -75,7 +75,10 @@ Same protocol as the environment report: `tools/environment-benchmark.cjs`, Chro
   - every distant tree is a single billboard whose colour and normal images were baked from its 3D tree.
   - It still checks that nothing stands on the road, tree roots sit on the ground, the level-of-detail hysteresis holds and no buffers are reallocated.
   - It runs on the high level through `?quality=high`.
-- The rest of the suite is run as before. See the commit message for the results of this change.
+- **Results on the final code (all actually run):**
+  - graphics 3/3, progression 23/23, classification 9/9, intel 6/6, weather 8/8, timing-position 27/27;
+  - browser tests with SwiftShader: scenery (all six circuits) 1/1, career-flow 1/1, held-throttle 1/1, sporting-ui (every circuit and mode) 1/1.
+- **Not re-run for this change:** the long simulation-only files (movement, pitstops, circuits, sporting-rules, offtrack, ai-racecraft and others). This change touches only rendering and adds one pure function, `SIM.graphicsTier`, to the simulation.
 
 ## F. Limits
 
