@@ -53,6 +53,10 @@ test('sharp display: real 4K buffers, saved Native mode, coherent menus and read
     if (await page.locator('#loadErr').isVisible()) {
       t.skip(await page.locator('#loadErr').textContent()); return;
     }
+    // Until the driver chooses, the resolution follows the graphics level: Native below High (4K Ultra on High).
+    assert.equal(await page.evaluate(() => __displayTest.settings.resolution), 'native', 'medium devices start at Native');
+    assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem('apexgp.settings.v1') || '{}').resolution), undefined, 'no resolution is saved before a choice');
+    await page.locator('#menu [data-resolution="4k"]').click();
     const dimensions = () => page.evaluate(() => {
       const c = __displayTest.renderer().domElement;
       return { width: c.width, height: c.height, postWidth: APEX.post?.rt.width, postHeight: APEX.post?.rt.height, mode: __displayTest.settings.resolution };
@@ -60,7 +64,7 @@ test('sharp display: real 4K buffers, saved Native mode, coherent menus and read
     const frames = async n => { for (let i = 0; i < n; i++) await page.evaluate(() => __frames(1)); };
     const shot = async name => { if (out) await page.screenshot({ path: path.join(out, name + '.png'), animations: 'disabled' }); };
     assert.deepEqual(await dimensions(), { width:3840, height:2160, postWidth:3840, postHeight:2160, mode:'4k' });
-    console.log('Default 4K: canvas and multisampled scene target are 3840 × 2160.');
+    console.log('4K Ultra: canvas and multisampled scene target are 3840 × 2160.');
     await frames(2); await shot('01-menu');
 
     await page.locator('#menu [data-resolution="native"]').click();

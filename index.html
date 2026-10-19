@@ -482,7 +482,10 @@
   .cr-vr em { font-style:normal; font-weight:700; font-size:16px; padding:2px 10px; border-radius:4px; background:rgba(255,255,255,.07); }
   .cr-vr em.up, .vr-up { color:#4be38a; } .cr-vr em.down, .vr-down { color:#ff7a72; }
   .sum-hero.no > b { color:#ff7a72; }
-  #results .res-scroll { max-height:52vh; overflow-y:auto; scrollbar-width:none; }
+  #results .dialog { display:flex; flex-direction:column; }
+  #results .dialog > * { flex:none; }
+  /* only the table scrolls, so the actions below it stay on screen at any window height */
+  #results .res-scroll { flex:0 1 auto; min-height:120px; max-height:52vh; overflow-y:auto; scrollbar-width:none; }
   #results .res-scroll::-webkit-scrollbar { display:none; }
   /* championship summary */
   #careerSummary .dialog { width:min(720px,94vw); }
@@ -705,6 +708,35 @@
   @media(max-width:900px) { #circuitSelect { position:fixed; inset:16px; width:auto; max-height:calc(100vh - 32px); } #menu.selecting .menu-left { visibility:hidden; } .menu-left { width:min(460px,100%); } .keys { grid-template-columns:1fr; } .dialog { padding:22px; } }
   @media(max-width:500px) { .menu-left { padding:24px 20px; gap:12px; } .logo { font-size:60px; } .menu-intro b { font-size:21px; } .mode-option { font-size:13px; padding:12px; } #circuitSelect { padding:16px; } .cs-head { margin-bottom:10px; } #csCards { gap:8px; } .cs-card { padding:10px; font-size:14px; } .cs-actions .btn { flex:1; justify-content:center; padding:10px; } #pause .dialog { width:calc(100vw - 32px) !important; } }
   @media(prefers-reduced-motion:reduce) { *, *::before, *::after { scroll-behavior:auto !important; transition:none !important; animation:none !important; } }
+  /* Short windows (most laptops): compact the brief so Back / Go to grid stay on screen; they stay pinned if it still scrolls. */
+  #raceBrief .actions { position:sticky; bottom:-14px; z-index:1; margin-bottom:-14px; padding:10px 0 14px; background:linear-gradient(180deg,rgba(6,18,28,0),rgba(6,18,28,.97) 30%); }
+  @media(max-height:860px) {
+    #raceBrief .dialog { padding:14px 20px 12px; max-height:calc(100vh - 20px); }
+    #raceBrief .actions { bottom:-12px; margin-bottom:-12px; padding:8px 0 12px; }
+    #raceBrief h2 { margin:0 4px 8px; font-size:clamp(22px,2.2vw,30px); }
+    .brief-meta { padding:8px 10px; }
+    .brief-meta b { font-size:16px; } .brief-meta p { font-size:14px; }
+    .brief-section-title { margin:8px 4px 8px; font-size:20px; gap:12px; }
+    .brief-section-title .brief-icon { width:30px; height:30px; }
+    #briefChoices { height:224px; gap:8px; }
+    .brief-tyre[data-c="S"], .brief-tyre[data-c="H"] { min-height:224px; padding:16px 14px 12px; grid-template-columns:80px minmax(0,1fr); font-size:15px; }
+    .brief-tyre[data-c="S"] .brief-tyre-art, .brief-tyre[data-c="H"] .brief-tyre-art { width:80px; height:90px; }
+    .brief-tyre-copy b { font-size:20px; }
+    .brief-tyre-facts { padding-top:8px; } .brief-tyre-facts p { margin-bottom:6px; gap:10px; }
+    .brief-tyre-facts .brief-icon { width:22px; height:22px; }
+    .brief-tyre[data-c="I"], .brief-tyre[data-c="W"] { grid-template-columns:70px minmax(0,1fr); padding:6px 10px; }
+    .brief-tyre[data-c="I"] .brief-tyre-art, .brief-tyre[data-c="W"] .brief-tyre-art { width:70px; height:80px; }
+    .brief-tyre[data-c="I"] .brief-tyre-copy b, .brief-tyre[data-c="W"] .brief-tyre-copy b { font-size:18px; margin-bottom:0; }
+    .brief-tyre[data-c="I"] .brief-tyre-copy span, .brief-tyre[data-c="W"] .brief-tyre-copy span { font-size:13px; line-height:1.3; }
+    .brief-tyre[data-c="I"] .brief-tyre-facts, .brief-tyre[data-c="W"] .brief-tyre-facts { padding-top:3px; font-size:11.5px; line-height:1.25; }
+    .brief-tyre[data-c="I"] .brief-tyre-facts p, .brief-tyre[data-c="W"] .brief-tyre-facts p { margin-bottom:2px; }
+    .briefFuel { margin:8px 0 2px; padding:6px 6px 6px 16px; gap:16px; }
+    .briefFuel label { font-size:19px; } .briefFuel p { font-size:14px; }
+    .brief-fuel-heading .brief-icon { width:28px; height:32px; }
+    .brief-fuel-total { padding:6px 10px; } #briefFuelVal { font-size:20px; } #briefFuelVal b { font-size:24px; }
+    .brief-fuel-detail { margin-top:4px; } #briefFuelInfo { font-size:13px; }
+    #raceBrief .actions .btn { padding:6px 22px; font-size:19px; }
+  }
 </style>
 </head>
 <body>
@@ -8757,7 +8789,7 @@ function undergrowthShapes(atlas) {
   for (let k = 0; k < 6; k++) { const a = k / 6 * Math.PI * 2, d = [Math.cos(a), 0, Math.sin(a)], side = [-d[2], 0, d[0]];
     fern.card([d[0] * 0.55, 0.42, d[2] * 0.55], [side[0] * 0.75, 0, side[2] * 0.75], [d[0] * 0.55, 0.42, d[2] * 0.55], atlas.rect('fern'), (x, y, z) => { const n = [x, 1.2, z], l = Math.hypot(...n); return [n[0] / l, n[1] / l, n[2] / l, 0.45 + 0.6 * y, 0.6 * y]; }); }
   for (let k = 0; k < 3; k++) { const a = k / 3 * Math.PI; tuft.card([0, 0.4, 0], [Math.cos(a) * 0.55, 0, Math.sin(a) * 0.55], [0, 0.4, 0], atlas.rect('grass'), (x, y) => [0, 1, 0, 0.55 + 0.5 * y, 0.5 * y]); }
-  const ico = new THREE.IcosahedronGeometry(1, 1).toNonIndexed(), p = ico.attributes.position, rr = atlas.rect('rock'), n = makeNoise(3);
+  const ico = new THREE.IcosahedronGeometry(1, 1), p = ico.attributes.position, rr = atlas.rect('rock'), n = makeNoise(3);
   for (let k = 0; k < p.count; k += 3) {
     const v = [0, 1, 2].map(j => { const x = p.getX(k + j), y = p.getY(k + j), z = p.getZ(k + j), s = 0.85 + 0.3 * n(x * 2.1 + 3, z * 2.1 + y); return [x * s, Math.max(-0.2, y * 0.62 * s) + 0.35, z * s * 0.85]; });
     const e1 = [v[1][0] - v[0][0], v[1][1] - v[0][1], v[1][2] - v[0][2]], e2 = [v[2][0] - v[0][0], v[2][1] - v[0][1], v[2][2] - v[0][2]];
@@ -9169,7 +9201,7 @@ function densifyStations(st, step) {
   return out;
 }
 function cutCockpit(g) {
-  const O = COCKPIT_OPENING, n = g.toNonIndexed(), p = n.attributes.position, uv = n.attributes.uv, P = [], U = [];
+  const O = COCKPIT_OPENING, n = g.index ? g.toNonIndexed() : g, p = n.attributes.position, uv = n.attributes.uv, P = [], U = [];
   for (let k = 0; k < p.count; k += 3) {
     const cx = (p.getX(k) + p.getX(k + 1) + p.getX(k + 2)) / 3, cy = (p.getY(k) + p.getY(k + 1) + p.getY(k + 2)) / 3, cz = (p.getZ(k) + p.getZ(k + 1) + p.getZ(k + 2)) / 3;
     if (cx > O.x0 && cx < O.x1 && Math.abs(cz) < O.z && cy > 0.6) continue;
@@ -9441,7 +9473,7 @@ function driverGeometries() {
     outline.quadraticCurveTo(0.165, -0.075, 0.13, -0.075); outline.lineTo(0.09, -0.065); outline.quadraticCurveTo(0, -0.045, -0.09, -0.065);
     outline.lineTo(-0.13, -0.075); outline.quadraticCurveTo(-0.165, -0.075, -0.165, -0.035); outline.lineTo(-0.15, 0.04); outline.quadraticCurveTo(-0.14, 0.07, -0.115, 0.07);
     const plate = new THREE.ExtrudeGeometry(outline, { depth: 0.028, bevelEnabled: true, bevelThickness: 0.004, bevelSize: 0.004, bevelSegments: 2, curveSegments: 6 });
-    plate.rotateY(-Math.PI / 2); plate.translate(0.014, 0, 0); parts.push(paintGeo(plate.toNonIndexed(), dark)); // (shape x → wheel z, extruded along x)
+    plate.rotateY(-Math.PI / 2); plate.translate(0.014, 0, 0); parts.push(paintGeo(plate, dark)); // (shape x → wheel z, extruded along x)
     // the screen's bezel
     const bezel = new THREE.BoxGeometry(0.006, 0.072, 0.13); bezel.translate(0.018, 0.017, 0); parts.push(paintGeo(bezel, [0.01, 0.01, 0.012]));
     for (const sz of [-1, 1]) {
@@ -10142,15 +10174,17 @@ const SETTINGS_KEY = 'apexgp.settings.v1';
 const DEFAULTS = { startTyre:'H', startFuel:6.5, circuit:SIM.CIRCUITS[0].id,
   quality:'high', volume:70, speedBlur:'off', resolution:'4k', camera:'chase' };
 const S = { ...DEFAULTS };
+let resolutionChosen = false; // until the driver picks one, the resolution follows the device's graphics level (chooseGraphics)
 try { const raw = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}');
   for (const k of ['startTyre', 'startFuel', 'circuit', 'camera', 'resolution']) if (raw[k] != null) S[k] = raw[k];
+  resolutionChosen = ['native', '4k'].includes(raw.resolution);
 } catch(e) { /* storage unavailable */ }
 S.startTyre = SIM.migrateCompound(S.startTyre) || 'H';
 S.startFuel = clamp(Math.round((+S.startFuel || 6.5) * 2) / 2, ...SIM.START_FUEL_LAPS);
 if (!SIM.CIRCUITS.some(c => c.id === S.circuit)) S.circuit = SIM.CIRCUITS[0].id;
 if (S.camera !== 'cockpit') S.camera = 'chase';
 if (!['native', '4k'].includes(S.resolution)) S.resolution = DEFAULTS.resolution;
-const saveSettings = () => { try { localStorage.setItem(SETTINGS_KEY, JSON.stringify({ startTyre:S.startTyre, startFuel:S.startFuel, circuit:S.circuit, camera:S.camera, resolution:S.resolution })); } catch(e) { /* ignore */ } };
+const saveSettings = () => { try { localStorage.setItem(SETTINGS_KEY, JSON.stringify({ startTyre:S.startTyre, startFuel:S.startFuel, circuit:S.circuit, camera:S.camera, resolution:resolutionChosen ? S.resolution : undefined })); } catch(e) { /* ignore */ } };
 /* ---------------- Career progression ----------------
    Three six-race championships and Endless Career (SIM.PROGRESS). The v4 save has its own key; the earlier saves
    (v3 and older) stay untouched in theirs. */
@@ -10478,6 +10512,8 @@ function chooseGraphics() {
   const force = (new URLSearchParams(location.search).get('quality') || '').toLowerCase();
   if (GFX_TIERS.includes(force)) { GFX.tier = GFX_TIERS.indexOf(force); GFX.forced = true; GFX.why = 'set in the address'; }
   S.quality = GFX_TIERS[GFX.tier]; G.gfx = GFX;
+  // 4K Ultra multiplies the pixels drawn several times over: only High-level devices start with it.
+  if (!resolutionChosen) S.resolution = GFX.tier === 2 ? '4k' : 'native';
   return GFX;
 }
 // A new level applies from the next session (startSession rebuilds the world for it).
@@ -10498,7 +10534,7 @@ function updateDisplayUI() {
 }
 function setDisplayResolution(mode) {
   if (!['native', '4k'].includes(mode)) return;
-  S.resolution = mode; G.resScale = 1; saveSettings(); onResize();
+  S.resolution = mode; resolutionChosen = true; G.resScale = 1; saveSettings(); onResize();
 }
 function speedUnit(v) { return v * 3.6; }
 
@@ -12102,7 +12138,10 @@ function processEvents() {
 function handleKeys(dt) {
   const sess = G.session;
   if (takePress('KeyC') && sess && !G.attract) toggleCarStatus();
-  if (takePress('Escape') || (G.pad && G.pad.start)) { if (G.csOpen) closeCarStatus(); else if (G.mode !== 'menu' && !$('results').classList.contains('hidden') === false) togglePause(); }
+  if (takePress('Escape') || (G.pad && G.pad.start)) {
+    // (in the menu, togglePause only closes Controls or the race brief)
+    if (G.csOpen) closeCarStatus(); else if (CRUI.open) closeCareer(); else if (G.mode === 'menu' || $('results').classList.contains('hidden')) togglePause();
+  }
   if (G.paused || !sess || G.attract) return;
   if (takePress('KeyT')) G.showTel = !G.showTel;
   if (takePress('KeyF')) { G.camRig.setMode(G.camRig.mode === 'cockpit' ? 'chase' : 'cockpit'); S.camera = G.camRig.mode; saveSettings(); pushMsg(G.camRig.mode === 'cockpit' ? 'Cockpit camera' : 'Chase camera', 'info', 1.2); }
@@ -12204,6 +12243,9 @@ function showResults() {
     mk('Race again ▸', () => { hideAllOverlays(); startRace(); }, true);
   }
   $('results').classList.remove('hidden');
+  // the table scrolls without a visible bar: bring the player's own row into view
+  const scroller = tbl.closest('.res-scroll'), me = tbl.querySelector('tr.me');
+  if (scroller) { scroller.scrollTop = 0; if (me) scroller.scrollTop = me.getBoundingClientRect().top - scroller.getBoundingClientRect().top - scroller.clientHeight / 2; }
 }
 function onAction(act) {
   G.audio.init();
