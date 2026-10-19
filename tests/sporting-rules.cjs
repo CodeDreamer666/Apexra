@@ -55,10 +55,10 @@ for (const track of tracks) for (const mode of modes) {
     assert.equal(S.winner, a);
     assert.equal(S.results[0].points, 25); assert.equal(S.results[1].points, 18);
     if (mode === 'career') {
-      // Career scores the classified finish (no penalties exist): P1 = 50 position points
-      const st = SIM.PROGRESS.create(), me = S.results[0];
-      const out = SIM.PROGRESS.recordCareer(st, { rank: 0, circuit: S.track.def.id, id: label, pos: me.pos, dnf: false, pacePts: 30 });
-      assert.ok(out.ok); assert.equal(out.entry.posPts, 50); assert.equal(out.entry.total, 80);
+      // Career scores the classified finish and best-lap rank (no penalties exist): P1 = 20 position points
+      const st = SIM.PROGRESS.create(), me = S.results[0], b = SIM.PROGRESS.beginRace(st, 'rank', 0);
+      const out = SIM.PROGRESS.recordRace(st, { id: b.active.id, pos: me.pos, lapRank: me.lapRank, best: me.best, dnf: false });
+      assert.ok(out.ok); assert.equal(out.entry.posPts, 20); assert.equal(out.entry.total, 20 + out.entry.lapPts);
     }
   });
   test(label + ': healthy tyres need no compliance stop; wear, weather and damage still prompt service', () => {
@@ -138,13 +138,13 @@ for (const track of tracks) for (const mode of modes) {
   });
 }
 test('legacy saves and result payloads: obsolete fields are discarded, legitimate progress is kept', () => {
-  const P = SIM.PROGRESS, st = P.create();
-  P.recordCareer(st, { rank: 0, circuit: 'monza', id: 'legacy', pos: 1, dnf: false, pacePts: 40 });
+  const P = SIM.PROGRESS, st = P.create(), b = P.beginRace(st, 'rank', 0);
+  P.recordRace(st, { id: b.active.id, pos: 1, lapRank: 2, best: 80, dnf: false });
   const raw = JSON.parse(JSON.stringify(st));
-  Object.assign(raw.career.results.rookie.monza, { penalty: 999, pen: 999, compoundPenalty: true });
+  Object.assign(raw.career.ranks.rookie.races[0], { penalty: 999, pen: 999, compoundPenalty: true });
   const loaded = P.load(raw);
-  assert.deepEqual(Object.keys(loaded.career.results.rookie.monza).sort(), ['at', 'dnf', 'id', 'pacePts', 'pos', 'posPts', 'total', 'water']);
-  assert.equal(P.status(loaded, 'career', 0).score, 90);
+  assert.deepEqual(Object.keys(loaded.career.ranks.rookie.races[0]).sort(), ['at', 'best', 'circuit', 'dnf', 'id', 'index', 'lapPts', 'lapRank', 'pos', 'posPts', 'reason', 'total']);
+  assert.equal(P.status(loaded, 0).total, 39);
   // the old five-tier Career keeps the access it earned (here: Rookie and Pro completed -> Master open)
   const old = { v: 2, unlocked: 2, completed: [0, 1], best: [1, 1, 0, 0, 0], champion: false, active: null };
   assert.equal(P.load(null, old, null).career.unlocked, 2);

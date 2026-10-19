@@ -295,7 +295,6 @@ test('AI drivers shoved off the track at speed recover on their own, with no res
   for (const [id, t] of tracks) {
     const S = new SIM.Session(t, { type: 'race', laps: 3, entries: SIM.DRIVERS.map(driver => ({ driver })), seed: 5, spectate: true, weather: 'dynamic', weatherState: DRY(5) });
     S.totalLaps = 3;
-    let resets = 0; const reset = S.marshalReset.bind(S); S.marshalReset = (c) => { resets++; return reset(c); };
     const pushed = new Map(); let k = 0;
     while (!S.over && S.time < 1100) {
       S.fixedStep(dt);
@@ -322,7 +321,7 @@ test('AI drivers shoved off the track at speed recover on their own, with no res
     assert.ok(S.over && pushed.size >= 30 / 5, id + ' race over with cars pushed off: ' + pushed.size);
     // (or, put 3 m from a wall at up to 260 km/h, it hits the wall and retires with damage: a crash, not a car stuck)
     for (const [c, p] of pushed) assert.ok(p.back != null && p.back < 15 + (p.wait || 0) || c.dnf && c.dnfReason && c.dnfReason !== 'Out of fuel', `${id} ${c.driver.short} back on track after ${p.back} (waited ${(p.wait || 0).toFixed(1)} s for traffic; dnf ${c.dnf} ${c.dnfReason || ''}, ${c.ai.mode}, d ${c.d.toFixed(1)}, ${p.v} km/h ${p.yaw} rad from d ${p.d.toFixed(1)})`);
-    assert.equal(resets, 0, id + ' nobody needed a marshal reset');
+    assert.equal(S.marshalReset, undefined, 'nobody is ever put back on the track');
     // every car took the flag or retired from racing damage later on (contact between cars); none stuck or out of fuel
     assert.ok(S.cars.every(c => c.finished || (c.dnf && c.dnfReason !== 'Out of fuel')), id + ' every car finished or retired: ' + S.cars.filter(c => !c.finished).map(c => c.driver.short + ' ' + c.dnfReason));
     assert.ok(S.cars.every(c => !('penaltyLog' in c) && !('warnings' in c)));

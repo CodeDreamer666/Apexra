@@ -330,11 +330,10 @@ test('an AI driver run off the track at speed recovers and rejoins without a res
   for (const id of Object.keys(tracks)) {
     const s = session(id, [{ driver: SIM.DRIVERS[7] }]); racing(s);
     const c = s.cars[0], t = s.track; place(s, c, 800, 60, t.hw[t.wrapI(400)] + 4);
-    let resets = 0; const orig = c.ai.respawn.bind(c.ai); c.ai.respawn = () => { resets++; orig(); };
     let back = null;
     run(s, 20, () => { if (back == null && Math.abs(c.d) < t.hw[c.idx] - 0.5 && c.ai.mode === 'race' && c.speed > 20) back = s.time - 50; });
     assert.ok(back != null && back < 12, id + ': back racing after ' + back);
-    assert.equal(resets, 0, id + ': no reset');
+    assert.ok(!c.dnf, id + ': still racing (nobody is put back on the track: a car that cannot rejoin retires)');
     assert.ok(c.speed > 30 && Math.abs(c.d) < t.hw[c.idx], id + ': racing again');
   }
 });

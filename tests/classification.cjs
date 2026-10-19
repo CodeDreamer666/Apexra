@@ -135,5 +135,6 @@ test('a full race: HUD position, results and the Career position agree for every
     const p = s.results[k - 1].car, q = s.results[k].car;
     if (p.finished && q.finished && p.laps === q.laps) assert.ok(p.finishTime <= q.finishTime, 'same lap: by finishing time');
   }
-  assert.equal(SIM.PROGRESS.positionPoints(s.results[0].pos), 50);
+  assert.equal(s.results[0].posPts, 20); // the race score: 20 position points for P1
+  for (const r of s.results) assert.equal(r.score, r.posPts + r.lapPts);
 });

@@ -341,7 +341,7 @@ test('all moving key combinations have the expected turn, brake and drift behavi
   }
 });
 
-test('respawn discards queued taps while preserving currently held pedals', () => {
+test('clearing the input queue discards queued taps while preserving currently held pedals', () => {
   const keyboard = new SIM.KeyboardDriveInput();
   keyboard.setKey('KeyW', true, 0);
   keyboard.step(dt);
@@ -590,10 +590,11 @@ test('bots pit for damage when the repair is worth it, limp in with a puncture, 
   assert.ok(B.ai.boxThisLap, 'a puncture always means pitting');
 });
 
-test('damage persists through a respawn and is gone in the next session', () => {
+test('damage stays for the rest of the race (nothing resets it; there is no respawn) and is gone in the next session', () => {
   const S = crashLab('standard', 1); const [A] = S.cars;
   A.damage.c[0] = 0.6; A.damage.c[5] = 0.3; A.damage.computePerf();
-  S.marshalReset(A);
+  for (let k = 0; k < 240 * 5; k++) S.fixedStep(dt);
+  assert.equal(S.marshalReset, undefined);
   assert.equal(A.damage.c[0], 0.6); assert.equal(A.damage.c[5], 0.3);
   const fresh = crashLab('standard', 1).cars[0];
   assert.ok(fresh.damage.isClean());

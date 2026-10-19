@@ -171,7 +171,7 @@ const index = [];
 
     if (full) {
       await H('H.ff(18)');
-      // ---------- damage, respawn ----------
+      // ---------- damage ----------
       await H('H.crash(p, 32, 0.3)'); await frames(10, 1);
       // (the barrier hit depends on the run-off in front of it; a glancing front-left impact is then staged through the
       // game's own damage path so the status panels always show a damaged, still-running car)
@@ -182,8 +182,9 @@ const index = [];
       await page.keyboard.press('KeyC'); await frames(3, 1);
       await shot(tag('car-status'), 'Car Status (C): the race is paused, every component and its effect');
       await page.keyboard.press('KeyC'); await frames(2, 1);
-      await page.keyboard.press('KeyR'); await H('H.bot()'); await frames(10, 1);
-      await shot(tag('respawn'), 'Car respawned on track (R)');
+      // there is no respawn: the damaged car drives on (or retires if it cannot)
+      await H('H.ff(8)'); await settle(8, 1);
+      await shot(tag('damaged-driving'), 'Driving on with the damage (no respawn)');
       // ---------- rain ----------
       await H('H.rain()'); await H('H.ff(3)'); await H('G.nextRoadWeather=0'); await settle(20, 1);
       await shot(tag('rain-chase'), 'Racing in heavy rain, chase camera');

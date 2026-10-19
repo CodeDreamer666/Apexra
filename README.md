@@ -31,50 +31,60 @@ A single race, open whenever you like:
 Grand Prix races don't count towards your Career, so it's the place to learn a circuit or try a strategy.
 
 ### Career
-The main challenge. Career has three ranks, and each rank asks you to race all six circuits:
+The main challenge: three championships, then Endless Career.
 
-| Rank | Opponents | Score needed to complete the rank |
+| Rank | Opponents | Points needed after six races |
 |---|---|---|
-| Rookie | 100% | 360 / 600 |
-| Pro | 125% | 420 / 600 |
-| Master | 150% | 480 / 600 |
+| Rookie | 100% | 160 / 240 |
+| Pro | 125% | 180 / 240 |
+| Master | 150% | 200 / 240 |
+| Endless Career | 150% | opens when you pass Master |
 
-**Where you start:** your first race in a rank starts from the back of the grid, in P20. After that, you start every race in that rank where you finished the last one. Finish P6 and your next race starts from P6; drop to P12 and the race after starts from P12. A retirement counts as the place you were classified in. Replays count as your next race too, and a race you leave before the chequered flag doesn't change your grid spot. Each rank keeps its own starting position, so every new rank begins from P20. The Career screen shows your next starting position.
+**Each rank is a six-race championship, raced in a fixed order:** Monza, Silverstone, Spa-Francorchamps, Suzuka, Bahrain, Interlagos. You can't skip a race, pick a later one or race one again.
 
-Completing a rank unlocks the next one. Ranks you've unlocked stay open, so you can go back and improve your results at any time.
+**Every race counts, once.** There are no retries. A retirement counts as your result for that race, and so does a race you leave with Retire. If you close the browser during a Career race, it counts as a retirement before the first lap the next time you open the game.
+
+**Promotion is decided after race 6.** Reach the target and the next rank opens for good. Miss it and you can start that rank's championship again from race 1. That's the only way to try again; a single race can never be replayed.
+
+**Where you start:** race 1 of a championship starts from the back of the grid, in P20. After that you start each race where you finished the one before: finish P6 and the next race starts from P6; drop to P12 and the race after starts from P12. A retirement counts as the place you were classified in.
+
+### Endless Career
+Pass Master and Endless Career opens:
+- Every race is six laps against the 150% field.
+- The circuit is drawn at random, never the same one twice in a row. You see it before you start.
+- Reloading the game doesn't change the draw.
+- There's no last race: you build a **VR** rating, starting at 1,000, with 9,999 the maximum.
+
+VR goes up after good races and down after poor ones (see below). The higher your VR, the smaller the gains and the bigger the losses, so staying near the top is hard.
 
 ---
 
 ## How Career scoring works
 
-Each race is worth up to **100 points**: up to 50 for where you finish, and up to 50 for how fast you lap.
+Each race is worth up to **40 points**, the same for every driver in the race:
+- **Finishing position, up to 20:** P1 20 points, P2 19 … P20 1 point.
+- **Best lap, up to 20:** every driver's fastest completed lap is ranked. Fastest 20 points, second fastest 19 … slowest 1 point.
 
-**Finishing position (up to 50 points)**
+So the race winner who also set the fastest lap scores 40. Finishing far back but setting the second-fastest lap still earns 19 lap points.
 
-| P1 | P2 | P3 | P4 | P5 | P6 | P7 | P8 | P9 | P10 |
-|---|---|---|---|---|---|---|---|---|---|
-| 50 | 44 | 39 | 35 | 32 | 29 | 26 | 23 | 20 | 18 |
+**Retirements.** Every car still in the race at the end ranks above every car that retired. Among retired cars, the later a car dropped out, the higher it ranks. A car that retires keeps its best completed lap for the lap ranking. A driver without a completed lap ranks below everyone who has one.
 
-| P11 | P12 | P13 | P14 | P15 | P16 | P17 | P18 | P19 | P20 |
-|---|---|---|---|---|---|---|---|---|---|
-| 16 | 14 | 12 | 10 | 8 | 6 | 5 | 4 | 2 | 1 |
+**When you retire, the race goes on.** The rest of the field races to the flag; press `Enter` (or choose *Skip to the result* in the pause menu) to have it run to the end straight away. Your result is worked out from the finished race, because cars may still retire behind you or set faster laps.
 
-**Lap-time pace (up to 50 points)**
+### VR (Endless Career)
+A race score of **21 / 40** leaves your VR unchanged. Above 21 you gain, below 21 you lose, up to these limits:
 
-Every lap you complete is compared with a target time for that circuit, adjusted for how wet the track was. The score is the average over the whole race, so consistency matters as much as one quick lap.
+| Your VR before the race | Best possible gain (40 / 40) | Worst possible loss (2 / 40) |
+|---|---|---|
+| 0–1,999 | +48 | −20 |
+| 2,000–3,999 | +38 | −28 |
+| 4,000–5,999 | +29 | −38 |
+| 6,000–7,999 | +19 | −48 |
+| 8,000–9,999 | +10 | −60 |
 
-- The slower first lap from the standing start is allowed for.
-- Time spent in the pit lane doesn't count against you.
-- Spins, trips off the track and heavy damage all show up in your lap times.
-- Every point from 0 to 50 is possible.
+Scores in between give a share of the limit. For example, at 4,250 VR a score of 35 gains 21 VR. VR never goes above 9,999 or below 0, and a bad race still costs VR when you're at the top.
 
-**Retries and best scores**
-
-- You can race any circuit in a rank as often as you like.
-- Only your best score on each circuit counts, so a worse result never undoes a good one.
-- A race you leave before the chequered flag doesn't count at all.
-
-Your progress is saved automatically in your browser. If you clear your browser's site data, your Career progress is cleared too.
+Your progress is saved automatically in your browser. If you clear your browser's site data, your Career progress is cleared too. Results from the previous 100-point Career are kept as history but don't count in the new championships; any ranks you had unlocked stay unlocked.
 
 ---
 
@@ -122,9 +132,9 @@ Using the kerbs, running a little wide, or putting two wheels over the inside ke
 | Pit plan: repairs on or off | `0` |
 | Car Status page (pauses the race) | `C` |
 | Telemetry graph | `T` |
-| Back onto the track (after the start) | `R` or `Space` |
 | Mute sound | `M` |
-| Pause | `Esc` |
+| Pause (and Retire from a race) | `Esc` |
+| After retiring: skip to the result | `Enter` |
 
 **Gamepad:** left stick to steer, right trigger to accelerate, left trigger to brake, Start to pause.
 
@@ -229,6 +239,8 @@ What breaks depends on where you're hit, which way and how hard, not on luck:
 Every part that's damaged changes how the car drives, and you'll feel it immediately. A short notice tells you when something important is hit.
 
 At a pit stop the crew can repair everything on a car that's still running, with repairs left on in your pit plan. Light damage takes a few seconds and heavy damage longer. A car that has retired stays out of the race. Damage never carries over to the next race.
+
+**There is no respawn.** After a crash or a trip off the track you carry on with whatever damage the car has: drive it back onto the circuit yourself, and limp to the pits if you need repairs. If the damage is too serious, your race is over. If your car ends up stuck and can't move, choose *Retire* in the pause menu; in Career that counts as a retirement at that moment. The computer drivers live by the same rule: a car that can't get going again retires.
 
 ### Your opponents
 The other 19 drivers all race the same way: hard, but fair.
