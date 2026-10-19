@@ -9005,9 +9005,8 @@ function carGeometries() {
   // halo
   carbon.push(tag(tube([[-0.42, 0.66, -0.3], [-0.4, 0.83, -0.29], [-0.1, 0.89, -0.27], [0.18, 0.88, -0.1], [0.24, 0.88, 0], [0.18, 0.88, 0.1], [-0.1, 0.89, 0.27], [-0.4, 0.83, 0.29], [-0.42, 0.66, 0.3]], 0.032, 32), PT.HALO));
   carbon.push(tag(rod([0.24, 0.88, 0], [0.45, 0.66, 0], 0.03), PT.HALO));
-  // cockpit opening & seat (dark)
-  // (behind the steering wheel and below the driver's arms: the wheel and hands stand above it)
-  dark.push(xf(new THREE.BoxGeometry(0.6, 0.02, 0.44), { p: [-0.04, 0.692, 0] }));
+  // cockpit: the seat back (dark), behind the driver's shoulders; the driver fills the opening (makeDriver)
+  dark.push(xf(new THREE.BoxGeometry(0.08, 0.1, 0.42), { p: [-0.3, 0.72, 0] }));
   CAR_GEO.body = mergeGeoms(body);
   CAR_GEO.carbon = mergeGeoms(carbon);
   CAR_GEO.accent = mergeGeoms(accent);
