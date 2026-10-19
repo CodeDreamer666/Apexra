@@ -8616,6 +8616,7 @@ function buildTrees(scene, track, inLake, opts) {
     return true;
   }
   // (the outer rings, seen only as distant impostors, give the horizon its woods where the woods pattern is dense)
+  const woodsEdge=.4-Math.max(0,(env.forest??1)-1)*.15; // (the more wooded the country, the more of it is woods)
   const rings=[8,19,34,58,94,148,222,325,450,...(Q>0?[600]:[]),...(Q>1?[780]:[])],step=Q===0?11:Q===1?7:5;
   for(let i=0;i<track.N;i+=step)for(const side of [-1,1]){
     for(let ring=0;ring<rings.length;ring++)for(let j=0;j<(ring<5?2:1);j++){
@@ -8631,7 +8632,7 @@ function buildTrees(scene, track, inLake, opts) {
       if(ring>=5&&!desert){
         // away from the circuit the land is woods and open country: inside a wood (the same pattern that darkens the
         // ground) trees stand in clumps; outside it only the odd lone tree
-        if(woodsAt(pt[0],pt[1])<.4){if(rng()<.1)plant(pt[0],pt[1]);continue;}
+        if(woodsAt(pt[0],pt[1])<woodsEdge){if(rng()<.04)plant(pt[0],pt[1]);continue;}
         for(let k=0,n=3+Math.floor(rng()*3);k<n;k++)plant(pt[0]+(rng()-.5)*26,pt[1]+(rng()-.5)*26);
         continue;
       }
