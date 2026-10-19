@@ -9065,9 +9065,9 @@ function textTex(txt, color, bg, w = 512, h = 96, font = '900 70px Titillium Web
    Car frame: x forward, y up, z across. The head sits where the helmet always was (0, 0.79, 0).
    --------------------------------------------------------------- */
 const DRIVER = {
-  head: [0, 0.79, 0], shoulder: [-0.07, 0.705, 0.19], elbow: [0.15, 0.668, 0.215],
-  wheel: [0.42, 0.728, 0], wheelTilt: 0.3, grip: 0.135, steerRatio: 5.5, steerMax: 2.3,
-  eye: [-0.05, 0.775, 0], // the cockpit camera: at the driver's eyes
+  head: [0, 0.79, 0], shoulder: [-0.07, 0.705, 0.19], elbow: [0.16, 0.668, 0.225],
+  wheel: [0.39, 0.735, 0], wheelTilt: 0.28, grip: 0.15, steerRatio: 5.5, steerMax: 2.3,
+  eye: [-0.07, 0.865, 0], // the cockpit camera: the visor camera, wide, looking down the nose past the wheel
 };
 const SKIN = [0xe0b18f, 0xc68e6a, 0xa7714e, 0x8a5a3b, 0x6b4430, 0xf0c7a8];
 function paintGeo(g, rgb) { const n = g.attributes.position.count, a = new Float32Array(n * 3); for (let k = 0; k < n; k++) a.set(rgb, k * 3); g.setAttribute('color', new THREE.BufferAttribute(a, 3)); return g; }
@@ -9115,22 +9115,41 @@ function driverGeometries() {
   }
   // forearm: a unit-length cylinder along +y (posed every frame from the elbow to the hand)
   D.forearm = new THREE.CylinderGeometry(0.03, 0.038, 1, 8); D.forearm.translate(0, 0.5, 0);
-  // steering wheel in its own frame (x towards the driver, y up the wheel, z across), with the gloves on its grips:
-  // carbon body, grips, coloured buttons and paddles; gloves are white (the material carries the team colour)
+  // steering wheel in its own frame (x towards the driver, y up the wheel, z across), shaped like a modern F1 wheel:
+  // a flat-topped carbon plate that sweeps down into two grips, a big central screen, rotary switches and coloured
+  // buttons round it, shift paddles behind; the gloves hold the grips, thumbs on the front (gloves are white: the
+  // material carries the team colour)
   {
-    const parts = [], dark = [0.035, 0.035, 0.04], G = DRIVER.grip;
-    const body = new THREE.BoxGeometry(0.035, 0.11, 0.2); parts.push(paintGeo(body, dark));
+    const parts = [], dark = [0.03, 0.03, 0.035], G = DRIVER.grip;
+    const outline = new THREE.Shape();
+    outline.moveTo(-0.115, 0.07); outline.lineTo(0.115, 0.07); outline.quadraticCurveTo(0.14, 0.07, 0.15, 0.04); outline.lineTo(0.165, -0.035);
+    outline.quadraticCurveTo(0.165, -0.075, 0.13, -0.075); outline.lineTo(0.09, -0.065); outline.quadraticCurveTo(0, -0.045, -0.09, -0.065);
+    outline.lineTo(-0.13, -0.075); outline.quadraticCurveTo(-0.165, -0.075, -0.165, -0.035); outline.lineTo(-0.15, 0.04); outline.quadraticCurveTo(-0.14, 0.07, -0.115, 0.07);
+    const plate = new THREE.ExtrudeGeometry(outline, { depth: 0.028, bevelEnabled: true, bevelThickness: 0.004, bevelSize: 0.004, bevelSegments: 2, curveSegments: 6 });
+    plate.rotateY(-Math.PI / 2); plate.translate(0.014, 0, 0); parts.push(paintGeo(plate.toNonIndexed(), dark)); // (shape x → wheel z, extruded along x)
+    // the screen's bezel
+    const bezel = new THREE.BoxGeometry(0.006, 0.072, 0.13); bezel.translate(0.018, 0.017, 0); parts.push(paintGeo(bezel, [0.01, 0.01, 0.012]));
     for (const sz of [-1, 1]) {
-      const grip = new THREE.CapsuleGeometry(0.022, 0.09, 4, 8); grip.translate(0, -0.005, sz * G); parts.push(paintGeo(grip, [0.02, 0.02, 0.02]));
-      const paddle = new THREE.BoxGeometry(0.005, 0.07, 0.05); paddle.translate(-0.03, 0.02, sz * 0.07); parts.push(paintGeo(paddle, [0.12, 0.12, 0.13]));
-      for (let b = 0; b < 3; b++) { const btn = new THREE.CylinderGeometry(0.007, 0.007, 0.008, 8); btn.rotateZ(Math.PI / 2); btn.translate(0.02, -0.03 + b * 0.02, sz * 0.085); parts.push(paintGeo(btn, [[0.9, 0.2, 0.15], [0.15, 0.5, 0.95], [0.95, 0.8, 0.15]][b])); }
-      // glove: palm round the grip, thumb on the front, fingers wrapping behind
-      const palm = new THREE.SphereGeometry(0.038, 10, 8); palm.scale(1.05, 1.25, 0.95); palm.translate(0.012, 0.004, sz * G); parts.push(paintGeo(palm, [1, 1, 1]));
-      const thumb = new THREE.CapsuleGeometry(0.011, 0.03, 3, 6); thumb.rotateX(sz * 0.9); thumb.translate(0.03, 0.028, sz * (G - 0.022)); parts.push(paintGeo(thumb, [1, 1, 1]));
-      const cuff = new THREE.CylinderGeometry(0.036, 0.034, 0.04, 8); cuff.rotateZ(Math.PI / 2 - 0.5); cuff.translate(0.045, -0.03, sz * G); parts.push(paintGeo(cuff, [0.08, 0.08, 0.09]));
+      const grip = new THREE.CapsuleGeometry(0.024, 0.075, 4, 10); grip.translate(0.004, -0.03, sz * G); parts.push(paintGeo(grip, [0.015, 0.015, 0.015]));
+      const paddle = new THREE.BoxGeometry(0.004, 0.06, 0.07); paddle.translate(-0.025, 0.02, sz * 0.085); parts.push(paintGeo(paddle, [0.16, 0.16, 0.17]));
+      // rotary switches below the screen and push buttons beside it
+      for (let r = 0; r < 2; r++) { const knob = new THREE.CylinderGeometry(0.011, 0.012, 0.014, 12); knob.rotateZ(Math.PI / 2); knob.translate(0.022, -0.04, sz * (0.03 + r * 0.045)); parts.push(paintGeo(knob, [0.2, 0.2, 0.22]));
+        const dot = new THREE.CylinderGeometry(0.004, 0.004, 0.016, 6); dot.rotateZ(Math.PI / 2); dot.translate(0.023, -0.033, sz * (0.03 + r * 0.045)); parts.push(paintGeo(dot, [1, 0.85, 0.2])); }
+      for (let bq = 0; bq < 4; bq++) { const btn = new THREE.CylinderGeometry(0.0065, 0.0065, 0.01, 10); btn.rotateZ(Math.PI / 2); btn.translate(0.02, 0.045 - bq * 0.022, sz * 0.092); parts.push(paintGeo(btn, [[0.95, 0.15, 0.12], [0.1, 0.55, 1], [1, 0.75, 0.1], [0.2, 0.85, 0.3]][(bq + (sz > 0 ? 2 : 0)) % 4])); }
+      // glove: palm round the grip, thumb on the front plate, fingers behind, cuff
+      const palm = new THREE.SphereGeometry(0.036, 12, 10); palm.scale(1.1, 1.35, 1); palm.translate(0.014, -0.028, sz * G); parts.push(paintGeo(palm, [1, 1, 1]));
+      const thumb = new THREE.CapsuleGeometry(0.0105, 0.032, 3, 8); thumb.rotateX(sz * 1.1); thumb.translate(0.03, 0.006, sz * (G - 0.032)); parts.push(paintGeo(thumb, [1, 1, 1]));
+      const fingers = new THREE.CapsuleGeometry(0.013, 0.05, 3, 8); fingers.translate(-0.022, -0.028, sz * (G + 0.004)); parts.push(paintGeo(fingers, [0.85, 0.85, 0.85]));
+      const cuff = new THREE.CylinderGeometry(0.036, 0.034, 0.04, 10); cuff.rotateZ(Math.PI / 2 - 0.55); cuff.translate(0.045, -0.062, sz * G); parts.push(paintGeo(cuff, [0.08, 0.08, 0.09]));
     }
     D.wheel = mergeGeoms(parts, true);
-    D.display = new THREE.PlaneGeometry(0.105, 0.052); D.display.rotateY(Math.PI / 2); D.display.translate(0.0185, 0.018, 0);
+    D.display = new THREE.PlaneGeometry(0.122, 0.062); D.display.rotateY(Math.PI / 2); D.display.translate(0.0215, 0.017, 0);
+  }
+  // the halo as the driver sees it from the cockpit: the same hoop and centre pillar, drawn slimmer and a little higher
+  // so it frames the top of the view instead of filling it (the car's own halo is hidden in the cockpit view)
+  {
+    const hoop = [[-0.42, 0.66, -0.3], [-0.4, 0.86, -0.3], [-0.08, 0.955, -0.28], [0.24, 0.955, -0.12], [0.32, 0.955, 0], [0.24, 0.955, 0.12], [-0.08, 0.955, 0.28], [-0.4, 0.86, 0.3], [-0.42, 0.66, 0.3]];
+    D.cockpitHalo = mergeGeoms([tube(hoop, 0.02, 40), rod([0.32, 0.955, 0], [0.5, 0.66, 0], 0.02)], true);
   }
   return D;
 }
@@ -9173,7 +9192,7 @@ function poseDriver(drv, steer, gLat = 0) {
   drv.mount.updateMatrix(); drv.tilt.updateMatrix(); drv.spin.updateMatrix();
   drv.forearms.forEach((f, k) => {
     // the wrist, just behind the glove on its grip, carried round by the wheel; the forearm reaches it from the elbow
-    _drvH.set(0.035, -0.025, (k ? -1 : 1) * DRIVER.grip).applyMatrix4(drv.spin.matrix).applyMatrix4(drv.tilt.matrix).applyMatrix4(drv.mount.matrix);
+    _drvH.set(0.04, -0.07, (k ? -1 : 1) * DRIVER.grip).applyMatrix4(drv.spin.matrix).applyMatrix4(drv.tilt.matrix).applyMatrix4(drv.mount.matrix);
     _drvE.set(DRIVER.elbow[0], DRIVER.elbow[1], (k ? 1 : -1) * DRIVER.elbow[2]);
     const d = _drvH.sub(_drvE), len = d.length();
     f.position.copy(_drvE); f.quaternion.setFromUnitVectors(_drvY, d.divideScalar(len)); f.scale.set(1, len, 1);
@@ -10024,7 +10043,7 @@ const _lookW = new THREE.Vector3();
 const CHASE = { dist: 5.2, height: 1.62, ahead: 4, lookY: 0.82, fov: 60 };
 // the cockpit camera (car frame, see DRIVER.eye): the point it looks at, and, looking back, the onboard camera on the
 // nose that faces the driver
-const COCKPIT = { look: [8, 0.62, 0], fov: 74, faceCam: [1.05, 0.98, 0], faceLook: [0, 0.74, 0], faceFov: 50 };
+const COCKPIT = { look: [8, -0.35, 0], fov: 76, faceCam: [1.05, 0.98, 0], faceLook: [0, 0.74, 0], faceFov: 50 };
 const _ckE = new THREE.Vector3(), _ckT = new THREE.Vector3();
 class CameraRig {
   constructor(camera) {
@@ -11335,6 +11354,7 @@ function updateDamageVisuals(car, m, sess, dt) {
     m.rw.visible = !gone;
     if (!gone) { m.rw.rotation.set(d > 0.4 ? Math.sin(now * 23) * 0.05 * shake * d : 0, d * 0.08, -d * 0.4); m.rw.position.set(RW_PIVOT[0], RW_PIVOT[1] - d * 0.06 + up, 0); }
   }
+  if (car === G.focus && G.camRig.mode === 'cockpit' && !G.lookBack) show |= bit(PT.HALO); // (the cockpit draws its own, slimmer halo)
   m.mask.value = show;
   const fatal = sess.damageLevel.fatal, k = Math.min(dt, 0.05);
   for (let i = 0; i < 4; i++) {
@@ -11616,6 +11636,10 @@ function updateCarVisuals(dt) {
     if (m.lod < 1) poseDriver(m.driver, car.steer, car.gLat || 0);
     const inside = car === G.focus && G.camRig.mode === 'cockpit' && !G.lookBack;
     m.helmet.visible = m.lod < 2 && !inside;
+    if (inside) {
+      if (!G.cockpitHalo) G.cockpitHalo = new THREE.Mesh(driverGeometries().cockpitHalo, new THREE.MeshStandardMaterial({ color: 0x15171a, roughness: 0.42, metalness: 0.3 }));
+      if (G.cockpitHalo.parent !== m.group) m.group.add(G.cockpitHalo);
+    } else if (car === G.focus && G.cockpitHalo && G.cockpitHalo.parent) G.cockpitHalo.parent.remove(G.cockpitHalo);
     if (car === G.focus && G.camRig.mode === 'cockpit') { if (m.driver.dispMat.map !== G.wheelTex && G.wheelTex) m.driver.dispMat.map = G.wheelTex; }
     else if (m.driver.dispMat.map === G.wheelTex) m.driver.dispMat.map = wheelScreenTex(car.team);
     // brake temperature (visual): heats with braking effort at speed, cools with airflow
