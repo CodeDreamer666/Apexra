@@ -56,6 +56,21 @@ Interlagos 6 samples (light where the hills are real, heavier on the flat circui
 buildings would otherwise make bumps). Commonly quoted elevation ranges (about 100-105 m for Spa, about 40 m for Suzuka,
 about 40-45 m for Interlagos) are close to these; the game does not rely on them.
 
+## Rendering the elevation
+
+The road, kerbs, run-off, barriers and fences follow the measured road profile directly. Terrain texels extend the
+local road slope instead of stamping flat heights at the nearest sample. A continuous Hermite profile and centre-line
+projection give moving cars and cameras a continuous height and pitch, including on both levels of Suzuka's bridge.
+Cars use one ground-height uniform for all bodywork, wheels, driver and shadow materials, so terrain cells cannot
+bend individual parts of the car. The cockpit converts the driver's eye and look point into the same height reference
+once. Unreachable inner fence segments that fold back through a tight corner are left open.
+
+`tests/elevation-rendering.cjs` checks the actual road and fence meshes and both cameras around every circuit, and
+compiles the car shaders in Chromium. It checks every sample transition, both bridge levels and the finish-line seam.
+`tests/scenery.cjs` checks that ground and scenery stay clear of the rendered road. To run without CDN access, set
+`THREE_JS` to a local Three.js r160 module; `CHROMIUM_PATH` selects the Chromium binary. The elevation test also accepts
+`ELEVATION_QUALITY=high`, `CIRCUITS=spa,suzuka` and `ELEVATION_SCREENSHOTS=/absolute/output/path` for targeted visual checks.
+
 ## Estimated, not measured
 
 - **Track width.** The game uses a minimum width of 10 m (`MIN_HALF_W`): where the TUM width is narrower (Monza,

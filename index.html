@@ -1271,6 +1271,35 @@ const SIM = (function () {
     }
     // the road surface height (m) at sample i
     roadY(i) { return this.elev[i]; }
+    // A continuous road profile, including between the 2 m samples and across the finish line.
+    // Hermite interpolation shares the measured gradient at each end, so neither height nor pitch steps.
+    roadHeightAt(s) {
+      const f = this.wrapS(s) / DS, i = Math.floor(f), j = (i + 1) % this.N, u = f - i;
+      const a = this.elev[i], b = this.elev[j], m = this.grade[i] * DS, n = this.grade[j] * DS;
+      return a + u * (m + u * (3 * (b - a) - 2 * m - n + u * (2 * (a - b) + m + n)));
+    }
+    // Rendering needs a continuous along-road coordinate too. The physics projection chooses a nearest sample;
+    // its tangent-plane estimate can change when that sample changes, visible as a twitch on a steep corner.
+    // Project onto a C1 centre line locally, retaining the hint so an overpass always stays on the same level.
+    projectRoad(x, z, hint, out) {
+      this.project(x, z, hint, out);
+      let s = out.s, px = 0, pz = 0, dx = 0, dz = 0;
+      for (let k = 0; k < 6; k++) {
+        const f = this.wrapS(s) / DS, i = Math.floor(f), j = (i + 1) % this.N, u = f - i;
+        const ax = this.cx[i], az = this.cz[i], mx = this.tx[i] * DS, mz = this.tz[i] * DS;
+        const bx = 3 * (this.cx[j] - ax) - 2 * mx - this.tx[j] * DS, bz = 3 * (this.cz[j] - az) - 2 * mz - this.tz[j] * DS;
+        const cx = 2 * (ax - this.cx[j]) + mx + this.tx[j] * DS, cz = 2 * (az - this.cz[j]) + mz + this.tz[j] * DS;
+        px = ax + u * (mx + u * (bx + u * cx)); pz = az + u * (mz + u * (bz + u * cz));
+        dx = mx + u * (2 * bx + 3 * u * cx); dz = mz + u * (2 * bz + 3 * u * cz);
+        const den = dx * dx + dz * dz + (px - x) * (2 * bx + 6 * u * cx) + (pz - z) * (2 * bz + 6 * u * cz);
+        const step = den > 0.1 ? clamp(((px - x) * dx + (pz - z) * dz) / den, -1, 1) * DS : 0;
+        if (Math.abs(step) < 1e-7 || k === 5) break;
+        s -= step;
+      }
+      out.s = this.wrapS(s); out.i = this.wrapI(Math.round(out.s / DS));
+      out.d = ((x - px) * -dz + (z - pz) * dx) / Math.max(1e-6, Math.hypot(dx, dz));
+      return out;
+    }
     // Height of the land and road at (x, z) for the renderer (the simulation itself is 2D and uses the profile):
     // the measured profile within the circuit's barriers, blending over ~220 m into the DEM terrain around it, on a
     // fine grid over the circuit and the coarse DEM grids beyond. Built once, on first use. At an overpass the
@@ -1299,7 +1328,13 @@ const SIM = (function () {
         for (let j = Math.max(0, j0 - rc); j <= Math.min(M - 1, j0 + rc); j++) for (let k = Math.max(0, k0 - rc); k <= Math.min(M - 1, k0 + rc); k++) {
           let d = Math.hypot(x0 + k * step - this.cx[i], z0 + j * step - this.cz[i]);
           if (up) d += 18; // the lower road (and its verges) wins under the crossing
-          const q = j * M + k; if (d < dist[q]) { dist[q] = d; rh[q] = this.elev[i]; }
+          const q = j * M + k;
+          if (d < dist[q]) {
+            dist[q] = d;
+            // Extend the local road slope to the texel instead of stamping a flat step for every sample.
+            const along = (x0 + k * step - this.cx[i]) * this.tx[i] + (z0 + j * step - this.cz[i]) * this.tz[i];
+            rh[q] = this.elev[i] + along * this.grade[i];
+          }
         }
       }
       for (let j = 0; j < M; j++) for (let k = 0; k < M; k++) {
@@ -1466,6 +1501,9 @@ const SIM = (function () {
       // The reach of each side is the largest offset that stays clear of the centre line all round the bend; a barrier
       // beyond it is open (the infield of a hairpin): the renderer draws no barrier, run-off or scenery there.
       this.reachL = this.sideReach(-1); this.reachR = this.sideReach(1);
+      // An inner offset can still double back where the local bend is tighter than its smoothed curvature.
+      // Leave those unreachable bits of infield open, with a panel's margin either side of the fold.
+      this.barrierL = this.barrierMask(-1); this.barrierR = this.barrierMask(1);
     }
     // Shared section profile used by surface physics, ribbons and forest exclusions. Pit approaches and
     // close parallel sections keep their existing collision/pit envelopes; narrower strips fit those exceptions.
@@ -1489,7 +1527,22 @@ const SIM = (function () {
       return out;
     }
     // whether the barrier on side sg (+1 right, -1 left) of sample i stands where it can be reached (see reachL)
-    barrierAt(i, sg) { return (sg > 0 ? this.wallR[i] : this.wallL[i]) < (sg > 0 ? this.reachR[i] : this.reachL[i]) - 0.5; }
+    barrierAt(i, sg) { return (sg > 0 ? this.barrierR : this.barrierL)[i] !== 0; }
+    barrierMask(sg) {
+      const N = this.N, wall = sg > 0 ? this.wallR : this.wallL, reach = sg > 0 ? this.reachR : this.reachL;
+      const raw = new Uint8Array(N), mask = new Uint8Array(N);
+      const point = i => [this.cx[i] + this.rx[i] * sg * (wall[i] + 0.45), this.cz[i] + this.rz[i] * sg * (wall[i] + 0.45)];
+      for (let i = 0; i < N; i++) {
+        if (wall[i] >= reach[i] - 0.5) continue;
+        const a = point(this.wrapI(i - 2)), b = point(i), c = point(this.wrapI(i + 2));
+        const ux = b[0] - a[0], uz = b[1] - a[1], vx = c[0] - b[0], vz = c[1] - b[1];
+        if (ux * this.tx[i] + uz * this.tz[i] < DS * 0.2 || vx * this.tx[i] + vz * this.tz[i] < DS * 0.2) continue;
+        if (ux * vx + uz * vz < 0.9 * Math.hypot(ux, uz) * Math.hypot(vx, vz)) continue;
+        raw[i] = 1;
+      }
+      for (let i = 0; i < N; i++) mask[i] = raw[this.wrapI(i - 2)] && raw[i] && raw[this.wrapI(i + 2)] ? 1 : 0;
+      return mask;
+    }
     // Largest lateral offset (m, up to 160) on side sg (+1 right, -1 left) of every sample at which a point stays at
     // least that far (less 1.5 m) from the centre line of the same part of the circuit within 160 m either way.
     sideReach(sg) {
@@ -6784,7 +6837,7 @@ const R = {}; // render namespace
 // into the SRTM terrain), sampled exactly as Track.elevAt samples it on the CPU (bilinear texel fetches of the same
 // float grids). The lift is relative to the ground height under the camera (ELEV[0].z), so the camera rig and
 // anything carried with the camera need no changes. ELEV[1] = fine grid (x0, z0, step, size), ELEV[2] = coarse grid.
-// Geometry that belongs to the upper road of an overpass carries its extra height in its own vertices (trackLift).
+// Road-owned geometry carries the correction from this terrain grid to the smooth road profile (trackLift).
 const ELEV = Array.from({ length: 3 }, () => new THREE.Vector4());
 const HF_TEX = [0, 1].map(() => { const t = new THREE.DataTexture(new Float32Array(1), 1, 1, THREE.RedFormat, THREE.FloatType); t.minFilter = t.magFilter = THREE.NearestFilter; t.generateMipmaps = false; t.needsUpdate = true; return t; });
 const ELEV_GLSL = `uniform vec4 apexElev[3]; uniform highp sampler2D apexHF[2];
@@ -6811,22 +6864,19 @@ function setElevationField(track) {
   put(HF_TEX[0], h.fine, h.M); put(HF_TEX[1], h.coarse, h.CM);
   ELEV[1].set(h.x0, h.z0, h.step, h.M); ELEV[2].set(h.cx0, h.cx0, h.cstep, h.CM);
 }
-// Extra height (m) of geometry at (x, z) that belongs to track sample i: the upper road of an overpass and everything
-// along it stands above the land the height field gives there (the lower road owns it). Zero everywhere else.
+// Road, verges, walls and fences follow their own section's profile, including both levels of an overpass.
+// Sampling the terrain grid for their heights made sloping fences sawtooth-shaped near other parts of the lap.
 function trackLift(track, i, x, z) {
-  const op = track.overpass; if (!op) return 0;
-  let d = Math.abs(i * SIM.DS - op.highS); d = Math.min(d, track.length - d);
-  return d < op.ramp ? track.elev[i] - track.elevAt(x, z) : 0;
+  return track.elev[i] - track.elevAt(x, z);
 }
 // Height of the visible surface at (x, z) for a viewer or object following track sample `hint` (the camera, a car):
-// on the upper road of an overpass that is the road; elsewhere the height field.
+// interpolate the road profile continuously, blending back into terrain beyond the barriers.
 const _gp = { i: 0, d: 0, s: 0 };
 function surfaceAt(x, z, hint) {
   const t = G.track; if (!t) return 0;
-  const h = t.elevAt(x, z); if (!t.overpass || hint == null) return h;
-  t.project(x, z, hint, _gp); const w = t.walls(_gp.i, _gp.s, false, { l: 0, r: 0, innerPit: 0 }), lim = (_gp.d > 0 ? w.r : w.l) + 2;
-  const lift = trackLift(t, _gp.i, x, z); if (!lift) return h;
-  return h + lift * smooth01(lim + 6, lim, Math.abs(_gp.d));
+  const h = t.elevAt(x, z); if (hint == null) return h;
+  t.projectRoad(x, z, hint, _gp); const w = t.walls(_gp.i, _gp.s, false, { l: 0, r: 0, innerPit: 0 }), lim = (_gp.d > 0 ? w.r : w.l) + 2;
+  return h + (t.roadHeightAt(_gp.s) - h) * smooth01(lim + 6, lim, Math.abs(_gp.d));
 }
 // height of the warped scene at (x, z) as seen from a camera at (cx, cz), both following track sample `hint`
 function elevWarp(x, z, cx, cz, hint) { return G.track ? surfaceAt(x, z, hint) - surfaceAt(cx, cz, hint) : 0; }
@@ -7354,7 +7404,7 @@ function buildTerrain(world, track, T, opts) {
         const k = Math.floor(fx), j = Math.floor(fz), u = fx - k, v = fz - j, a = j * W + k, b = a + 1, c = a + W, d = c + 1;
         const h = (q) => H[q] - sunk[q] + E[q];
         const tri = u + v < 1 ? [[a, 1 - u - v], [b, u], [c, v]] : [[d, u + v - 1], [c, 1 - u], [b, 1 - v]];
-        const excess = tri.reduce((acc, [q, w]) => acc + h(q) * w, 0) - (track.elevAt(x, z) - 0.25);
+        const excess = tri.reduce((acc, [q, w]) => acc + h(q) * w, 0) - (Math.min(track.elevAt(x, z), track.elev[i]) - 0.25);
         if (excess > 0) for (const [q] of tri) sunk[q] += excess;
       }
     }
@@ -7906,6 +7956,17 @@ function buildTrack(scene, track, T, opts) {
   const hw = track.halfW, N = track.N, wet = opts.wet, Q = opts.quality;
   const P = track.pit, side = P.side;
   const objs = { lights: [], gantryLamps: [] };
+  // Small ground decals share the road profile too; otherwise a smoothed road can bury a pit-box or grid marking.
+  const fitRoadPlane = (mesh, s) => {
+    mesh.updateMatrix(); mesh.geometry = mesh.geometry.clone();
+    const p = mesh.geometry.attributes.position, inv = mesh.matrix.clone().invert(), v = new THREE.Vector3(), q = {};
+    const hint = track.wrapI(Math.round(track.wrapS(s) / SIM.DS));
+    for (let k = 0; k < p.count; k++) {
+      v.fromBufferAttribute(p, k).applyMatrix4(mesh.matrix); track.projectRoad(v.x, v.z, hint, q);
+      v.y += track.roadHeightAt(q.s) - track.elevAt(v.x, v.z); v.applyMatrix4(inv); p.setXYZ(k, v.x, v.y, v.z);
+    }
+    p.needsUpdate = true;
+  };
   // The one road material (asphalt texture, normal map, rubber/patch vertex shading and the per-vertex wetness
   // that lowers roughness in the rain). The circuit and the pit lane both use it, so they read as one surface.
   const roadMaterial = (extra) => {
@@ -8027,7 +8088,8 @@ function buildTrack(scene, track, T, opts) {
         const fast = Math.abs(track.pitTargetD(s, null));
         for (let k = 0; k <= segs; k++) {
           const a = inner + (outer - inner) * k / segs, d = side * a;
-          pos.push(track.cx[ii] + track.rx[ii] * d, 0.004, track.cz[ii] + track.rz[ii] * d);
+          const px = track.cx[ii] + track.rx[ii] * d, pz = track.cz[ii] + track.rz[ii] * d;
+          pos.push(px, 0.004 + trackLift(track, ii, px, pz), pz);
           uv.push((d + hw) / (2 * hw) * 1.4, vv);
           const v = asphaltShade(ii, d) - 0.05 * Math.exp(-((a - fast) ** 2) / 3.2);
           col.push(v, v, v * 1.025);
@@ -8103,6 +8165,8 @@ function buildTrack(scene, track, T, opts) {
       const [lx, lz] = track.pointAt(P.boxes[t] - 1.6, side * P.boxD);
       const lt = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 1.4), new THREE.MeshStandardMaterial({ map: letter, transparent: true, roughness: .7, polygonOffset: true, polygonOffsetFactor: -4 }));
       lt.rotation.x = -Math.PI / 2; lt.rotation.z = -h + (side > 0 ? -Math.PI / 2 : Math.PI / 2); lt.position.set(lx, 0.014, lz); G.add(lt);
+      fitRoadPlane(box, P.boxes[t]); fitRoadPlane(inner, P.boxes[t]);
+      fitRoadPlane(stop, P.boxes[t] + SIM.SPEC.a); fitRoadPlane(lt, P.boxes[t] - 1.6);
     }
   }
   // ---- start/finish line, grid boxes ----
@@ -8111,9 +8175,11 @@ function buildTrack(scene, track, T, opts) {
     const lineG = new THREE.PlaneGeometry(1.2, 2 * hw); const chk = canvasTex(64, 512, (g, w, h) => { for (let a = 0; a < 2; a++) for (let b = 0; b < 16; b++) { g.fillStyle = (a + b) % 2 ? '#111' : '#f4f4f4'; g.fillRect(a * 32, b * 32, 32, 32); } });
     const [x, z, h] = track.pointAt(0, 0); const line = new THREE.Mesh(lineG, new THREE.MeshStandardMaterial({ map: chk, roughness: .7, polygonOffset: true, polygonOffsetFactor: -2 }));
     line.rotation.x = -Math.PI / 2; line.rotation.z = -h; line.position.set(x, 0.014, z); G.add(line); void sl;
+    fitRoadPlane(line, 0);
     for (let k = 0; k < 20; k++) {
       const gs = track.gridSlots[k]; const [gx, gz, gh] = track.pointAt(gs.s + 2.6, gs.d);
       const m = new THREE.Mesh(new THREE.PlaneGeometry(0.25, 2.2), lineMat); m.rotation.x = -Math.PI / 2; m.rotation.z = -gh; m.position.set(gx, 0.014, gz); G.add(m);
+      fitRoadPlane(m, gs.s + 2.6);
     }
   }
   // ---- walls with advertising, catch fences ----
@@ -8158,14 +8224,14 @@ function buildTrack(scene, track, T, opts) {
       }
       prev = [x, z]; n++;
     }
-    const mk = (pos, uv, idx, mat) => { const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); if (uv) g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx); g.computeVertexNormals(); const m = new THREE.Mesh(g, mat); m.castShadow = Q === 2; m.receiveShadow = true; G.add(m); return m; };
+    const mk = (pos, uv, idx, mat) => { const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); if (uv) g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx); g.computeVertexNormals(); const m = new THREE.Mesh(g, mat); m.userData.kind = 'barrier'; m.castShadow = Q === 2; m.receiveShadow = true; G.add(m); return m; };
     const skin=(pos,uv)=>{
       const all=faces[0].concat(faces[1],faces[2]), mesh=mk(pos,uv,all,[wallMat,railMat,tyreMat]);
       let offset=0;for(let k=0;k<3;k++){if(faces[k].length)mesh.geometry.addGroup(offset,faces[k].length,k);offset+=faces[k].length;}
     };
     skin(posF,uvF);skin(posO,uvO);
     mk(posT, null, idxT, concrete);
-    if (fence && posFe.length) mk(posFe, uvFe, idxFe, fenceMat).castShadow = false;
+    if (fence && posFe.length) { const m = mk(posFe, uvFe, idxFe, fenceMat); m.userData.kind = 'fence'; m.castShadow = false; }
   };
   const pitStartI = Math.floor(P.entry0 / SIM.DS), pitEndI = pitStartI + Math.ceil(P.len / SIM.DS);
   const inPitI = (i) => track.pitProg(i * SIM.DS) >= 0;
@@ -9265,6 +9331,27 @@ function partMask(mat, uni) {
   mat.customProgramCacheKey = () => 'partmask';
   return mat;
 }
+// Cars are rigid bodies. Terrain-warping each vertex bent their tyres and bodywork differently as they crossed
+// height-field cells. Each car shares one ground-height uniform across its colour and shadow materials instead.
+const CAR_TERRAIN_MATERIAL = new WeakMap();
+function carSurfaceMaterials() {
+  const ground = { value: 0 }, cache = new Map();
+  const material = base => {
+    if (Array.isArray(base)) return base.map(material);
+    if (cache.has(base)) return cache.get(base);
+    const mat = base.clone(), compile = base.onBeforeCompile, key = base.customProgramCacheKey();
+    mat.onBeforeCompile = (sh, renderer) => {
+      compile.call(base, sh, renderer); sh.uniforms.apexCarGround = ground;
+      sh.vertexShader = 'uniform float apexCarGround;\n' + sh.vertexShader
+        .replace('#include <project_vertex>', THREE.ShaderChunk.project_vertex.replace('apexWarp(apexW.xz)', '(apexCarGround - apexElev[0].z)'))
+        .replace('#include <worldpos_vertex>', THREE.ShaderChunk.worldpos_vertex.replace('apexWarp(worldPosition.xz)', '(apexCarGround - apexElev[0].z)'));
+    };
+    mat.customProgramCacheKey = () => key + ':rigid-car';
+    CAR_TERRAIN_MATERIAL.set(mat, base); cache.set(base, mat); cache.set(mat, mat);
+    return mat;
+  };
+  return { ground, material, materials: () => new Set(cache.values()) };
+}
 function sidewallTex(comp) {
   if (MAT_CACHE['sw' + comp]) return MAT_CACHE['sw' + comp];
   const col = SIM.COMPOUNDS[comp].color;
@@ -9447,6 +9534,7 @@ const CAR_EXPOSURE = 1.28; // livery brightness multiplier
 function makeCarMesh(car, opts = {}) {
   const geo = carGeometries(); const team = car.team;
   const grp = new THREE.Group();
+  const surface = carSurfaceMaterials(), material = surface.material;
   // per-car materials share the car's part mask (broken-off pieces)
   const mask = { value: 0 }, depthMat = partMask(new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking }), mask);
   // (cars are exposed brighter than the scenery around them — a lighter livery and stronger sky reflections — so they
@@ -9508,11 +9596,28 @@ function makeCarMesh(car, opts = {}) {
   // level of detail: decals and small parts are hidden for distant cars, shadows only near the camera
   const detail = [wingTxt, num, ...grp.children.filter(c => c.isMesh && c.geometry.type === 'PlaneGeometry')];
   const shadowCasters = []; grp.traverse(o => { if (o.isMesh && o.castShadow) shadowCasters.push(o); });
-  return { group: grp, wheels, flap, light, lightMat, helmet, bodyMat, accentMat, carbonMat, mirrorMat, rimMat, coverMat, coverBlur, fw, rw, detail: [...new Set(detail)], shadowCasters, lod: -1, midHide: [mirror, ...driver.detail], driver, mirrorMesh: mirror, dmgKey: '',
+  grp.traverse(o => { if (o.isMesh) { o.frustumCulled = false; o.material = material(o.material); if (o.customDepthMaterial) o.customDepthMaterial = material(o.customDepthMaterial); } });
+  driver.dispMat = material(driver.dispMat);
+  return { group: grp, material, materials: surface.materials, ground: surface.ground, wheels, flap, light, lightMat: material(lightMat), helmet,
+    bodyMat: material(bodyMat), accentMat: material(accentMat), carbonMat: material(carbonMat), mirrorMat: material(mirrorMat), rimMat: material(rimMat), coverMat: material(coverMat), coverBlur: material(coverBlur),
+    fw, rw, detail: [...new Set(detail)], shadowCasters, lod: -1, midHide: [mirror, ...driver.detail], driver, mirrorMesh: mirror, dmgKey: '',
     bh: new Float32Array(4), skid: null, lastX: null, lastZ: 0, mask, brk: 0,
     // body reaction to impacts (springs on roll / pitch / squash, a hop) and per-wheel flail of broken corners
     rx: { roll: 0, pitch: 0, vr: 0, vp: 0, hop: 0, vh: 0, sq: 0, vs: 0, sqx: 1, yaw: 0, vy: 0 }, flail: new Float32Array(8), torn: [false, false, false, false],
     scrubT: 0, lastImpact: null };
+}
+// The shader moves each car vertically, so unwarped per-part bounds cannot decide its visibility. Cull the whole
+// car at its rendered height instead; this also keeps the cockpit bodywork visible on the upper bridge deck.
+const _carFrustum = new THREE.Frustum(), _carProjection = new THREE.Matrix4(), _carSphere = new THREE.Sphere(new THREE.Vector3(), 6);
+function cullCarModels(cam) {
+  if (!G.session) return;
+  cam.updateMatrixWorld(true); _carProjection.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);
+  _carFrustum.setFromProjectionMatrix(_carProjection);
+  for (const car of G.session.cars) {
+    const m = G.models.get(car); if (!m || car.ghost || car.inGarage) continue;
+    _carSphere.center.set(car.x, m.group.position.y + m.ground.value - ELEV[0].z + 0.6, car.z);
+    m.group.visible = _carFrustum.intersectsSphere(_carSphere);
+  }
 }
 /* ---------------------------------------------------------------
    PARTICLES & VFX — fixed-size pools (no allocation while racing), all driven by the simulation:
@@ -9778,7 +9883,7 @@ class DebrisField {
     _box.getCenter(_v4); _box.getSize(_v5);
     w.meshes.forEach((me, k) => {
       const d = defs[k]; me.visible = !!d; if (!d) return;
-      me.geometry = d[0]; me.material = d[1]; me.matrix.makeTranslation(-_v4.x, -_v4.y, -_v4.z); if (d[2]) me.matrix.multiply(d[2]);
+      me.geometry = d[0]; me.material = CAR_TERRAIN_MATERIAL.get(d[1]) || d[1]; me.matrix.makeTranslation(-_v4.x, -_v4.y, -_v4.z); if (d[2]) me.matrix.multiply(d[2]);
     });
     w.hx = Math.max(0.01, _v5.x / 2); w.hy = Math.max(0.01, _v5.y / 2); w.hz = Math.max(0.01, _v5.z / 2);
     // the thinnest axis is the one it ends up lying on
@@ -10266,8 +10371,12 @@ class CameraRig {
     const cam = this.camera, g = model.group; g.updateMatrixWorld(true);
     _ckE.set(...(lookBack ? COCKPIT.faceCam : DRIVER.eye)).applyMatrix4(g.matrixWorld);
     _ckT.set(...(lookBack ? COCKPIT.faceLook : COCKPIT.look)).applyMatrix4(g.matrixWorld);
+    // The model is already pitched with the road. Convert both rigid points into the camera's height reference
+    // once; adding a second terrain warp to the target made the cockpit nod on slopes and jump on the bridge.
+    const ground = model.ground.value - surfaceAt(_ckE.x, _ckE.z, car.idx);
+    _ckE.y += ground; _ckT.y += ground;
     cam.position.copy(_ckE); this.pos.copy(_ckE);
-    _ckT.y += elevWarp(_ckT.x, _ckT.z, cam.position.x, cam.position.z, car.idx); cam.lookAt(_ckT);
+    cam.lookAt(_ckT);
     // the head feels kerbs, rough ground and buffeting at speed (smaller than the chase camera's shake)
     let amp = 0;
     for (let i = 0; i < 4; i++) if (car.surf[i] === 1) amp += 0.0012; else if (car.surf[i] >= 3) amp += 0.002;
@@ -10436,6 +10545,7 @@ function ensureWorld() {
     if(G.forest)G.forest.dispose();
     const mats = new Set(), texs = new Set();
     scene.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) for (const m of [].concat(o.material)) mats.add(m); });
+    for (const model of G.models.values()) for (const mat of model.materials()) mats.add(mat);
     for (const m of mats) { for (const v of Object.values(m)) if (v && v.isTexture) texs.add(v); if (m.uniforms) for (const u of Object.values(m.uniforms)) if (u && u.value && u.value.isTexture) texs.add(u.value); m.dispose(); }
     for (const t of texs) t.dispose();
     if (scene.environment) scene.environment.dispose();
@@ -10513,7 +10623,7 @@ function ensureWorld() {
   G.models.clear();
 }
 function setupCars() {
-  for (const m of G.models.values()) scene.remove(m.group);
+  for (const m of G.models.values()) { scene.remove(m.group); for (const mat of m.materials()) mat.dispose(); }
   G.models.clear();
   for (const car of G.session.cars) {
     const m = makeCarMesh(car);
@@ -11694,8 +11804,9 @@ function updateCarVisuals(dt) {
     const m = G.models.get(car); if (!m) continue;
     m.group.visible = !car.ghost && !car.inGarage;
     if (!m.group.visible) { m.lastX = null; continue; }
-    // on the upper road of an overpass the car rides above the land the height field gives (zero elsewhere)
-    const lift = G.track.overpass ? surfaceAt(car.x, car.z, car.idx) - G.track.elevAt(car.x, car.z) : 0; m.lift = lift;
+    // The car and camera use the same continuous road surface, including on both levels of Suzuka's bridge.
+    m.ground.value = G.track.elevAt(car.x, car.z);
+    const lift = surfaceAt(car.x, car.z, car.idx) - m.ground.value; m.lift = lift;
     if (G.contact && nShadow < G.contact.instanceMatrix.count) { _m4.compose(_v.set(car.x, 0.02 + lift, car.z), _q.setFromAxisAngle(_up, -car.psi), _s1); G.contact.setMatrixAt(nShadow++, _m4); }
     // a car that jumped (respawn, marshal recovery) does not drag tyre marks or trails across the circuit
     const jumped = m.lastX != null && Math.hypot(car.x - m.lastX, car.z - m.lastZ) > 10 + 2.5 * car.speed * dt * G.timeScale; m.lastX = car.x; m.lastZ = car.z;
@@ -11706,6 +11817,9 @@ function updateCarVisuals(dt) {
     // the nose dives under braking and lifts under power; the body leans in corners and sits low on a broken corner
     let pitch = clamp(car.gLong * 0.006, -0.03, 0.03) - 0.05 * (low(0) + low(1) - low(2) - low(3)) / 2;
     let roll = clamp(car.gLat * 0.006, -0.03, 0.03) + 0.06 * (low(1) + low(3) - low(0) - low(2)) / 2;
+    const fx = Math.cos(car.psi), fz = Math.sin(car.psi), axle = 2;
+    pitch += Math.atan2(surfaceAt(car.x + fx * axle, car.z + fz * axle, car.idx) - surfaceAt(car.x - fx * axle, car.z - fz * axle, car.idx), 2 * axle);
+    roll -= Math.atan2(surfaceAt(car.x - fz, car.z + fx, car.idx) - surfaceAt(car.x + fz, car.z - fx, car.idx), 2);
     const PS = car.pit && car.pit.phase === 'stopped' ? car.pit : null, jel = PS ? PS.total - PS.timer : 0;
     let y = PS && jel > 0.25 && jel < PS.total - 0.2 ? 0.06 : 0.0;
     // smooth vibration over kerbs and rough ground, and from damaged suspension or tyres;
@@ -11746,7 +11860,7 @@ function updateCarVisuals(dt) {
       w.spin.rotation.z = -car.wheelRot[i];
       // wheel blur: spokes and sidewall lettering smear once the wheel spins fast
       const fast = w.blur ? car.speed > 11 : car.speed > 14;
-      if (fast !== w.blur || w.comp !== car.tyre.c) { w.blur = fast; w.comp = car.tyre.c; w.tyre.material = tyreMaterials(car.tyre.c, fast); w.cover.material = fast ? m.coverBlur : m.coverMat; }
+      if (fast !== w.blur || w.comp !== car.tyre.c) { w.blur = fast; w.comp = car.tyre.c; w.tyre.material = m.material(tyreMaterials(car.tyre.c, fast)); w.cover.material = fast ? m.coverBlur : m.coverMat; }
     }
     // Keep a compact red rain marker; halos and reflection streaks obscure cars ahead.
     m.lightMat.emissiveIntensity = wet && !car.inGarage ? 0.6 : 0;
@@ -11769,6 +11883,8 @@ function updateCarVisuals(dt) {
     m.helmet.visible = m.lod < 2 && !(car === G.focus && G.camRig.mode === 'cockpit');
     if (inside) {
       if (!G.cockpitHalo) G.cockpitHalo = new THREE.Mesh(driverGeometries().cockpitHalo, new THREE.MeshStandardMaterial({ color: 0x15171a, roughness: 0.42, metalness: 0.3 }));
+      G.cockpitHalo.frustumCulled = false;
+      G.cockpitHalo.material = m.material(CAR_TERRAIN_MATERIAL.get(G.cockpitHalo.material) || G.cockpitHalo.material);
       if (G.cockpitHalo.parent !== m.group) m.group.add(G.cockpitHalo);
     } else if (car === G.focus && G.cockpitHalo && G.cockpitHalo.parent) G.cockpitHalo.parent.remove(G.cockpitHalo);
     // The cockpit wheel uses its fixed decorative display; race telemetry stays in the HUD.
@@ -12312,6 +12428,7 @@ function frame(now) {
     R.wind.value = 0.55 + (G.session && G.session.weather ? G.session.weather.rain : 0) * 0.9; // the woods move more in a squall
     renderer.info.reset();
     setElevationCamera(camera.position.x, camera.position.z, G.focus && G.track ? G.focus.idx : null);
+    cullCarModels(camera);
     if (G.forest) G.forest.update(camera, G.worldWet);
     // medium level: the shadow map is redrawn every second frame (its light follows the focus car, so a shadow lags
     // by one frame at most)
@@ -12385,12 +12502,13 @@ function updateMirrors(m) {
     G.mirrorRT = new THREE.WebGLRenderTarget(512, 128, { type: renderer.capabilities.isWebGL2 && GFX.post ? THREE.HalfFloatType : THREE.UnsignedByteType });
     G.mirrorCam = new THREE.PerspectiveCamera(15, 4, 0.3, 700);
   }
-  if (!m.mirrorLive) m.mirrorLive = partMask(new THREE.MeshBasicMaterial({ map: G.mirrorRT.texture }), m.mask);
+  if (!m.mirrorLive) m.mirrorLive = m.material(partMask(new THREE.MeshBasicMaterial({ map: G.mirrorRT.texture }), m.mask));
   if (m.mirrorMesh.material !== m.mirrorLive) { m.mirrorMesh.material = m.mirrorLive; G.mirrorOwner = m; }
   if ((G.mirrorN = (G.mirrorN || 0) + 1) % (G.worldQ === 2 ? 1 : 2)) return;
   const g = m.group, cam = G.mirrorCam; g.updateMatrixWorld(true);
   cam.position.set(...COCKPIT.mirrorCam).applyMatrix4(g.matrixWorld);
-  _ckT.set(...COCKPIT.mirrorLook).applyMatrix4(g.matrixWorld); _ckT.y += elevWarp(_ckT.x, _ckT.z, camera.position.x, camera.position.z, G.focus.idx);
+  _ckT.set(...COCKPIT.mirrorLook).applyMatrix4(g.matrixWorld);
+  const ground = m.ground.value - ELEV[0].z; cam.position.y += ground; _ckT.y += ground;
   cam.lookAt(_ckT); cam.updateMatrixWorld();
   const vis = m.mirrorMesh.visible, au = renderer.shadowMap.autoUpdate, nu = renderer.shadowMap.needsUpdate, prev = renderer.getRenderTarget();
   m.mirrorMesh.visible = false; renderer.shadowMap.autoUpdate = false;

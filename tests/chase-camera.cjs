@@ -18,7 +18,7 @@ test('chase camera: fixed distance and field of view in every situation; cockpit
     page.setDefaultTimeout(500000);
     const errors = []; page.on('pageerror', e => errors.push(e.message));
     await page.addInitScript(() => {
-      localStorage.setItem('apexgp.settings.v1', JSON.stringify({ circuit: 'monza' }));
+      localStorage.setItem('apexgp.settings.v1', JSON.stringify({ circuit: 'monza', resolution: 'native' }));
       const nativeRaf = window.requestAnimationFrame.bind(window);
       window.requestAnimationFrame = cb => { if (!/\bframe\(/.test(String(cb))) return nativeRaf(cb); (window.__rafq = window.__rafq || []).push(cb); return 1; };
       window.__t = 0; window.__frames = (n, dt = 1000 / 60) => { for (let i = 0; i < n; i++) { const q = window.__rafq || []; window.__rafq = []; window.__t += dt; for (const cb of q) cb(window.__t); } };
@@ -51,16 +51,16 @@ test('chase camera: fixed distance and field of view in every situation; cockpit
       const sp = G.spray, live = [];
       for (let i = 0; i < sp.n; i++) if (sp.life[i] > 0) live.push({ y: sp.pos[i * 3 + 1], a: sp.baseA[i] });
       // the cockpit camera: at the driver's eyes, the focus car's own head hidden, its hands on a wheel turned with the
-      // steering, the live wheel display; looking back, the nose camera faces the driver
+      // steering, the decorative wheel display; looking back, the nose camera faces the driver
       G.camRig.setMode('cockpit'); __frames(4);
       const m = G.models.get(car), cam = G.camera.position, fx = Math.cos(car.psi), fz = Math.sin(car.psi);
       const cockpit = { along: (cam.x - car.x) * fx + (cam.z - car.z) * fz, side: Math.abs(-(cam.x - car.x) * fz + (cam.z - car.z) * fx), headHidden: !m.helmet.visible,
-        wheel: m.driver.angle, steer: car.steer, display: m.driver.dispMat.map === G.wheelTex, others: s.cars.filter(c => c !== car).every(c => { const o = G.models.get(c); return !o || o.helmet.visible || o.lod >= 2; }) };
+        wheel: m.driver.angle, steer: car.steer, display: !!m.driver.dispMat.map?.isCanvasTexture, others: s.cars.filter(c => c !== car).every(c => { const o = G.models.get(c); return !o || o.helmet.visible || o.lod >= 2; }) };
       G.lookBack = true; __frames(2);
       const dir = G.camera.getWorldDirection(new cam.constructor());
       cockpit.backDir = dir.x * fx + dir.z * fz; cockpit.backY = cam.y; cockpit.headBack = m.helmet.visible;
       G.lookBack = false; __frames(2);
-      cockpit.mirrors = m.mirrorMesh.material === m.mirrorLive && !!G.mirrorRT && m.mirrorLive.map === G.mirrorRT.texture;
+      cockpit.mirrors = m.mirrorMesh.material === m.mirrorMat && m.mirrorMat.metalness === 1;
       G.lookBack = false; G.camRig.setMode('chase');
       return { views, cockpit, spray: { count: live.length, maxY: Math.max(...live.map(p => p.y)), maxA: Math.max(...live.map(p => p.a)) } };
     });
@@ -78,9 +78,9 @@ test('chase camera: fixed distance and field of view in every situation; cockpit
     assert.ok(k.headHidden, 'the camera is the driver\'s head: its own helmet is not drawn');
     assert.ok(k.others, 'every other driver keeps his head');
     assert.ok(Math.abs(k.wheel - Math.max(-2.3, Math.min(2.3, k.steer * 5.5))) < 0.05, 'the wheel turns with the steering: ' + k.wheel + ' for ' + k.steer);
-    assert.ok(k.display, 'the wheel shows the live display');
+    assert.ok(k.display, 'the wheel keeps its decorative display (race telemetry is in the HUD)');
     assert.ok(k.backDir < -0.5 && k.backY > 0.9 && !k.headBack, 'looking back from the cockpit: over the halo and engine cover at the cars behind: ' + JSON.stringify(k));
-    assert.ok(k.mirrors, 'the mirrors show the live view behind');
+    assert.ok(k.mirrors, 'the mirrors keep their reflective material');
     assert.deepEqual(errors, [], 'no page errors');
   } finally { await browser.close(); await server.close(); }
 });
