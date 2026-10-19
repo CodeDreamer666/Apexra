@@ -144,6 +144,8 @@ Using the kerbs, running a little wide, or putting two wheels over the inside ke
 
 ## The race screen
 
+You watch the race from a camera just behind your car. It stays at the same distance and height all the time, whether you're slow, flat out, braking or cornering.
+
 **Top right: race information**
 - **LAP:** the lap you're on, for example `LAP 3 / 6`.
 - **POS:** your current position, for example `POS 2 / 20`.
@@ -213,6 +215,8 @@ A stop for tyres only costs about 16–17 seconds compared with staying out, dep
 
 ### Weather
 The weather changes during the race. Watch the rain chance and the track wetness on the status panel. Rain makes the track slippery, and it takes time for a wet track to dry out again. Getting the timing of a switch between dry and wet tyres right can gain or lose a lot of places.
+
+On a wet track the tyres throw up a fine spray of water. It stays low and fades quickly, so you can always see the car in front.
 
 ### Slipstream
 Following closely behind another car on a straight gives you a tow, which makes you faster. Use it to set up an overtake into the next braking zone.
