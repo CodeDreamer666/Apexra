@@ -1,2 +1,7 @@
 # captured by tools/capture-screenshots.cjs (default output folder); not part of the repo
 /screenshots/
+/node_modules/
+/dist/
+/.vercel/
+/.env*
+/tools/.circuit-cache/

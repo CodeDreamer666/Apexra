@@ -1,0 +1,3 @@
+# Preserve upstream license bytes so the recorded vendor integrity hash survives checkout.
+# Its original CRLF and trailing spaces are part of the vendored file, not authored whitespace.
+vendor/fonts/OFL.txt -text whitespace=-blank-at-eol

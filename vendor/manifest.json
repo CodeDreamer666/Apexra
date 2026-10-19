@@ -1,0 +1,44 @@
+[
+  {
+    "path": "vendor/three/three.module.min.js",
+    "source": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.min.js",
+    "sha256": "3e690ac7d180b0aadf0891bea39eec643e29e2d3e75c99b18689518665f69ba6",
+    "bytes": 670681
+  },
+  {
+    "path": "vendor/three/LICENSE.txt",
+    "source": "https://raw.githubusercontent.com/mrdoob/three.js/r160/LICENSE",
+    "sha256": "852e0e8699169bf9f6fdc6bda3e682d078dcbc738b5d33e74df594721bff271d",
+    "bytes": 1081
+  },
+  {
+    "path": "vendor/fonts/OFL.txt",
+    "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/titilliumweb/OFL.txt",
+    "sha256": "c0562e066174197902a4a10606673d189f067970ef89c6013943b9cf182aadbc",
+    "bytes": 4523
+  },
+  {
+    "path": "vendor/fonts/TitilliumWeb-Regular.ttf",
+    "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/titilliumweb/TitilliumWeb-Regular.ttf",
+    "sha256": "7b6b4452c65cc8b8522e92e7d4d4c2e6d7675341ceafd041bb6bd30297517ea5",
+    "bytes": 63660
+  },
+  {
+    "path": "vendor/fonts/TitilliumWeb-SemiBold.ttf",
+    "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/titilliumweb/TitilliumWeb-SemiBold.ttf",
+    "sha256": "7c92f15302d7ac1836015cb9cf4068796406667b304a061b75df8e11f1648c81",
+    "bytes": 63008
+  },
+  {
+    "path": "vendor/fonts/TitilliumWeb-Bold.ttf",
+    "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/titilliumweb/TitilliumWeb-Bold.ttf",
+    "sha256": "e2e8e1812041e2c5868f1d03ac24994312052c5381cca2e80748f08cb7e13093",
+    "bytes": 59884
+  },
+  {
+    "path": "vendor/fonts/TitilliumWeb-Black.ttf",
+    "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/titilliumweb/TitilliumWeb-Black.ttf",
+    "sha256": "6e064771c29aee4c79c9aebbd560db79faa71f4c1944ea27f12d82be8a04b1cb",
+    "bytes": 49328
+  }
+]

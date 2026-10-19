@@ -1,0 +1,15 @@
+{
+  "name": "apexra-private-release-tools",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Local build and verification tools for proprietary Apexra",
+  "scripts": {
+    "build": "node tools/build-release.cjs",
+    "build:draft": "node tools/build-release.cjs --draft",
+    "test:legal": "node tests/legal.cjs"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2",
+    "playwright": "1.62.1"
+  }
+}

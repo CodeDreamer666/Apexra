@@ -6,8 +6,7 @@
 <title>Apexra</title>
 <link rel="icon" href="./favicon.ico" sizes="16x16 32x32 48x48 64x64">
 <link rel="icon" type="image/png" href="./favicon.png" sizes="64x64">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Titillium+Web:wght@400;600;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./legal/fonts.css">
 <style>
   :root {
     color-scheme: dark;
@@ -756,7 +755,7 @@
   <div id="accentbar"></div>
   <div id="hud-left" class="hz">
     <div class="lstack">
-      <div id="hud-bl" class="panel"><canvas aria-label="Track map" id="minimap" width="652" height="472"></canvas></div>
+      <div id="hud-bl" class="panel"><canvas aria-label="Track map" id="minimap" width="652" height="472"></canvas><a href="./credits.html" target="_blank" rel="noopener noreferrer" aria-label="Circuit data credits and licenses (opens a new tab)" style="pointer-events:auto;color:var(--dim);font-size:11px">© OpenStreetMap contributors · ODbL · Credits</a></div>
     </div>
   </div>
   <div id="hud-tr" class="panel hz">
@@ -840,6 +839,12 @@
       <small class="display-readout" role="status">3840 × 2160 · Motion blur off</small>
     </div>
     <p class="menu-foot">WASD / ARROWS TO DRIVE</p>
+    <nav class="legal-links" aria-label="Legal information" style="display:flex;flex-wrap:wrap;gap:16px;font-size:14px">
+      <a href="./privacy.html" style="color:var(--dim)">Privacy</a>
+      <a href="./terms.html" style="color:var(--dim)">Terms</a>
+      <a href="./credits.html" style="color:var(--dim)">Credits</a>
+    </nav>
+    <small style="color:var(--dim)">Independent racing game. Not affiliated with Formula 1 or the FIA.<br>Circuit data: © OpenStreetMap contributors · ODbL. <a href="./credits.html" style="color:var(--dim)">Sources &amp; licenses</a></small>
   </div>
   <div id="circuitSelect" class="panel" role="dialog" aria-labelledby="csName" aria-hidden="true">
     <div class="cs-head">
@@ -6847,17 +6852,15 @@ const SIM = (function () {
 if (typeof module !== 'undefined') module.exports = SIM;
 </script>
 <script type="module">
-/* Three.js is loaded from a CDN with fallbacks; everything else is in this file. */
+/* Pinned, self-hosted Three.js; its MIT notice ships beside the module. */
 const THREE_URLS = [
-  'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js',
-  'https://unpkg.com/three@0.160.0/build/three.module.js',
-  'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.module.min.js',
+  './vendor/three/three.module.min.js',
 ];
 let THREE = null; let loadErr = null;
 for (const u of THREE_URLS) { try { THREE = await import(u); break; } catch (e) { loadErr = e; } }
 if (!THREE) {
   document.getElementById('loadErr').classList.remove('hidden');
-  document.getElementById('loadErr').innerHTML = 'Could not load Three.js from any CDN.<br>Please check your internet connection and reload.<br><small>' + (loadErr && loadErr.message) + '</small>';
+  document.getElementById('loadErr').textContent = 'Could not load the game engine. Please reload. ' + (loadErr ? loadErr.message : '');
   throw new Error('three.js unavailable');
 }
 /* =====================================================================

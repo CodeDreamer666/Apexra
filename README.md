@@ -8,12 +8,11 @@ It's easy to pick up and hard to master. The opponents race hard, mistakes cost 
 
 ## Starting the game
 
-1. Download or clone this project.
-2. Open **`index.html`** in a modern desktop browser (Chrome, Edge, Firefox or Safari).
+Play at **[apexra.vercel.app](https://apexra.vercel.app)** in a modern desktop browser. Apexra is free to play and does not require an account.
 
-You don't need to install anything. You do need an internet connection the first time, so the browser can download the 3D engine and the game's font.
+You don't need to install anything. The game, its pinned 3D engine and its font are delivered from the same website.
 
-If the game doesn't load when you double-click the file, your browser may be blocking local files. In that case, serve the folder with any simple local web server and open the address it gives you.
+The intended distribution is the playable website, with a private development repository. Free play does not grant unrestricted rights to redistribute proprietary code or original assets. Third-party code, fonts and circuit data keep their own license rights. Browser-delivered JavaScript is inspectable. See [copyright notice](COPYRIGHT.md), [release audit](docs/release-audit.md) and [authorized developer setup](docs/development.md).
 
 ---
 
@@ -280,4 +279,8 @@ They drive the same cars under the same rules as you, with no hidden boosts and 
 
 ## Credits
 
-Circuit layouts are based on the TUM racetrack database and OpenStreetMap (© OpenStreetMap contributors), aligned with the bacinger/f1-circuits traces, with elevation from SRTM. The licences for this data are in [`docs/licenses`](docs/licenses), and the sources are described in [`docs/circuit-data.md`](docs/circuit-data.md).
+Circuit layouts are based on the TUM racetrack database and OpenStreetMap (© OpenStreetMap contributors, ODbL 1.0), aligned with the bacinger/f1-circuits traces. Elevation was downloaded from AWS Terrain Tiles / Mapzen Skadi; the exact underlying elevation sources and their terms require confirmation. The data licenses are in [`docs/licenses`](docs/licenses), with provenance in [`docs/circuit-data.md`](docs/circuit-data.md). Three.js (MIT) and Titillium Web (OFL 1.1) notices ship in `vendor`. Player-facing attribution is in [Credits & Licenses](credits.html).
+
+## Release review
+
+The Privacy Policy, Terms and Credits are clearly marked local drafts. `npm run build` deliberately fails while owner/contact/date details or legal review decisions remain unresolved. `npm run build:draft` prepares an unpublished local review in `dist`; it is not permission to publish. See [developer setup and release gate](docs/development.md). Do not merge, push a deployment-triggering branch or deploy these changes without explicit approval.

@@ -8,9 +8,9 @@
 //                            used to place the TUM lines (which are in local metres) on the globe by a rigid
 //                            (rotation + translation, no scaling) iterative-closest-point fit. The fit residual is
 //                            printed: it is the independent agreement between the two traces.
-//   elevation                SRTM 1-arc-second (~30 m) DEM tiles, as served by the AWS Terrain Tiles open dataset
-//                            (Mapzen "skadi" format, https://registry.opendata.aws/terrain-tiles/; SRTM is public
-//                            domain, NASA/USGS). SRTM is a surface model (it includes tree canopy and buildings), so
+//   elevation                AWS Terrain Tiles / Mapzen Skadi (https://registry.opendata.aws/terrain-tiles/).
+//                            These tiles blend sources; the former SRTM-only/public-domain claim is unverified.
+//                            See docs/release-audit.md before release. The source is a surface model, so
 //                            the profile along the track is median-filtered and smoothed.
 //
 //   node tools/build-circuits.cjs [--cache DIR] [--write]

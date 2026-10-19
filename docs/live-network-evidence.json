@@ -1,0 +1,56 @@
+{
+  "method": "Network-only Chromium capture, fulfilled from TLS-verified curl responses. Exact original resources, no seed/account. Browser NSS cannot trust proxy CA. Does not verify game boot, provider backends, normal browser cookie headers or browser storage.",
+  "url": "https://apexra.vercel.app/?quality=low",
+  "requests": [
+    {
+      "url": "https://apexra.vercel.app/?quality=low",
+      "method": "GET"
+    },
+    {
+      "url": "https://fonts.googleapis.com/css2?family=Titillium+Web:wght@400;600;700;900&display=swap",
+      "method": "GET"
+    },
+    {
+      "url": "https://fonts.gstatic.com/s/titilliumweb/v19/NaPDcZTIAOhVxoMyOr9n_E7ffEDBKIw.ttf",
+      "method": "GET"
+    },
+    {
+      "url": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+      "method": "GET"
+    },
+    {
+      "url": "https://apexra.vercel.app/favicon.png",
+      "method": "GET"
+    }
+  ],
+  "responses": [
+    {
+      "url": "https://apexra.vercel.app/?quality=low",
+      "status": "HTTP/2 200 ",
+      "setCookie": null
+    },
+    {
+      "url": "https://fonts.googleapis.com/css2?family=Titillium+Web:wght@400;600;700;900&display=swap",
+      "status": "HTTP/2 200 ",
+      "setCookie": null
+    },
+    {
+      "url": "https://fonts.gstatic.com/s/titilliumweb/v19/NaPDcZTIAOhVxoMyOr9n_E7ffEDBKIw.ttf",
+      "status": "HTTP/2 200 ",
+      "setCookie": null
+    },
+    {
+      "url": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+      "status": "HTTP/2 200 ",
+      "setCookie": null
+    },
+    {
+      "url": "https://apexra.vercel.app/favicon.png",
+      "status": "HTTP/2 200 ",
+      "setCookie": null
+    }
+  ],
+  "cookies": [],
+  "errors": [],
+  "failures": []
+}

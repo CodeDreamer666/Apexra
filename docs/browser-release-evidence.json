@@ -1,0 +1,80 @@
+{
+  "checks": [
+    "production build refuses unresolved legal details and removes stale output",
+    "allowlisted build excludes internals, strips debug accessors/maps and preserves the embedded dataset",
+    "Privacy, Terms and Credits render at desktop/mobile widths; legal links/licenses/dataset resolve; saves unchanged",
+    "keyboard confirmation cancel preserves saves; confirmed reset clears all six current/legacy keys only; denied storage reports failure",
+    "real minified WebGL game boots under proposed CSP; menu legal navigation/back works and Career save is intact",
+    "Grand Prix selection, briefing and grid launch work (animation throttled in test)",
+    "Career launches and saves the active attempt in the browser",
+    "all runtime requests are same-origin GETs; no cookies, sessionStorage, IndexedDB, Cache Storage, service workers or console errors"
+  ],
+  "requests": [
+    {
+      "url": "http://127.0.0.1:39413/privacy.html",
+      "method": "GET"
+    },
+    {
+      "url": "http://127.0.0.1:39413/legal/legal.css",
+      "method": "GET"
+    },
+    {
+      "url": "http://127.0.0.1:39413/legal/clear-data.js",
+      "method": "GET"
+    },
+    {
+      "url": "http://127.0.0.1:39413/legal/fonts.css",
+      "method": "GET"
+    },
+    {
+      "url": "http://127.0.0.1:39413/vendor/fonts/TitilliumWeb-Black.ttf",
+      "method": "GET"
+    },
+    {
+      "url": "http://127.0.0.1:39413/vendor/fonts/TitilliumWeb-Regular.ttf",
+      "method": "GET"
+    },
+    {
+      "url": "http://127.0.0.1:39413/vendor/fonts/TitilliumWeb-Bold.ttf",
+      "method": "GET"
+    },
+    {
+      "url": "http://127.0.0.1:39413/terms.html",
+      "method": "GET"
+    },
+    {
+      "url": "http://127.0.0.1:39413/credits.html",
+      "method": "GET"
+    },
+    {
+      "url": "http://127.0.0.1:39413/",
+      "method": "GET"
+    },
+    {
+      "url": "http://127.0.0.1:39413/sim.js",
+      "method": "GET"
+    },
+    {
+      "url": "http://127.0.0.1:39413/game.js",
+      "method": "GET"
+    },
+    {
+      "url": "http://127.0.0.1:39413/vendor/three/three.module.min.js",
+      "method": "GET"
+    },
+    {
+      "url": "http://127.0.0.1:39413/vendor/fonts/TitilliumWeb-SemiBold.ttf",
+      "method": "GET"
+    },
+    {
+      "url": "http://127.0.0.1:39413/?quality=low",
+      "method": "GET"
+    },
+    {
+      "url": "http://127.0.0.1:39413/favicon.png",
+      "method": "GET"
+    }
+  ],
+  "failed": [],
+  "errors": []
+}

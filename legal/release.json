@@ -1,0 +1,13 @@
+{
+  "copyrightOwner": "[VERIFIED COPYRIGHT OWNER REQUIRED]",
+  "contactEmail": "[PUBLIC PRIVACY AND CONTACT EMAIL REQUIRED]",
+  "effectiveDate": "[EFFECTIVE DATE REQUIRED]",
+  "approvals": {
+    "ownershipAndAssetProvenance": false,
+    "thirdPartySourceAndLicenseObligations": false,
+    "hostingPrivacyAndRetention": false,
+    "nameLogoAndSponsorClearance": false,
+    "ageJurisdictionAndTermsReview": false,
+    "repositoryIsPrivate": false
+  }
+}
