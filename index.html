@@ -9068,7 +9068,7 @@ function textTex(txt, color, bg, w = 512, h = 96, font = '900 70px Titillium Web
 const DRIVER = {
   head: [0, 0.79, 0], shoulder: [-0.07, 0.705, 0.19], elbow: [0.15, 0.668, 0.215],
   wheel: [0.42, 0.728, 0], wheelTilt: 0.3, grip: 0.135, steerRatio: 5.5, steerMax: 2.3,
-  eye: [-0.05, 0.795, 0], // the cockpit camera: at the driver's eyes
+  eye: [-0.05, 0.775, 0], // the cockpit camera: at the driver's eyes
 };
 const SKIN = [0xe0b18f, 0xc68e6a, 0xa7714e, 0x8a5a3b, 0x6b4430, 0xf0c7a8];
 function paintGeo(g, rgb) { const n = g.attributes.position.count, a = new Float32Array(n * 3); for (let k = 0; k < n; k++) a.set(rgb, k * 3); g.setAttribute('color', new THREE.BufferAttribute(a, 3)); return g; }
