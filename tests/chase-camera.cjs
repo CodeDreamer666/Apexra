@@ -57,7 +57,10 @@ test('chase camera: fixed distance and field of view in every situation; cockpit
       const cockpit = { along: (cam.x - car.x) * fx + (cam.z - car.z) * fz, side: Math.abs(-(cam.x - car.x) * fz + (cam.z - car.z) * fx), headHidden: !m.helmet.visible,
         wheel: m.driver.angle, steer: car.steer, display: m.driver.dispMat.map === G.wheelTex, others: s.cars.filter(c => c !== car).every(c => { const o = G.models.get(c); return !o || o.helmet.visible || o.lod >= 2; }) };
       G.lookBack = true; __frames(2);
-      cockpit.backAlong = (cam.x - car.x) * fx + (cam.z - car.z) * fz; cockpit.headBack = m.helmet.visible;
+      const dir = G.camera.getWorldDirection(new cam.constructor());
+      cockpit.backDir = dir.x * fx + dir.z * fz; cockpit.backY = cam.y; cockpit.headBack = m.helmet.visible;
+      G.lookBack = false; __frames(2);
+      cockpit.mirrors = m.mirrorMesh.material === m.mirrorLive && !!G.mirrorRT && m.mirrorLive.map === G.mirrorRT.texture;
       G.lookBack = false; G.camRig.setMode('chase');
       return { views, cockpit, spray: { count: live.length, maxY: Math.max(...live.map(p => p.y)), maxA: Math.max(...live.map(p => p.a)) } };
     });
@@ -76,7 +79,8 @@ test('chase camera: fixed distance and field of view in every situation; cockpit
     assert.ok(k.others, 'every other driver keeps his head');
     assert.ok(Math.abs(k.wheel - Math.max(-2.3, Math.min(2.3, k.steer * 5.5))) < 0.05, 'the wheel turns with the steering: ' + k.wheel + ' for ' + k.steer);
     assert.ok(k.display, 'the wheel shows the live display');
-    assert.ok(k.backAlong > 0.8 && k.headBack, 'looking back from the cockpit: the nose camera, facing the driver');
+    assert.ok(k.backDir < -0.5 && k.backY > 0.9 && !k.headBack, 'looking back from the cockpit: over the halo and engine cover at the cars behind: ' + JSON.stringify(k));
+    assert.ok(k.mirrors, 'the mirrors show the live view behind');
     assert.deepEqual(errors, [], 'no page errors');
   } finally { await browser.close(); await server.close(); }
 });
