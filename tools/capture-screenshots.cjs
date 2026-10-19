@@ -17,11 +17,16 @@ let chromium;
 try { ({ chromium } = require('playwright')); } catch { ({ chromium } = require('/opt/node22/lib/node_modules/playwright')); }
 
 const ROOT = path.join(__dirname, '..');
+// the simulation (the first <script> of the page) runs in Node too: here only for the list of circuits
+const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+const m = { exports: {} }; new Function('module', html.match(/<script>([\s\S]*?)<\/script>/)[1])(m);
+const SIM = m.exports;
 const args = process.argv.slice(2);
 const OUT = path.resolve(args.find(a => !a.startsWith('--')) || path.join(ROOT, 'screenshots'));
 const opt = (k) => { const a = args.find(x => x.startsWith('--' + k + '=')); return a ? a.split('=')[1].split(',') : null; };
 const ONLY = opt('only');
 const CIRCUITS = opt('circuits') || SIM.CIRCUITS.map(c => c.id);
+for (const id of CIRCUITS) if (!SIM.CIRCUITS.some(c => c.id === id)) { console.error('Unknown circuit: ' + id + ' (known: ' + SIM.CIRCUITS.map(c => c.id).join(', ') + ')'); process.exit(1); }
 const W = 1600, HT = 900;
 fs.mkdirSync(OUT, { recursive: true });
 const index = [];
@@ -30,10 +35,12 @@ const index = [];
   const browser = await chromium.launch({ args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--autoplay-policy=no-user-gesture-required'] });
   const page = await browser.newPage({ viewport: { width: W, height: HT } });
   page.setDefaultTimeout(240000);
-  page.on('pageerror', e => console.log('  [pageerror]', e.message));
+  const pageErrors = [];
+  page.on('pageerror', e => { pageErrors.push(e.message); console.log('  [pageerror]', e.message); });
   // the render loop runs only when we ask for frames
   await page.addInitScript(() => {
-    localStorage.setItem('apexgp.settings.v1', JSON.stringify({ quality: 'high', camera: 'chase', volume: 0 }));
+    // native resolution: the 4K default would render 3840×2160 in software WebGL for a 1600×900 screenshot
+    localStorage.setItem('apexgp.settings.v1', JSON.stringify({ quality: 'high', camera: 'chase', volume: 0, resolution: 'native' }));
     // only the game's render loop is held; other callbacks (including Playwright's own) run natively
     const nativeRaf = window.requestAnimationFrame.bind(window);
     window.__t = 0; window.requestAnimationFrame = cb => { if (!/\bframe\(/.test(String(cb))) return nativeRaf(cb); (window.__rafq = window.__rafq || []).push(cb); return 1; };
@@ -84,7 +91,7 @@ const index = [];
       H.botOn = true;
     };
     H.snap = () => { APEX.camRig.init = false; };
-    H.cam = (m) => { if (APEX.camRig.setMode) APEX.camRig.setMode(m); APEX.camRig.init = false; }; // (Chase is the only camera now)
+    H.cam = (m) => { APEX.camRig.setMode(m); APEX.camRig.init = false; }; // 'chase' or 'cockpit' (F toggles them in the game)
     // stage a crash: the car is put next to its barrier and aimed into it
     H.crash = (car, v = 60, yaw = 0.5) => {
       const S = APEX.session, t = S.track, w = t.walls(car.idx, car.s, false, { l: 0, r: 0, innerPit: 0 }), side = car.d >= 0 ? 1 : -1;
@@ -105,6 +112,10 @@ const index = [];
   await page.click('#menu [data-act="controls"]'); await frames(2);
   await shot('menu-controls', 'Controls reference');
   await page.click('[data-act="controlsClose"]'); await frames(1);
+  await page.click('#menu [data-act="career"]'); await frames(2);
+  await page.waitForFunction(() => document.querySelectorAll('#crRanks li').length > 0 && !!document.querySelector('#crTier .cr-next'), null, { polling: 200, timeout: 20000 });
+  await shot('menu-career', 'Career: the ranks (Rookie, Pro, Master, Endless) and the next race');
+  await page.click('#crBack'); await frames(1);
   await page.click('#menu [data-act="play"]'); await frames(3);
   await shot('menu-circuit-select', 'Circuit selection');
 
@@ -130,7 +141,7 @@ const index = [];
     await ev(() => window.__setKey('KeyW', true));
     for (const L of full ? [1, 3, 5] : [5]) {
       await H('H.ff(20, s => s.lights >= a)', L); await frames(3, 0.02);
-      await shot(tag('lights-' + L), L + ' red light' + (L > 1 ? 's' : '') + ', launch control armed (holding W)');
+      await shot(tag('lights-' + L), L + ' red light' + (L > 1 ? 's' : '') + ' (holding W)');
     }
     await H('H.ff(10, s => s.lightsOut)'); await frames(6, 1);
     await shot(tag('lights-out'), 'Lights out and away we go');
@@ -138,12 +149,9 @@ const index = [];
     await H('H.ff(40)'); await settle(8, 1);
     await shot(tag('race-chase'), 'Racing, chase camera');
     if (full) {
-      for (const [m, d] of [['far', 'far chase camera'], ['cockpit', 'cockpit camera'], ['tcam', 'T-cam']]) {
-        await H('H.cam(a)', m); await frames(8, 1); await shot(tag('race-' + m), 'Racing, ' + d);
-      }
+      await H('H.cam("cockpit")'); await frames(8, 1); await shot(tag('race-cockpit'), 'Racing, cockpit camera (F)');
       await H('H.cam("chase")');
       await ev(() => window.__setKey('KeyB', true)); await frames(6, 1); await shot(tag('race-lookback'), 'Look back (B)'); await ev(() => window.__setKey('KeyB', false));
-      await page.keyboard.press('KeyI'); await page.keyboard.press('Tab');
       await page.keyboard.press('KeyT'); await frames(30, 1); await shot(tag('race-telemetry'), 'Telemetry overlay (T)'); await page.keyboard.press('KeyT');
 
     }
@@ -163,7 +171,6 @@ const index = [];
     if (full) { await H('H.cam("cockpit")'); await frames(6, 1); await shot(tag('pit-lane-cockpit'), 'Pit lane from the cockpit'); await H('H.cam("chase")'); }
     await H('H.ff(60, s => p.pit && p.pit.phase === "stopped")'); await H('H.ff(0.8)'); await settle(10, 0.02);
     await shot(tag('pit-servicing'), 'In the team box: the plan runs at once (red release light)');
-    if (full) { await H('H.cam("tcam")'); await frames(6, 0.02); await shot(tag('pit-servicing-tcam'), 'Servicing, T-cam'); await H('H.cam("chase")'); }
     await H('H.ff(30, s => p.pit && (p.pit.phase === "release" || p.pit.phase === "out"))'); await H('H.ff(0.3)'); await settle(6, 1);
     await shot(tag('pit-release'), 'Service complete: green light, leaving the box');
     await H('H.ff(60, s => !p.pit)'); await H('H.ff(0.5)'); await settle(8, 1);
@@ -232,4 +239,5 @@ const index = [];
   fs.writeFileSync(path.join(OUT, 'README.md'), md.join('\n'));
   console.log('Wrote ' + index.length + ' screenshots to ' + OUT);
   await browser.close();
+  if (pageErrors.length) { console.error(pageErrors.length + ' page error(s) during the capture'); process.exit(1); }
 })().catch(e => { console.error(e); process.exit(1); });
