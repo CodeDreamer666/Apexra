@@ -44,10 +44,9 @@ cannot detect a dishonest or mistaken manual approval.
 
 ## Delivery and security
 
-Automatic Vercel Git deployments from `main` are disabled in `vercel.json` so the reviewed changes can be pushed
-without publishing unresolved legal drafts. Restore that setting only as part of an explicitly approved release,
-after resolving the release gate. Other branches retain Vercel's default behavior; manual deployments remain gated
-by the build checks. See [Vercel Git configuration](https://vercel.com/docs/project-configuration/git-configuration).
+Automatic Vercel Git deployments use Vercel's default behavior, including builds triggered by pushes to `main`.
+The build checks still prevent publication of unresolved legal drafts. See
+[Vercel Git configuration](https://vercel.com/docs/project-configuration/git-configuration).
 
 `vercel.json` uses `npm run build` and serves only `dist`. No production/preview deployment was created.
 Do not push a branch or create a PR without checking whether Vercel Git integration automatically deploys it;
