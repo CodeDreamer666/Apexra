@@ -53,8 +53,6 @@ try {
   });
   if (n !== 2) throw Error('Expected the simulation and game scripts.');
   if (draft) html = html.replace('<head>','<head>\n<meta name="robots" content="noindex">').replace('<body>','<body>\n<p style="position:fixed;top:0;left:0;z-index:99999;background:#2b2517;color:#fff;padding:4px 12px;margin:0">LOCAL DRAFT — release review pending</p>');
-  if (prerelease) html = html.replace('<head>','<head>\n<meta name="robots" content="noindex">')
-    .replace('<h1 class="logo">Apex<span>ra</span></h1>', '<h1 class="logo">Apex<span>ra</span></h1><p class="menu-foot" role="status">PRE-RELEASE · Legal review incomplete</p>');
   write('index.html',html);
   const vars = { COPYRIGHT_OWNER:cfg.copyrightOwner,CONTACT_EMAIL:cfg.contactEmail,EFFECTIVE_DATE:cfg.effectiveDate };
   for (const page of ['privacy.html','terms.html','credits.html']) {
@@ -67,9 +65,9 @@ try {
     if (!draft && (/\{\{|\[.*REQUIRED\]/.test(body) || reviewText.test(body))) throw Error('Unresolved legal draft: '+page);
     write(page,body);
   }
-  write('release-status.json',JSON.stringify({stage:prerelease?'pre-release':draft?'local-draft':'reviewed-release',legalReviewComplete:!draft&&!prerelease})+'\n');
-  write('robots.txt',draft||prerelease?'User-agent: *\nDisallow: /\n':'User-agent: *\nAllow: /\n');
-  console.log((prerelease?'Public pre-release (legal review incomplete)':draft?'LOCAL DRAFT ONLY':'Reviewed release')+' built in dist. No deployment performed.');
+  write('release-status.json',JSON.stringify(prerelease?{stage:'release'}:{stage:draft?'local-draft':'reviewed-release',legalReviewComplete:!draft})+'\n');
+  write('robots.txt',draft?'User-agent: *\nDisallow: /\n':'User-agent: *\nAllow: /\n');
+  console.log((prerelease?'Public release':draft?'LOCAL DRAFT ONLY':'Reviewed release')+' built in dist. No deployment performed.');
 } catch (e) {
   fs.rmSync(out,{recursive:true,force:true});
   console.error('Release blocked: '+e.message);

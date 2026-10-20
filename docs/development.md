@@ -24,8 +24,9 @@ and self-hosted resources when needed. A skipped test is not a pass.
 ## Deployment modes and required review
 
 Following the developer's explicit production-deployment instruction on 20 October 2026, `npm run build` builds
-an expressly labeled **public pre-release**. It omits unknown identity/contact/effective-date fields, retains honest
-review-incomplete notices, uses noindex, and does not turn any legal approval flag on. This is not legal clearance.
+the public game with license credits and factual privacy information. It omits unknown identity/contact/effective-date
+fields and editorial review notices, permits indexing, and does not turn any internal legal approval flag on.
+The retained `--prerelease` argument is an internal compatibility name for this public-information mode.
 Use `npm run test:prerelease` to check this deployable artifact. The game and attribution remain accessible.
 
 `npm run build:release` retains the strict check for finalized, reviewed documents. Before using that mode:
@@ -52,13 +53,13 @@ cannot detect a dishonest or mistaken manual approval.
 ## Delivery and security
 
 Automatic Vercel Git deployments use Vercel's default behavior, including builds triggered by pushes to `main`.
-The public pre-release build removes placeholder fields and labels incomplete legal information. The separate
+The public build removes placeholder fields and editorial review notices. The separate
 reviewed-release command still refuses unresolved details and review decisions. See
 [Vercel Git configuration](https://vercel.com/docs/project-configuration/git-configuration).
 
 `vercel.json` uses `npm run build` and serves only `dist`. Production deployment was explicitly authorized on
 20 October 2026. `main` is the repository's sole existing branch; use that branch and the production target.
-Do not publish local `--draft` output: it is distinct from the sanitized public pre-release build.
+Do not publish local `--draft` output: it is distinct from the sanitized public build.
 
 The build minifies/extracts runtime scripts, removes known debug accessors, copies only named public files and
 license texts, and exports the already-licensed circuit dataset as `data/circuit-data.json`. No maps, tests,

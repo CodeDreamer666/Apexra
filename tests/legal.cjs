@@ -31,10 +31,10 @@ const mime = {'.html':'text/html; charset=utf-8','.js':'application/javascript',
   if(prerelease){
     for(const page of ['privacy.html','terms.html','credits.html']){
       const body=fs.readFileSync(path.join(dist,page),'utf8');assert.ok(!/\{\{|\}\}|\[.*REQUIRED\]/.test(body));
-      assert.match(body,/Pre-release information — legal review incomplete/);
+      assert.doesNotMatch(body,/pre-release|legal review|developer review|required.*review|must be confirmed/i);
     }
-    assert.deepEqual(JSON.parse(fs.readFileSync(path.join(dist,'release-status.json'),'utf8')),{stage:'pre-release',legalReviewComplete:false});
-    pass('public pre-release is explicitly labeled, contains no identity/contact placeholders and does not mark legal review complete');
+    assert.deepEqual(JSON.parse(fs.readFileSync(path.join(dist,'release-status.json'),'utf8')),{stage:'release'});
+    pass('public pages omit review notices and placeholders without asserting legal approval');
   }
   assert.ok(!fs.existsSync(path.join(dist,'tools')) && !fs.existsSync(path.join(dist,'docs')) && !fs.existsSync(path.join(dist,'.git')));
   for(const p of ['sim.js','game.js']) assert.ok(!/sourceMappingURL|window\.__game|window\.APEX\s*=/.test(fs.readFileSync(path.join(dist,p),'utf8')));

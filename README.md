@@ -283,4 +283,4 @@ Circuit layouts are based on the TUM racetrack database and OpenStreetMap (© Op
 
 ## Release review
 
-The normal deployment is an explicitly labeled pre-release. `npm run build` publishes factual game information without unknown identity/contact/date placeholders and keeps legal-review status incomplete. `npm run build:release` is the strict reviewed-release command and still fails while required details or decisions are unresolved. `npm run build:draft` is for unpublished local review only. See [developer setup and deployment modes](docs/development.md).
+The normal deployment publishes game information and required license credits without editorial review notices or unknown identity/contact/date placeholders. Internal review records remain unchanged. `npm run build:release` is the strict reviewed-release command and still fails while required details or decisions are unresolved. `npm run build:draft` is for unpublished local review only. See [developer setup and deployment modes](docs/development.md).

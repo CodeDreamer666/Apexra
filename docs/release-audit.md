@@ -268,3 +268,8 @@ term asset-source ledger and professionally reviewed trademark strategy. None is
 Testing outcomes and any failed/limited checks are recorded after execution in `docs/release-tests.md`. No skipped,
 timed-out, indirect or unexecuted check should be described as passed. The release gate is expected to fail while
 blockers remain. The local draft is reviewable; the game is not legally cleared or authorized for deployment.
+
+
+### Public notice removal — 20 October 2026
+
+At the developer’s explicit request to release, the public artifact no longer displays pre-release banners or editorial legal-review reminders. Required attribution, license texts, privacy disclosures and statutory-rights protections remain. Public output makes no claim of completed legal clearance; the internal review metadata and findings above remain unchanged. No owner or contact identity was invented.
