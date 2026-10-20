@@ -25,8 +25,17 @@ const mime = {'.html':'text/html; charset=utf-8','.js':'application/javascript',
   const blocked=spawnSync(process.execPath,['tools/build-release.cjs'],{cwd:fixture,encoding:'utf8'});
   assert.equal(blocked.status,1);assert.match(blocked.stderr,/Release blocked/);assert.equal(fs.existsSync(path.join(fixture,'dist')),false);
   fs.rmSync(fixture,{recursive:true,force:true});
-  pass('production build refuses unresolved legal details and removes stale output');
-  const draft = build(['--draft']); assert.equal(draft.status,0,draft.stderr);
+  pass('strict reviewed-release build refuses unresolved legal details and removes stale output');
+  const prerelease=process.argv.includes('--prerelease');
+  const draft = build([prerelease?'--prerelease':'--draft']); assert.equal(draft.status,0,draft.stderr);
+  if(prerelease){
+    for(const page of ['privacy.html','terms.html','credits.html']){
+      const body=fs.readFileSync(path.join(dist,page),'utf8');assert.ok(!/\{\{|\}\}|\[.*REQUIRED\]/.test(body));
+      assert.match(body,/Pre-release information — legal review incomplete/);
+    }
+    assert.deepEqual(JSON.parse(fs.readFileSync(path.join(dist,'release-status.json'),'utf8')),{stage:'pre-release',legalReviewComplete:false});
+    pass('public pre-release is explicitly labeled, contains no identity/contact placeholders and does not mark legal review complete');
+  }
   assert.ok(!fs.existsSync(path.join(dist,'tools')) && !fs.existsSync(path.join(dist,'docs')) && !fs.existsSync(path.join(dist,'.git')));
   for(const p of ['sim.js','game.js']) assert.ok(!/sourceMappingURL|window\.__game|window\.APEX\s*=/.test(fs.readFileSync(path.join(dist,p),'utf8')));
   const source = fs.readFileSync(path.join(root,'index.html'),'utf8');
@@ -45,11 +54,15 @@ const mime = {'.html':'text/html; charset=utf-8','.js':'application/javascript',
   const browser=await chromium.launch({headless:true,executablePath:process.env.CHROMIUM_PATH||'/usr/bin/chromium',args:['--use-angle=swiftshader','--enable-unsafe-swiftshader','--ignore-gpu-blocklist']});
   try{
     const context=await browser.newContext({viewport:{width:1280,height:800}});
-    // Throttle animation only on game pages for this software-rendered integration check.
-    // Keep callbacks running so layout/keyboard checks work; this is not a driving-performance test.
+    // Render the initial WebGL frame, then stop only the game's self-scheduling frame callback.
+    // Other animation callbacks (circuit layout and browser UI checks) still run normally.
+    // The earlier full-animation check is recorded separately; this verifies launch/state, not driving performance.
     await context.addInitScript(()=>{
-      if(location.pathname==='/'||location.pathname.endsWith('/index.html'))
-        window.requestAnimationFrame=callback=>setTimeout(()=>callback(performance.now()),250);
+      if(location.pathname==='/'||location.pathname.endsWith('/index.html')) {
+        const nativeFrame=window.requestAnimationFrame.bind(window);
+        window.requestAnimationFrame=callback=> /^function\s+[\w$]+\([^)]*\)\s*\{\s*requestAnimationFrame\(/.test(Function.prototype.toString.call(callback))
+          ? 0 : nativeFrame(callback);
+      }
     });
     context.on('request',r=>requests.push({url:r.url(),method:r.method()}));
     context.on('requestfailed',r=>failed.push({url:r.url(),error:r.failure()?.errorText}));
@@ -98,7 +111,7 @@ const mime = {'.html':'text/html; charset=utf-8','.js':'application/javascript',
     pass('real minified WebGL game boots under proposed CSP; menu legal navigation/back works and Career save is intact');
     await page.focus('#menuStart');await page.keyboard.press('Enter');await page.waitForSelector('#menu.selecting');
     await page.focus('#csGo');await page.keyboard.press('Enter');await page.waitForSelector('#raceBrief:not(.hidden)');await page.focus('#briefStart');await page.keyboard.press('Enter');await page.waitForSelector('#hud:not(.hidden)');
-    pass('Grand Prix selection, briefing and grid launch work (animation throttled in test)');
+    pass('Grand Prix selection, briefing and grid launch work (initial-frame integration test)');
     await page.goto(origin+'/?quality=low');await page.waitForSelector('#loading.hidden',{state:'attached',timeout:180000});
     await page.focus('#btnCareer');await page.keyboard.press('Enter');await page.waitForSelector('#career:not(.hidden)');await page.focus('#crActions .btn.primary');await page.keyboard.press('Enter');await page.waitForSelector('#raceBrief:not(.hidden)');await page.focus('#briefStart');await page.keyboard.press('Enter');
     await page.waitForSelector('#hud:not(.hidden)');

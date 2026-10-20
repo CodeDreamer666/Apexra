@@ -21,7 +21,14 @@ approved distribution. Existing simulation tests remain in `tests`. Run `npm run
 storage and built runtime. Other browser harnesses may assume old CDN loading or `file://`; adapt them to HTTP
 and self-hosted resources when needed. A skipped test is not a pass.
 
-## Required review before a public build
+## Deployment modes and required review
+
+Following the developer's explicit production-deployment instruction on 20 October 2026, `npm run build` builds
+an expressly labeled **public pre-release**. It omits unknown identity/contact/effective-date fields, retains honest
+review-incomplete notices, uses noindex, and does not turn any legal approval flag on. This is not legal clearance.
+Use `npm run test:prerelease` to check this deployable artifact. The game and attribution remain accessible.
+
+`npm run build:release` retains the strict check for finalized, reviewed documents. Before using that mode:
 
 1. Read `docs/release-audit.md`, resolve blockers and record evidence/decisions there.
 2. Supply the verified owner, monitored public privacy/contact email and ISO effective date in
@@ -34,23 +41,24 @@ and self-hosted resources when needed. A skipped test is not a pass.
 4. Set each named `approvals` boolean true only after its review is completed. This is a release checklist,
    not evidence an agent checked the dashboard or a lawyer cleared the project. Retain source versions/hashes
    and review decisions privately.
-5. Run `npm run build` and `npm run test:legal` (the test rebuilds a draft; run the reviewed production build
+5. Run `npm run build:release` and `npm run test:legal` (the test rebuilds a draft; run the reviewed production build
    again afterwards). Review the final HTML and test the approved artifact. Never deploy a draft artifact.
 6. Confirm Vercel uses this build command and `dist` output without overriding the gate. Verify private Git
    integration still works. Obtain explicit approval for publication and deployment.
 
-The normal production build fails and removes stale output when details or reviews are incomplete. The gate
+The strict reviewed-release build fails and removes stale output when details or reviews are incomplete. The gate
 cannot detect a dishonest or mistaken manual approval.
 
 ## Delivery and security
 
 Automatic Vercel Git deployments use Vercel's default behavior, including builds triggered by pushes to `main`.
-The build checks still prevent publication of unresolved legal drafts. See
+The public pre-release build removes placeholder fields and labels incomplete legal information. The separate
+reviewed-release command still refuses unresolved details and review decisions. See
 [Vercel Git configuration](https://vercel.com/docs/project-configuration/git-configuration).
 
-`vercel.json` uses `npm run build` and serves only `dist`. No production/preview deployment was created.
-Do not push a branch or create a PR without checking whether Vercel Git integration automatically deploys it;
-this task authorizes local preparation, not a remote preview.
+`vercel.json` uses `npm run build` and serves only `dist`. Production deployment was explicitly authorized on
+20 October 2026. `main` is the repository's sole existing branch; use that branch and the production target.
+Do not publish local `--draft` output: it is distinct from the sanitized public pre-release build.
 
 The build minifies/extracts runtime scripts, removes known debug accessors, copies only named public files and
 license texts, and exports the already-licensed circuit dataset as `data/circuit-data.json`. No maps, tests,

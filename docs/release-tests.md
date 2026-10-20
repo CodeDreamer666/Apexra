@@ -1,5 +1,24 @@
 # Release verification record
 
+## Production-deployment follow-up — 20 October 2026
+
+The developer explicitly authorized production deployment. `npm run build` now creates an explicitly labeled
+public pre-release with no identity/contact/date placeholders. `npm run build:release` preserves the strict legal
+review checks. All six manual approval flags remain false; this deployment mode is not legal clearance.
+
+`npm run test:prerelease` **passed all 9 check groups**: strict-release refusal, sanitized public documents/status,
+allowlisted/minified output and dataset, desktop/mobile pages and links, confirmed save reset/error handling,
+WebGL/CSP boot/navigation/save preservation, Grand Prix grid launch, Career launch/save, and same-origin requests
+with no cookies, storage databases, service workers or console errors. See `docs/prerelease-browser-evidence.json`.
+
+This follow-up renders the initial WebGL frame and suppresses only the game's self-scheduling animation callback
+to make launch/state checks reproducible under software rendering. Browser/layout animation callbacks are retained.
+It does not verify sustained frame rate or driving performance. An earlier attempt using continuously throttled
+frames timed out waiting to focus the race brief; that attempt is not counted as a pass. The production game loop
+and gameplay code were not changed. The earlier audit checks below used their recorded methods.
+
+## Original audit verification
+
 Scope: changes based on deployed/main commit `9688204d231fa99b0dd03012fb3f84b205d37d6b`.
 No deployment, merge, remote push or real player's save modification was performed.
 

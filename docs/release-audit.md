@@ -1,5 +1,11 @@
 # Apexra pre-release legal, privacy, copyright and compliance audit
 
+> **Deployment follow-up, 20 October 2026:** the developer explicitly requested production deployment despite
+> the outstanding reviews. The normal build now emits clearly labeled pre-release information without identity,
+> contact or effective-date placeholders; it does not mark any review complete. The strict reviewed-release
+> command remains `npm run build:release`. Findings below remain unresolved; deployment is not legal clearance.
+> The original audit's statements about an unpublished local artifact and build blocking describe that earlier stage.
+
 Audit date: **19 October 2026 (Singapore)**. Status: **BLOCKED for public release; local implementation prepared.**
 This is an engineering audit and preliminary legal research, not a legal clearance opinion or compliance guarantee.
 No merge, push, repository visibility change, preview deployment or production publication was performed.

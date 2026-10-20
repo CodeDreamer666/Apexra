@@ -283,4 +283,4 @@ Circuit layouts are based on the TUM racetrack database and OpenStreetMap (© Op
 
 ## Release review
 
-The Privacy Policy, Terms and Credits are clearly marked local drafts. `npm run build` deliberately fails while owner/contact/date details or legal review decisions remain unresolved. `npm run build:draft` prepares an unpublished local review in `dist`; it is not permission to publish. See [developer setup and release gate](docs/development.md). Do not merge, push a deployment-triggering branch or deploy these changes without explicit approval.
+The normal deployment is an explicitly labeled pre-release. `npm run build` publishes factual game information without unknown identity/contact/date placeholders and keeps legal-review status incomplete. `npm run build:release` is the strict reviewed-release command and still fails while required details or decisions are unresolved. `npm run build:draft` is for unpublished local review only. See [developer setup and deployment modes](docs/development.md).

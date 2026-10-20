@@ -4,9 +4,11 @@
   "private": true,
   "description": "Local build and verification tools for proprietary Apexra",
   "scripts": {
-    "build": "node tools/build-release.cjs",
+    "build": "node tools/build-release.cjs --prerelease",
+    "build:release": "node tools/build-release.cjs",
     "build:draft": "node tools/build-release.cjs --draft",
-    "test:legal": "node tests/legal.cjs"
+    "test:legal": "node tests/legal.cjs",
+    "test:prerelease": "node tests/legal.cjs --prerelease"
   },
   "devDependencies": {
     "esbuild": "0.28.2",
